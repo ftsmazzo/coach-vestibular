@@ -2,6 +2,10 @@
 
 Plataforma web de apoio a estudantes de pré-vestibular (foco medicina). Transforma resultados de simulados em diagnóstico por matéria/tema, plano semanal e quests com recompensa emocional.
 
+## Documentação completa
+
+**[docs/DOCUMENTACAO-COMPLETA.md](docs/DOCUMENTACAO-COMPLETA.md)** — visão do produto, arquitetura, fluxos admin/aluno, IA, deploy, histórico do chat e como retomar em outro PC.
+
 ## Deploy (EasyPanel + PostgreSQL)
 
 Guia completo: **[docs/DEPLOY-EASYPANEL.md](docs/DEPLOY-EASYPANEL.md)**
