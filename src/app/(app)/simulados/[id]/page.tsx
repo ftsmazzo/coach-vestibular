@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { formatDataAplicacao } from "@/lib/data-prova";
 import { prisma } from "@/lib/prisma";
+import {
+  categoriaDoRegistro,
+  labelCategoriaRegistro,
+} from "@/lib/prova-tipo";
 import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
 import { Card, Button, Badge } from "@/components/ui";
 import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
@@ -34,21 +39,27 @@ export default async function SimuladoDetailPage({
   const resumoProva = scores?.resumoProva as ResumoProvaDiagnostico | undefined;
   const total = exam.questionAttempts.length;
   const acertos = exam.questionAttempts.filter((q) => q.correto).length;
+  const cat = categoriaDoRegistro(exam);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{exam.nome}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold">{exam.nome}</h1>
+            <Badge tone={cat === "prova_oficial" ? "success" : "neutral"}>
+              {labelCategoriaRegistro(cat)}
+            </Badge>
+          </div>
           <p className="text-slate-600">
-            {exam.data.toLocaleDateString("pt-BR")} · {Math.round((acertos / total) * 100)}% ·{" "}
+            Aplicada em {formatDataAplicacao(exam.data)} · {Math.round((acertos / total) * 100)}% ·{" "}
             {exam.banca}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <ExcluirRegistroButton examId={exam.id} nome={exam.nome} variant="secondary" />
           <Link href="/simulados">
-            <Button variant="secondary">Meus registros</Button>
+            <Button variant="secondary">Últimos resultados</Button>
           </Link>
           <Link href="/dashboard">
             <Button variant="ghost">Dashboard</Button>

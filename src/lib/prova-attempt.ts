@@ -5,11 +5,15 @@ import { enriquecerDiagnosticoComProva } from "./diagnosis-prova";
 import { generateStudyPlan, planToQuests } from "./study-plan";
 import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
+import { parseDataAplicacao } from "./data-prova";
 
 export interface RegistrarTentativaInput {
   userId: string;
   provaId: string;
-  data?: string;
+  /** YYYY-MM-DD — dia em que a prova foi aplicada (não o cadastro no app) */
+  data: string;
+  /** Apaga este registro antes de criar o novo (mesma prova) */
+  substituirExamId?: string;
   checkInScore?: number;
   nota?: number;
   /** Linhas número,letra — gabarito do aluno (recomendado) */
@@ -129,6 +133,22 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
   if (!prova.publicada) throw new Error("PROVA_NOT_PUBLISHED");
   if (prova.questoes.length === 0) throw new Error("PROVA_EMPTY");
 
+  if (!input.data?.trim()) throw new Error("DATA_OBRIGATORIA");
+
+  if (input.substituirExamId) {
+    const anterior = await prisma.exam.findFirst({
+      where: {
+        id: input.substituirExamId,
+        userId: input.userId,
+        provaId: input.provaId,
+      },
+    });
+    if (!anterior) throw new Error("EXAM_NOT_FOUND");
+    await prisma.exam.delete({ where: { id: anterior.id } });
+  }
+
+  const dataAplicacao = parseDataAplicacao(input.data);
+
   const temGabaritoAluno =
     Boolean(input.gabaritoAluno?.trim()) || Boolean(input.respostas?.trim());
   const temErros = Boolean(input.apenasErros?.length);
@@ -209,7 +229,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
       userId: input.userId,
       provaId: prova.id,
       nome: prova.nome,
-      data: input.data ? new Date(input.data) : new Date(),
+      data: dataAplicacao,
       banca: prova.banca,
       totalQuestoes: prova.totalQuestoes,
       nota: input.nota,
@@ -269,7 +289,14 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
 
   await prisma.quest.createMany({ data: planToQuests(items, input.userId) });
 
-  return { exam, diagnosis, prova, analiseCompleta, avisos };
+  return {
+    exam,
+    diagnosis,
+    prova,
+    analiseCompleta,
+    avisos,
+    substituiu: Boolean(input.substituirExamId),
+  };
 }
 
 export async function refreshProvaGabaritoFlag(provaId: string) {

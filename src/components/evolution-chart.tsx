@@ -12,11 +12,13 @@ import {
 
 export function EvolutionChart({
   data,
+  emptyMessage = "Registre resultados para ver a evolução.",
 }: {
   data: Array<{ nome: string; data: string; taxaAcerto: number }>;
+  emptyMessage?: string;
 }) {
   if (data.length === 0) {
-    return <p className="text-sm text-slate-500">Registre simulados para ver a evolução.</p>;
+    return <p className="text-sm text-slate-500">{emptyMessage}</p>;
   }
 
   return (

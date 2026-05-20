@@ -5,7 +5,8 @@ import { registrarTentativaProva } from "@/lib/prova-attempt";
 
 const schema = z.object({
   provaId: z.string(),
-  data: z.string().optional(),
+  data: z.string().min(1, "Informe a data em que você fez a prova"),
+  substituirExamId: z.string().optional(),
   checkInScore: z.number().int().min(1).max(5).optional(),
   nota: z.number().optional(),
   /** Uma linha por questão: 1,C */
@@ -51,6 +52,18 @@ export async function POST(request: Request) {
         { error: "Informe seu gabarito ou os números das questões erradas" },
         { status: 400 }
       );
+    }
+    if (msg === "DATA_OBRIGATORIA") {
+      return NextResponse.json(
+        { error: "Informe a data em que você fez a prova (não a data de hoje)" },
+        { status: 400 }
+      );
+    }
+    if (msg === "EXAM_NOT_FOUND") {
+      return NextResponse.json({ error: "Registro anterior não encontrado" }, { status: 404 });
+    }
+    if (msg === "DATA_INVALIDA") {
+      return NextResponse.json({ error: "Data inválida" }, { status: 400 });
     }
     console.error(e);
     return NextResponse.json({ error: "Erro ao registrar tentativa" }, { status: 500 });

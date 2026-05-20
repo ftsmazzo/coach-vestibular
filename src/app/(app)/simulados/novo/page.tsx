@@ -7,6 +7,15 @@ import { Button, Card, Input, Label } from "@/components/ui";
 import { parseListaErros } from "@/lib/gabarito";
 import { formatProvaLabel } from "@/lib/prova-label";
 
+interface TentativaResumo {
+  id: string;
+  dataLabel: string;
+  dataInput: string;
+  pctAcerto: number;
+  acertos: number;
+  total: number;
+}
+
 interface ProvaOption {
   id: string;
   nome: string;
@@ -16,7 +25,11 @@ interface ProvaOption {
   totalQuestoes: number;
   gabaritoCompleto: boolean;
   questoesCount: number;
+  minhasTentativas?: number;
+  tentativas: TentativaResumo[];
 }
+
+type ModoRegistro = "substituir" | "nova";
 
 export default function NovoSimuladoPage() {
   const router = useRouter();
@@ -24,7 +37,9 @@ export default function NovoSimuladoPage() {
   const provaIdInicial = searchParams.get("provaId") ?? "";
   const [provas, setProvas] = useState<ProvaOption[]>([]);
   const [provaId, setProvaId] = useState("");
-  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
+  const [data, setData] = useState("");
+  const [modoRegistro, setModoRegistro] = useState<ModoRegistro>("nova");
+  const [substituirExamId, setSubstituirExamId] = useState("");
   const [checkIn, setCheckIn] = useState<number | null>(null);
   const [gabaritoAluno, setGabaritoAluno] = useState("");
   const [respostas, setRespostas] = useState("");
@@ -36,18 +51,45 @@ export default function NovoSimuladoPage() {
   useEffect(() => {
     fetch("/api/provas")
       .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setProvas(data);
-          const pre = provaIdInicial && data.some((p: ProvaOption) => p.id === provaIdInicial)
+      .then((lista) => {
+        if (!Array.isArray(lista)) return;
+        const normalizada: ProvaOption[] = lista.map((p: ProvaOption) => ({
+          ...p,
+          tentativas: p.tentativas ?? [],
+        }));
+        setProvas(normalizada);
+        const pre =
+          provaIdInicial && normalizada.some((p) => p.id === provaIdInicial)
             ? provaIdInicial
-            : data[0]?.id ?? "";
-          setProvaId(pre);
-        }
+            : normalizada[0]?.id ?? "";
+        setProvaId(pre);
       });
   }, [provaIdInicial]);
 
   const prova = provas.find((p) => p.id === provaId);
+  const tentativas = prova?.tentativas ?? [];
+  const jaRegistrou = tentativas.length > 0;
+
+  useEffect(() => {
+    if (!prova) return;
+    if (tentativas.length > 0) {
+      setModoRegistro("substituir");
+      const alvo = tentativas[0];
+      setSubstituirExamId(alvo.id);
+      setData(alvo.dataInput);
+    } else {
+      setModoRegistro("nova");
+      setSubstituirExamId("");
+      setData("");
+    }
+  }, [provaId, provas]);
+
+  useEffect(() => {
+    if (modoRegistro === "substituir" && substituirExamId) {
+      const t = tentativas.find((x) => x.id === substituirExamId);
+      if (t) setData(t.dataInput);
+    }
+  }, [modoRegistro, substituirExamId, tentativas]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,6 +97,15 @@ export default function NovoSimuladoPage() {
       setError("Selecione uma prova cadastrada pelo admin.");
       return;
     }
+    if (!data.trim()) {
+      setError("Informe a data em que você fez a prova (dia da aplicação).");
+      return;
+    }
+    if (modoRegistro === "substituir" && jaRegistrou && !substituirExamId) {
+      setError("Selecione qual registro deseja substituir.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -63,6 +114,9 @@ export default function NovoSimuladoPage() {
       data,
     };
     if (checkIn != null) body.checkInScore = checkIn;
+    if (modoRegistro === "substituir" && substituirExamId) {
+      body.substituirExamId = substituirExamId;
+    }
 
     if (modo === "gabarito") {
       if (gabaritoAluno.trim().split(/\n/).filter(Boolean).length < 1) {
@@ -111,9 +165,9 @@ export default function NovoSimuladoPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-bold">Registrar resultado</h1>
         <p className="mt-1 text-slate-600">
-          Seu gabarito (o que você marcou em cada questão) é salvo como o oficial do admin. Com os
-          dois, o sistema confere acerto/erro por questão e monta o diagnóstico nos conteúdos da
-          prova.
+          Seu gabarito é comparado com o oficial do admin. Use a data em que você{" "}
+          <strong>fez a prova</strong>, não o dia em que está cadastrando aqui — o gráfico de
+          evolução usa essa data.
         </p>
       </div>
 
@@ -139,6 +193,9 @@ export default function NovoSimuladoPage() {
               {provas.map((p) => (
                 <option key={p.id} value={p.id}>
                   {formatProvaLabel(p)} — {p.questoesCount}/{p.totalQuestoes} no banco
+                  {(p.tentativas?.length ?? 0) > 0
+                    ? ` · ${p.tentativas.length} registro(s) seu(s)`
+                    : ""}
                   {p.gabaritoCompleto ? "" : " (gabarito parcial)"}
                 </option>
               ))}
@@ -151,10 +208,104 @@ export default function NovoSimuladoPage() {
             )}
           </Card>
 
+          {jaRegistrou && (
+            <Card className="border-amber-200 bg-amber-50/80">
+              <p className="font-medium text-amber-950">
+                Você já tem resultado desta prova
+              </p>
+              <p className="mt-1 text-sm text-amber-900">
+                Não é um cadastro em branco — escolha se quer <strong>substituir</strong> um
+                registro (apaga o antigo e gera outro) ou criar uma <strong>nova tentativa</strong>{" "}
+                (por exemplo, refez em outra data).
+              </p>
+              <ul className="mt-3 space-y-2">
+                {tentativas.map((t) => (
+                  <li
+                    key={t.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm"
+                  >
+                    <span>
+                      Aplicada em <strong>{t.dataLabel}</strong> · {t.pctAcerto}% ({t.acertos}/
+                      {t.total})
+                    </span>
+                    <Link
+                      href={`/simulados/${t.id}`}
+                      className="text-teal-700 font-medium hover:underline"
+                    >
+                      Ver diagnóstico →
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModoRegistro("substituir")}
+                  className={`rounded-lg px-3 py-1.5 text-sm ${
+                    modoRegistro === "substituir"
+                      ? "bg-amber-700 text-white"
+                      : "bg-white text-slate-700 ring-1 ring-amber-200"
+                  }`}
+                >
+                  Substituir registro
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModoRegistro("nova");
+                    setSubstituirExamId("");
+                    setData("");
+                  }}
+                  className={`rounded-lg px-3 py-1.5 text-sm ${
+                    modoRegistro === "nova"
+                      ? "bg-teal-600 text-white"
+                      : "bg-white text-slate-700 ring-1 ring-slate-200"
+                  }`}
+                >
+                  Nova tentativa (outra data)
+                </button>
+              </div>
+
+              {modoRegistro === "substituir" && tentativas.length > 1 && (
+                <div className="mt-3">
+                  <Label>Qual registro substituir?</Label>
+                  <select
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                    value={substituirExamId}
+                    onChange={(e) => setSubstituirExamId(e.target.value)}
+                  >
+                    {tentativas.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.dataLabel} — {t.pctAcerto}%
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {modoRegistro === "substituir" && (
+                <p className="mt-2 text-xs text-amber-800">
+                  O registro selecionado será apagado ao salvar; diagnóstico e plano serão
+                  recalculados.
+                </p>
+              )}
+            </Card>
+          )}
+
           <Card className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label>Data</Label>
-              <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
+            <div className="sm:col-span-2">
+              <Label>Data em que você fez a prova</Label>
+              <Input
+                type="date"
+                required
+                value={data}
+                onChange={(e) => setData(e.target.value)}
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Dia da aplicação (ENEM, simulado da escola, etc.), não o dia em que você está
+                preenchendo aqui. O gráfico de evolução usa essa data.
+              </p>
             </div>
             <div className="sm:col-span-2">
               <Label>Como você se sentiu depois da prova? (opcional)</Label>
@@ -237,8 +388,8 @@ export default function NovoSimuladoPage() {
                 </p>
                 {prova && !prova.gabaritoCompleto && (
                   <p className="mt-2 text-xs text-amber-700">
-                    Gabarito oficial ainda incompleto nesta prova — o percentual de acertos pode ficar
-                    limitado até o admin publicar o oficial.
+                    Gabarito oficial ainda incompleto nesta prova — o percentual de acertos pode
+                    ficar limitado até o admin publicar o oficial.
                   </p>
                 )}
               </div>
@@ -279,7 +430,11 @@ export default function NovoSimuladoPage() {
 
           {error && <p className="text-sm text-rose-600">{error}</p>}
           <Button type="submit" disabled={loading}>
-            {loading ? "Analisando..." : "Gerar diagnóstico e plano"}
+            {loading
+              ? "Analisando..."
+              : modoRegistro === "substituir" && jaRegistrou
+                ? "Substituir e gerar diagnóstico"
+                : "Gerar diagnóstico e plano"}
           </Button>
         </form>
       )}

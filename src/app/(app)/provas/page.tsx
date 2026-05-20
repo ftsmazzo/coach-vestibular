@@ -8,6 +8,7 @@ import {
   filtrarProvasPorAba,
   labelTipoProva,
 } from "@/lib/prova-tipo";
+import { formatDataAplicacao } from "@/lib/data-prova";
 import { Card, Button, Badge } from "@/components/ui";
 
 interface PageProps {
@@ -60,7 +61,7 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
   const { aba: abaParam } = await searchParams;
   const aba = abaFromSearchParam(abaParam);
 
-  const [user, provasRaw, tentativasPorProva] = await Promise.all([
+  const [user, provasRaw, meusExams] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.userId },
       select: { vestibularAlvo: true, metaProva: true },
@@ -70,21 +71,35 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
       orderBy: [{ ano: "desc" }, { nome: "asc" }],
       include: { questoes: { select: { numero: true } } },
     }),
-    prisma.exam.groupBy({
-      by: ["provaId"],
+    prisma.exam.findMany({
       where: {
         userId: session.userId,
         provaId: { not: null },
       },
-      _count: { id: true },
+      include: { questionAttempts: true },
+      orderBy: { data: "desc" },
     }),
   ]);
 
-  const tentativasMap = new Map(
-    tentativasPorProva
-      .filter((t) => t.provaId != null)
-      .map((t) => [t.provaId!, t._count.id])
-  );
+  const ultimaPorProvaId = new Map<
+    string,
+    { id: string; dataLabel: string; pctAcerto: number }
+  >();
+  const contagemPorProvaId = new Map<string, number>();
+
+  for (const e of meusExams) {
+    if (!e.provaId) continue;
+    contagemPorProvaId.set(e.provaId, (contagemPorProvaId.get(e.provaId) ?? 0) + 1);
+    if (!ultimaPorProvaId.has(e.provaId)) {
+      const total = e.questionAttempts.length;
+      const acertos = e.questionAttempts.filter((q) => q.correto).length;
+      ultimaPorProvaId.set(e.provaId, {
+        id: e.id,
+        dataLabel: formatDataAplicacao(e.data),
+        pctAcerto: total > 0 ? Math.round((acertos / total) * 100) : 0,
+      });
+    }
+  }
 
   const provas = provasRaw.map((p) => {
     const stats = statsQuestoesProva(p.questoes, p.totalQuestoes);
@@ -100,7 +115,8 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
       gabaritoCompleto: p.gabaritoCompleto,
       questoesCount: stats.cadastradas,
       bancoIncompleto: stats.incompleto,
-      minhasTentativas: tentativasMap.get(p.id) ?? 0,
+      minhasTentativas: contagemPorProvaId.get(p.id) ?? 0,
+      ultimaTentativa: ultimaPorProvaId.get(p.id) ?? null,
     };
   });
 
@@ -207,10 +223,30 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
                           {p.bancoIncompleto ? " · cadastro parcial" : ""}
                           {!p.gabaritoCompleto ? " · gabarito incompleto" : ""}
                         </p>
+                        {p.ultimaTentativa && (
+                          <p className="mt-2 text-sm text-teal-800">
+                            Seu último registro: aplicada em{" "}
+                            <strong>{p.ultimaTentativa.dataLabel}</strong> ·{" "}
+                            {p.ultimaTentativa.pctAcerto}% acertos
+                          </p>
+                        )}
                       </div>
-                      <Link href={`/simulados/novo?provaId=${p.id}`}>
-                        <Button className="w-full">Registrar meu resultado</Button>
-                      </Link>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        {p.ultimaTentativa && (
+                          <Link href={`/simulados/${p.ultimaTentativa.id}`} className="flex-1">
+                            <Button variant="secondary" className="w-full">
+                              Ver meu resultado
+                            </Button>
+                          </Link>
+                        )}
+                        <Link href={`/simulados/novo?provaId=${p.id}`} className="flex-1">
+                          <Button className="w-full">
+                            {p.minhasTentativas > 0
+                              ? "Atualizar resultado"
+                              : "Registrar meu resultado"}
+                          </Button>
+                        </Link>
+                      </div>
                     </Card>
                   </li>
                 ))}

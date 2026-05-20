@@ -33,3 +33,37 @@ export function labelTipoProva(tipo: ProvaTipo): string {
   };
   return map[tipo] ?? tipo;
 }
+
+/** Filtro nas listas do aluno (dashboard, meus registros) */
+export type FiltroRegistros = "todos" | "provas" | "simulados";
+
+export function filtroRegistrosFromSearchParam(v: string | undefined): FiltroRegistros {
+  if (v === "provas" || v === "simulados") return v;
+  return "todos";
+}
+
+export type CategoriaRegistro = "prova_oficial" | "simulado";
+
+/** Classifica um Exam pelo tipo da Prova vinculada (UFU, ENEM = oficial; cursinho = simulado). */
+export function categoriaDoRegistro(exam: {
+  provaId: string | null;
+  prova?: { tipo: ProvaTipo } | null;
+}): CategoriaRegistro {
+  if (exam.prova?.tipo) {
+    return provaEhOficial(exam.prova.tipo) ? "prova_oficial" : "simulado";
+  }
+  return "simulado";
+}
+
+export function registroPassaFiltro(
+  exam: { provaId: string | null; prova?: { tipo: ProvaTipo } | null },
+  filtro: FiltroRegistros
+): boolean {
+  if (filtro === "todos") return true;
+  const cat = categoriaDoRegistro(exam);
+  return filtro === "provas" ? cat === "prova_oficial" : cat === "simulado";
+}
+
+export function labelCategoriaRegistro(cat: CategoriaRegistro): string {
+  return cat === "prova_oficial" ? "Prova oficial" : "Simulado";
+}

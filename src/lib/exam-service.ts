@@ -1,5 +1,12 @@
 import type { ErrorType } from "@/generated/prisma/client";
 import { prisma } from "./prisma";
+import { formatDataAplicacao, parseDataAplicacao } from "./data-prova";
+import { pctAcertoRegistro } from "./exam-stats";
+import {
+  categoriaDoRegistro,
+  registroPassaFiltro,
+  type FiltroRegistros,
+} from "./prova-tipo";
 import { buildDiagnosis } from "./diagnosis";
 import { generateStudyPlan, planToQuests } from "./study-plan";
 
@@ -41,7 +48,7 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
     data: {
       userId: input.userId,
       nome: input.nome,
-      data: new Date(input.data),
+      data: parseDataAplicacao(input.data),
       banca: input.banca ?? "ENEM",
       totalQuestoes: input.totalQuestoes,
       nota: input.nota,
@@ -117,17 +124,27 @@ function getWeekStart(date: Date) {
   return d;
 }
 
-export async function getDashboardData(userId: string) {
+export async function getDashboardData(userId: string, filtro: FiltroRegistros = "todos") {
   const exams = await prisma.exam.findMany({
     where: { userId },
     orderBy: { data: "desc" },
     include: {
       questionAttempts: true,
       diagnosticSnapshot: true,
+      prova: { select: { tipo: true } },
     },
   });
 
-  const latest = exams[0];
+  const counts = {
+    todos: exams.length,
+    provas: exams.filter((e) => registroPassaFiltro(e, "provas")).length,
+    simulados: exams.filter((e) => registroPassaFiltro(e, "simulados")).length,
+  };
+
+  const examsFiltrados = exams.filter((e) => registroPassaFiltro(e, filtro));
+  const latest = examsFiltrados[0];
+  const latestProva = exams.find((e) => registroPassaFiltro(e, "provas"));
+  const latestSimulado = exams.find((e) => registroPassaFiltro(e, "simulados"));
   const studyPlan = await prisma.studyPlan.findFirst({
     where: { userId },
     orderBy: { createdAt: "desc" },
@@ -139,21 +156,18 @@ export async function getDashboardData(userId: string) {
     take: 10,
   });
 
-  const evolution = exams
+  const evolution = examsFiltrados
     .slice()
     .reverse()
-    .map((e) => {
-      const total = e.questionAttempts.length;
-      const acertos = e.questionAttempts.filter((q) => q.correto).length;
-      return {
-        nome: e.nome,
-        data: e.data.toISOString().slice(0, 10),
-        taxaAcerto: total > 0 ? Math.round((acertos / total) * 100) : 0,
-      };
-    });
+    .map((e) => ({
+      nome: e.nome,
+      data: formatDataAplicacao(e.data),
+      taxaAcerto: pctAcertoRegistro(e.questionAttempts),
+      categoria: categoriaDoRegistro(e),
+    }));
 
   const materiaEvolution: Record<string, number[]> = {};
-  for (const exam of exams.slice(0, 5).reverse()) {
+  for (const exam of examsFiltrados.slice(0, 5).reverse()) {
     for (const q of exam.questionAttempts) {
       if (!q.materiaId) continue;
       if (!materiaEvolution[q.materiaId]) materiaEvolution[q.materiaId] = [];
@@ -173,7 +187,12 @@ export async function getDashboardData(userId: string) {
 
   return {
     exams,
+    examsFiltrados,
+    counts,
+    filtro,
     latest,
+    latestProva,
+    latestSimulado,
     studyPlan,
     quests,
     evolution,
