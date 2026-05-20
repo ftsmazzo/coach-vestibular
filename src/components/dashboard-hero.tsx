@@ -1,15 +1,16 @@
 import Link from "next/link";
+import type { ProvaTipo } from "@/generated/prisma/client";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { labelCategoriaRegistro, categoriaDoRegistro } from "@/lib/prova-tipo";
 import { Button } from "@/components/ui";
 import { PctDonut } from "@/components/pct-donut";
 
-type ExamHero = {
+export type ExamHero = {
   id: string;
   nome: string;
   data: Date;
   provaId: string | null;
-  prova?: { tipo: string } | null;
+  prova?: { tipo: ProvaTipo } | null;
   questionAttempts: { correto: boolean }[];
 };
 

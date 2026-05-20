@@ -10,6 +10,7 @@ import { EvolutionChart } from "@/components/evolution-chart";
 import { FiltroRegistrosTabs } from "@/components/filtro-registros-tabs";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
 import { DashboardHero } from "@/components/dashboard-hero";
+import { MensagemDiaCard } from "@/components/mensagem-dia";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 
 interface PageProps {
@@ -65,6 +66,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <Button>+ Registrar prova</Button>
         </Link>
       </div>
+
+      <MensagemDiaCard />
 
       <DashboardHero exam={examHero} pct={pctLatest} counts={data.counts} />
 
