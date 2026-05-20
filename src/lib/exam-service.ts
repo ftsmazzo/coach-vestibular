@@ -137,7 +137,7 @@ export async function getDashboardData(userId: string, filtro: FiltroRegistros =
     include: {
       questionAttempts: true,
       diagnosticSnapshot: true,
-      prova: { select: { tipo: true } },
+      prova: { select: { tipo: true, nome: true } },
     },
   });
 

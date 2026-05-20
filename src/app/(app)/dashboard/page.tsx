@@ -4,36 +4,16 @@ import { getSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/exam-service";
 import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { getMateriaLabel } from "@/lib/taxonomy";
-import {
-  filtroRegistrosFromSearchParam,
-  labelCategoriaRegistro,
-  categoriaDoRegistro,
-} from "@/lib/prova-tipo";
+import { filtroRegistrosFromSearchParam } from "@/lib/prova-tipo";
 import { Card, Button, Badge } from "@/components/ui";
 import { EvolutionChart } from "@/components/evolution-chart";
 import { FiltroRegistrosTabs } from "@/components/filtro-registros-tabs";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
+import { DashboardHero } from "@/components/dashboard-hero";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 
 interface PageProps {
   searchParams: Promise<{ filtro?: string }>;
-}
-
-function CardUltimo({
-  titulo,
-  exam,
-}: {
-  titulo: string;
-  exam: { nome: string; questionAttempts: { correto: boolean }[] } | undefined;
-}) {
-  const pct = exam ? pctAcertoRegistro(exam.questionAttempts) : null;
-  return (
-    <Card>
-      <p className="text-sm text-slate-500">{titulo}</p>
-      <p className="text-3xl font-bold text-teal-700">{pct != null ? `${pct}%` : "—"}</p>
-      <p className="text-xs text-slate-500">{exam?.nome ?? "Nenhum ainda"}</p>
-    </Card>
-  );
 }
 
 export default async function DashboardPage({ searchParams }: PageProps) {
@@ -50,105 +30,79 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const focos = snapshot ? JSON.parse(snapshot.focosJson) : [];
   const pctLatest = latest ? pctAcertoRegistro(latest.questionAttempts) : 0;
 
-  const tituloUltimo =
-    filtro === "provas"
-      ? "Última prova oficial"
-      : filtro === "simulados"
-        ? "Último simulado"
-        : "Último resultado";
-
-  const tituloContagem =
-    filtro === "provas"
-      ? "Provas oficiais registradas"
-      : filtro === "simulados"
-        ? "Simulados registrados"
-        : "Resultados registrados";
-
-  const contagemValor =
-    filtro === "todos" ? data.counts.todos : filtro === "provas" ? data.counts.provas : data.counts.simulados;
-
-  const subtituloContagem =
-    filtro === "todos"
-      ? `${data.counts.provas} prova${data.counts.provas !== 1 ? "s" : ""} · ${data.counts.simulados} simulado${data.counts.simulados !== 1 ? "s" : ""}`
-      : undefined;
+  const examHero = latest
+    ? {
+        id: latest.id,
+        nome: latest.nome,
+        data: latest.data,
+        provaId: latest.provaId,
+        prova: latest.prova,
+        questionAttempts: latest.questionAttempts,
+      }
+    : undefined;
 
   const tituloEvolucao =
     filtro === "provas"
-      ? "Evolução — provas oficiais"
+      ? "Evolução nas provas oficiais"
       : filtro === "simulados"
-        ? "Evolução — simulados"
-        : "Evolução — todos os resultados";
-
-  const tituloMateria =
-    filtro === "provas"
-      ? "Por matéria (últimas provas)"
-      : filtro === "simulados"
-        ? "Por matéria (últimos simulados)"
-        : "Por matéria (últimos resultados)";
+        ? "Evolução nos simulados"
+        : "Sua evolução";
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-600">
-            Provas oficiais (ENEM, vestibular) definem focos; simulados mostram se você está
-            evoluindo nesses temas.
+          <p className="text-sm font-medium text-teal-700">Olá, {session.name.split(" ")[0]}</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+            Seu painel
+          </h1>
+          <p className="mt-1 max-w-xl text-sm text-slate-600">
+            Visão rápida do último resultado. O plano e as quests são o próximo passo depois do
+            diagnóstico.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/provas">
-            <Button>Provas públicas</Button>
-          </Link>
-          <Link href="/simulados">
-            <Button variant="secondary">Últimos resultados</Button>
-          </Link>
-        </div>
+        <Link href="/provas">
+          <Button>+ Registrar prova</Button>
+        </Link>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
+      <DashboardHero exam={examHero} pct={pctLatest} counts={data.counts} />
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+          Filtrar visão
+        </p>
         <FiltroRegistrosTabs basePath="/dashboard" filtro={filtro} counts={data.counts} />
       </div>
 
-      {filtro === "todos" ? (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <CardUltimo titulo="Última prova oficial" exam={data.latestProva} />
-          <CardUltimo titulo="Último simulado" exam={data.latestSimulado} />
-          <Card>
-            <p className="text-sm text-slate-500">Total de registros</p>
-            <p className="text-3xl font-bold text-slate-800">{data.counts.todos}</p>
-            <p className="text-xs text-slate-500">
-              {data.counts.provas} prova{data.counts.provas !== 1 ? "s" : ""} · {data.counts.simulados}{" "}
-              simulado{data.counts.simulados !== 1 ? "s" : ""}
-            </p>
-          </Card>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <p className="text-sm text-slate-500">{tituloUltimo}</p>
-            <p className="text-3xl font-bold text-teal-700">
-              {latest ? `${pctLatest}%` : "—"}
-            </p>
-            <p className="text-xs text-slate-500">{latest?.nome ?? "Nenhum ainda"}</p>
-            {latest && (
-              <div className="mt-2">
-                <Badge tone="neutral">
-                  {labelCategoriaRegistro(categoriaDoRegistro(latest))}
-                </Badge>
-              </div>
+      {filtro === "todos" && data.counts.todos > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Card className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm text-slate-500">Último simulado</p>
+              <p className="text-lg font-semibold text-slate-800">
+                {data.latestSimulado
+                  ? `${pctAcertoRegistro(data.latestSimulado.questionAttempts)}%`
+                  : "—"}
+              </p>
+              <p className="text-xs text-slate-500 truncate max-w-[200px]">
+                {data.latestSimulado?.nome ?? "Nenhum ainda"}
+              </p>
+            </div>
+            {data.counts.simulados === 0 && (
+              <Link href="/provas?aba=simulados">
+                <Button variant="ghost" className="text-xs">
+                  Ver simulados
+                </Button>
+              </Link>
             )}
           </Card>
-          <Card>
-            <p className="text-sm text-slate-500">{tituloContagem}</p>
-            <p className="text-3xl font-bold text-slate-800">{contagemValor}</p>
-            {subtituloContagem && (
-              <p className="text-xs text-slate-500">{subtituloContagem}</p>
-            )}
-          </Card>
-          <Card>
-            <p className="text-sm text-slate-500">Streak</p>
-            <p className="text-3xl font-bold text-slate-800">{data.streak} dias</p>
+          <Card className="flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm text-slate-500">Streak de estudo</p>
+              <p className="text-lg font-semibold text-slate-800">{data.streak} dias</p>
+              <p className="text-xs text-slate-500">com registro de resultado</p>
+            </div>
           </Card>
         </div>
       )}
@@ -157,7 +111,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <Card className="border-amber-200 bg-amber-50">
           <Badge tone="warning">Modo recuperação</Badge>
           <p className="mt-2 text-sm text-amber-900">
-            Metas reduzidas esta semana. Um resultado difícil não define seu vestibular.
+            Plano mais leve esta semana — um resultado difícil não define seu vestibular.
           </p>
         </Card>
       )}
@@ -166,13 +120,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <ResumoDiagnosticoCard
           resumo={scores.resumoProva as ResumoProvaDiagnostico}
           checkIn={latest?.checkInScore}
+          compact
         />
       )}
 
-      {snapshot && (
-        <Card>
-          <h2 className="mb-2 font-semibold text-slate-900">Leitura do coach</h2>
-          <p className="text-slate-700">{snapshot.mensagem}</p>
+      {snapshot?.mensagem && (
+        <Card className="border-l-4 border-l-teal-500 bg-gradient-to-r from-teal-50/80 to-white">
+          <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
+            Leitura do coach
+          </p>
+          <p className="mt-2 text-slate-700 leading-relaxed">{snapshot.mensagem}</p>
           {!scores?.resumoProva && focos.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {focos.map((f: { label: string; prioridade: string }, i: number) => (
@@ -185,72 +142,75 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </Card>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <h2 className="mb-4 font-semibold">{tituloEvolucao}</h2>
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Card className="lg:col-span-3">
+          <h2 className="mb-1 font-semibold text-slate-900">{tituloEvolucao}</h2>
+          <p className="mb-4 text-xs text-slate-500">Percentual de acertos por data de aplicação</p>
           <EvolutionChart
             data={data.evolution}
-            emptyMessage={
-              filtro === "provas"
-                ? "Registre provas oficiais para ver a evolução."
-                : filtro === "simulados"
-                  ? "Registre simulados para ver a evolução."
-                  : "Registre provas ou simulados para ver a evolução."
-            }
+            emptyMessage="Registre mais provas para ver a linha de evolução."
           />
         </Card>
-        <Card>
-          <h2 className="mb-4 font-semibold">{tituloMateria}</h2>
-          <ul className="space-y-2">
-            {scores?.materiaScores?.map(
-              (m: { materiaId: string; taxaAcerto: number; materiaLabel?: string }) => (
-                <li key={m.materiaId} className="flex justify-between text-sm">
-                  <span>{m.materiaLabel ?? getMateriaLabel(m.materiaId)}</span>
-                  <span className="font-medium">{Math.round(m.taxaAcerto * 100)}%</span>
-                </li>
+        <Card className="lg:col-span-2">
+          <h2 className="mb-4 font-semibold text-slate-900">Por matéria</h2>
+          <ul className="space-y-3">
+            {scores?.materiaScores?.length ? (
+              scores.materiaScores.map(
+                (m: { materiaId: string; taxaAcerto: number; materiaLabel?: string }) => {
+                  const pct = Math.round(m.taxaAcerto * 100);
+                  return (
+                    <li key={m.materiaId}>
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium text-slate-800">
+                          {m.materiaLabel ?? getMateriaLabel(m.materiaId)}
+                        </span>
+                        <span className={pct >= 70 ? "text-emerald-700" : "text-slate-600"}>
+                          {pct}%
+                        </span>
+                      </div>
+                      <div className="mt-1 h-1.5 rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full ${pct >= 70 ? "bg-emerald-500" : "bg-teal-500"}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                }
               )
-            ) ?? <li className="text-slate-500">Sem dados neste filtro</li>}
+            ) : (
+              <li className="text-sm text-slate-500">Sem dados neste filtro.</li>
+            )}
           </ul>
-          {scores?.materiaScores && (
-            <div className="mt-4 text-sm">
-              <p className="font-medium text-emerald-700">Destaques</p>
-              <p className="text-slate-600">
-                {scores.materiaScores
-                  .filter((m: { taxaAcerto: number }) => m.taxaAcerto >= 0.7)
-                  .map((m: { materiaLabel: string }) => m.materiaLabel)
-                  .join(", ") || "Continue registrando para ver padrões."}
-              </p>
-            </div>
-          )}
         </Card>
       </div>
 
       {data.quests.length > 0 && (
         <Card>
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Quests pendentes</h2>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-slate-900">Próximas quests</h2>
+              <p className="text-sm text-slate-500">Tarefas do plano desta semana</p>
+            </div>
             <Link href="/quests">
-              <Button variant="ghost">Ver todas</Button>
+              <Button variant="secondary">Abrir quests</Button>
             </Link>
           </div>
-          <ul className="mt-3 space-y-2">
-            {data.quests.slice(0, 3).map((q) => (
-              <li key={q.id} className="text-sm text-slate-700">
-                • {q.titulo}
+          <ul className="mt-4 space-y-2">
+            {data.quests.slice(0, 3).map((q, i) => (
+              <li
+                key={q.id}
+                className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2 text-sm"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
+                  {i + 1}
+                </span>
+                <span className="font-medium text-slate-800">{q.titulo}</span>
               </li>
             ))}
           </ul>
         </Card>
       )}
-
-      <div className="flex gap-3">
-        <Link href="/plano">
-          <Button variant="secondary">Ver plano semanal</Button>
-        </Link>
-        <Link href={`/simulados${filtro !== "todos" ? `?filtro=${filtro}` : ""}`}>
-          <Button variant="ghost">Últimos resultados</Button>
-        </Link>
-      </div>
     </div>
   );
 }
