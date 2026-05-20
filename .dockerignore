@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+*.md
+!README.md
+.env
+.env.*
+!.env.example
+*.db
+*.db-journal
+coverage
+.DS_Store
+npm-debug.log*

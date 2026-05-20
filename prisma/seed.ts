@@ -1,21 +1,16 @@
 import "dotenv/config";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "../src/generated/prisma/client";
 import bcrypt from "bcryptjs";
-import path from "path";
 import exemploSimulado from "../data/exemplo-simulado.json";
 import { buildDiagnosis } from "../src/lib/diagnosis";
 import { generateStudyPlan, planToQuests } from "../src/lib/study-plan";
-
-const raw = process.env.DATABASE_URL ?? "file:./dev.db";
-const filePath = raw.replace(/^file:/, "");
-const dbPath = path.isAbsolute(filePath)
-  ? filePath
-  : path.join(process.cwd(), path.basename(filePath));
-const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
-const prisma = new PrismaClient({ adapter });
+import { prisma } from "../src/lib/prisma";
 
 async function main() {
+  if (process.env.RUN_SEED !== "true" && process.env.NODE_ENV === "production") {
+    console.log("Seed ignorado (defina RUN_SEED=true para executar em produção).");
+    return;
+  }
+
   await prisma.quest.deleteMany();
   await prisma.studyPlan.deleteMany();
   await prisma.diagnosticSnapshot.deleteMany();
@@ -119,5 +114,8 @@ async function main() {
 }
 
 main()
-  .catch(console.error)
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

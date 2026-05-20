@@ -1,28 +1,43 @@
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
-import path from "path";
+import { Pool } from "pg";
 
-function getDatabaseUrl() {
-  const raw = process.env.DATABASE_URL ?? "file:./dev.db";
-  if (raw.startsWith("file:")) {
-    const filePath = raw.replace(/^file:/, "");
-    const resolved = path.isAbsolute(filePath)
-      ? filePath
-      : path.join(process.cwd(), path.basename(filePath));
-    return `file:${resolved}`;
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+function createPrismaClient(): PrismaClient {
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (!databaseUrl) {
+    throw new Error(
+      "DATABASE_URL não definida. Ex.: postgresql://user:pass@host:5432/coach_vestibular"
+    );
   }
-  return raw;
-}
 
-function createPrismaClient() {
-  const adapter = new PrismaBetterSqlite3({ url: getDatabaseUrl() });
+  if (!databaseUrl.startsWith("postgresql://") && !databaseUrl.startsWith("postgres://")) {
+    throw new Error(
+      "DATABASE_URL deve ser PostgreSQL (postgresql://...). Veja .env.example e docs/DEPLOY-EASYPANEL.md"
+    );
+  }
+
+  const pool = new Pool({ connectionString: databaseUrl });
+  const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+function getPrismaClient(): PrismaClient {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+/** Cliente Prisma com inicialização lazy (evita conexão durante `next build`). */
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrismaClient();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});
 
 export type { PrismaClient };

@@ -2,69 +2,55 @@
 
 Plataforma web de apoio a estudantes de pré-vestibular (foco medicina). Transforma resultados de simulados em diagnóstico por matéria/tema, plano semanal e quests com recompensa emocional.
 
-## Funcionalidades (MVP)
+## Deploy (EasyPanel + PostgreSQL)
 
-- Registro manual de gabarito (acerto/erro por questão)
-- Importação CSV (template em `docs/templates/`)
-- Motor de diagnóstico por regras (sem IA obrigatória)
-- Dashboard com evolução e focos da semana
-- Plano de estudo automático (modo recuperação após simulado difícil)
-- Quests vinculadas ao diagnóstico
-- Beta fechado com códigos de convite
-- Upload de prova (Fase 2 — stub + API narrativa opcional com `OPENAI_API_KEY`)
+Guia completo: **[docs/DEPLOY-EASYPANEL.md](docs/DEPLOY-EASYPANEL.md)**
 
-## Requisitos
+No deploy, **migrations rodam automaticamente** (`prisma migrate deploy` no startup do container).
 
-- Node.js 20+
-- npm
+### Variáveis no EasyPanel (app)
 
-## Instalação
+```env
+DATABASE_URL=postgresql://USUARIO:SENHA@HOST_INTERNO_POSTGRES:5432/coach_vestibular
+JWT_SECRET=sua-chave-secreta-minimo-32-caracteres
+NODE_ENV=production
+PORT=3000
+HOSTNAME=0.0.0.0
+RUN_SEED=true
+```
+
+> `RUN_SEED=true` apenas no **primeiro** deploy; depois use `false`.
+
+Modelo completo: [.env.example](.env.example)
+
+## Desenvolvimento local
+
+### Com Docker (PostgreSQL)
 
 ```bash
-cd coach-vestibular
+docker compose up --build
+```
+
+### Sem Docker (SQLite)
+
+```bash
 npm install
-npx prisma migrate dev
-npm run db:seed
+cp .env.example .env
+# No .env use: DATABASE_URL="file:./dev.db"
+npx prisma migrate deploy
+RUN_SEED=true npm run db:seed
 npm run dev
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000)
+## Scripts
 
-### Contas demo (após seed)
+| Comando | Uso |
+|---------|-----|
+| `npm run dev` | Desenvolvimento |
+| `npm run build` | Build produção |
+| `npm run db:migrate:deploy` | Migrations (produção / CI) |
+| `npm run db:seed` | Dados iniciais + convites |
 
-| Papel | E-mail | Senha |
-|-------|--------|-------|
-| Aluna | aluna@coach.local | demo1234 |
-| Admin | admin@coach.local | demo1234 |
+## Repositório
 
-**Convites para novos cadastros:** `MED2026-BETA`, `COACH-FAMILIA`
-
-## Estrutura
-
-- `data/taxonomy.json` — matérias, temas e tipos de erro
-- `data/exemplo-simulado.json` — simulado de validação
-- `docs/validacao-simulado.md` — guia para validar com a estudante
-- `docs/wireframes.md` — wireframes das telas
-- `src/lib/diagnosis.ts` — motor de regras
-- `src/lib/study-plan.ts` — gerador de plano e quests
-
-## PostgreSQL (produção)
-
-No `.env`, troque para:
-
-```
-DATABASE_URL="postgresql://user:pass@host:5432/coach"
-```
-
-Altere `provider` em `prisma/schema.prisma` para `postgresql` e rode `npx prisma migrate dev`.
-
-## Variáveis opcionais
-
-```
-JWT_SECRET=...
-OPENAI_API_KEY=...   # narrativa empática (Fase 2)
-```
-
-## Privacidade
-
-Dados de desempenho e check-in emocional são sensíveis. O app não substitui acompanhamento psicológico. Ver mensagem em `src/lib/messages.ts`.
+https://github.com/ftsmazzo/coach-vestibular
