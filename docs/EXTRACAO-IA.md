@@ -38,6 +38,7 @@ flowchart LR
 | PDF escaneado (imagem) | Texto pode sair vazio | OCR (Tesseract / Vision API) |
 | Provas longas 180q | Chunks de texto | Processar por blocos ENEM |
 | Matéria errada | Revisão admin + CSV GPT | Fine-tune + mapa ENEM por faixa |
+| ENEM sem caderno por questão | `caderno` null → usa caderno da prova no admin | — |
 | Gabarito separado | Update em lote | Importar gabarito oficial CSV |
 
 ## Configuração

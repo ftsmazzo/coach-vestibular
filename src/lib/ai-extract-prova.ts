@@ -1,14 +1,20 @@
 import { z } from "zod";
 
+/** IA costuma enviar null em campos vazios (ex. ENEM sem caderno por questão). */
+const textoOpcional = z.string().nullish();
+
 const questaoExtraidaSchema = z.object({
   numero: z.number().int().positive(),
-  caderno: z.string().optional(),
+  caderno: textoOpcional,
   materia: z.string().min(1),
   assunto: z.string().min(1),
-  conhecimentoExigido: z.string().optional(),
-  nivelDificuldade: z.string().optional(),
-  observacoes: z.string().optional(),
-  gabarito: z.string().regex(/^[A-Ea-e]$/).optional().nullable(),
+  conhecimentoExigido: textoOpcional,
+  nivelDificuldade: textoOpcional,
+  observacoes: textoOpcional,
+  gabarito: z
+    .union([z.string().regex(/^[A-Ea-e]$/), z.null()])
+    .optional()
+    .transform((v) => (v ? v.toUpperCase() : undefined)),
 });
 
 const respostaSchema = z.object({
@@ -23,7 +29,7 @@ const SYSTEM_PROMPT = `Você extrai metadados de provas vestibulares (ENEM, UFU,
 
 Para CADA questão identificada no texto, produza um objeto JSON com:
 - numero: número da questão na prova
-- caderno: tipo/caderno se mencionado (ex. Tipo 1, Azul)
+- caderno: tipo/caderno se mencionado (ex. Tipo 1, Azul, ENEM Azul); omita ou null se não houver por questão
 - materia: grupo grande (Química, Física, Matemática, Biologia, Português, História, Geografia, Filosofia, Sociologia, Inglês, Espanhol)
 - assunto: tema específico dentro da matéria (ex. Ondas, Estequiometria, Função quadrática)
 - conhecimentoExigido: habilidade ou conhecimento que a questão exige (1 frase objetiva)
