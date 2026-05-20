@@ -29,12 +29,14 @@ export async function POST(
   if (contentType.includes("text/csv") || contentType.includes("multipart")) {
     let csvText = "";
     let incluirGabarito = false;
+    let substituir = true;
     if (contentType.includes("multipart")) {
       const form = await request.formData();
       const file = form.get("file") as File | null;
       if (!file) return NextResponse.json({ error: "Arquivo CSV obrigatório" }, { status: 400 });
       csvText = await file.text();
       incluirGabarito = form.get("incluirGabarito") === "true";
+      substituir = form.get("modo") !== "adicionar";
     } else {
       csvText = await request.text();
     }
@@ -44,20 +46,48 @@ export async function POST(
       return NextResponse.json({ error: "CSV vazio ou inválido" }, { status: 400 });
     }
 
-    await prisma.provaQuestao.deleteMany({ where: { provaId } });
-    await prisma.provaQuestao.createMany({
-      data: rows.map((r) => ({
-        provaId,
-        numero: r.numero,
-        areaBloco: r.areaBloco ?? null,
-        materia: r.materia,
-        assunto: r.assunto,
-        conhecimentoExigido: r.conhecimentoExigido ?? null,
-        nivelDificuldade: r.nivelDificuldade ?? null,
-        observacoes: r.observacoes ?? null,
-        gabarito: r.gabarito ?? null,
-      })),
-    });
+    if (substituir) {
+      await prisma.provaQuestao.deleteMany({ where: { provaId } });
+      await prisma.provaQuestao.createMany({
+        data: rows.map((r) => ({
+          provaId,
+          numero: r.numero,
+          areaBloco: r.areaBloco ?? null,
+          materia: r.materia,
+          assunto: r.assunto,
+          conhecimentoExigido: r.conhecimentoExigido ?? null,
+          nivelDificuldade: r.nivelDificuldade ?? null,
+          observacoes: r.observacoes ?? null,
+          gabarito: r.gabarito ?? null,
+        })),
+      });
+    } else {
+      for (const r of rows) {
+        await prisma.provaQuestao.upsert({
+          where: { provaId_numero: { provaId, numero: r.numero } },
+          create: {
+            provaId,
+            numero: r.numero,
+            areaBloco: r.areaBloco ?? null,
+            materia: r.materia,
+            assunto: r.assunto,
+            conhecimentoExigido: r.conhecimentoExigido ?? null,
+            nivelDificuldade: r.nivelDificuldade ?? null,
+            observacoes: r.observacoes ?? null,
+            gabarito: r.gabarito ?? null,
+          },
+          update: {
+            areaBloco: r.areaBloco ?? null,
+            materia: r.materia,
+            assunto: r.assunto,
+            conhecimentoExigido: r.conhecimentoExigido ?? null,
+            nivelDificuldade: r.nivelDificuldade ?? null,
+            observacoes: r.observacoes ?? null,
+            ...(r.gabarito ? { gabarito: r.gabarito } : {}),
+          },
+        });
+      }
+    }
 
     await refreshProvaGabaritoFlag(provaId);
 

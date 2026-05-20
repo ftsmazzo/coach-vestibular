@@ -5,10 +5,16 @@ import { extrairQuestoesComIA } from "@/lib/ai-extract-prova";
 import { extractTextFromPdf } from "@/lib/pdf-text";
 import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
+import {
+  substituirQuestoesExtraidas,
+  upsertQuestoesExtraidas,
+} from "@/lib/prova-questoes-persist";
 
 const bodySchema = z.object({
   texto: z.string().optional(),
   aplicar: z.boolean().default(false),
+  /** substituir = apaga todas e recria; adicionar = só upsert (completar faltantes) */
+  modo: z.enum(["substituir", "adicionar"]).default("substituir"),
 });
 
 export async function POST(
@@ -24,11 +30,13 @@ export async function POST(
 
   let texto = "";
   let aplicar = false;
+  let modo: "substituir" | "adicionar" = "substituir";
 
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("multipart/form-data")) {
     const form = await request.formData();
     aplicar = form.get("aplicar") === "true";
+    modo = form.get("modo") === "adicionar" ? "adicionar" : "substituir";
     const textField = form.get("texto") as string | null;
     const file = form.get("file") as File | null;
 
@@ -51,6 +59,7 @@ export async function POST(
     const body = bodySchema.parse(await request.json());
     texto = body.texto ?? "";
     aplicar = body.aplicar;
+    modo = body.modo;
   }
 
   if (!texto.trim()) {
@@ -66,27 +75,22 @@ export async function POST(
       totalEsperado: prova.totalQuestoes,
     });
 
+    let adicionadas = 0;
     if (aplicar && resultado.questoes.length > 0) {
-      await prisma.provaQuestao.deleteMany({ where: { provaId } });
-      await prisma.provaQuestao.createMany({
-        data: resultado.questoes.map((q) => ({
-          provaId,
-          numero: q.numero,
-          areaBloco: q.areaBloco ?? null,
-          materia: q.materia,
-          assunto: q.assunto,
-          conhecimentoExigido: q.conhecimentoExigido ?? null,
-          nivelDificuldade: q.nivelDificuldade ?? null,
-          observacoes: q.observacoes ?? null,
-          gabarito: null,
-        })),
-      });
+      if (modo === "adicionar") {
+        adicionadas = await upsertQuestoesExtraidas(provaId, resultado.questoes);
+      } else {
+        await substituirQuestoesExtraidas(provaId, resultado.questoes);
+        adicionadas = resultado.questoes.length;
+      }
       await refreshProvaGabaritoFlag(provaId);
     }
 
     return NextResponse.json({
       ...resultado,
       aplicado: aplicar,
+      modo,
+      adicionadas: aplicar ? adicionadas : 0,
       caracteresProcessados: texto.length,
     });
   } catch (e) {

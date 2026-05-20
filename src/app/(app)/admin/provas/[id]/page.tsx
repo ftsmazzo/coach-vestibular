@@ -60,6 +60,7 @@ export default function AdminProvaDetailPage() {
   const [csvIncluirGabarito, setCsvIncluirGabarito] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [textoProva, setTextoProva] = useState("");
+  const [textoFaltantes, setTextoFaltantes] = useState("");
   const [preview, setPreview] = useState<ExtracaoPreview | null>(null);
   const [extraindo, setExtraindo] = useState(false);
   const [msg, setMsg] = useState("");
@@ -132,11 +133,37 @@ export default function AdminProvaDetailPage() {
     load();
   }
 
+  async function completarFaltantes() {
+    if (!textoFaltantes.trim()) {
+      setMsg("Cole o texto das questões que faltam no banco.");
+      return;
+    }
+    setExtraindo(true);
+    setMsg("");
+    const fd = new FormData();
+    fd.append("aplicar", "true");
+    fd.append("modo", "adicionar");
+    fd.append("texto", textoFaltantes.trim());
+    const res = await fetch(`/api/admin/provas/${id}/extrair`, { method: "POST", body: fd });
+    const data = await res.json();
+    setExtraindo(false);
+    if (!res.ok) {
+      setMsg(data.error ?? "Erro");
+      return;
+    }
+    setTextoFaltantes("");
+    setMsg(
+      `Adicionadas/atualizadas ${data.adicionadas ?? data.questoes?.length ?? 0} questão(ões). As demais permanecem no banco.`
+    );
+    load();
+  }
+
   async function extrairIA(aplicar: boolean) {
     setExtraindo(true);
     setMsg("");
     const fd = new FormData();
     fd.append("aplicar", String(aplicar));
+    fd.append("modo", "substituir");
     if (textoProva.trim()) fd.append("texto", textoProva.trim());
     else if (pdfFile) fd.append("file", pdfFile);
     else {
@@ -233,6 +260,33 @@ export default function AdminProvaDetailPage() {
 
       {msg && <p className="text-sm text-teal-700">{msg}</p>}
 
+      {prova.bancoIncompleto && prova.questoesFaltando && prova.questoesFaltando.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <h2 className="mb-2 font-semibold text-amber-900">Completar questões faltantes</h2>
+          <p className="mb-2 text-sm text-amber-900">
+            Não precisa reescanear o PDF inteiro. Cole aqui só o enunciado/texto das questões que
+            faltam (nº {prova.questoesFaltando.slice(0, 15).join(", ")}
+            {prova.questoesFaltando.length > 15 ? "…" : ""}). A IA classifica e{" "}
+            <strong>adiciona</strong> sem apagar as que já estão corretas.
+          </p>
+          <textarea
+            className="w-full rounded-xl border border-amber-200 bg-white p-3 text-sm"
+            rows={6}
+            placeholder="Questão 12\n(enunciado...)\n\nQuestão 45\n..."
+            value={textoFaltantes}
+            onChange={(e) => setTextoFaltantes(e.target.value)}
+          />
+          <Button
+            type="button"
+            className="mt-3"
+            disabled={extraindo}
+            onClick={completarFaltantes}
+          >
+            {extraindo ? "Classificando..." : "Classificar e adicionar faltantes"}
+          </Button>
+        </Card>
+      )}
+
       <Card>
         <h2 className="mb-2 font-semibold">Registro da prova</h2>
         <p className="mb-3 text-sm text-slate-600">
@@ -310,9 +364,8 @@ export default function AdminProvaDetailPage() {
       <Card className="border-teal-200 bg-teal-50/40">
         <h2 className="mb-2 font-semibold text-teal-900">Extração com IA (principal)</h2>
         <p className="mb-3 text-sm text-teal-800">
-          Envie o PDF da prova ou cole o texto. A IA preenche Matéria, Assunto, Conhecimento,
-          Dificuldade e Observações. <strong>Não preenche gabarito</strong> — use a seção de gabarito
-          em lote depois.
+          Envie o PDF da prova ou cole o texto completo. <strong>Substitui</strong> todas as questões
+          ao aplicar. Para só as faltantes, use o bloco amarelo acima. Não preenche gabarito.
         </p>
         <p className="mb-3 text-xs text-teal-700">
           Requer <code>OPENAI_API_KEY</code> no servidor. Alternativa: exporte CSV do GPT e importe
