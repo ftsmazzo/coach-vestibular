@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { buildProvaNome } from "@/lib/prova-nome";
+import { statsQuestoesProva } from "@/lib/prova-stats";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -20,7 +21,14 @@ export async function GET(
     },
   });
   if (!prova) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
-  return NextResponse.json(prova);
+  const stats = statsQuestoesProva(prova.questoes, prova.totalQuestoes);
+  return NextResponse.json({
+    ...prova,
+    questoesCadastradas: stats.cadastradas,
+    maiorNumeroQuestao: stats.maiorNumero,
+    questoesFaltando: stats.faltando,
+    bancoIncompleto: stats.incompleto,
+  });
 }
 
 const patchSchema = z.object({

@@ -117,14 +117,15 @@ export default function NovoSimuladoPage() {
             >
               {provas.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {formatProvaLabel(p)} — {p.totalQuestoes} questões
+                  {formatProvaLabel(p)} — {p.questoesCount}/{p.totalQuestoes} no banco
                   {p.gabaritoCompleto ? "" : " (gabarito parcial)"}
                 </option>
               ))}
             </select>
             {prova && (
               <p className="mt-2 text-xs text-slate-500">
-                {prova.banca} · {prova.questoesCount} questões no banco
+                {prova.banca} · {prova.questoesCount} de {prova.totalQuestoes} questões
+                classificadas no banco
               </p>
             )}
           </Card>

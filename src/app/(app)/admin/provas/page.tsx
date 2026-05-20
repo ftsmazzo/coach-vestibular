@@ -13,6 +13,9 @@ interface Prova {
   totalQuestoes: number;
   publicada: boolean;
   gabaritoCompleto: boolean;
+  questoesCadastradas: number;
+  bancoIncompleto: boolean;
+  questoesFaltando: number[];
   _count: { questoes: number; tentativas: number };
 }
 
@@ -149,8 +152,18 @@ export default function AdminProvasPage() {
               <div>
                 <h3 className="font-semibold">{p.nome}</h3>
                 <p className="text-sm text-slate-500">
-                  {p._count.questoes} questões cadastradas
-                  {p.tipo !== "ENEM_OFICIAL" ? ` · ${p.tipo}` : ""}
+                  <span className={p.bancoIncompleto ? "font-medium text-amber-700" : ""}>
+                    {p.questoesCadastradas} de {p.totalQuestoes} questões no banco
+                  </span>
+                  {p.bancoIncompleto && p.questoesFaltando.length > 0 && (
+                    <span className="block text-xs text-amber-700">
+                      Faltam no banco: nº{" "}
+                      {p.questoesFaltando.slice(0, 12).join(", ")}
+                      {p.questoesFaltando.length > 12
+                        ? ` (+${p.questoesFaltando.length - 12})`
+                        : ""}
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs text-slate-500">
                   {p.publicada ? "Publicada" : "Rascunho"} · Gabarito{" "}

@@ -46,6 +46,9 @@ interface Prova {
   publicada: boolean;
   gabaritoCompleto: boolean;
   totalQuestoes: number;
+  questoesCadastradas?: number;
+  questoesFaltando?: number[];
+  bancoIncompleto?: boolean;
   questoes: ProvaQuestao[];
 }
 
@@ -64,6 +67,7 @@ export default function AdminProvaDetailPage() {
     ano: "",
     dia: "",
     caderno: "",
+    totalQuestoes: "",
     descricao: "",
   });
 
@@ -77,6 +81,7 @@ export default function AdminProvaDetailPage() {
         ano: data.ano != null ? String(data.ano) : "",
         dia: data.dia != null ? String(data.dia) : "",
         caderno: data.caderno ?? "",
+        totalQuestoes: String(data.totalQuestoes),
         descricao: data.descricao ?? "",
       });
     }
@@ -95,6 +100,9 @@ export default function AdminProvaDetailPage() {
         ano: meta.ano ? parseInt(meta.ano, 10) : null,
         dia: meta.dia ? parseInt(meta.dia, 10) : null,
         caderno: meta.caderno || null,
+        totalQuestoes: meta.totalQuestoes
+          ? parseInt(meta.totalQuestoes, 10)
+          : undefined,
         descricao: meta.descricao || null,
       }),
     });
@@ -182,9 +190,21 @@ export default function AdminProvaDetailPage() {
         <div>
           <h1 className="text-2xl font-bold">{prova.nome}</h1>
           <p className="text-slate-600">
-            {prova.questoes.length} questões cadastradas · Gabarito{" "}
-            {prova.gabaritoCompleto ? "completo" : "pendente (use lote abaixo)"}
+            <span className={prova.bancoIncompleto ? "font-medium text-amber-800" : ""}>
+              {prova.questoes.length} de {prova.totalQuestoes} questões no banco
+            </span>
+            {" · "}
+            Gabarito {prova.gabaritoCompleto ? "completo" : "pendente (use lote abaixo)"}
           </p>
+          {prova.bancoIncompleto && prova.questoesFaltando && prova.questoesFaltando.length > 0 && (
+            <p className="text-sm text-amber-700">
+              A IA ou o import pode ter pulado questões. Faltam no banco: nº{" "}
+              {prova.questoesFaltando.slice(0, 20).join(", ")}
+              {prova.questoesFaltando.length > 20
+                ? ` (+${prova.questoesFaltando.length - 20})`
+                : ""}
+            </p>
+          )}
         </div>
         <Button variant="secondary" onClick={togglePublicada}>
           {prova.publicada ? "Despublicar" : "Publicar para alunos"}
@@ -241,6 +261,18 @@ export default function AdminProvaDetailPage() {
               value={meta.dia}
               onChange={(e) => setMeta({ ...meta, dia: e.target.value })}
             />
+          </div>
+          <div>
+            <Label>Total esperado de questões</Label>
+            <Input
+              type="number"
+              value={meta.totalQuestoes}
+              onChange={(e) => setMeta({ ...meta, totalQuestoes: e.target.value })}
+              placeholder="90, 45, 60..."
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Meta da prova (ex.: 90 no ENEM por dia). Não muda ao importar — só linhas no banco.
+            </p>
           </div>
           <div className="sm:col-span-2">
             <Label>Descrição (opcional)</Label>
