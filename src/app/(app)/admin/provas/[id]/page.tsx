@@ -12,7 +12,26 @@ interface ProvaQuestao {
   materia: string;
   assunto: string;
   conhecimentoExigido: string | null;
+  nivelDificuldade: string | null;
+  observacoes: string | null;
   gabarito: string | null;
+}
+
+interface QuestaoPreview {
+  numero: number;
+  caderno?: string;
+  materia: string;
+  assunto: string;
+  conhecimentoExigido?: string | null;
+  nivelDificuldade?: string | null;
+  observacoes?: string | null;
+  gabarito?: string | null;
+}
+
+interface ExtracaoPreview {
+  questoes: QuestaoPreview[];
+  avisos: string[];
+  resumo?: string;
 }
 
 interface Prova {
@@ -30,6 +49,10 @@ export default function AdminProvaDetailPage() {
   const [prova, setProva] = useState<Prova | null>(null);
   const [gabaritoLote, setGabaritoLote] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [textoProva, setTextoProva] = useState("");
+  const [preview, setPreview] = useState<ExtracaoPreview | null>(null);
+  const [extraindo, setExtraindo] = useState(false);
   const [msg, setMsg] = useState("");
 
   const load = useCallback(async () => {
@@ -59,6 +82,39 @@ export default function AdminProvaDetailPage() {
     const data = await res.json();
     setMsg(res.ok ? `Importadas ${data.imported} questões` : data.error);
     load();
+  }
+
+  async function extrairIA(aplicar: boolean) {
+    setExtraindo(true);
+    setMsg("");
+    const fd = new FormData();
+    fd.append("aplicar", String(aplicar));
+    if (textoProva.trim()) fd.append("texto", textoProva.trim());
+    else if (pdfFile) fd.append("file", pdfFile);
+    else {
+      setMsg("Cole o texto da prova ou envie um PDF.");
+      setExtraindo(false);
+      return;
+    }
+    const res = await fetch(`/api/admin/provas/${id}/extrair`, { method: "POST", body: fd });
+    const data = await res.json();
+    setExtraindo(false);
+    if (!res.ok) {
+      setMsg(data.error ?? "Erro na extração");
+      return;
+    }
+    if (aplicar) {
+      setPreview(null);
+      setMsg(`IA aplicou ${data.questoes?.length ?? 0} questões no banco.`);
+      load();
+    } else {
+      setPreview({
+        questoes: data.questoes,
+        avisos: data.avisos ?? [],
+        resumo: data.resumo,
+      });
+      setMsg(`Prévia: ${data.questoes.length} questões extraídas. Revise e clique em Aplicar.`);
+    }
   }
 
   async function salvarGabaritoLote() {
@@ -99,10 +155,99 @@ export default function AdminProvaDetailPage() {
 
       {msg && <p className="text-sm text-teal-700">{msg}</p>}
 
+      <Card className="border-teal-200 bg-teal-50/40">
+        <h2 className="mb-2 font-semibold text-teal-900">Extração com IA (principal)</h2>
+        <p className="mb-3 text-sm text-teal-800">
+          Envie o PDF da prova ou cole o texto. A IA preenche Matéria, Assunto, Conhecimento,
+          Dificuldade e Observações — como sua planilha modelo. Gabarito só se estiver no material.
+        </p>
+        <p className="mb-3 text-xs text-teal-700">
+          Requer <code>OPENAI_API_KEY</code> no servidor. Alternativa: exporte CSV do GPT e importe
+          abaixo.
+        </p>
+        <div className="space-y-3">
+          <div>
+            <Label>PDF da prova</Label>
+            <Input
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+          <div>
+            <Label>Ou cole o texto da prova</Label>
+            <textarea
+              className="mt-1 w-full rounded-xl border p-3 text-sm"
+              rows={5}
+              placeholder="Texto extraído do PDF, ou enunciados colados..."
+              value={textoProva}
+              onChange={(e) => setTextoProva(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" disabled={extraindo} onClick={() => extrairIA(false)}>
+              {extraindo ? "Extraindo..." : "Pré-visualizar extração"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={extraindo || !preview}
+              onClick={() => extrairIA(true)}
+            >
+              Aplicar direto no banco
+            </Button>
+            {preview && (
+              <Button type="button" disabled={extraindo} onClick={() => extrairIA(true)}>
+                Confirmar e aplicar prévia
+              </Button>
+            )}
+          </div>
+          {preview?.avisos && preview.avisos.length > 0 && (
+            <ul className="text-xs text-amber-800">
+              {preview.avisos.map((a, i) => (
+                <li key={i}>• {a}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Card>
+
+      {preview && preview.questoes.length > 0 && (
+        <Card>
+          <h3 className="mb-2 font-semibold">Prévia IA ({preview.questoes.length} questões)</h3>
+          <div className="max-h-64 overflow-auto text-xs">
+            <table className="w-full">
+              <thead>
+                <tr className="text-slate-500">
+                  <th className="p-1">#</th>
+                  <th className="p-1">Matéria</th>
+                  <th className="p-1">Assunto</th>
+                  <th className="p-1">Conhec.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {preview.questoes.slice(0, 20).map((q) => (
+                  <tr key={q.numero} className="border-t">
+                    <td className="p-1">{q.numero}</td>
+                    <td className="p-1">{q.materia}</td>
+                    <td className="p-1">{q.assunto}</td>
+                    <td className="p-1 truncate max-w-[120px]">{q.conhecimentoExigido ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {preview.questoes.length > 20 && (
+              <p className="mt-2 text-slate-500">+ {preview.questoes.length - 20} questões...</p>
+            )}
+          </div>
+        </Card>
+      )}
+
       <Card>
-        <h2 className="mb-2 font-semibold">Importar questões (CSV)</h2>
+        <h2 className="mb-2 font-semibold">Importar planilha CSV (GPT)</h2>
         <p className="mb-3 text-sm text-slate-600">
-          Colunas: numero, caderno, materia, assunto, conhecimento_exigido, gabarito. Template em{" "}
+          Mesmo formato da sua planilha: Prova, Caderno, Número da Questão, Matéria, Assunto,
+          Habilidade/Conhecimento, Dificuldade, Observações, Gabarito. Template:{" "}
           <code className="text-xs">docs/templates/prova-questoes.csv</code>
         </p>
         <Input type="file" accept=".csv" onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)} />
@@ -137,6 +282,7 @@ export default function AdminProvaDetailPage() {
                 <th className="p-2">Matéria</th>
                 <th className="p-2">Assunto</th>
                 <th className="p-2">Conhecimento</th>
+                <th className="p-2">Dific.</th>
                 <th className="p-2">Gabarito</th>
               </tr>
             </thead>
@@ -150,6 +296,7 @@ export default function AdminProvaDetailPage() {
                   <td className="p-2 max-w-xs truncate" title={q.conhecimentoExigido ?? ""}>
                     {q.conhecimentoExigido ?? "—"}
                   </td>
+                  <td className="p-2">{q.nivelDificuldade ?? "—"}</td>
                   <td className="p-2 font-mono font-bold">{q.gabarito ?? "—"}</td>
                 </tr>
               ))}

@@ -11,6 +11,8 @@ const questaoSchema = z.object({
   materia: z.string().min(1),
   assunto: z.string().min(1),
   conhecimentoExigido: z.string().optional(),
+  nivelDificuldade: z.string().optional(),
+  observacoes: z.string().optional(),
   gabarito: z.string().regex(/^[A-Ea-e]$/).optional().nullable(),
 });
 
@@ -49,6 +51,8 @@ export async function POST(
         materia: r.materia,
         assunto: r.assunto,
         conhecimentoExigido: r.conhecimentoExigido,
+        nivelDificuldade: r.nivelDificuldade,
+        observacoes: r.observacoes,
         gabarito: r.gabarito,
       })),
     });

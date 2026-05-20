@@ -61,6 +61,8 @@ model ProvaQuestao {
   materia             String
   assunto             String
   conhecimentoExigido String?
+  nivelDificuldade    String?
+  observacoes         String?
   gabarito            String?
 
   prova     Prova              @relation(fields: [provaId], references: [id], onDelete: Cascade)
