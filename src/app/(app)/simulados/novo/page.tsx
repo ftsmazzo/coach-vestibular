@@ -25,7 +25,7 @@ export default function NovoSimuladoPage() {
   const [provas, setProvas] = useState<ProvaOption[]>([]);
   const [provaId, setProvaId] = useState("");
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
-  const [checkIn, setCheckIn] = useState(3);
+  const [checkIn, setCheckIn] = useState<number | null>(null);
   const [gabaritoAluno, setGabaritoAluno] = useState("");
   const [respostas, setRespostas] = useState("");
   const [listaErros, setListaErros] = useState("");
@@ -61,8 +61,8 @@ export default function NovoSimuladoPage() {
     const body: Record<string, unknown> = {
       provaId,
       data,
-      checkInScore: checkIn,
     };
+    if (checkIn != null) body.checkInScore = checkIn;
 
     if (modo === "gabarito") {
       if (gabaritoAluno.trim().split(/\n/).filter(Boolean).length < 1) {
@@ -156,9 +156,14 @@ export default function NovoSimuladoPage() {
               <Label>Data</Label>
               <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
             </div>
-            <div>
-              <Label>Como você está? (1–5)</Label>
-              <div className="mt-2 flex gap-2">
+            <div className="sm:col-span-2">
+              <Label>Como você se sentiu depois da prova? (opcional)</Label>
+              <p className="mt-1 text-xs text-slate-500">
+                1 = muito pesado · 5 = tranquilo. Notas 1–2 ou muitos erros deixam o{" "}
+                <strong>plano da semana mais leve</strong> (modo recuperação). Não é terapia —
+                só ajusta a carga de estudo.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
@@ -171,6 +176,15 @@ export default function NovoSimuladoPage() {
                     {n}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => setCheckIn(null)}
+                  className={`rounded-lg px-3 py-1.5 text-sm ${
+                    checkIn === null ? "bg-slate-200 font-medium" : "text-slate-500"
+                  }`}
+                >
+                  Pular
+                </button>
               </div>
             </div>
           </Card>

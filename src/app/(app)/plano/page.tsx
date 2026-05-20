@@ -49,7 +49,15 @@ export default async function PlanoPage() {
                   <div>
                     <h2 className="font-semibold text-slate-900">{item.titulo}</h2>
                     <p className="mt-1 text-sm text-slate-600">{item.descricao}</p>
-                    <p className="mt-2 text-xs text-slate-500">~{item.duracaoMin} min</p>
+                    {item.conhecimentoExigido && (
+                      <p className="mt-2 text-xs text-teal-800">
+                        Da prova: {item.conhecimentoExigido}
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-slate-500">
+                      ~{item.duracaoMin} min
+                      {item.nivelDificuldade ? ` · ${item.nivelDificuldade}` : ""}
+                    </p>
                   </div>
                 </div>
               </Card>

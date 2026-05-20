@@ -32,7 +32,13 @@ export interface DiagnosisResult {
     prioridade: "alta" | "media";
     motivo: string;
     tipoErroDominante?: string;
+    assunto?: string;
+    conhecimentoExigido?: string | null;
+    nivelDificuldade?: string | null;
+    numerosErrados?: number[];
   }>;
+  /** Agregação pedagógica da prova (matéria/assunto do banco) */
+  resumoProva?: import("./diagnosis-prova").ResumoProvaDiagnostico;
   fortes: string[];
   fracos: string[];
   recoveryMode: boolean;

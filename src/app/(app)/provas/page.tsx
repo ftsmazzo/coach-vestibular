@@ -226,6 +226,9 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
           <li>Meta de faculdade com peso por banca/vestibular</li>
           <li>Histórico comparando tentativas da mesma prova</li>
           <li>Gabarito do aluno por questão (implementado em Registrar resultado)</li>
+          <li>
+            Incidência de temas em vestibulares (API externa) — comparar com erros do aluno
+          </li>
           <li>Painel de focos: oficiais → simulados como termômetro</li>
         </ul>
       </Card>

@@ -1,6 +1,7 @@
 import type { ErrorType } from "@/generated/prisma/client";
 import { prisma } from "./prisma";
 import { buildDiagnosis, type AttemptInput } from "./diagnosis";
+import { enriquecerDiagnosticoComProva } from "./diagnosis-prova";
 import { generateStudyPlan, planToQuests } from "./study-plan";
 import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
@@ -169,7 +170,19 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     })
   );
 
-  const diagnosis = buildDiagnosis(
+  const questoesPedagogicas = rawAttempts.map((a) => {
+    const q = prova.questoes.find((pq) => pq.numero === a.numero)!;
+    return {
+      numero: a.numero,
+      correto: a.correto,
+      materia: q.materia,
+      assunto: q.assunto,
+      conhecimentoExigido: q.conhecimentoExigido,
+      nivelDificuldade: q.nivelDificuldade,
+    };
+  });
+
+  let diagnosis = buildDiagnosis(
     rawAttempts.map(({ numero, correto, materiaId, temaId, tipoErro }) => ({
       numero,
       correto,
@@ -179,6 +192,12 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     })),
     historicalAttempts,
     { checkInScore: input.checkInScore }
+  );
+
+  diagnosis = enriquecerDiagnosticoComProva(
+    diagnosis,
+    questoesPedagogicas,
+    input.checkInScore
   );
 
   if (!analiseCompleta && avisos.length > 0) {
@@ -219,6 +238,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
             overallAcerto: diagnosis.overallAcerto,
             materiaScores: diagnosis.materiaScores,
             temaScores: diagnosis.temaScores,
+            resumoProva: diagnosis.resumoProva,
             provaId: prova.id,
             analiseCompleta,
           }),

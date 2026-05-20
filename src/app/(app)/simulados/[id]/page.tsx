@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getMateriaLabel, getTemaLabel, getTipoErroLabel } from "@/lib/taxonomy";
+import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
 import { Card, Button, Badge } from "@/components/ui";
 import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
+import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
+import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 
 export default async function SimuladoDetailPage({
   params,
@@ -28,6 +30,8 @@ export default async function SimuladoDetailPage({
 
   const snapshot = exam.diagnosticSnapshot;
   const focos = snapshot ? JSON.parse(snapshot.focosJson) : [];
+  const scores = snapshot ? JSON.parse(snapshot.scoresJson) : null;
+  const resumoProva = scores?.resumoProva as ResumoProvaDiagnostico | undefined;
   const total = exam.questionAttempts.length;
   const acertos = exam.questionAttempts.filter((q) => q.correto).length;
 
@@ -54,23 +58,44 @@ export default async function SimuladoDetailPage({
 
       {exam.recoveryMode && (
         <Card className="border-amber-200 bg-amber-50">
-          <Badge tone="warning">Modo recuperação ativado</Badge>
+          <Badge tone="warning">Modo recuperação</Badge>
           <p className="mt-2 text-sm text-amber-900">
-            Plano semanal mais leve gerado automaticamente.
+            Plano com metas menores — ativado por desempenho baixo e/ou check-in emocional 1–2.
+          </p>
+        </Card>
+      )}
+
+      {resumoProva ? (
+        <ResumoDiagnosticoCard resumo={resumoProva} checkIn={exam.checkInScore} />
+      ) : (
+        <Card>
+          <p className="text-sm text-slate-600">
+            Resumo numérico indisponível neste registro antigo. Registre de novo a prova para ver
+            acertos/erros % e matérias com mais falhas.
           </p>
         </Card>
       )}
 
       {snapshot && (
         <Card>
-          <h2 className="mb-2 font-semibold">Diagnóstico</h2>
+          <h2 className="mb-2 font-semibold">Leitura do coach</h2>
           <p className="text-slate-700">{snapshot.mensagem}</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {focos.map((f: { label: string; prioridade: string }, i: number) => (
-              <Badge key={i} tone={f.prioridade === "alta" ? "danger" : "warning"}>
-                {f.label}
-              </Badge>
-            ))}
+            {focos.map(
+              (
+                f: { label: string; prioridade: string; motivo?: string },
+                i: number
+              ) => (
+                <div key={i} className="w-full sm:w-auto">
+                  <Badge tone={f.prioridade === "alta" ? "danger" : "warning"}>
+                    {f.label}
+                  </Badge>
+                  {f.motivo && (
+                    <p className="mt-1 text-xs text-slate-500">{f.motivo}</p>
+                  )}
+                </div>
+              )
+            )}
           </div>
         </Card>
       )}
@@ -84,7 +109,8 @@ export default async function SimuladoDetailPage({
                 <th className="p-2">#</th>
                 <th className="p-2">Sua resposta</th>
                 <th className="p-2">Gabarito oficial</th>
-                <th className="p-2">Conteúdo</th>
+                <th className="p-2">Matéria / Assunto</th>
+                <th className="p-2">Conhecimento</th>
                 <th className="p-2 text-right">Resultado</th>
               </tr>
             </thead>
@@ -103,13 +129,16 @@ export default async function SimuladoDetailPage({
                     <td className="p-2 font-mono">
                       {q.provaQuestao?.gabarito ?? "—"}
                     </td>
-                    <td className="p-2 max-w-xs truncate text-slate-600">
+                    <td className="p-2 text-slate-700">
                       {q.provaQuestao
                         ? `${q.provaQuestao.materia} / ${q.provaQuestao.assunto}`
                         : `${getMateriaLabel(q.materiaId)} / ${getTemaLabel(q.materiaId, q.temaId)}`}
-                      {!q.correto && q.tipoErro && (
-                        <span className="text-slate-400"> ({getTipoErroLabel(q.tipoErro)})</span>
-                      )}
+                    </td>
+                    <td className="p-2 max-w-[200px] truncate text-xs text-slate-500" title={q.provaQuestao?.conhecimentoExigido ?? ""}>
+                      {q.provaQuestao?.conhecimentoExigido ?? "—"}
+                      {q.provaQuestao?.nivelDificuldade
+                        ? ` · ${q.provaQuestao.nivelDificuldade}`
+                        : ""}
                     </td>
                     <td className="p-2 text-right">{q.correto ? "✓" : "✗"}</td>
                   </tr>

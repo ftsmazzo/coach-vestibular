@@ -5,6 +5,8 @@ import { getDashboardData } from "@/lib/exam-service";
 import { getMateriaLabel } from "@/lib/taxonomy";
 import { Card, Button, Badge } from "@/components/ui";
 import { EvolutionChart } from "@/components/evolution-chart";
+import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
+import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -62,11 +64,18 @@ export default async function DashboardPage() {
         </Card>
       )}
 
+      {scores?.resumoProva && (
+        <ResumoDiagnosticoCard
+          resumo={scores.resumoProva as ResumoProvaDiagnostico}
+          checkIn={latest?.checkInScore}
+        />
+      )}
+
       {snapshot && (
         <Card>
-          <h2 className="mb-2 font-semibold text-slate-900">Diagnóstico</h2>
+          <h2 className="mb-2 font-semibold text-slate-900">Leitura do coach</h2>
           <p className="text-slate-700">{snapshot.mensagem}</p>
-          {focos.length > 0 && (
+          {!scores?.resumoProva && focos.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {focos.map((f: { label: string; prioridade: string }, i: number) => (
                 <Badge key={i} tone={f.prioridade === "alta" ? "danger" : "warning"}>
