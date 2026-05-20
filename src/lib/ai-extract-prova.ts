@@ -53,7 +53,8 @@ PROIBIDO:
 - gabarito, resposta correta, letra A–E
 - null em materia/assunto (use string)
 
-Formato: { "questoes": [...], "avisos": ["..."], "resumo": "..." }
+Responda somente com um objeto JSON válido (sem markdown), neste formato:
+{ "questoes": [...], "avisos": ["..."], "resumo": "..." }
 No resumo, indique quantas questões classificou e o intervalo de números (ex.: "34 questões, nº 1–34").`;
 
 /** Quebra preferencial antes de marcadores de questão (evita cortar no meio). */
@@ -178,7 +179,7 @@ async function callOpenAI(
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `${meta}\n\nConteúdo (classifique TODAS as questões numeradas neste trecho):\n${userContent}`,
+          content: `${meta}\n\nClassifique e devolva JSON com todas as questões numeradas neste trecho:\n${userContent}`,
         },
       ],
       max_tokens: 16384,
