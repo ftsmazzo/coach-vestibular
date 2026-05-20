@@ -25,7 +25,8 @@ flowchart LR
   Gabarito[Gabarito em lote] --> DB
 ```
 
-1. Admin envia **PDF** ou cola **texto** em `/admin/provas/[id]`.
+1. Admin envia **PDF** (texto selecionável) ou cola **texto** em `/admin/provas/[id]`.
+   - Requer `pdf-parse` v2 no container (`PDFParse` + `getText()`); PDF só imagem ainda precisa OCR.
 2. `POST /api/admin/provas/[id]/extrair` chama modelo com schema fixo.
 3. **Pré-visualizar** → revisar tabela → **Aplicar**.
 4. Gabarito oficial entra depois (lote `numero,letra`).
