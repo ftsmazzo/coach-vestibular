@@ -4,15 +4,18 @@ FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
 RUN npm ci
 
 FROM deps AS builder
 WORKDIR /app
-COPY prisma ./prisma
-COPY prisma.config.ts ./
-RUN npx prisma generate
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# DATABASE_URL fictícia só para o build (Prisma/Next não conectam ao banco aqui)
+ARG DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
+ENV DATABASE_URL=${DATABASE_URL}
+RUN npx prisma generate
 RUN npm run build
 
 FROM node:22-bookworm-slim AS runner

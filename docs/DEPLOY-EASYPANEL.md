@@ -44,6 +44,8 @@ HOSTNAME=0.0.0.0
 RUN_SEED=true
 ```
 
+> **Atenção:** `HOSTNAME` deve ser `0.0.0.0` (porta do Next.js no container). **Não** use o host do Postgres nem a URL HTTPS do EasyPanel aqui.
+
 | Variável | Descrição |
 |----------|-----------|
 | `DATABASE_URL` | URL interna do Postgres criado no passo 1 |
