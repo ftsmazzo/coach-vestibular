@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button, Card, Input, Label } from "@/components/ui";
 import { buildProvaNome } from "@/lib/prova-nome";
@@ -53,6 +53,7 @@ interface Prova {
 }
 
 export default function AdminProvaDetailPage() {
+  const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const [prova, setProva] = useState<Prova | null>(null);
   const [gabaritoLote, setGabaritoLote] = useState("");
@@ -208,6 +209,42 @@ export default function AdminProvaDetailPage() {
         : data.error ?? "Erro"
     );
     load();
+  }
+
+  async function zerarQuestoes() {
+    if (
+      !confirm(
+        "Apagar TODAS as questões desta prova? O cadastro (nome, ano, caderno) permanece. A prova será despublicada. Depois extraia ou importe de novo."
+      )
+    ) {
+      return;
+    }
+    const res = await fetch(`/api/admin/provas/${id}/questoes`, { method: "DELETE" });
+    const data = await res.json();
+    if (res.ok) {
+      setMsg(`Banco zerado (${data.removidas} questões removidas). Pode reimportar ou extrair de novo.`);
+      load();
+    } else {
+      setMsg(data.error ?? "Erro ao zerar");
+    }
+  }
+
+  async function excluirProva() {
+    if (
+      !confirm(
+        `Excluir a prova "${prova?.nome}" e todas as questões? Tentativas de alunos ficam sem vínculo com esta prova. Esta ação não tem volta.`
+      )
+    ) {
+      return;
+    }
+    const res = await fetch(`/api/admin/provas/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/admin/provas");
+      router.refresh();
+    } else {
+      const data = await res.json();
+      setMsg(data.error ?? "Erro ao excluir");
+    }
   }
 
   async function salvarGabaritoLote() {
@@ -533,8 +570,28 @@ export default function AdminProvaDetailPage() {
           </table>
         </div>
         {prova.questoes.length === 0 && (
-          <p className="mt-4 text-slate-500">Importe um CSV ou peça ao GPT a tabela e cole aqui.</p>
+          <p className="mt-4 text-slate-500">Importe um CSV ou extraia com IA para preencher o banco.</p>
         )}
+      </Card>
+
+      <Card className="border-red-200 bg-red-50/40">
+        <h2 className="mb-2 font-semibold text-red-900">Recomeçar do zero</h2>
+        <p className="mb-3 text-sm text-red-900">
+          Se a prova foi gravada com o formato antigo da tabela, use uma das opções abaixo e importe
+          de novo com o fluxo atual (sem gabarito na IA).
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" onClick={zerarQuestoes}>
+            Zerar só as questões (mantém cadastro da prova)
+          </Button>
+          <Button type="button" variant="danger" onClick={excluirProva}>
+            Excluir prova inteira
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-red-800">
+          <strong>Zerar questões:</strong> apaga linhas e despublica; você reextrai o PDF na mesma
+          prova. <strong>Excluir prova:</strong> remove tudo e volta à lista para criar outra.
+        </p>
       </Card>
     </div>
   );

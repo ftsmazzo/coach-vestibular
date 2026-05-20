@@ -116,3 +116,24 @@ export async function POST(
   });
   return NextResponse.json(questoes);
 }
+
+/** Remove todas as questões da prova (mantém cadastro da prova para reimportar) */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  const { id: provaId } = await params;
+  const prova = await prisma.prova.findUnique({ where: { id: provaId } });
+  if (!prova) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
+
+  const removidas = await prisma.provaQuestao.deleteMany({ where: { provaId } });
+  await prisma.prova.update({
+    where: { id: provaId },
+    data: { gabaritoCompleto: false, publicada: false },
+  });
+
+  return NextResponse.json({ ok: true, removidas: removidas.count });
+}
