@@ -10,6 +10,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "npx tsx prisma/seed.ts",
+    "db:limpar-demo": "npx tsx scripts/limpar-demo-aluno.ts",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
   },

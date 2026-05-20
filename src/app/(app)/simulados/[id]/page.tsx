@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getMateriaLabel, getTemaLabel, getTipoErroLabel } from "@/lib/taxonomy";
 import { Card, Button, Badge } from "@/components/ui";
+import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
 
 export default async function SimuladoDetailPage({
   params,
@@ -40,9 +41,15 @@ export default async function SimuladoDetailPage({
             {exam.banca}
           </p>
         </div>
-        <Link href="/dashboard">
-          <Button variant="secondary">Dashboard</Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <ExcluirRegistroButton examId={exam.id} nome={exam.nome} variant="secondary" />
+          <Link href="/simulados">
+            <Button variant="secondary">Meus registros</Button>
+          </Link>
+          <Link href="/dashboard">
+            <Button variant="ghost">Dashboard</Button>
+          </Link>
+        </div>
       </div>
 
       {exam.recoveryMode && (

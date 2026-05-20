@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Card, Button, Badge } from "@/components/ui";
+import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
 
 export default async function SimuladosPage() {
   const session = await getSession();
@@ -55,9 +56,11 @@ export default async function SimuladosPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {exam.recoveryMode && <Badge tone="warning">Recuperação</Badge>}
+                    {exam.provaId && <Badge tone="neutral">Prova cadastrada</Badge>}
                     <Link href={`/simulados/${exam.id}`}>
                       <Button variant="ghost">Detalhes</Button>
                     </Link>
+                    <ExcluirRegistroButton examId={exam.id} nome={exam.nome} />
                   </div>
                 </Card>
               </li>
