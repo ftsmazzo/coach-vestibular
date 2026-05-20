@@ -57,10 +57,6 @@ export async function POST(
       })),
     });
 
-    await prisma.prova.update({
-      where: { id: provaId },
-      data: { totalQuestoes: rows.length },
-    });
     await refreshProvaGabaritoFlag(provaId);
 
     const questoes = await prisma.provaQuestao.findMany({

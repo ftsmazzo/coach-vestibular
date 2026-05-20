@@ -5,7 +5,8 @@
 | Nível | Onde fica | Exemplos |
 |--------|-----------|----------|
 | **Prova** (registro admin) | Tabela `Prova` | Nome, banca/vestibular, ano, dia, caderno Azul/Tipo 1 |
-| **Questão** (pedagógico) | Tabela `ProvaQuestao` | Número, área/bloco ENEM, matéria, assunto, conhecimento, dificuldade, gabarito |
+| **Questão** (pedagógico) | Tabela `ProvaQuestao` | Número, área/bloco ENEM, matéria, assunto, conhecimento, dificuldade |
+| **Gabarito** | Admin manual (lote) | Nunca pela extração IA |
 
 O aluno, ao registrar o simulado, **escolhe a prova** — não repete vestibular/ano/caderno por questão.
 

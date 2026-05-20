@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
+import { buildProvaNome } from "@/lib/prova-nome";
 import { prisma } from "@/lib/prisma";
-import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 
 export async function GET(
   _request: Request,
@@ -44,7 +44,28 @@ export async function PATCH(
 
   const { id } = await params;
   const body = patchSchema.parse(await request.json());
-  const prova = await prisma.prova.update({ where: { id }, data: body });
+  const atual = await prisma.prova.findUnique({ where: { id } });
+  if (!atual) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
+
+  const merged = {
+    banca: body.banca ?? atual.banca,
+    ano: body.ano !== undefined ? body.ano : atual.ano,
+    dia: body.dia !== undefined ? body.dia : atual.dia,
+    caderno: body.caderno !== undefined ? body.caderno : atual.caderno,
+  };
+  const nome =
+    body.nome?.trim() ||
+    buildProvaNome({
+      banca: merged.banca,
+      ano: merged.ano,
+      dia: merged.dia,
+      caderno: merged.caderno,
+    });
+
+  const prova = await prisma.prova.update({
+    where: { id },
+    data: { ...body, nome },
+  });
   return NextResponse.json(prova);
 }
 

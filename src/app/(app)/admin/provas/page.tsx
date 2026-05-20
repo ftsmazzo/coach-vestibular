@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button, Card, Input, Label, Select } from "@/components/ui";
+import { buildProvaNome } from "@/lib/prova-nome";
 
 interface Prova {
   id: string;
@@ -18,7 +19,6 @@ interface Prova {
 export default function AdminProvasPage() {
   const [provas, setProvas] = useState<Prova[]>([]);
   const [form, setForm] = useState({
-    nome: "",
     banca: "ENEM",
     tipo: "SIMULADO",
     ano: "" as string | number,
@@ -49,7 +49,6 @@ export default function AdminProvasPage() {
       }),
     });
     setForm({
-      nome: "",
       banca: "ENEM",
       tipo: "SIMULADO",
       ano: "",
@@ -73,14 +72,16 @@ export default function AdminProvasPage() {
       <Card>
         <h2 className="mb-4 font-semibold">Nova prova</h2>
         <form onSubmit={criar} className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label>Nome</Label>
-            <Input
-              value={form.nome}
-              onChange={(e) => setForm({ ...form, nome: e.target.value })}
-              placeholder="ENEM 2024 — 1º dia Natureza"
-              required
-            />
+          <div className="sm:col-span-2">
+            <Label>Nome da prova (gerado automaticamente)</Label>
+            <p className="mt-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              {buildProvaNome({
+                banca: form.banca,
+                ano: form.ano ? parseInt(String(form.ano), 10) : null,
+                dia: form.dia ? parseInt(String(form.dia), 10) : null,
+                caderno: form.caderno || null,
+              }) || "Preencha banca, ano e caderno"}
+            </p>
           </div>
           <div>
             <Label>Banca / vestibular</Label>
@@ -148,7 +149,8 @@ export default function AdminProvasPage() {
               <div>
                 <h3 className="font-semibold">{p.nome}</h3>
                 <p className="text-sm text-slate-500">
-                  {p.banca} · {p.tipo} · {p._count.questoes}/{p.totalQuestoes} questões
+                  {p._count.questoes} questões cadastradas
+                  {p.tipo !== "ENEM_OFICIAL" ? ` · ${p.tipo}` : ""}
                 </p>
                 <p className="text-xs text-slate-500">
                   {p.publicada ? "Publicada" : "Rascunho"} · Gabarito{" "}

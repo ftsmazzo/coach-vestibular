@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button, Card, Input, Label } from "@/components/ui";
+import { buildProvaNome } from "@/lib/prova-nome";
 
 interface ProvaQuestao {
   id: string;
@@ -25,7 +26,6 @@ interface QuestaoPreview {
   conhecimentoExigido?: string | null;
   nivelDificuldade?: string | null;
   observacoes?: string | null;
-  gabarito?: string | null;
 }
 
 interface ExtracaoPreview {
@@ -60,7 +60,6 @@ export default function AdminProvaDetailPage() {
   const [extraindo, setExtraindo] = useState(false);
   const [msg, setMsg] = useState("");
   const [meta, setMeta] = useState({
-    nome: "",
     banca: "",
     ano: "",
     dia: "",
@@ -74,7 +73,6 @@ export default function AdminProvaDetailPage() {
       const data: Prova = await res.json();
       setProva(data);
       setMeta({
-        nome: data.nome,
         banca: data.banca,
         ano: data.ano != null ? String(data.ano) : "",
         dia: data.dia != null ? String(data.dia) : "",
@@ -93,7 +91,6 @@ export default function AdminProvaDetailPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        nome: meta.nome,
         banca: meta.banca,
         ano: meta.ano ? parseInt(meta.ano, 10) : null,
         dia: meta.dia ? parseInt(meta.dia, 10) : null,
@@ -185,8 +182,8 @@ export default function AdminProvaDetailPage() {
         <div>
           <h1 className="text-2xl font-bold">{prova.nome}</h1>
           <p className="text-slate-600">
-            {prova.questoes.length} questões · Gabarito{" "}
-            {prova.gabaritoCompleto ? "completo" : "pendente"}
+            {prova.questoes.length} questões cadastradas · Gabarito{" "}
+            {prova.gabaritoCompleto ? "completo" : "pendente (use lote abaixo)"}
           </p>
         </div>
         <Button variant="secondary" onClick={togglePublicada}>
@@ -203,9 +200,16 @@ export default function AdminProvaDetailPage() {
           A IA não repete esses dados por questão.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <Label>Nome</Label>
-            <Input value={meta.nome} onChange={(e) => setMeta({ ...meta, nome: e.target.value })} />
+          <div className="sm:col-span-2">
+            <Label>Nome da prova (gerado ao salvar)</Label>
+            <p className="mt-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+              {buildProvaNome({
+                banca: meta.banca,
+                ano: meta.ano ? parseInt(meta.ano, 10) : null,
+                dia: meta.dia ? parseInt(meta.dia, 10) : null,
+                caderno: meta.caderno || null,
+              })}
+            </p>
           </div>
           <div>
             <Label>Banca / vestibular</Label>
@@ -255,7 +259,8 @@ export default function AdminProvaDetailPage() {
         <h2 className="mb-2 font-semibold text-teal-900">Extração com IA (principal)</h2>
         <p className="mb-3 text-sm text-teal-800">
           Envie o PDF da prova ou cole o texto. A IA preenche Matéria, Assunto, Conhecimento,
-          Dificuldade e Observações — como sua planilha modelo. Gabarito só se estiver no material.
+          Dificuldade e Observações. <strong>Não preenche gabarito</strong> — use a seção de gabarito
+          em lote depois.
         </p>
         <p className="mb-3 text-xs text-teal-700">
           Requer <code>OPENAI_API_KEY</code> no servidor. Alternativa: exporte CSV do GPT e importe

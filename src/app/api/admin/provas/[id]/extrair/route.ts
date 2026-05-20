@@ -78,12 +78,8 @@ export async function POST(
           conhecimentoExigido: q.conhecimentoExigido ?? null,
           nivelDificuldade: q.nivelDificuldade ?? null,
           observacoes: q.observacoes ?? null,
-          gabarito: q.gabarito?.toUpperCase() ?? null,
+          gabarito: null,
         })),
-      });
-      await prisma.prova.update({
-        where: { id: provaId },
-        data: { totalQuestoes: resultado.questoes.length },
       });
       await refreshProvaGabaritoFlag(provaId);
     }

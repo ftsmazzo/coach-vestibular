@@ -189,7 +189,7 @@ export async function refreshProvaGabaritoFlag(provaId: string) {
   const completo = syncProvaGabaritoStatus(questoes);
   await prisma.prova.update({
     where: { id: provaId },
-    data: { gabaritoCompleto: completo },
+    data: { gabaritoCompleto: completo, totalQuestoes: questoes.length },
   });
   return completo;
 }

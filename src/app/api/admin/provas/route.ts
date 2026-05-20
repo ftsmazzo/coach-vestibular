@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
+import { buildProvaNome } from "@/lib/prova-nome";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -13,11 +14,30 @@ export async function GET() {
       _count: { select: { questoes: true, tentativas: true } },
     },
   });
-  return NextResponse.json(provas);
+
+  await Promise.all(
+    provas
+      .filter((p) => p._count.questoes !== p.totalQuestoes)
+      .map((p) =>
+        prisma.prova.update({
+          where: { id: p.id },
+          data: { totalQuestoes: p._count.questoes },
+        })
+      )
+  );
+
+  const synced = await prisma.prova.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      _count: { select: { questoes: true, tentativas: true } },
+    },
+  });
+
+  return NextResponse.json(synced);
 }
 
 const createSchema = z.object({
-  nome: z.string().min(1),
+  nome: z.string().optional(),
   banca: z.string().default("ENEM"),
   tipo: z.enum(["ENEM_OFICIAL", "SIMULADO", "VESTIBULAR", "OUTRO"]).default("SIMULADO"),
   ano: z.number().int().optional(),
@@ -33,6 +53,16 @@ export async function POST(request: Request) {
   if (auth.error) return auth.error;
 
   const body = createSchema.parse(await request.json());
-  const prova = await prisma.prova.create({ data: body });
+  const nome =
+    body.nome?.trim() ||
+    buildProvaNome({
+      banca: body.banca,
+      ano: body.ano,
+      dia: body.dia,
+      caderno: body.caderno,
+    });
+  const prova = await prisma.prova.create({
+    data: { ...body, nome },
+  });
   return NextResponse.json(prova);
 }

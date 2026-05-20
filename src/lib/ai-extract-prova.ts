@@ -11,10 +11,6 @@ const questaoExtraidaSchema = z.object({
   conhecimentoExigido: textoOpcional,
   nivelDificuldade: textoOpcional,
   observacoes: textoOpcional,
-  gabarito: z
-    .union([z.string().regex(/^[A-Ea-e]$/), z.null()])
-    .optional()
-    .transform((v) => (v ? v.toUpperCase() : undefined)),
 });
 
 const respostaSchema = z.object({
@@ -27,24 +23,25 @@ export type QuestaoExtraida = z.infer<typeof questaoExtraidaSchema>;
 
 const SYSTEM_PROMPT = `Você classifica questões objetivas de provas vestibulares (ENEM, UFU, Fuvest, simulados).
 
-O cadastro da prova (instituição, ano, caderno azul/branco, vestibular) já foi feito pelo admin — NÃO repita nome da prova nem caderno por questão.
+O cadastro da prova (instituição, ano, caderno, vestibular) já foi feito pelo admin — NÃO repita nome da prova nem caderno por questão.
 
 Para CADA questão no texto, retorne JSON:
 - numero: número da questão na prova
-- areaBloco: bloco grande da prova, se aplicável (ex. Ciências da Natureza, Linguagens, Matemática e suas Tecnologias) — senão omita/null
-- materia: disciplina principal (Química, Física, Matemática, Biologia, História, Geografia, Filosofia, Sociologia, Língua Portuguesa, Literatura, Inglês, Espanhol, Redação)
-- assunto: tema específico (ex. Ondas, Estequiometria, Interpretação de texto) — mais específico que matéria
+- areaBloco: bloco grande da prova, se aplicável (ex. Ciências da Natureza, Linguagens) — senão omita/null
+- materia: disciplina principal
+- assunto: tema específico — mais específico que matéria
 - conhecimentoExigido: em uma frase curta o que o estudante precisa saber/fazer
 - nivelDificuldade: facil | media | dificil ou null
 - observacoes: só se interdisciplinar, imagem, ambiguidade relevante
-- gabarito: letra A–E SOMENTE se explícita no material; senão null
 
-REGRAS DE CLASSIFICAÇÃO:
+PROIBIDO:
+- NÃO inclua campo gabarito, resposta correta nem letra A–E no JSON.
+- O gabarito oficial será cadastrado depois pelo admin manualmente.
+
+REGRAS:
 - Não misture matéria com assunto.
-- Não invente gabarito nem número de questão inexistente.
-- Em ambiguidade, escolha a classificação mais defensável e explique brevemente em observacoes.
-- Interdisciplinar: matéria predominante + observação curta se necessário.
-- Padronize nomenclaturas para comparar provas depois.
+- Não invente número de questão inexistente.
+- Em ambiguidade, classificação defensável + observação curta se necessário.
 
 Formato: { "questoes": [...], "avisos": [...], "resumo": "..." }`;
 
@@ -57,6 +54,20 @@ function chunkText(text: string, maxLen = 14000): string[] {
     start += maxLen;
   }
   return chunks;
+}
+
+function stripGabaritoFromRaw(parsed: unknown): unknown {
+  if (!parsed || typeof parsed !== "object") return parsed;
+  const obj = parsed as { questoes?: unknown[] };
+  if (!Array.isArray(obj.questoes)) return parsed;
+  return {
+    ...obj,
+    questoes: obj.questoes.map((q) => {
+      if (!q || typeof q !== "object") return q;
+      const { gabarito: _g, resposta: _r, respostaCorreta: _c, ...rest } = q as Record<string, unknown>;
+      return rest;
+    }),
+  };
 }
 
 async function callOpenAI(
@@ -108,7 +119,7 @@ async function callOpenAI(
   const raw = data.choices?.[0]?.message?.content;
   if (!raw) throw new Error("Resposta vazia da IA");
 
-  const parsed = JSON.parse(raw);
+  const parsed = stripGabaritoFromRaw(JSON.parse(raw));
   return respostaSchema.parse(parsed);
 }
 
