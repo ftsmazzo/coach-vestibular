@@ -1,0 +1,11 @@
+numero_questao,acertou,materia_sugerida,tema_sugerido,tipo_erro,observacao
+1,true,Biologia,Genetica,, 
+2,false,Quimica,Estequiometria,base_teorica,confundi coeficientes
+3,false,Fisica,Cinematica,interpretacao,lei mal interpretada
+4,true,Matematica,Funcoes,,
+5,false,Quimica,Estequiometria,atencao,erro de conta simples
+6,false,Biologia,Fisiologia Humana,base_teorica,
+7,true,Portugues,Interpretacao de Texto,,
+8,false,Fisica,Cinematica,base_teorica,formula errada
+9,true,Matematica,Geometria,,
+10,false,Quimica,Estequiometria,base_teorica,terceiro erro no tema

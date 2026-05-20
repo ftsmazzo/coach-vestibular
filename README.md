@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Coach Vestibular
 
-## Getting Started
+Plataforma web de apoio a estudantes de pré-vestibular (foco medicina). Transforma resultados de simulados em diagnóstico por matéria/tema, plano semanal e quests com recompensa emocional.
 
-First, run the development server:
+## Funcionalidades (MVP)
+
+- Registro manual de gabarito (acerto/erro por questão)
+- Importação CSV (template em `docs/templates/`)
+- Motor de diagnóstico por regras (sem IA obrigatória)
+- Dashboard com evolução e focos da semana
+- Plano de estudo automático (modo recuperação após simulado difícil)
+- Quests vinculadas ao diagnóstico
+- Beta fechado com códigos de convite
+- Upload de prova (Fase 2 — stub + API narrativa opcional com `OPENAI_API_KEY`)
+
+## Requisitos
+
+- Node.js 20+
+- npm
+
+## Instalação
 
 ```bash
+cd coach-vestibular
+npm install
+npx prisma migrate dev
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Contas demo (após seed)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Papel | E-mail | Senha |
+|-------|--------|-------|
+| Aluna | aluna@coach.local | demo1234 |
+| Admin | admin@coach.local | demo1234 |
 
-## Learn More
+**Convites para novos cadastros:** `MED2026-BETA`, `COACH-FAMILIA`
 
-To learn more about Next.js, take a look at the following resources:
+## Estrutura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `data/taxonomy.json` — matérias, temas e tipos de erro
+- `data/exemplo-simulado.json` — simulado de validação
+- `docs/validacao-simulado.md` — guia para validar com a estudante
+- `docs/wireframes.md` — wireframes das telas
+- `src/lib/diagnosis.ts` — motor de regras
+- `src/lib/study-plan.ts` — gerador de plano e quests
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## PostgreSQL (produção)
 
-## Deploy on Vercel
+No `.env`, troque para:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+DATABASE_URL="postgresql://user:pass@host:5432/coach"
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Altere `provider` em `prisma/schema.prisma` para `postgresql` e rode `npx prisma migrate dev`.
+
+## Variáveis opcionais
+
+```
+JWT_SECRET=...
+OPENAI_API_KEY=...   # narrativa empática (Fase 2)
+```
+
+## Privacidade
+
+Dados de desempenho e check-in emocional são sensíveis. O app não substitui acompanhamento psicológico. Ver mensagem em `src/lib/messages.ts`.

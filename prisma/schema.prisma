@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+enum ErrorType {
+  base_teorica
+  interpretacao
+  atencao
+  tempo
+}
+
+enum QuestStatus {
+  pending
+  done
+  skipped
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  name            String
+  role            UserRole @default(STUDENT)
+  vestibularAlvo  String?  @default("Medicina")
+  metaProva       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  exams               Exam[]
+  diagnosticSnapshots DiagnosticSnapshot[]
+  studyPlans          StudyPlan[]
+  quests              Quest[]
+  emotionalLogs       EmotionalLog[]
+}
+
+model InviteCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  maxUses   Int      @default(5)
+  usedCount Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Exam {
+  id             String   @id @default(cuid())
+  userId         String
+  nome           String
+  data           DateTime
+  banca          String?  @default("ENEM")
+  totalQuestoes  Int
+  nota           Float?
+  checkInScore   Int?
+  recoveryMode   Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionAttempts  QuestionAttempt[]
+  diagnosticSnapshot DiagnosticSnapshot?
+  emotionalLog      EmotionalLog?
+}
+
+model QuestionAttempt {
+  id        String     @id @default(cuid())
+  examId    String
+  numero    Int
+  correto   Boolean
+  materiaId String?
+  temaId    String?
+  tipoErro  ErrorType?
+  observacao String?
+
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, numero])
+}
+
+model DiagnosticSnapshot {
+  id              String   @id @default(cuid())
+  userId          String
+  examId          String   @unique
+  scoresJson      String
+  focosJson       String
+  mensagem        String
+  recoveryMode    Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+}
+
+model StudyPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  weekStart   DateTime
+  itemsJson   String
+  recoveryMode Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Quest {
+  id          String      @id @default(cuid())
+  userId      String
+  titulo      String
+  descricao   String?
+  materiaId   String?
+  temaId      String?
+  duracaoMin  Int         @default(30)
+  status      QuestStatus @default(pending)
+  rewardMsg   String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  moodAfter   Int?
+  createdAt   DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmotionalLog {
+  id        String   @id @default(cuid())
+  userId    String
+  examId    String?  @unique
+  score     Int
+  nota      String?
+  createdAt DateTime @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam Exam? @relation(fields: [examId], references: [id], onDelete: SetNull)
+}
+
+model UploadJob {
+  id        String   @id @default(cuid())
+  userId    String
+  fileName  String
+  status    String   @default("pending")
+  resultJson String?
+  createdAt DateTime @default(now())
+}

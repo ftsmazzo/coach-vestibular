@@ -1,0 +1,20 @@
+{
+  "nome": "Simulado Cursinho - Exemplo validação",
+  "data": "2026-05-15",
+  "banca": "ENEM",
+  "totalQuestoes": 10,
+  "nota": 6.0,
+  "checkInEmocional": 2,
+  "questoes": [
+    { "numero": 1, "correto": true, "materiaId": "biologia", "temaId": "genetica" },
+    { "numero": 2, "correto": false, "materiaId": "quimica", "temaId": "estequiometria", "tipoErro": "base_teorica" },
+    { "numero": 3, "correto": false, "materiaId": "fisica", "temaId": "cinematica", "tipoErro": "interpretacao" },
+    { "numero": 4, "correto": true, "materiaId": "matematica", "temaId": "funcoes" },
+    { "numero": 5, "correto": false, "materiaId": "quimica", "temaId": "estequiometria", "tipoErro": "atencao" },
+    { "numero": 6, "correto": false, "materiaId": "biologia", "temaId": "fisiologia_humana", "tipoErro": "base_teorica" },
+    { "numero": 7, "correto": true, "materiaId": "portugues", "temaId": "interpretacao_texto" },
+    { "numero": 8, "correto": false, "materiaId": "fisica", "temaId": "cinematica", "tipoErro": "base_teorica" },
+    { "numero": 9, "correto": true, "materiaId": "matematica", "temaId": "geometria" },
+    { "numero": 10, "correto": false, "materiaId": "quimica", "temaId": "estequiometria", "tipoErro": "base_teorica" }
+  ]
+}

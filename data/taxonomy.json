@@ -1,0 +1,107 @@
+{
+  "version": "1.0",
+  "focusAreas": [
+    {
+      "id": "estequiometria",
+      "label": "Estequiometria",
+      "materiaId": "quimica",
+      "priority": "alta",
+      "note": "Top dor — recorrência em simulados"
+    },
+    {
+      "id": "cinematica",
+      "label": "Cinemática",
+      "materiaId": "fisica",
+      "priority": "alta",
+      "note": "Top dor — base + interpretação"
+    },
+    {
+      "id": "fisiologia_humana",
+      "label": "Fisiologia Humana",
+      "materiaId": "biologia",
+      "priority": "alta",
+      "note": "Top dor — volume de conteúdo medicina"
+    }
+  ],
+  "materias": [
+    {
+      "id": "biologia",
+      "label": "Biologia",
+      "temas": [
+        { "id": "genetica", "label": "Genética" },
+        { "id": "ecologia", "label": "Ecologia" },
+        { "id": "citologia", "label": "Citologia" },
+        { "id": "fisiologia_humana", "label": "Fisiologia Humana" },
+        { "id": "evolucao", "label": "Evolução" },
+        { "id": "botanica", "label": "Botânica" }
+      ]
+    },
+    {
+      "id": "quimica",
+      "label": "Química",
+      "temas": [
+        { "id": "estequiometria", "label": "Estequiometria" },
+        { "id": "termoquimica", "label": "Termoquímica" },
+        { "id": "equilibrio", "label": "Equilíbrio Químico" },
+        { "id": "eletroquimica", "label": "Eletroquímica" },
+        { "id": "organica", "label": "Química Orgânica" },
+        { "id": "atomistica", "label": "Atomística" }
+      ]
+    },
+    {
+      "id": "fisica",
+      "label": "Física",
+      "temas": [
+        { "id": "cinematica", "label": "Cinemática" },
+        { "id": "dinamica", "label": "Dinâmica" },
+        { "id": "energia", "label": "Trabalho e Energia" },
+        { "id": "eletricidade", "label": "Eletricidade" },
+        { "id": "ondas", "label": "Ondas" },
+        { "id": "optica", "label": "Óptica" }
+      ]
+    },
+    {
+      "id": "matematica",
+      "label": "Matemática",
+      "temas": [
+        { "id": "funcoes", "label": "Funções" },
+        { "id": "geometria", "label": "Geometria" },
+        { "id": "probabilidade", "label": "Probabilidade e Estatística" },
+        { "id": "trigonometria", "label": "Trigonometria" },
+        { "id": "algebra", "label": "Álgebra" }
+      ]
+    },
+    {
+      "id": "portugues",
+      "label": "Português",
+      "temas": [
+        { "id": "interpretacao_texto", "label": "Interpretação de Texto" },
+        { "id": "gramatica", "label": "Gramática" },
+        { "id": "literatura", "label": "Literatura" },
+        { "id": "redacao", "label": "Redação" }
+      ]
+    },
+    {
+      "id": "historia",
+      "label": "História",
+      "temas": [
+        { "id": "brasil_republica", "label": "Brasil República" },
+        { "id": "geral_contemporanea", "label": "História Contemporânea" }
+      ]
+    },
+    {
+      "id": "geografia",
+      "label": "Geografia",
+      "temas": [
+        { "id": "humanos", "label": "Geografia Humana" },
+        { "id": "fisicos", "label": "Geografia Física" }
+      ]
+    }
+  ],
+  "tiposErro": [
+    { "id": "base_teorica", "label": "Falta de base teórica", "icone": "book" },
+    { "id": "interpretacao", "label": "Interpretação / leitura", "icone": "text" },
+    { "id": "atencao", "label": "Atenção / cuidado", "icone": "eye" },
+    { "id": "tempo", "label": "Gestão de tempo", "icone": "clock" }
+  ]
+}
