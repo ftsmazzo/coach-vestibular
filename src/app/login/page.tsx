@@ -27,7 +27,7 @@ export default function LoginPage() {
       setError(data.error ?? "Erro ao entrar");
       return;
     }
-    router.push("/dashboard");
+    router.push(data.role === "ADMIN" ? "/admin" : "/dashboard");
     router.refresh();
   }
 

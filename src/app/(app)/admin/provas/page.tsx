@@ -65,7 +65,7 @@ export default function AdminProvasPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Banco de provas (Admin)</h1>
+        <h1 className="text-2xl font-bold">Banco de provas</h1>
         <p className="text-slate-600">
           Primeiro cadastre a prova (vestibular, ano, caderno). Depois importe ou extraia as questões
           (matéria, assunto, conhecimento).

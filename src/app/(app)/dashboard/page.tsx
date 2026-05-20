@@ -39,6 +39,7 @@ function CardUltimo({
 export default async function DashboardPage({ searchParams }: PageProps) {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.role === "ADMIN") redirect("/admin");
 
   const { filtro: filtroParam } = await searchParams;
   const filtro = filtroRegistrosFromSearchParam(filtroParam);

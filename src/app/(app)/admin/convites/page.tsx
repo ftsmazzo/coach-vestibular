@@ -22,7 +22,7 @@ export default function ConvitesPage() {
   async function load() {
     const res = await fetch("/api/invites");
     if (res.status === 403) {
-      router.push("/dashboard");
+      router.push("/admin");
       return;
     }
     setInvites(await res.json());
