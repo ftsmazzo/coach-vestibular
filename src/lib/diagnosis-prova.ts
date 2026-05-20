@@ -33,6 +33,8 @@ export interface ResumoProvaDiagnostico {
   pctAcerto: number;
   pctErro: number;
   materiasComMaisErros: MateriaErroResumo[];
+  /** Todas as matérias da prova, da que mais falhou à mais estável */
+  todasMaterias: MateriaErroResumo[];
   assuntosPrioritarios: AssuntoPrioritario[];
 }
 
@@ -96,7 +98,14 @@ export function buildResumoProva(questoes: QuestaoPedagogica[]): ResumoProvaDiag
   const assuntosPrioritarios = [...porAssunto.values()]
     .filter((a) => a.erros > 0)
     .sort((a, b) => b.erros - a.erros)
-    .slice(0, 3);
+    .slice(0, 8);
+
+  const todasMaterias = [...porMateria.values()].sort((a, b) => {
+    if (b.erros !== a.erros) return b.erros - a.erros;
+    const taxaA = a.total > 0 ? a.erros / a.total : 0;
+    const taxaB = b.total > 0 ? b.erros / b.total : 0;
+    return taxaB - taxaA;
+  });
 
   return {
     total,
@@ -105,6 +114,7 @@ export function buildResumoProva(questoes: QuestaoPedagogica[]): ResumoProvaDiag
     pctAcerto: total > 0 ? Math.round((acertos / total) * 100) : 0,
     pctErro: total > 0 ? Math.round((erros / total) * 100) : 0,
     materiasComMaisErros,
+    todasMaterias,
     assuntosPrioritarios,
   };
 }

@@ -166,8 +166,8 @@ export function buildDiagnosis(
         prioridade: (rec >= 2 || t.taxaAcerto < 0.4 ? "alta" : "media") as "alta" | "media",
         motivo:
           rec >= 2
-            ? `Errou este tema em ${rec} simulados recentes`
-            : `${Math.round((1 - t.taxaAcerto) * 100)}% de erro neste simulado`,
+            ? `Errou este tema em ${rec} registros recentes`
+            : `${Math.round((1 - t.taxaAcerto) * 100)}% de erro neste registro`,
         tipoErroDominante: tipoDominante,
       };
     })
@@ -200,25 +200,38 @@ export function buildDiagnosis(
     .join(", ");
   const melhoraMateria = materiaScores.find((m) => m.taxaAcerto >= 0.65);
 
+  const rotulo =
+    options?.examLabel === "prova oficial"
+      ? {
+          este: "Esta prova oficial",
+          neste: "Nesta prova oficial",
+          comparar: "suas últimas provas oficiais",
+        }
+      : {
+          este: "Este simulado",
+          neste: "Neste simulado",
+          comparar: "seus últimos simulados",
+        };
+
   let mensagem: string;
   if (recoveryMode) {
     mensagem =
-      `Este simulado foi pesado — e isso não define seu vestibular. ` +
+      `${rotulo.este} foi pesada — e isso não define seu vestibular. ` +
       `Um passo de cada vez: esta semana foque em no máximo ${focosFinal.length || 2} temas (` +
       `${focosTexto || "revisão leve"}). ` +
       `Você já demonstrou capacidade${melhoraMateria ? ` em ${melhoraMateria.materiaLabel}` : ""}. Respire, revise com calma.`;
   } else {
     const pct = Math.round(overallAcerto * 100);
     mensagem =
-      `Neste simulado você acertou ${pct}% das questões registradas. ` +
+      `${rotulo.neste} você acertou ${pct}% das questões registradas. ` +
       (fortes.length ? `Pontos fortes: ${fortes.join(", ")}. ` : "") +
       (focosTexto ? `Focos da semana: ${focosTexto}. ` : "") +
-      `Compare com seus últimos simulados — a tendência importa mais que uma nota isolada.`;
+      `Compare com ${rotulo.comparar} — a tendência importa mais que uma nota isolada.`;
   }
 
   if (errosSemTema > 0 && focos.length === 0) {
     mensagem +=
-      ` Para diagnóstico por tema, cole a análise do seu assistente (GPT) no registro do simulado — ou envie o caderno na Fase 2.`;
+      ` Para diagnóstico por tema, registre o gabarito completo (número + letra) ou envie o caderno na Fase 2.`;
   }
 
   return {

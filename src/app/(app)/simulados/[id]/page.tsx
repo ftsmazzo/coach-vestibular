@@ -10,6 +10,7 @@ import {
 import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
 import { Card, Button, Badge } from "@/components/ui";
 import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
+import { RecalcularDiagnosticoButton } from "@/components/recalcular-diagnostico-button";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 
@@ -56,7 +57,8 @@ export default async function SimuladoDetailPage({
             {exam.banca}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-start gap-2">
+          {exam.provaId && <RecalcularDiagnosticoButton examId={exam.id} />}
           <ExcluirRegistroButton examId={exam.id} nome={exam.nome} variant="secondary" />
           <Link href="/simulados">
             <Button variant="secondary">Últimos resultados</Button>
@@ -79,10 +81,19 @@ export default async function SimuladoDetailPage({
       {resumoProva ? (
         <ResumoDiagnosticoCard resumo={resumoProva} checkIn={exam.checkInScore} />
       ) : (
-        <Card>
-          <p className="text-sm text-slate-600">
-            Resumo numérico indisponível neste registro antigo. Registre de novo a prova para ver
-            acertos/erros % e matérias com mais falhas.
+        <Card className="border-amber-200 bg-amber-50/50">
+          <p className="text-sm text-amber-950">
+            Este registro foi salvo antes do diagnóstico detalhado (ou só com lista de erros).
+            {exam.provaId ? (
+              <>
+                {" "}
+                Use <strong>Atualizar diagnóstico e plano</strong> se já informou o gabarito
+                completo, ou <strong>Substituir registro</strong> em Registrar resultado com todas
+                as linhas <code className="text-xs">número,letra</code>.
+              </>
+            ) : (
+              " Registre de novo a partir do catálogo de provas públicas."
+            )}
           </p>
         </Card>
       )}

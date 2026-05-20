@@ -2,17 +2,37 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getQuestsDoPlanoAtual } from "@/lib/plano-atual";
 import { pickRewardMessage } from "@/lib/messages";
 
 export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-  const quests = await prisma.quest.findMany({
-    where: { userId: session.userId },
-    orderBy: { createdAt: "desc" },
+  const { quests, plan, items } = await getQuestsDoPlanoAtual(session.userId);
+
+  const ordemPorTitulo = new Map(items.map((i) => [i.titulo, i.ordem]));
+  const metaPorTitulo = new Map(
+    items.map((i) => [
+      i.titulo,
+      {
+        ordem: i.ordem,
+        bloco: i.bloco,
+        materiaDestaque: i.materiaDestaque,
+        errosNaMateria: i.errosNaMateria,
+      },
+    ])
+  );
+
+  return NextResponse.json({
+    quests: quests.map((q) => ({
+      ...q,
+      ordemPlano: ordemPorTitulo.get(q.titulo) ?? null,
+      meta: metaPorTitulo.get(q.titulo) ?? null,
+    })),
+    planoAtualizadoEm: plan?.createdAt ?? null,
+    recoveryMode: plan?.recoveryMode ?? false,
   });
-  return NextResponse.json(quests);
 }
 
 const patchSchema = z.object({

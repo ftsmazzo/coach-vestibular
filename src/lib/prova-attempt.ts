@@ -6,6 +6,8 @@ import { generateStudyPlan, planToQuests } from "./study-plan";
 import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
 import { parseDataAplicacao } from "./data-prova";
+import { provaEhOficial, rotulosDiagnostico } from "./prova-tipo";
+import type { DiagnosisResult } from "./diagnosis";
 
 export interface RegistrarTentativaInput {
   userId: string;
@@ -202,6 +204,10 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     };
   });
 
+  const rotulos = rotulosDiagnostico(
+    provaEhOficial(prova.tipo) ? "prova_oficial" : "simulado"
+  );
+
   let diagnosis = buildDiagnosis(
     rawAttempts.map(({ numero, correto, materiaId, temaId, tipoErro }) => ({
       numero,
@@ -211,7 +217,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
       tipoErro: tipoErro as ErrorType | null | undefined,
     })),
     historicalAttempts,
-    { checkInScore: input.checkInScore }
+    { checkInScore: input.checkInScore, examLabel: rotulos.curto }
   );
 
   diagnosis = enriquecerDiagnosticoComProva(
@@ -274,20 +280,12 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     include: { diagnosticSnapshot: true },
   });
 
-  const { items, recoveryMode } = generateStudyPlan(diagnosis);
-  const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+  await aplicarPlanoEQuests(input.userId, diagnosis, provaEhOficial(prova.tipo));
 
-  await prisma.studyPlan.create({
-    data: {
-      userId: input.userId,
-      weekStart,
-      itemsJson: JSON.stringify(items),
-      recoveryMode,
-    },
+  await prisma.exam.update({
+    where: { id: exam.id },
+    data: { recoveryMode: diagnosis.recoveryMode },
   });
-
-  await prisma.quest.createMany({ data: planToQuests(items, input.userId) });
 
   return {
     exam,
@@ -297,6 +295,143 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     avisos,
     substituiu: Boolean(input.substituirExamId),
   };
+}
+
+async function aplicarPlanoEQuests(
+  userId: string,
+  diagnosis: DiagnosisResult,
+  ehProvaOficial: boolean
+) {
+  await prisma.quest.updateMany({
+    where: { userId, status: "pending" },
+    data: { status: "skipped" },
+  });
+
+  const { items, recoveryMode } = generateStudyPlan(diagnosis, { ehProvaOficial });
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+
+  await prisma.studyPlan.create({
+    data: {
+      userId,
+      weekStart,
+      itemsJson: JSON.stringify(items),
+      recoveryMode,
+    },
+  });
+
+  await prisma.quest.createMany({ data: planToQuests(items, userId) });
+}
+
+/** Recalcula diagnóstico, plano e quests a partir do gabarito já salvo (sem redigitar). */
+export async function recalcularDiagnosticoExam(examId: string, userId: string) {
+  const exam = await prisma.exam.findFirst({
+    where: { id: examId, userId },
+    include: {
+      prova: { include: { questoes: true } },
+      questionAttempts: { include: { provaQuestao: true }, orderBy: { numero: "asc" } },
+      diagnosticSnapshot: true,
+    },
+  });
+
+  if (!exam) throw new Error("EXAM_NOT_FOUND");
+  if (!exam.prova || !exam.provaId) throw new Error("SEM_PROVA_VINCULADA");
+  if (exam.questionAttempts.length === 0) throw new Error("SEM_QUESTOES");
+
+  const prova = exam.prova;
+  const rotulos = rotulosDiagnostico(
+    provaEhOficial(prova.tipo) ? "prova_oficial" : "simulado"
+  );
+
+  const historicalExams = await prisma.exam.findMany({
+    where: { userId, provaId: prova.id, id: { not: examId } },
+    orderBy: { data: "desc" },
+    take: 5,
+    include: { questionAttempts: { include: { provaQuestao: true } } },
+  });
+
+  const historicalAttempts: AttemptInput[][] = historicalExams.map((e) =>
+    e.questionAttempts.map((a) => {
+      const mapped =
+        a.provaQuestao &&
+        mapMateriaAssuntoToTaxonomy(a.provaQuestao.materia, a.provaQuestao.assunto);
+      return {
+        numero: a.numero,
+        correto: a.correto,
+        materiaId: a.materiaId ?? mapped?.materiaId,
+        temaId: a.temaId ?? mapped?.temaId,
+        tipoErro: a.tipoErro,
+      };
+    })
+  );
+
+  const rawAttempts: AttemptInput[] = exam.questionAttempts.map((a) => {
+    const pq =
+      a.provaQuestao ?? prova.questoes.find((q) => q.numero === a.numero);
+    const mapped =
+      pq && mapMateriaAssuntoToTaxonomy(pq.materia, pq.assunto);
+    return {
+      numero: a.numero,
+      correto: a.correto,
+      materiaId: a.materiaId ?? mapped?.materiaId,
+      temaId: a.temaId ?? mapped?.temaId,
+      tipoErro: a.tipoErro,
+    };
+  });
+
+  const questoesPedagogicas = exam.questionAttempts.map((a) => {
+    const q =
+      a.provaQuestao ?? prova.questoes.find((pq) => pq.numero === a.numero)!;
+    return {
+      numero: a.numero,
+      correto: a.correto,
+      materia: q.materia,
+      assunto: q.assunto,
+      conhecimentoExigido: q.conhecimentoExigido,
+      nivelDificuldade: q.nivelDificuldade,
+    };
+  });
+
+  let diagnosis = buildDiagnosis(rawAttempts, historicalAttempts, {
+    checkInScore: exam.checkInScore,
+    examLabel: rotulos.curto,
+  });
+
+  diagnosis = enriquecerDiagnosticoComProva(
+    diagnosis,
+    questoesPedagogicas,
+    exam.checkInScore
+  );
+
+  const analiseCompleta = exam.questionAttempts.every((a) => a.respostaAluno != null);
+
+  if (exam.diagnosticSnapshot) {
+    await prisma.diagnosticSnapshot.update({
+      where: { examId: exam.id },
+      data: {
+        scoresJson: JSON.stringify({
+          overallAcerto: diagnosis.overallAcerto,
+          materiaScores: diagnosis.materiaScores,
+          temaScores: diagnosis.temaScores,
+          resumoProva: diagnosis.resumoProva,
+          provaId: prova.id,
+          analiseCompleta,
+        }),
+        focosJson: JSON.stringify(diagnosis.focos),
+        mensagem: diagnosis.mensagem,
+        recoveryMode: diagnosis.recoveryMode,
+      },
+    });
+  }
+
+  await prisma.exam.update({
+    where: { id: exam.id },
+    data: { recoveryMode: diagnosis.recoveryMode },
+  });
+
+  await aplicarPlanoEQuests(userId, diagnosis, provaEhOficial(prova.tipo));
+
+  return { examId: exam.id, diagnosis };
 }
 
 export async function refreshProvaGabaritoFlag(provaId: string) {

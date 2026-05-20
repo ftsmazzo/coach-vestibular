@@ -2,6 +2,7 @@ import type { ErrorType } from "@/generated/prisma/client";
 import { prisma } from "./prisma";
 import { formatDataAplicacao, parseDataAplicacao } from "./data-prova";
 import { pctAcertoRegistro } from "./exam-stats";
+import { getQuestsDoPlanoAtual } from "./plano-atual";
 import {
   categoriaDoRegistro,
   registroPassaFiltro,
@@ -107,6 +108,11 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
     },
   });
 
+  await prisma.quest.updateMany({
+    where: { userId: input.userId, status: "pending" },
+    data: { status: "skipped" },
+  });
+
   const questData = planToQuests(items, input.userId);
   if (questData.length > 0) {
     await prisma.quest.createMany({ data: questData });
@@ -150,11 +156,8 @@ export async function getDashboardData(userId: string, filtro: FiltroRegistros =
     orderBy: { createdAt: "desc" },
   });
 
-  const quests = await prisma.quest.findMany({
-    where: { userId, status: "pending" },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
+  const { quests: questsPlano } = await getQuestsDoPlanoAtual(userId);
+  const quests = questsPlano.filter((q) => q.status === "pending").slice(0, 10);
 
   const evolution = examsFiltrados
     .slice()

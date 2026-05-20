@@ -67,3 +67,20 @@ export function registroPassaFiltro(
 export function labelCategoriaRegistro(cat: CategoriaRegistro): string {
   return cat === "prova_oficial" ? "Prova oficial" : "Simulado";
 }
+
+/** Textos do diagnóstico genérico (antes do resumo concreto da prova). */
+export function rotulosDiagnostico(cat: CategoriaRegistro) {
+  return cat === "prova_oficial"
+    ? {
+        curto: "prova oficial",
+        neste: "Nesta prova oficial",
+        este: "Esta prova oficial",
+        comparar: "suas últimas provas oficiais",
+      }
+    : {
+        curto: "simulado",
+        neste: "Neste simulado",
+        este: "Este simulado",
+        comparar: "seus últimos simulados",
+      };
+}
