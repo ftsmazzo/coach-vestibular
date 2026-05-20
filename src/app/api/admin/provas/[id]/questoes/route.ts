@@ -7,12 +7,12 @@ import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 
 const questaoSchema = z.object({
   numero: z.number().int().positive(),
-  caderno: z.string().optional(),
+  areaBloco: z.string().optional().nullable(),
   materia: z.string().min(1),
   assunto: z.string().min(1),
-  conhecimentoExigido: z.string().optional(),
-  nivelDificuldade: z.string().optional(),
-  observacoes: z.string().optional(),
+  conhecimentoExigido: z.string().optional().nullable(),
+  nivelDificuldade: z.string().optional().nullable(),
+  observacoes: z.string().optional().nullable(),
   gabarito: z.string().regex(/^[A-Ea-e]$/).optional().nullable(),
 });
 
@@ -47,13 +47,13 @@ export async function POST(
       data: rows.map((r) => ({
         provaId,
         numero: r.numero,
-        caderno: r.caderno,
+        areaBloco: r.areaBloco ?? null,
         materia: r.materia,
         assunto: r.assunto,
-        conhecimentoExigido: r.conhecimentoExigido,
-        nivelDificuldade: r.nivelDificuldade,
-        observacoes: r.observacoes,
-        gabarito: r.gabarito,
+        conhecimentoExigido: r.conhecimentoExigido ?? null,
+        nivelDificuldade: r.nivelDificuldade ?? null,
+        observacoes: r.observacoes ?? null,
+        gabarito: r.gabarito ?? null,
       })),
     });
 

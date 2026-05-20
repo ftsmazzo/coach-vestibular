@@ -61,6 +61,8 @@ export async function POST(
     const resultado = await extrairQuestoesComIA(texto, {
       nome: prova.nome,
       banca: prova.banca,
+      ano: prova.ano,
+      caderno: prova.caderno,
       totalEsperado: prova.totalQuestoes,
     });
 
@@ -70,12 +72,12 @@ export async function POST(
         data: resultado.questoes.map((q) => ({
           provaId,
           numero: q.numero,
-          caderno: q.caderno ?? prova.caderno,
+          areaBloco: q.areaBloco ?? null,
           materia: q.materia,
           assunto: q.assunto,
-          conhecimentoExigido: q.conhecimentoExigido,
-          nivelDificuldade: q.nivelDificuldade,
-          observacoes: q.observacoes,
+          conhecimentoExigido: q.conhecimentoExigido ?? null,
+          nivelDificuldade: q.nivelDificuldade ?? null,
+          observacoes: q.observacoes ?? null,
           gabarito: q.gabarito?.toUpperCase() ?? null,
         })),
       });

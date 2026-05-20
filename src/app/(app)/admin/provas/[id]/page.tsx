@@ -8,7 +8,7 @@ import { Button, Card, Input, Label } from "@/components/ui";
 interface ProvaQuestao {
   id: string;
   numero: number;
-  caderno: string | null;
+  areaBloco: string | null;
   materia: string;
   assunto: string;
   conhecimentoExigido: string | null;
@@ -19,7 +19,7 @@ interface ProvaQuestao {
 
 interface QuestaoPreview {
   numero: number;
-  caderno?: string;
+  areaBloco?: string | null;
   materia: string;
   assunto: string;
   conhecimentoExigido?: string | null;
@@ -38,6 +38,11 @@ interface Prova {
   id: string;
   nome: string;
   banca: string;
+  tipo: string;
+  ano: number | null;
+  dia: number | null;
+  caderno: string | null;
+  descricao: string | null;
   publicada: boolean;
   gabaritoCompleto: boolean;
   totalQuestoes: number;
@@ -54,15 +59,51 @@ export default function AdminProvaDetailPage() {
   const [preview, setPreview] = useState<ExtracaoPreview | null>(null);
   const [extraindo, setExtraindo] = useState(false);
   const [msg, setMsg] = useState("");
+  const [meta, setMeta] = useState({
+    nome: "",
+    banca: "",
+    ano: "",
+    dia: "",
+    caderno: "",
+    descricao: "",
+  });
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/admin/provas/${id}`);
-    if (res.ok) setProva(await res.json());
+    if (res.ok) {
+      const data: Prova = await res.json();
+      setProva(data);
+      setMeta({
+        nome: data.nome,
+        banca: data.banca,
+        ano: data.ano != null ? String(data.ano) : "",
+        dia: data.dia != null ? String(data.dia) : "",
+        caderno: data.caderno ?? "",
+        descricao: data.descricao ?? "",
+      });
+    }
   }, [id]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  async function salvarMetadados() {
+    const res = await fetch(`/api/admin/provas/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nome: meta.nome,
+        banca: meta.banca,
+        ano: meta.ano ? parseInt(meta.ano, 10) : null,
+        dia: meta.dia ? parseInt(meta.dia, 10) : null,
+        caderno: meta.caderno || null,
+        descricao: meta.descricao || null,
+      }),
+    });
+    setMsg(res.ok ? "Dados da prova salvos." : "Erro ao salvar prova");
+    load();
+  }
 
   async function togglePublicada() {
     if (!prova) return;
@@ -155,6 +196,61 @@ export default function AdminProvaDetailPage() {
 
       {msg && <p className="text-sm text-teal-700">{msg}</p>}
 
+      <Card>
+        <h2 className="mb-2 font-semibold">Registro da prova</h2>
+        <p className="mb-3 text-sm text-slate-600">
+          Vestibular, ano e caderno ficam aqui — o aluno escolhe esta prova ao registrar o simulado.
+          A IA não repete esses dados por questão.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label>Nome</Label>
+            <Input value={meta.nome} onChange={(e) => setMeta({ ...meta, nome: e.target.value })} />
+          </div>
+          <div>
+            <Label>Banca / vestibular</Label>
+            <Input
+              value={meta.banca}
+              onChange={(e) => setMeta({ ...meta, banca: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label>Ano</Label>
+            <Input
+              type="number"
+              value={meta.ano}
+              onChange={(e) => setMeta({ ...meta, ano: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label>Caderno / tipo</Label>
+            <Input
+              value={meta.caderno}
+              onChange={(e) => setMeta({ ...meta, caderno: e.target.value })}
+              placeholder="Azul, Tipo 1..."
+            />
+          </div>
+          <div>
+            <Label>Dia (ENEM)</Label>
+            <Input
+              type="number"
+              value={meta.dia}
+              onChange={(e) => setMeta({ ...meta, dia: e.target.value })}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label>Descrição (opcional)</Label>
+            <Input
+              value={meta.descricao}
+              onChange={(e) => setMeta({ ...meta, descricao: e.target.value })}
+            />
+          </div>
+        </div>
+        <Button className="mt-3" type="button" onClick={salvarMetadados}>
+          Salvar registro da prova
+        </Button>
+      </Card>
+
       <Card className="border-teal-200 bg-teal-50/40">
         <h2 className="mb-2 font-semibold text-teal-900">Extração com IA (principal)</h2>
         <p className="mb-3 text-sm text-teal-800">
@@ -246,8 +342,9 @@ export default function AdminProvaDetailPage() {
       <Card>
         <h2 className="mb-2 font-semibold">Importar planilha CSV (GPT)</h2>
         <p className="mb-3 text-sm text-slate-600">
-          Mesmo formato da sua planilha: Prova, Caderno, Número da Questão, Matéria, Assunto,
-          Habilidade/Conhecimento, Dificuldade, Observações, Gabarito. Template:{" "}
+          Colunas por questão (prova já cadastrada acima): Número, Área/Bloco, Matéria, Assunto,
+          Conhecimento, Dificuldade, Observações, Gabarito. Colunas Prova/Caderno do GPT são
+          ignoradas. Template:{" "}
           <code className="text-xs">docs/templates/prova-questoes.csv</code>
         </p>
         <Input type="file" accept=".csv" onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)} />
@@ -278,7 +375,7 @@ export default function AdminProvaDetailPage() {
             <thead>
               <tr className="border-b text-slate-500">
                 <th className="p-2">#</th>
-                <th className="p-2">Caderno</th>
+                <th className="p-2">Área/Bloco</th>
                 <th className="p-2">Matéria</th>
                 <th className="p-2">Assunto</th>
                 <th className="p-2">Conhecimento</th>
@@ -290,7 +387,7 @@ export default function AdminProvaDetailPage() {
               {prova.questoes.map((q) => (
                 <tr key={q.id} className="border-b border-slate-100">
                   <td className="p-2 font-medium">{q.numero}</td>
-                  <td className="p-2">{q.caderno ?? "—"}</td>
+                  <td className="p-2">{q.areaBloco ?? "—"}</td>
                   <td className="p-2">{q.materia}</td>
                   <td className="p-2">{q.assunto}</td>
                   <td className="p-2 max-w-xs truncate" title={q.conhecimentoExigido ?? ""}>

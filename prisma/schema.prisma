@@ -52,12 +52,12 @@ model Prova {
   tentativas Exam[]
 }
 
-/// Uma questão da prova — matéria, assunto, conhecimento, gabarito (update posterior)
+/// Uma questão da prova — classificação pedagógica (metadados da prova ficam em Prova)
 model ProvaQuestao {
   id                  String  @id @default(cuid())
   provaId             String
   numero              Int
-  caderno             String?
+  areaBloco           String?
   materia             String
   assunto             String
   conhecimentoExigido String?

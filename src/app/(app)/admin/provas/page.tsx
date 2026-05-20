@@ -21,6 +21,9 @@ export default function AdminProvasPage() {
     nome: "",
     banca: "ENEM",
     tipo: "SIMULADO",
+    ano: "" as string | number,
+    dia: "" as string | number,
+    caderno: "",
     totalQuestoes: 60,
   });
 
@@ -38,9 +41,22 @@ export default function AdminProvasPage() {
     await fetch("/api/admin/provas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        ano: form.ano ? parseInt(String(form.ano), 10) : undefined,
+        dia: form.dia ? parseInt(String(form.dia), 10) : undefined,
+        caderno: form.caderno || undefined,
+      }),
     });
-    setForm({ nome: "", banca: "ENEM", tipo: "SIMULADO", totalQuestoes: 60 });
+    setForm({
+      nome: "",
+      banca: "ENEM",
+      tipo: "SIMULADO",
+      ano: "",
+      dia: "",
+      caderno: "",
+      totalQuestoes: 60,
+    });
     load();
   }
 
@@ -49,8 +65,8 @@ export default function AdminProvasPage() {
       <div>
         <h1 className="text-2xl font-bold">Banco de provas (Admin)</h1>
         <p className="text-slate-600">
-          Cadastre a prova com uma linha por questão: matéria, assunto, conhecimento e gabarito
-          (pode preencher depois).
+          Primeiro cadastre a prova (vestibular, ano, caderno). Depois importe ou extraia as questões
+          (matéria, assunto, conhecimento).
         </p>
       </div>
 
@@ -67,8 +83,38 @@ export default function AdminProvasPage() {
             />
           </div>
           <div>
-            <Label>Banca</Label>
-            <Input value={form.banca} onChange={(e) => setForm({ ...form, banca: e.target.value })} />
+            <Label>Banca / vestibular</Label>
+            <Input
+              value={form.banca}
+              onChange={(e) => setForm({ ...form, banca: e.target.value })}
+              placeholder="ENEM, UFU, Fuvest..."
+            />
+          </div>
+          <div>
+            <Label>Ano</Label>
+            <Input
+              type="number"
+              value={form.ano}
+              onChange={(e) => setForm({ ...form, ano: e.target.value })}
+              placeholder="2025"
+            />
+          </div>
+          <div>
+            <Label>Caderno / tipo</Label>
+            <Input
+              value={form.caderno}
+              onChange={(e) => setForm({ ...form, caderno: e.target.value })}
+              placeholder="Azul, Tipo 1, 1º dia Natureza..."
+            />
+          </div>
+          <div>
+            <Label>Dia (ENEM)</Label>
+            <Input
+              type="number"
+              value={form.dia}
+              onChange={(e) => setForm({ ...form, dia: e.target.value })}
+              placeholder="1 ou 2"
+            />
           </div>
           <div>
             <Label>Tipo</Label>
@@ -102,8 +148,7 @@ export default function AdminProvasPage() {
               <div>
                 <h3 className="font-semibold">{p.nome}</h3>
                 <p className="text-sm text-slate-500">
-                  {p.banca} · {p.tipo} · {p._count.questoes}/{p.totalQuestoes} questões ·{" "}
-                  {p._count.tentativas} tentativas
+                  {p.banca} · {p.tipo} · {p._count.questoes}/{p.totalQuestoes} questões
                 </p>
                 <p className="text-xs text-slate-500">
                   {p.publicada ? "Publicada" : "Rascunho"} · Gabarito{" "}

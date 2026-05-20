@@ -4,11 +4,14 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button, Card, Input, Label } from "@/components/ui";
 import { parseListaErros } from "@/lib/gabarito";
+import { formatProvaLabel } from "@/lib/prova-label";
 
 interface ProvaOption {
   id: string;
   nome: string;
   banca: string;
+  ano?: number | null;
+  caderno?: string | null;
   totalQuestoes: number;
   gabaritoCompleto: boolean;
   questoesCount: number;
@@ -114,8 +117,8 @@ export default function NovoSimuladoPage() {
             >
               {provas.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.nome} ({p.totalQuestoes}q
-                  {p.gabaritoCompleto ? ", gabarito ok" : ", gabarito parcial"})
+                  {formatProvaLabel(p)} — {p.totalQuestoes} questões
+                  {p.gabaritoCompleto ? "" : " (gabarito parcial)"}
                 </option>
               ))}
             </select>

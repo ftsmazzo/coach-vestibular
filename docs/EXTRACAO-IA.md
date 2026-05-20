@@ -1,45 +1,48 @@
 # Extração com IA — desafio e estratégia
 
-## Sua planilha modelo (UFU 2026-2)
+## Dois níveis de dados
 
-| Coluna | Preenchido por |
-|--------|----------------|
-| Prova | Admin (nome da prova) |
-| Caderno | IA ou CSV |
-| Número da Questão | IA (ordem no caderno) |
-| Matéria | IA |
-| Assunto | IA |
-| Habilidade/Conhecimento Exigido | IA |
-| Nível de Dificuldade | IA (estimativa) |
-| Observações | IA |
-| Gabarito | Admin depois (update por questão) |
+| Nível | Onde fica | Exemplos |
+|--------|-----------|----------|
+| **Prova** (registro admin) | Tabela `Prova` | Nome, banca/vestibular, ano, dia, caderno Azul/Tipo 1 |
+| **Questão** (pedagógico) | Tabela `ProvaQuestao` | Número, área/bloco ENEM, matéria, assunto, conhecimento, dificuldade, gabarito |
 
-## Pipeline implementado (v1)
+O aluno, ao registrar o simulado, **escolhe a prova** — não repete vestibular/ano/caderno por questão.
+
+## Planilha / CSV (por questão)
+
+Colunas: `Número da Questão`, `Área/Bloco`, `Matéria`, `Assunto`, `Habilidade/Conhecimento Exigido`, `Nível de Dificuldade`, `Observações`, `Gabarito`.
+
+Colunas antigas `Prova` e `Caderno` do GPT são **ignoradas** no import (use o cadastro da prova no admin).
+
+Template: `docs/templates/prova-questoes.csv`
+
+## Pipeline IA (v1)
 
 ```mermaid
 flowchart LR
-  PDF[PDF ou texto] --> Texto[Texto bruto]
-  Texto --> IA[OpenAI JSON estruturado]
+  Cadastro[Admin cadastra Prova] --> PDF[PDF ou texto]
+  PDF --> Texto[Texto bruto]
+  Texto --> IA[OpenAI — só classificação pedagógica]
   IA --> Preview[Admin revisa]
   Preview --> DB[ProvaQuestao]
   Gabarito[Gabarito em lote] --> DB
 ```
 
-1. Admin envia **PDF** (texto selecionável) ou cola **texto** em `/admin/provas/[id]`.
-   - Requer `pdf-parse` v2 no container (`PDFParse` + `getText()`); PDF só imagem ainda precisa OCR.
-2. `POST /api/admin/provas/[id]/extrair` chama modelo com schema fixo.
-3. **Pré-visualizar** → revisar tabela → **Aplicar**.
-4. Gabarito oficial entra depois (lote `numero,letra`).
+A IA recebe o contexto da prova (nome, banca, ano, caderno) só como **referência**, sem repetir por linha.
 
-## Limitações honestas
+## Prompt para GPT (CSV alinhado ao app)
 
-| Desafio | Mitigação atual | Próximo passo |
-|---------|-----------------|---------------|
-| PDF escaneado (imagem) | Texto pode sair vazio | OCR (Tesseract / Vision API) |
-| Provas longas 180q | Chunks de texto | Processar por blocos ENEM |
-| Matéria errada | Revisão admin + CSV GPT | Fine-tune + mapa ENEM por faixa |
-| ENEM sem caderno por questão | `caderno` null → usa caderno da prova no admin | — |
-| Gabarito separado | Update em lote | Importar gabarito oficial CSV |
+```
+Analise o caderno [anexar PDF].
+A prova já está cadastrada como: ENEM 2025 — 1º dia Ciências da Natureza, caderno Azul.
+
+Gere CSV com colunas exatamente:
+Número da Questão,Área/Bloco,Matéria,Assunto,Habilidade/Conhecimento Exigido,Nível de Dificuldade,Observações,Gabarito
+
+Uma linha por questão. Não repita nome da prova nem caderno nas linhas.
+Gabarito vazio se não constar no material.
+```
 
 ## Configuração
 
@@ -48,17 +51,10 @@ OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o-mini
 ```
 
-Sem chave: use **Importar CSV** com a planilha que o GPT já gera (fluxo que você usa hoje).
+## Limitações
 
-## Prompt para GPT (gerar CSV igual à planilha)
-
-Use quando não quiser PDF direto no app — resultado idêntico ao import CSV:
-
-```
-Analise o caderno de provas [anexar PDF].
-Gere CSV com colunas exatamente:
-Prova,Caderno,Número da Questão,Matéria,Assunto,Habilidade/Conhecimento Exigido,Nível de Dificuldade,Observações,Gabarito
-
-Uma linha por questão. Prova=UFU 2026-2, Caderno=Tipo 1.
-Gabarito vazio se não constar no material.
-```
+| Desafio | Mitigação |
+|---------|-----------|
+| PDF escaneado | Cole texto ou CSV |
+| ENEM 180q | Chunks (em evolução) |
+| Gabarito separado | Update em lote no admin |
