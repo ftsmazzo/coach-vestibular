@@ -57,6 +57,7 @@ export default function AdminProvaDetailPage() {
   const [prova, setProva] = useState<Prova | null>(null);
   const [gabaritoLote, setGabaritoLote] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvIncluirGabarito, setCsvIncluirGabarito] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [textoProva, setTextoProva] = useState("");
   const [preview, setPreview] = useState<ExtracaoPreview | null>(null);
@@ -124,6 +125,7 @@ export default function AdminProvaDetailPage() {
     if (!csvFile) return;
     const fd = new FormData();
     fd.append("file", csvFile);
+    if (csvIncluirGabarito) fd.append("incluirGabarito", "true");
     const res = await fetch(`/api/admin/provas/${id}/questoes`, { method: "POST", body: fd });
     const data = await res.json();
     setMsg(res.ok ? `Importadas ${data.imported} questões` : data.error);
@@ -161,6 +163,24 @@ export default function AdminProvaDetailPage() {
       });
       setMsg(`Prévia: ${data.questoes.length} questões extraídas. Revise e clique em Aplicar.`);
     }
+  }
+
+  async function limparGabaritos() {
+    if (
+      !confirm(
+        "Zerar o gabarito de TODAS as questões desta prova? Use depois do gabarito oficial em lote."
+      )
+    ) {
+      return;
+    }
+    const res = await fetch(`/api/admin/provas/${id}/gabarito`, { method: "DELETE" });
+    const data = await res.json();
+    setMsg(
+      res.ok
+        ? `Gabarito zerado em ${data.removidos} questão(ões). Preencha o oficial em lote quando tiver.`
+        : data.error ?? "Erro"
+    );
+    load();
   }
 
   async function salvarGabaritoLote() {
@@ -385,13 +405,35 @@ export default function AdminProvaDetailPage() {
           <code className="text-xs">docs/templates/prova-questoes.csv</code>
         </p>
         <Input type="file" accept=".csv" onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)} />
+        <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={csvIncluirGabarito}
+            onChange={(e) => setCsvIncluirGabarito(e.target.checked)}
+          />
+          Importar coluna Gabarito do CSV (só se for gabarito oficial)
+        </label>
         <Button className="mt-3" onClick={importCsv} disabled={!csvFile}>
           Importar CSV (substitui todas as questões)
         </Button>
       </Card>
 
       <Card>
-        <h2 className="mb-2 font-semibold">Atualizar gabarito em lote</h2>
+        <h2 className="mb-2 font-semibold">Gabarito oficial (somente admin)</h2>
+        <p className="mb-2 text-sm text-slate-600">
+          A extração por IA <strong>não</strong> deve preencher gabarito. Se o ENEM ainda tiver letras
+          erradas da IA antiga, limpe tudo e cole o gabarito oficial abaixo.
+        </p>
+        <div className="mb-3 flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" onClick={limparGabaritos}>
+            Zerar todos os gabaritos
+          </Button>
+          {prova.questoes.some((q) => q.gabarito) && (
+            <span className="self-center text-xs text-amber-700">
+              {prova.questoes.filter((q) => q.gabarito).length} questão(ões) com gabarito preenchido
+            </span>
+          )}
+        </div>
         <p className="mb-2 text-sm text-slate-600">Uma linha por questão: número e letra. Ex: 1,C</p>
         <textarea
           className="w-full rounded-xl border p-3 font-mono text-sm"
@@ -401,7 +443,7 @@ export default function AdminProvaDetailPage() {
           onChange={(e) => setGabaritoLote(e.target.value)}
         />
         <Button className="mt-2" onClick={salvarGabaritoLote}>
-          Salvar gabarito
+          Salvar gabarito em lote
         </Button>
       </Card>
 

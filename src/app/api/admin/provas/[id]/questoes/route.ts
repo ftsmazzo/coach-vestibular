@@ -28,16 +28,18 @@ export async function POST(
 
   if (contentType.includes("text/csv") || contentType.includes("multipart")) {
     let csvText = "";
+    let incluirGabarito = false;
     if (contentType.includes("multipart")) {
       const form = await request.formData();
       const file = form.get("file") as File | null;
       if (!file) return NextResponse.json({ error: "Arquivo CSV obrigatório" }, { status: 400 });
       csvText = await file.text();
+      incluirGabarito = form.get("incluirGabarito") === "true";
     } else {
       csvText = await request.text();
     }
 
-    const rows = parseProvaQuestoesCsv(csvText);
+    const rows = parseProvaQuestoesCsv(csvText, { incluirGabarito });
     if (rows.length === 0) {
       return NextResponse.json({ error: "CSV vazio ou inválido" }, { status: 400 });
     }
