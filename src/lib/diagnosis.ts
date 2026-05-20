@@ -173,14 +173,32 @@ export function buildDiagnosis(
 
   const recoveryMode = detectRecoveryMode(overallAcerto, options?.checkInScore);
 
-  const focosTexto = focos.map((f) => f.label.split(" — ")[1] ?? f.label).join(", ");
+  const errosSemTema = currentAttempts.filter(
+    (a) => !a.correto && (!a.materiaId || !a.temaId)
+  ).length;
+
+  const focosFromMateria = materiaScores
+    .filter((m) => m.erros > 0 && m.taxaAcerto < 0.55)
+    .slice(0, 3)
+    .map((m) => ({
+      materiaId: m.materiaId,
+      temaId: "geral",
+      label: m.materiaLabel,
+      prioridade: "media" as const,
+      motivo: `${m.erros} erro(s) nesta área (estimativa por bloco da prova)`,
+    }));
+
+  const focosFinal = focos.length > 0 ? focos : focosFromMateria;
+  const focosTexto = focosFinal
+    .map((f) => f.label.split(" — ")[1] ?? f.label)
+    .join(", ");
   const melhoraMateria = materiaScores.find((m) => m.taxaAcerto >= 0.65);
 
   let mensagem: string;
   if (recoveryMode) {
     mensagem =
       `Este simulado foi pesado — e isso não define seu vestibular. ` +
-      `Um passo de cada vez: esta semana foque em no máximo ${focos.length || 2} temas (` +
+      `Um passo de cada vez: esta semana foque em no máximo ${focosFinal.length || 2} temas (` +
       `${focosTexto || "revisão leve"}). ` +
       `Você já demonstrou capacidade${melhoraMateria ? ` em ${melhoraMateria.materiaLabel}` : ""}. Respire, revise com calma.`;
   } else {
@@ -192,11 +210,16 @@ export function buildDiagnosis(
       `Compare com seus últimos simulados — a tendência importa mais que uma nota isolada.`;
   }
 
+  if (errosSemTema > 0 && focos.length === 0) {
+    mensagem +=
+      ` Para diagnóstico por tema, cole a análise do seu assistente (GPT) no registro do simulado — ou envie o caderno na Fase 2.`;
+  }
+
   return {
     overallAcerto,
     materiaScores,
     temaScores,
-    focos,
+    focos: focosFinal,
     fortes,
     fracos,
     recoveryMode,
