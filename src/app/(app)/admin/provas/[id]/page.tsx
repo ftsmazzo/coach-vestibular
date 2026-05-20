@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Card, Input, Label } from "@/components/ui";
 import { buildProvaNome } from "@/lib/prova-nome";
 
@@ -57,8 +57,10 @@ export default function AdminProvaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [prova, setProva] = useState<Prova | null>(null);
   const [gabaritoLote, setGabaritoLote] = useState("");
-  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const [csvFileName, setCsvFileName] = useState("");
   const [csvIncluirGabarito, setCsvIncluirGabarito] = useState(false);
+  const [importandoCsv, setImportandoCsv] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [textoProva, setTextoProva] = useState("");
   const [textoFaltantes, setTextoFaltantes] = useState("");
@@ -124,14 +126,42 @@ export default function AdminProvaDetailPage() {
   }
 
   async function importCsv() {
-    if (!csvFile) return;
+    const file = csvInputRef.current?.files?.[0];
+    if (!file) {
+      setMsg("Selecione um arquivo .csv antes de importar.");
+      return;
+    }
+    setImportandoCsv(true);
+    setMsg("");
     const fd = new FormData();
-    fd.append("file", csvFile);
+    fd.append("file", file);
     if (csvIncluirGabarito) fd.append("incluirGabarito", "true");
-    const res = await fetch(`/api/admin/provas/${id}/questoes`, { method: "POST", body: fd });
-    const data = await res.json();
-    setMsg(res.ok ? `Importadas ${data.imported} questões` : data.error);
-    load();
+    try {
+      const res = await fetch(`/api/admin/provas/${id}/questoes`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        const detalhe =
+          Array.isArray(data.avisos) && data.avisos.length > 0
+            ? ` ${data.avisos.join(" ")}`
+            : "";
+        setMsg(`${data.error ?? "Erro no import"}${detalhe}`);
+        return;
+      }
+      const avisoCsv =
+        Array.isArray(data.avisos) && data.avisos.length > 0
+          ? ` ${data.avisos.join(" ")}`
+          : "";
+      setMsg(
+        `Importadas ${data.imported} questões (substituiu todas as linhas anteriores).${avisoCsv}`
+      );
+      if (csvInputRef.current) csvInputRef.current.value = "";
+      setCsvFileName("");
+      load();
+    } catch {
+      setMsg("Falha de rede ao importar CSV — tente de novo.");
+    } finally {
+      setImportandoCsv(false);
+    }
   }
 
   async function completarFaltantes() {
@@ -295,7 +325,13 @@ export default function AdminProvaDetailPage() {
         </Button>
       </div>
 
-      {msg && <p className="text-sm text-teal-700">{msg}</p>}
+      {msg && (
+        <p
+          className={`text-sm ${msg.includes("Erro") || msg.includes("Falha") || msg.includes("inválido") ? "text-rose-700" : "text-teal-700"}`}
+        >
+          {msg}
+        </p>
+      )}
 
       {prova.bancoIncompleto && prova.questoesFaltando && prova.questoesFaltando.length > 0 && (
         <Card className="border-amber-200 bg-amber-50/60">
@@ -489,12 +525,22 @@ export default function AdminProvaDetailPage() {
       <Card>
         <h2 className="mb-2 font-semibold">Importar planilha CSV (GPT)</h2>
         <p className="mb-3 text-sm text-slate-600">
-          Colunas por questão (prova já cadastrada acima): Número, Área/Bloco, Matéria, Assunto,
-          Conhecimento, Dificuldade, Observações, Gabarito. Colunas Prova/Caderno do GPT são
-          ignoradas. Template:{" "}
+          Colunas usadas por questão: Número, Área/Bloco, Matéria, Assunto, Conhecimento,
+          Dificuldade, Observações, Gabarito (opcional). Colunas extras como Prova, Caderno, Tipo ou
+          Vestibular são <strong>ignoradas</strong> — os metadados vêm do cadastro acima. Aceita CSV
+          com vírgula ou ponto-e-vírgula (Excel BR). Template:{" "}
           <code className="text-xs">docs/templates/prova-questoes.csv</code>
         </p>
-        <Input type="file" accept=".csv" onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)} />
+        <input
+          ref={csvInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-teal-800"
+          onChange={(e) => setCsvFileName(e.target.files?.[0]?.name ?? "")}
+        />
+        {csvFileName && (
+          <p className="mt-1 text-xs text-slate-600">Arquivo selecionado: {csvFileName}</p>
+        )}
         <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
           <input
             type="checkbox"
@@ -503,8 +549,13 @@ export default function AdminProvaDetailPage() {
           />
           Importar coluna Gabarito do CSV (só se for gabarito oficial)
         </label>
-        <Button className="mt-3" onClick={importCsv} disabled={!csvFile}>
-          Importar CSV (substitui todas as questões)
+        <Button
+          type="button"
+          className="mt-3"
+          onClick={importCsv}
+          disabled={importandoCsv || !csvFileName}
+        >
+          {importandoCsv ? "Importando..." : "Importar CSV (substitui todas as questões)"}
         </Button>
       </Card>
 

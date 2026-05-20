@@ -29,35 +29,73 @@ export type QuestaoExtraida = z.infer<typeof questaoExtraidaSchema>;
 
 const SYSTEM_PROMPT = `Você classifica questões objetivas de provas vestibulares (ENEM, UFU, Fuvest, simulados).
 
-O cadastro da prova (instituição, ano, caderno, vestibular) já foi feito pelo admin — NÃO repita nome da prova nem caderno por questão.
+O cadastro da prova (instituição, ano, caderno) já foi feito pelo admin — NÃO repita nome da prova nem caderno por questão.
 
-Para CADA questão no texto, retorne JSON:
-- numero: número da questão na prova
-- areaBloco: bloco grande da prova, se aplicável — senão omita/null
-- materia: disciplina principal (string obrigatória; se incerto use "A classificar")
-- assunto: tema específico (string obrigatória; se incerto use "A classificar")
+OBJETIVO PRINCIPAL: cobertura completa. Para CADA questão numerada visível no trecho, inclua um objeto em "questoes".
+
+Campos por questão:
+- numero: número oficial na prova (inteiro)
+- areaBloco: bloco ENEM ou área, se aplicável — senão null
+- materia: disciplina (obrigatório; se incerto: "A classificar")
+- assunto: tema específico (obrigatório; se incerto: "A classificar")
 - conhecimentoExigido: frase curta ou null
 - nivelDificuldade: facil | media | dificil ou null
-- observacoes: só se necessário
+- observacoes: ambiguidade, imagem, interdisciplinar — ou null
+
+REGRAS DE COBERTURA (prioridade máxima):
+- NÃO omita questões numeradas que aparecem no texto, mesmo com enunciado incompleto ou cortado no fim do trecho.
+- Se o trecho termina no meio de uma questão, classifique-a com o número visível e "A classificar" onde faltar contexto.
+- Se matéria/assunto forem ambíguos, use melhor hipótese OU "A classificar" — mas SEMPRE inclua a linha da questão.
+- Não invente números que não aparecem no trecho.
+- Não misture matéria com assunto.
 
 PROIBIDO:
-- NÃO use null em materia nem assunto — use sempre string.
-- NÃO inclua gabarito nem letra A–E.
+- gabarito, resposta correta, letra A–E
+- null em materia/assunto (use string)
 
-REGRAS:
-- Não misture matéria com assunto.
-- Não invente número de questão inexistente.
+Formato: { "questoes": [...], "avisos": ["..."], "resumo": "..." }
+No resumo, indique quantas questões classificou e o intervalo de números (ex.: "34 questões, nº 1–34").`;
 
-Formato: { "questoes": [...], "avisos": [...], "resumo": "..." }`;
+/** Quebra preferencial antes de marcadores de questão (evita cortar no meio). */
+function findSoftBreakEnd(slice: string, minRatio = 0.35): number {
+  const patterns = [
+    /\n\s*(?:QUEST[ÃA]O|Questão|Q\.)\s*\d+/gi,
+    /\n\s*\d{1,3}\s*[\.\)]\s/g,
+    /\n\s*—\s*\d{1,3}\s*—/g,
+  ];
+  let best = -1;
+  for (const re of patterns) {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(slice)) !== null) {
+      if (m.index >= slice.length * minRatio) best = Math.max(best, m.index);
+    }
+  }
+  return best;
+}
 
-function chunkText(text: string, maxLen = 14000): string[] {
+function chunkText(text: string, maxLen = 10000, overlap = 2000): string[] {
   if (text.length <= maxLen) return [text];
+
   const chunks: string[] = [];
   let start = 0;
+
   while (start < text.length) {
-    chunks.push(text.slice(start, start + maxLen));
-    start += maxLen;
+    let end = Math.min(start + maxLen, text.length);
+
+    if (end < text.length) {
+      const slice = text.slice(start, end);
+      const soft = findSoftBreakEnd(slice);
+      if (soft > 0) end = start + soft;
+    }
+
+    chunks.push(text.slice(start, end));
+
+    if (end >= text.length) break;
+    const nextStart = end - overlap;
+    start = nextStart > start ? nextStart : end;
   }
+
   return chunks;
 }
 
@@ -82,9 +120,30 @@ function stripGabaritoFromRaw(parsed: unknown): unknown {
   };
 }
 
+function numerosFaltantes(
+  questoes: QuestaoExtraida[],
+  totalEsperado?: number
+): number[] {
+  if (!totalEsperado || totalEsperado < 1) return [];
+  const presentes = new Set(questoes.map((q) => q.numero));
+  const faltando: number[] = [];
+  for (let n = 1; n <= totalEsperado; n++) {
+    if (!presentes.has(n)) faltando.push(n);
+  }
+  return faltando;
+}
+
 async function callOpenAI(
   userContent: string,
-  provaContext: { nome: string; banca: string; ano?: number | null; caderno?: string | null; totalEsperado?: number }
+  provaContext: {
+    nome: string;
+    banca: string;
+    ano?: number | null;
+    caderno?: string | null;
+    totalEsperado?: number;
+    parte?: string;
+    numerosAlvo?: number[];
+  }
 ): Promise<z.infer<typeof respostaSchema>> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -96,7 +155,11 @@ async function callOpenAI(
     `Banca/vestibular: ${provaContext.banca}`,
     provaContext.ano ? `Ano: ${provaContext.ano}` : null,
     provaContext.caderno ? `Caderno/tipo: ${provaContext.caderno}` : null,
-    `Total esperado: ${provaContext.totalEsperado ?? "desconhecido"}`,
+    `Total esperado na prova: ${provaContext.totalEsperado ?? "desconhecido"}`,
+    provaContext.parte ? `Trecho: ${provaContext.parte}` : null,
+    provaContext.numerosAlvo?.length
+      ? `Classifique APENAS estas questões (números): ${provaContext.numerosAlvo.join(", ")}`
+      : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -109,16 +172,16 @@ async function callOpenAI(
     },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-      temperature: 0.2,
+      temperature: 0.15,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `${meta}\n\nConteúdo das questões (classifique apenas o pedagógico por linha):\n${userContent}`,
+          content: `${meta}\n\nConteúdo (classifique TODAS as questões numeradas neste trecho):\n${userContent}`,
         },
       ],
-      max_tokens: 8000,
+      max_tokens: 16384,
     }),
   });
 
@@ -131,10 +194,17 @@ async function callOpenAI(
   const raw = data.choices?.[0]?.message?.content;
   if (!raw) throw new Error("Resposta vazia da IA");
 
+  const finishReason = data.choices?.[0]?.finish_reason;
   const parsed = stripGabaritoFromRaw(JSON.parse(raw));
   const result = respostaSchema.parse(parsed);
 
   const avisos = [...(result.avisos ?? [])];
+  if (finishReason === "length") {
+    avisos.push(
+      "Resposta da IA truncada (limite de tokens) — pode faltar questões neste trecho. Tente CSV ou complete faltantes."
+    );
+  }
+
   for (const q of result.questoes) {
     if (q.materia === "A classificar" || q.assunto === "A classificar") {
       avisos.push(`Questão ${q.numero}: matéria/assunto incertos — revise manualmente.`);
@@ -155,11 +225,61 @@ function mergeQuestoes(all: QuestaoExtraida[]): QuestaoExtraida[] {
     map.set(q.numero, {
       ...existing,
       ...q,
+      areaBloco: q.areaBloco ?? existing.areaBloco,
       materia: q.materia !== "A classificar" ? q.materia : existing.materia,
       assunto: q.assunto !== "A classificar" ? q.assunto : existing.assunto,
+      conhecimentoExigido: q.conhecimentoExigido ?? existing.conhecimentoExigido,
+      nivelDificuldade: q.nivelDificuldade ?? existing.nivelDificuldade,
+      observacoes: q.observacoes ?? existing.observacoes,
     });
   }
   return [...map.values()].sort((a, b) => a.numero - b.numero);
+}
+
+/** Extrai trechos do texto que mencionam números de questão faltantes (para repasse focado). */
+function extrairTrechoParaNumeros(texto: string, numeros: number[]): string {
+  const lines = texto.split(/\r?\n/);
+  const wanted = new Set(numeros);
+  const chunks: string[] = [];
+  let buf: string[] = [];
+
+  const flush = () => {
+    if (buf.length) chunks.push(buf.join("\n"));
+    buf = [];
+  };
+
+  const matchesNumero = (line: string): number | null => {
+    const patterns = [
+      /(?:QUEST[ÃA]O|Questão|Q\.?)\s*(\d{1,3})/i,
+      /^(\d{1,3})\s*[\.\)]\s/,
+      /^(\d{1,3})\s*[-–—]\s/,
+    ];
+    for (const re of patterns) {
+      const m = line.match(re);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (wanted.has(n)) return n;
+      }
+    }
+    return null;
+  };
+
+  let active = false;
+  for (const line of lines) {
+    const n = matchesNumero(line);
+    if (n != null) {
+      if (active) flush();
+      active = true;
+      buf = [line];
+    } else if (active) {
+      buf.push(line);
+      if (buf.length > 80) flush();
+    }
+  }
+  flush();
+
+  if (chunks.length > 0) return chunks.join("\n\n---\n\n");
+  return texto.slice(0, 12000);
 }
 
 export async function extrairQuestoesComIA(
@@ -185,18 +305,52 @@ export async function extrairQuestoesComIA(
   const allQuestoes: QuestaoExtraida[] = [];
   const allAvisos: string[] = [];
 
+  if (chunks.length > 1) {
+    allAvisos.push(
+      `Prova dividida em ${chunks.length} partes para a IA (com sobreposição para não perder questões nas bordas).`
+    );
+  }
+
   for (let i = 0; i < chunks.length; i++) {
     const result = await callOpenAI(
-      chunks.length > 1
-        ? `[Parte ${i + 1}/${chunks.length}]\n${chunks[i]}`
-        : chunks[i],
-      provaContext
+      chunks.length > 1 ? `[Parte ${i + 1}/${chunks.length}]\n${chunks[i]}` : chunks[i],
+      {
+        ...provaContext,
+        parte: chunks.length > 1 ? `${i + 1}/${chunks.length}` : undefined,
+      }
     );
     allQuestoes.push(...result.questoes);
     if (result.avisos) allAvisos.push(...result.avisos);
   }
 
-  const questoes = mergeQuestoes(allQuestoes);
+  let questoes = mergeQuestoes(allQuestoes);
+
+  const faltando = numerosFaltantes(questoes, provaContext.totalEsperado);
+  if (faltando.length > 0 && faltando.length <= 25) {
+    allAvisos.push(
+      `Após extração faltam ${faltando.length} questão(ões): nº ${faltando.slice(0, 15).join(", ")}${faltando.length > 15 ? "…" : ""}. Tentando repasse focado…`
+    );
+    const trecho = extrairTrechoParaNumeros(trimmed, faltando);
+    try {
+      const retry = await callOpenAI(trecho, {
+        ...provaContext,
+        parte: "repasse faltantes",
+        numerosAlvo: faltando,
+      });
+      questoes = mergeQuestoes([...questoes, ...retry.questoes]);
+      if (retry.avisos) allAvisos.push(...retry.avisos);
+    } catch {
+      allAvisos.push("Repasse focado falhou — use o bloco «Completar faltantes» ou CSV.");
+    }
+  }
+
+  const aindaFaltando = numerosFaltantes(questoes, provaContext.totalEsperado);
+  if (aindaFaltando.length > 0) {
+    allAvisos.push(
+      `Ainda faltam ${aindaFaltando.length} de ${provaContext.totalEsperado} questões: nº ${aindaFaltando.slice(0, 20).join(", ")}${aindaFaltando.length > 20 ? ` (+${aindaFaltando.length - 20})` : ""}.`
+    );
+  }
+
   if (questoes.length === 0) {
     allAvisos.push("Nenhuma questão identificada — revise o texto ou use CSV do GPT.");
   }
@@ -204,6 +358,6 @@ export async function extrairQuestoesComIA(
   return {
     questoes,
     avisos: allAvisos,
-    resumo: `${questoes.length} questões extraídas`,
+    resumo: `${questoes.length} questões extraídas${provaContext.totalEsperado ? ` (meta: ${provaContext.totalEsperado})` : ""}`,
   };
 }

@@ -41,9 +41,15 @@ export async function POST(
       csvText = await request.text();
     }
 
-    const rows = parseProvaQuestoesCsv(csvText, { incluirGabarito });
+    const { rows, avisos } = parseProvaQuestoesCsv(csvText, { incluirGabarito });
     if (rows.length === 0) {
-      return NextResponse.json({ error: "CSV vazio ou inválido" }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "CSV vazio ou inválido",
+          avisos,
+        },
+        { status: 400 }
+      );
     }
 
     if (substituir) {
@@ -95,7 +101,12 @@ export async function POST(
       where: { provaId },
       orderBy: { numero: "asc" },
     });
-    return NextResponse.json({ imported: rows.length, questoes });
+    return NextResponse.json({
+      imported: rows.length,
+      substituiu: substituir,
+      avisos,
+      questoes,
+    });
   }
 
   const body = z.union([questaoSchema, z.array(questaoSchema)]).parse(await request.json());
