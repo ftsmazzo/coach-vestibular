@@ -25,6 +25,51 @@ enum QuestStatus {
   skipped
 }
 
+enum ProvaTipo {
+  ENEM_OFICIAL
+  SIMULADO
+  VESTIBULAR
+  OUTRO
+}
+
+/// Prova cadastrada pelo admin — banco de questões (uma linha por questão)
+model Prova {
+  id              String    @id @default(cuid())
+  nome            String
+  banca           String    @default("ENEM")
+  tipo            ProvaTipo @default(SIMULADO)
+  ano             Int?
+  dia             Int?
+  caderno         String?
+  descricao       String?
+  totalQuestoes   Int
+  publicada       Boolean   @default(false)
+  gabaritoCompleto Boolean  @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  questoes ProvaQuestao[]
+  tentativas Exam[]
+}
+
+/// Uma questão da prova — matéria, assunto, conhecimento, gabarito (update posterior)
+model ProvaQuestao {
+  id                  String  @id @default(cuid())
+  provaId             String
+  numero              Int
+  caderno             String?
+  materia             String
+  assunto             String
+  conhecimentoExigido String?
+  gabarito            String?
+
+  prova     Prova              @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  tentativas QuestionAttempt[]
+
+  @@unique([provaId, numero])
+  @@index([provaId, materia])
+}
+
 model User {
   id              String   @id @default(cuid())
   email           String   @unique
@@ -52,9 +97,11 @@ model InviteCode {
   createdAt DateTime @default(now())
 }
 
+/// Tentativa do aluno vinculada a uma Prova cadastrada (ou avulsa legado)
 model Exam {
   id             String   @id @default(cuid())
   userId         String
+  provaId        String?
   nome           String
   data           DateTime
   banca          String?  @default("ENEM")
@@ -64,23 +111,27 @@ model Exam {
   recoveryMode   Boolean  @default(false)
   createdAt      DateTime @default(now())
 
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  questionAttempts  QuestionAttempt[]
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prova              Prova?              @relation(fields: [provaId], references: [id], onDelete: SetNull)
+  questionAttempts   QuestionAttempt[]
   diagnosticSnapshot DiagnosticSnapshot?
-  emotionalLog      EmotionalLog?
+  emotionalLog       EmotionalLog?
 }
 
 model QuestionAttempt {
-  id        String     @id @default(cuid())
-  examId    String
-  numero    Int
-  correto   Boolean
-  materiaId String?
-  temaId    String?
-  tipoErro  ErrorType?
-  observacao String?
+  id             String     @id @default(cuid())
+  examId         String
+  provaQuestaoId String?
+  numero         Int
+  correto        Boolean
+  respostaAluno  String?
+  materiaId      String?
+  temaId         String?
+  tipoErro       ErrorType?
+  observacao     String?
 
-  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  exam         Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  provaQuestao ProvaQuestao? @relation(fields: [provaQuestaoId], references: [id], onDelete: SetNull)
 
   @@unique([examId, numero])
 }
@@ -100,12 +151,12 @@ model DiagnosticSnapshot {
 }
 
 model StudyPlan {
-  id          String   @id @default(cuid())
-  userId      String
-  weekStart   DateTime
-  itemsJson   String
-  recoveryMode Boolean @default(false)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  weekStart    DateTime
+  itemsJson    String
+  recoveryMode Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -141,10 +192,10 @@ model EmotionalLog {
 }
 
 model UploadJob {
-  id        String   @id @default(cuid())
-  userId    String
-  fileName  String
-  status    String   @default("pending")
+  id         String   @id @default(cuid())
+  userId     String
+  fileName   String
+  status     String   @default("pending")
   resultJson String?
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
 }

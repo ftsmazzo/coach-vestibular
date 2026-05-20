@@ -42,16 +42,28 @@ export function Nav({ userName, role }: { userName: string; role?: string }) {
             </Link>
           ))}
           {role === "ADMIN" && (
-            <Link
-              href="/admin/convites"
-              className={`rounded-lg px-3 py-1.5 text-sm ${
-                pathname.startsWith("/admin")
-                  ? "bg-teal-50 font-medium text-teal-800"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Convites
-            </Link>
+            <>
+              <Link
+                href="/admin/provas"
+                className={`rounded-lg px-3 py-1.5 text-sm ${
+                  pathname.startsWith("/admin/provas")
+                    ? "bg-teal-50 font-medium text-teal-800"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                Provas
+              </Link>
+              <Link
+                href="/admin/convites"
+                className={`rounded-lg px-3 py-1.5 text-sm ${
+                  pathname.startsWith("/admin/convites")
+                    ? "bg-teal-50 font-medium text-teal-800"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                Convites
+              </Link>
+            </>
           )}
         </nav>
         <div className="flex items-center gap-3">

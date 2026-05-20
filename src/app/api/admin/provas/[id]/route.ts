@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireAdmin } from "@/lib/admin-auth";
+import { prisma } from "@/lib/prisma";
+import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  const { id } = await params;
+  const prova = await prisma.prova.findUnique({
+    where: { id },
+    include: {
+      questoes: { orderBy: { numero: "asc" } },
+      _count: { select: { tentativas: true } },
+    },
+  });
+  if (!prova) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
+  return NextResponse.json(prova);
+}
+
+const patchSchema = z.object({
+  nome: z.string().optional(),
+  banca: z.string().optional(),
+  tipo: z.enum(["ENEM_OFICIAL", "SIMULADO", "VESTIBULAR", "OUTRO"]).optional(),
+  ano: z.number().int().optional().nullable(),
+  dia: z.number().int().optional().nullable(),
+  caderno: z.string().optional().nullable(),
+  descricao: z.string().optional().nullable(),
+  totalQuestoes: z.number().int().positive().optional(),
+  publicada: z.boolean().optional(),
+});
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  const { id } = await params;
+  const body = patchSchema.parse(await request.json());
+  const prova = await prisma.prova.update({ where: { id }, data: body });
+  return NextResponse.json(prova);
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  const { id } = await params;
+  await prisma.prova.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}

@@ -16,7 +16,11 @@ export default async function SimuladoDetailPage({
   const { id } = await params;
   const exam = await prisma.exam.findFirst({
     where: { id, userId: session.userId },
-    include: { questionAttempts: true, diagnosticSnapshot: true },
+    include: {
+      prova: true,
+      questionAttempts: { include: { provaQuestao: true }, orderBy: { numero: "asc" } },
+      diagnosticSnapshot: true,
+    },
   });
 
   if (!exam) notFound();
@@ -77,7 +81,25 @@ export default async function SimuladoDetailPage({
                 }`}
               >
                 <span>
-                  Q{q.numero} — {getMateriaLabel(q.materiaId)} / {getTemaLabel(q.materiaId, q.temaId)}
+                  Q{q.numero}
+                  {q.provaQuestao ? (
+                    <>
+                      {" "}
+                      — {q.provaQuestao.materia} / {q.provaQuestao.assunto}
+                      {q.respostaAluno && (
+                        <span className="text-slate-500">
+                          {" "}
+                          (sua: {q.respostaAluno}
+                          {q.provaQuestao.gabarito ? ` · gab: ${q.provaQuestao.gabarito}` : ""})
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {" "}
+                      — {getMateriaLabel(q.materiaId)} / {getTemaLabel(q.materiaId, q.temaId)}
+                    </>
+                  )}
                   {!q.correto && q.tipoErro && (
                     <span className="text-slate-500"> ({getTipoErroLabel(q.tipoErro)})</span>
                   )}
