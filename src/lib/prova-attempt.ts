@@ -3,7 +3,7 @@ import { prisma } from "./prisma";
 import { buildDiagnosis, type AttemptInput } from "./diagnosis";
 import { generateStudyPlan, planToQuests } from "./study-plan";
 import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
-import { normalizarAlternativas } from "./gabarito";
+import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
 
 export interface RegistrarTentativaInput {
   userId: string;
@@ -11,11 +11,18 @@ export interface RegistrarTentativaInput {
   data?: string;
   checkInScore?: number;
   nota?: number;
-  /** Sequência de respostas A–E na ordem das questões */
+  /** Linhas número,letra — gabarito do aluno (recomendado) */
+  gabaritoAluno?: string;
+  /** Sequência de respostas A–E na ordem das questões cadastradas */
   respostas?: string;
-  /** Apenas números das questões erradas (resto = acerto se tiver gabarito implícito) */
+  /** Só números errados — análise parcial se não houver gabarito do aluno */
   apenasErros?: number[];
 }
+
+type AttemptWithMeta = AttemptInput & {
+  provaQuestaoId?: string;
+  respostaAluno?: string;
+};
 
 function buildAttemptsFromProva(
   questoes: Array<{
@@ -25,43 +32,91 @@ function buildAttemptsFromProva(
     assunto: string;
     gabarito: string | null;
   }>,
-  respostasNorm: string,
+  respostasPorNumero: Map<number, string>,
   apenasErros?: number[]
-): AttemptWithMeta[] {
+): { attempts: AttemptWithMeta[]; analiseCompleta: boolean; avisos: string[] } {
   const erroSet = apenasErros ? new Set(apenasErros) : null;
+  const avisos: string[] = [];
+  let comRespostaAluno = 0;
+  let comparadosComOficial = 0;
+  let errosConfirmados = 0;
 
-  return questoes.map((q, i) => {
-    const respostaAluno = respostasNorm[i]?.toUpperCase();
-    let correto = false;
+  const modoGabaritoAluno = respostasPorNumero.size > 0;
 
-    if (erroSet) {
-      correto = !erroSet.has(q.numero);
-    } else if (q.gabarito && respostaAluno) {
-      correto = q.gabarito.toUpperCase() === respostaAluno;
-    } else if (respostaAluno && !q.gabarito) {
-      correto = false;
-    } else {
-      correto = true;
-    }
+  const attempts = questoes
+    .map((q) => {
+      const respostaAluno = respostasPorNumero.get(q.numero)?.toUpperCase();
 
-    const { materiaId, temaId } = mapMateriaAssuntoToTaxonomy(q.materia, q.assunto);
+      if (modoGabaritoAluno && !respostaAluno && !erroSet?.has(q.numero)) {
+        return null;
+      }
 
-    return {
-      numero: q.numero,
-      correto,
-      materiaId: materiaId ?? undefined,
-      temaId: temaId ?? undefined,
-      tipoErro: undefined,
-      provaQuestaoId: q.id,
-      respostaAluno: respostaAluno || undefined,
-    };
-  });
+      if (respostaAluno) comRespostaAluno++;
+
+      let correto = false;
+
+      if (respostaAluno && q.gabarito) {
+        correto = q.gabarito.toUpperCase() === respostaAluno;
+        comparadosComOficial++;
+        if (!correto) errosConfirmados++;
+      } else if (respostaAluno && !q.gabarito && erroSet) {
+        correto = !erroSet.has(q.numero);
+        if (!correto) errosConfirmados++;
+      } else if (erroSet) {
+        correto = !erroSet.has(q.numero);
+        if (!correto) errosConfirmados++;
+      } else if (respostaAluno) {
+        correto = false;
+      } else {
+        correto = true;
+      }
+
+      const { materiaId, temaId } = mapMateriaAssuntoToTaxonomy(q.materia, q.assunto);
+
+      return {
+        numero: q.numero,
+        correto,
+        materiaId: materiaId ?? undefined,
+        temaId: temaId ?? undefined,
+        tipoErro: undefined,
+        provaQuestaoId: q.id,
+        respostaAluno,
+      };
+    })
+    .filter((a): a is AttemptWithMeta => a != null);
+
+  const gabaritoOficialCount = questoes.filter((q) => q.gabarito).length;
+  const analiseCompleta = comRespostaAluno > 0 || Boolean(erroSet && errosConfirmados > 0);
+
+  if (erroSet && comRespostaAluno === 0) {
+    avisos.push(
+      "Modo só erros: suas alternativas (A–E) não foram salvas. Para análise completa, use «Meu gabarito»."
+    );
+  } else if (comRespostaAluno > 0 && gabaritoOficialCount === 0) {
+    avisos.push(
+      "Gabarito oficial ainda não cadastrado na prova — erros confirmados só onde você listou ou quando o admin publicar o oficial."
+    );
+  } else if (comRespostaAluno > 0 && comparadosComOficial < comRespostaAluno) {
+    avisos.push(
+      `Gabarito oficial parcial (${comparadosComOficial}/${comRespostaAluno} das suas respostas comparadas).`
+    );
+  }
+
+  return { attempts, analiseCompleta, avisos };
 }
 
-type AttemptWithMeta = AttemptInput & {
-  provaQuestaoId?: string;
-  respostaAluno?: string;
-};
+function respostasPorNumeroFromInput(
+  questoes: Array<{ numero: number }>,
+  input: RegistrarTentativaInput
+): Map<number, string> {
+  if (input.gabaritoAluno?.trim()) {
+    return parseGabaritoLote(input.gabaritoAluno);
+  }
+  if (input.respostas?.trim()) {
+    return sequenciaParaMapaPorNumero(questoes, input.respostas);
+  }
+  return new Map();
+}
 
 export async function registrarTentativaProva(input: RegistrarTentativaInput) {
   const prova = await prisma.prova.findUnique({
@@ -73,10 +128,18 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
   if (!prova.publicada) throw new Error("PROVA_NOT_PUBLISHED");
   if (prova.questoes.length === 0) throw new Error("PROVA_EMPTY");
 
-  const respostasNorm = input.respostas ? normalizarAlternativas(input.respostas) : "";
-  const rawAttempts = buildAttemptsFromProva(
+  const temGabaritoAluno =
+    Boolean(input.gabaritoAluno?.trim()) || Boolean(input.respostas?.trim());
+  const temErros = Boolean(input.apenasErros?.length);
+
+  if (!temGabaritoAluno && !temErros) {
+    throw new Error("GABARITO_ALUNO_OBRIGATORIO");
+  }
+
+  const respostasPorNumero = respostasPorNumeroFromInput(prova.questoes, input);
+  const { attempts: rawAttempts, analiseCompleta, avisos } = buildAttemptsFromProva(
     prova.questoes,
-    respostasNorm,
+    respostasPorNumero,
     input.apenasErros
   );
 
@@ -118,6 +181,10 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     { checkInScore: input.checkInScore }
   );
 
+  if (!analiseCompleta && avisos.length > 0) {
+    diagnosis.mensagem = `${diagnosis.mensagem} ${avisos[0]}`;
+  }
+
   const exam = await prisma.exam.create({
     data: {
       userId: input.userId,
@@ -153,6 +220,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
             materiaScores: diagnosis.materiaScores,
             temaScores: diagnosis.temaScores,
             provaId: prova.id,
+            analiseCompleta,
           }),
           focosJson: JSON.stringify(diagnosis.focos),
           mensagem: diagnosis.mensagem,
@@ -181,7 +249,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
 
   await prisma.quest.createMany({ data: planToQuests(items, input.userId) });
 
-  return { exam, diagnosis, prova };
+  return { exam, diagnosis, prova, analiseCompleta, avisos };
 }
 
 export async function refreshProvaGabaritoFlag(provaId: string) {

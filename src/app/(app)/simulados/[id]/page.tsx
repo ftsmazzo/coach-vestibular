@@ -69,45 +69,53 @@ export default async function SimuladoDetailPage({
       )}
 
       <Card>
-        <h2 className="mb-4 font-semibold">Questões</h2>
-        <ul className="space-y-2 text-sm">
-          {exam.questionAttempts
-            .sort((a, b) => a.numero - b.numero)
-            .map((q) => (
-              <li
-                key={q.id}
-                className={`flex justify-between rounded-lg px-2 py-1 ${
-                  q.correto ? "bg-emerald-50" : "bg-rose-50"
-                }`}
-              >
-                <span>
-                  Q{q.numero}
-                  {q.provaQuestao ? (
-                    <>
-                      {" "}
-                      — {q.provaQuestao.materia} / {q.provaQuestao.assunto}
-                      {q.respostaAluno && (
-                        <span className="text-slate-500">
-                          {" "}
-                          (sua: {q.respostaAluno}
-                          {q.provaQuestao.gabarito ? ` · gab: ${q.provaQuestao.gabarito}` : ""})
-                        </span>
+        <h2 className="mb-4 font-semibold">Questões — seu gabarito × oficial</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-slate-500">
+                <th className="p-2">#</th>
+                <th className="p-2">Sua resposta</th>
+                <th className="p-2">Gabarito oficial</th>
+                <th className="p-2">Conteúdo</th>
+                <th className="p-2 text-right">Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {exam.questionAttempts
+                .sort((a, b) => a.numero - b.numero)
+                .map((q) => (
+                  <tr
+                    key={q.id}
+                    className={`border-b border-slate-100 ${
+                      q.correto ? "bg-emerald-50/50" : "bg-rose-50/50"
+                    }`}
+                  >
+                    <td className="p-2 font-medium">{q.numero}</td>
+                    <td className="p-2 font-mono">{q.respostaAluno ?? "—"}</td>
+                    <td className="p-2 font-mono">
+                      {q.provaQuestao?.gabarito ?? "—"}
+                    </td>
+                    <td className="p-2 max-w-xs truncate text-slate-600">
+                      {q.provaQuestao
+                        ? `${q.provaQuestao.materia} / ${q.provaQuestao.assunto}`
+                        : `${getMateriaLabel(q.materiaId)} / ${getTemaLabel(q.materiaId, q.temaId)}`}
+                      {!q.correto && q.tipoErro && (
+                        <span className="text-slate-400"> ({getTipoErroLabel(q.tipoErro)})</span>
                       )}
-                    </>
-                  ) : (
-                    <>
-                      {" "}
-                      — {getMateriaLabel(q.materiaId)} / {getTemaLabel(q.materiaId, q.temaId)}
-                    </>
-                  )}
-                  {!q.correto && q.tipoErro && (
-                    <span className="text-slate-500"> ({getTipoErroLabel(q.tipoErro)})</span>
-                  )}
-                </span>
-                <span>{q.correto ? "✓" : "✗"}</span>
-              </li>
-            ))}
-        </ul>
+                    </td>
+                    <td className="p-2 text-right">{q.correto ? "✓" : "✗"}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+        {exam.questionAttempts.every((q) => !q.respostaAluno) && (
+          <p className="mt-3 text-xs text-amber-700">
+            Este registro não incluiu seu gabarito (modo «só erros»). Na próxima vez, use «Meu
+            gabarito» para ver acertos e erros questão a questão.
+          </p>
+        )}
       </Card>
 
       <Link href="/plano">

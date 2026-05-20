@@ -8,6 +8,8 @@ const schema = z.object({
   data: z.string().optional(),
   checkInScore: z.number().int().min(1).max(5).optional(),
   nota: z.number().optional(),
+  /** Uma linha por questão: 1,C */
+  gabaritoAluno: z.string().optional(),
   respostas: z.string().optional(),
   apenasErros: z.array(z.number().int().positive()).optional(),
 });
@@ -18,9 +20,15 @@ export async function POST(request: Request) {
 
   try {
     const body = schema.parse(await request.json());
-    if (!body.respostas && (!body.apenasErros || body.apenasErros.length === 0)) {
+    const temGabarito =
+      Boolean(body.gabaritoAluno?.trim()) || Boolean(body.respostas?.trim());
+    const temErros = Boolean(body.apenasErros?.length);
+    if (!temGabarito && !temErros) {
       return NextResponse.json(
-        { error: "Informe suas respostas ou a lista de questões erradas" },
+        {
+          error:
+            "Informe seu gabarito (número e letra por questão), uma sequência de respostas ou a lista de erros",
+        },
         { status: 400 }
       );
     }
@@ -37,6 +45,12 @@ export async function POST(request: Request) {
     }
     if (msg === "PROVA_NOT_PUBLISHED") {
       return NextResponse.json({ error: "Prova não disponível" }, { status: 403 });
+    }
+    if (msg === "GABARITO_ALUNO_OBRIGATORIO") {
+      return NextResponse.json(
+        { error: "Informe seu gabarito ou os números das questões erradas" },
+        { status: 400 }
+      );
     }
     console.error(e);
     return NextResponse.json({ error: "Erro ao registrar tentativa" }, { status: 500 });

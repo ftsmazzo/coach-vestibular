@@ -27,9 +27,12 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
           <p className="text-slate-600">Sua evolução importa mais que um simulado isolado.</p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/simulados/novo">
-            <Button>Novo simulado</Button>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/provas">
+            <Button>Provas públicas</Button>
+          </Link>
+          <Link href="/simulados">
+            <Button variant="secondary">Meus registros</Button>
           </Link>
         </div>
       </div>

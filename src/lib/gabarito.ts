@@ -31,6 +31,43 @@ export function parseListaErros(texto: string): number[] {
   return [...result].sort((a, b) => a - b);
 }
 
+/**
+ * Gabarito do aluno ou oficial em lote — uma linha por questão.
+ * Ex.: 1,C | 2, A | 3;B | 12.D
+ */
+export function parseGabaritoLote(texto: string): Map<number, string> {
+  const map = new Map<number, string>();
+  for (const linha of texto.split(/\r?\n/)) {
+    const trimmed = linha.trim();
+    if (!trimmed) continue;
+
+    const match =
+      trimmed.match(/^(\d{1,3})\s*[,;\s]+\s*([A-Ea-e])\b/i) ??
+      trimmed.match(/^(\d{1,3})\s*[\.\):\-–]\s*([A-Ea-e])\b/i);
+
+    if (!match) continue;
+    const numero = parseInt(match[1], 10);
+    const letra = match[2].toUpperCase();
+    if (numero > 0 && /^[A-E]$/.test(letra)) {
+      map.set(numero, letra);
+    }
+  }
+  return map;
+}
+
+/** Converte sequência contínua A–E para mapa por número das questões (ordem crescente). */
+export function sequenciaParaMapaPorNumero(
+  questoesOrdenadas: { numero: number }[],
+  textoRespostas: string
+): Map<number, string> {
+  const letras = normalizarAlternativas(textoRespostas);
+  const map = new Map<number, string>();
+  for (let i = 0; i < questoesOrdenadas.length && i < letras.length; i++) {
+    map.set(questoesOrdenadas[i].numero, letras[i]);
+  }
+  return map;
+}
+
 /** Normaliza sequência de alternativas (A–E), ignora espaços e quebras */
 export function normalizarAlternativas(texto: string): string {
   return texto

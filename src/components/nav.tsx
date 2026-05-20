@@ -6,7 +6,8 @@ import { Button } from "./ui";
 
 const links = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/simulados", label: "Simulados" },
+  { href: "/provas", label: "Provas" },
+  { href: "/simulados", label: "Meus registros" },
   { href: "/plano", label: "Plano" },
   { href: "/quests", label: "Quests" },
 ];

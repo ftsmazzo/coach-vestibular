@@ -17,13 +17,16 @@ export default async function SimuladosPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-slate-900">Simulados</h1>
-        <div className="flex gap-2">
+        <h1 className="text-2xl font-bold text-slate-900">Meus registros</h1>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/provas">
+            <Button variant="secondary">Provas públicas</Button>
+          </Link>
           <Link href="/simulados/upload">
             <Button variant="secondary">Upload (Fase 2)</Button>
           </Link>
           <Link href="/simulados/novo">
-            <Button>Novo simulado</Button>
+            <Button>Registrar resultado</Button>
           </Link>
         </div>
       </div>
