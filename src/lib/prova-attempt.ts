@@ -73,17 +73,17 @@ function buildAttemptsFromProva(
 
       const { materiaId, temaId } = mapMateriaAssuntoToTaxonomy(q.materia, q.assunto);
 
-      return {
+      const row: AttemptWithMeta = {
         numero: q.numero,
         correto,
         materiaId: materiaId ?? undefined,
         temaId: temaId ?? undefined,
-        tipoErro: undefined,
         provaQuestaoId: q.id,
         respostaAluno,
       };
+      return row;
     })
-    .filter((a): a is AttemptWithMeta => a != null);
+    .filter((a): a is AttemptWithMeta => a !== null);
 
   const gabaritoOficialCount = questoes.filter((q) => q.gabarito).length;
   const analiseCompleta = comRespostaAluno > 0 || Boolean(erroSet && errosConfirmados > 0);
