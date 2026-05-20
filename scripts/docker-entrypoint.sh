@@ -10,7 +10,11 @@ npx prisma migrate deploy
 
 if [ "$RUN_SEED" = "true" ]; then
   echo "==> Executando seed (RUN_SEED=true)..."
-  RUN_SEED=true npx tsx prisma/seed.ts
+  if RUN_SEED=true npx tsx prisma/seed.ts; then
+    echo "==> Seed concluído."
+  else
+    echo "==> AVISO: seed falhou — app será iniciado mesmo assim."
+  fi
 else
   echo "==> Seed ignorado (use RUN_SEED=true apenas no primeiro deploy)."
 fi

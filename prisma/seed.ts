@@ -11,6 +11,12 @@ async function main() {
     return;
   }
 
+  const existingUsers = await prisma.user.count();
+  if (existingUsers > 0) {
+    console.log("Banco já possui dados — seed ignorado (idempotente).");
+    return;
+  }
+
   await prisma.quest.deleteMany();
   await prisma.studyPlan.deleteMany();
   await prisma.diagnosticSnapshot.deleteMany();
