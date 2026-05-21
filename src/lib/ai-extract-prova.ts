@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ajustarMateriaPorIdiomaDoTexto } from "@/lib/prova-materia-ajuste";
 
 /** IA costuma enviar null em campos vazios. */
 const textoOpcional = z.string().nullish();
@@ -36,7 +37,7 @@ O cadastro da prova (instituição, ano, caderno) já foi feito pelo admin — N
 Para CADA questão no texto, retorne um objeto JSON com:
 - numero: número da questão na prova
 - areaBloco: bloco grande da prova, se aplicável (ex. Ciências da Natureza) — senão null
-- materia: disciplina principal (Química, Física, Matemática, Biologia, Português, História, etc.)
+- materia: disciplina principal (Química, Física, Matemática, Biologia, Português, Inglês, Espanhol, História, etc.)
 - assunto: tema específico dentro da matéria (mais específico que matéria)
 - conhecimentoExigido: em uma frase o que o estudante precisa saber/fazer, ou null
 - nivelDificuldade: facil | media | dificil ou null
@@ -45,6 +46,8 @@ Para CADA questão no texto, retorne um objeto JSON com:
 
 REGRAS:
 - Classifique com a melhor hipótese pedagógica a partir do enunciado.
+- LÍNGUA ESTRANGEIRA (obrigatório): se a PASSAGEM/TEXTO-BASE estiver em INGLÊS e o comando ou pergunta estiver em português, matéria = Inglês (NUNCA Português). Assunto típico: compreensão de texto em inglês / reading. O mesmo para espanhol: texto-base em espanhol + pergunta em PT → matéria Espanhol.
+- Português só quando o texto-base principal da questão estiver em português (interpretação, literatura, gramática no texto PT).
 - Use "A classificar" em matéria ou assunto só se o enunciado não der base nenhuma.
 - Não misture matéria com assunto.
 - Não invente número de questão que não apareça no trecho.
@@ -246,7 +249,14 @@ export async function extrairQuestoesComIA(
         : chunks[i],
       provaContext
     );
-    allQuestoes.push(...result.questoes);
+    const chunkTexto = chunks[i];
+    const ajustadas = result.questoes.map((q) =>
+      ajustarMateriaPorIdiomaDoTexto(
+        q.trechoEnunciado?.trim() ? `${chunkTexto}\n${q.trechoEnunciado}` : chunkTexto,
+        q
+      )
+    );
+    allQuestoes.push(...ajustadas);
     if (result.avisos) allAvisos.push(...result.avisos);
   }
 

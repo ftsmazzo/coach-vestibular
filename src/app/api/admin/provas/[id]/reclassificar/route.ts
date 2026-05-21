@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { extrairQuestoesComIA } from "@/lib/ai-extract-prova";
 import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
+import { ajustarMateriaPorIdiomaDoTexto } from "@/lib/prova-materia-ajuste";
 import { upsertQuestoesExtraidas } from "@/lib/prova-questoes-persist";
 
 const bodySchema = z.object({
@@ -47,7 +48,9 @@ export async function POST(
       );
     }
 
-    const normalizadas = questoes.map((q) => ({ ...q, numero }));
+    const normalizadas = questoes.map((q) =>
+      ajustarMateriaPorIdiomaDoTexto(textoIA, { ...q, numero })
+    );
     await upsertQuestoesExtraidas(provaId, normalizadas);
     await refreshProvaGabaritoFlag(provaId);
 
