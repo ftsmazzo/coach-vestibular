@@ -6,6 +6,10 @@ const PT_COMANDO =
 const ES_COMANDO =
   /de acuerdo con el texto|según el texto|segun el texto|con base en el texto/i;
 
+/** Comando em inglês (UFU e simulados). */
+const EN_COMANDO =
+  /fill in the blanks|choose the correct answer|according to the text|read the text|select the alternative|complete the text|which best complete/i;
+
 /** Inglês — palavras típicas de passagem em EN, raras em PT. */
 const RE_EN =
   /\b(the|and|of|to|in|is|are|was|were|with|for|that|this|from|have|has|had|been|every|year|can|will|would|their|they|them|you|your|we|our|as|at|by|or|an|be|if|it|its|not|but|all|one|people|who|when|what|which|there|these|those|such|than|then|into|over|after|before|between|about|through|during|without|within|against|among|pets|home|shelter|adopted|writing|children|world)\b/gi;
@@ -89,14 +93,23 @@ export function normalizarMateria(materia: string): string {
   return m;
 }
 
-/** Texto-base claramente em inglês (vestibular: pergunta em PT). */
-export function textoIndicaIngles(texto: string): boolean {
+/** Passagem em inglês (comando em PT ou em EN). */
+export function detectarPassagemIngles(texto: string): boolean {
   const t = texto.trim();
   if (t.length < 60) return false;
+  if (RE_PT_LITERATURA.test(t) && contarMatches(t, RE_EN) < 18) return false;
+
   const en = contarMatches(t, RE_EN);
   const pt = contarMatches(t, RE_PT_FORTE);
   const cmdPt = PT_COMANDO.test(t);
-  return en >= 12 && en > pt * 1.2 && cmdPt;
+  const cmdEn = EN_COMANDO.test(t);
+
+  if (en >= 18 && en > pt * 1.5) return true;
+  return en >= 10 && en > pt * 1.2 && (cmdPt || cmdEn);
+}
+
+export function textoIndicaIngles(texto: string): boolean {
+  return detectarPassagemIngles(texto);
 }
 
 /** Texto-base claramente em português (não espanhol). */
@@ -220,14 +233,14 @@ export function ajustarMateriaPorIdiomaDoTexto(
   const en = contarMatches(texto, RE_EN);
   const es = contarMatches(texto, RE_ES_FORTE);
   const pt = contarMatches(texto, RE_PT_FORTE);
-  const cmdPt = PT_COMANDO.test(texto);
   const cmdEs = ES_COMANDO.test(texto);
 
   let materia = questao.materia;
   let assunto = questao.assunto;
   let observacoes = questao.observacoes;
 
-  const passagemIngles = en >= 12 && en > pt * 1.2 && en > es * 2 && cmdPt;
+  const passagemIngles =
+    detectarPassagemIngles(texto) && en > es * 2;
   const passagemEspanhol =
     es >= 6 &&
     es > pt &&

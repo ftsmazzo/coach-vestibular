@@ -91,13 +91,17 @@ export function auditarClassificacaoQuestoes(
           "O texto-base está em português, mas a matéria no banco é Espanhol — cole o enunciado abaixo e clique em Reclassificar."
         );
       }
-    } else if (qMat === "portugues") {
+    } else if (qMat === "portugues" && textoQ.length < 60) {
+      const assuntoSoInterpretacao =
+        /^interpreta[cç][aã]o de texto\.?$/i.test(q.assunto.trim()) ||
+        (norm(q.assunto) === "interpretação de texto" ||
+          norm(q.assunto) === "interpretacao de texto");
       const vizinhoIngles =
         (prev && normalizarMateria(prev.materia) === "ingles") ||
         (next && normalizarMateria(next.materia) === "ingles");
-      if (vizinhoIngles) {
+      if (assuntoSoInterpretacao || vizinhoIngles) {
         motivos.push(
-          "Vizinho em Inglês, mas esta questão está como Português — se o texto-base for em inglês, cole o enunciado e reclassifique."
+          "Classificada como Português com assunto genérico — se o texto-base for em inglês, cole o enunciado e reclassifique."
         );
       }
     }
@@ -135,16 +139,6 @@ export function auditarClassificacaoQuestoes(
         `Classificação idêntica à questão ${other.numero}, mas vizinhos ${prev?.numero ?? "—"} e ${next?.numero ?? "—"} são de outra matéria — possível erro de quebra de página.`
       );
       break;
-    }
-
-    if (
-      prev?.areaBloco &&
-      next?.areaBloco &&
-      norm(prev.areaBloco) === norm(next.areaBloco) &&
-      q.areaBloco &&
-      norm(q.areaBloco) !== norm(prev.areaBloco)
-    ) {
-      motivos.push(`Bloco da prova diferente dos vizinhos (${q.areaBloco} vs ${prev.areaBloco}).`);
     }
 
     if (motivos.length === 0) continue;
