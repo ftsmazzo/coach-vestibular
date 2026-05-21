@@ -1,5 +1,6 @@
 import { extrairTrechosPorNumero } from "./prova-texto-parse";
 import {
+  detectarPassagemIngles,
   normalizarMateria,
   textoIndicaIngles,
   textoIndicaPortugues,
@@ -44,6 +45,56 @@ function chave(q: Pick<QuestaoAuditoriaInput, "materia" | "assunto">): string {
   return `${norm(q.materia)}|${norm(q.assunto)}`;
 }
 
+/** Assunto que a IA costuma usar em questões de inglês classificadas errado como PT. */
+function assuntoInterpretacaoGenerica(assunto: string): boolean {
+  const a = norm(assunto);
+  if (
+    a.includes("literatura") ||
+    a.includes("entrevista") ||
+    a.includes("gramática") ||
+    a.includes("gramatica") ||
+    a.includes("inglês") ||
+    a.includes("ingles") ||
+    a.includes("espanhol")
+  ) {
+    return false;
+  }
+  return (
+    a === "interpretação de texto" ||
+    a === "interpretacao de texto" ||
+    /^interpreta[cç][aã]o de texto\.?$/i.test(assunto.trim())
+  );
+}
+
+function motivosRevisaoIdioma(
+  q: QuestaoAuditoriaInput,
+  qMat: string,
+  textoQ: string
+): string[] {
+  const out: string[] = [];
+  const blob = [textoQ, q.assunto, q.conhecimentoExigido ?? ""].filter(Boolean).join("\n");
+
+  if (qMat === "portugues") {
+    if (textoIndicaIngles(blob) || detectarPassagemIngles(blob)) {
+      out.push(
+        "Texto-base em inglês, mas matéria no banco é Português — cole o enunciado abaixo e clique em Reclassificar."
+      );
+    } else if (assuntoInterpretacaoGenerica(q.assunto)) {
+      out.push(
+        "Marcada como Português com assunto genérico «Interpretação de texto» — típico de questão de inglês (ex.: 16, 19). Cole o enunciado completo e reclassifique."
+      );
+    }
+  }
+
+  if (qMat === "espanhol" && textoIndicaPortugues(blob)) {
+    out.push(
+      "Texto-base em português, mas matéria no banco é Espanhol — cole o enunciado e reclassifique."
+    );
+  }
+
+  return out;
+}
+
 function resumo(q: QuestaoAuditoriaInput): ClassificacaoResumo {
   return {
     materia: q.materia,
@@ -80,30 +131,9 @@ export function auditarClassificacaoQuestoes(
 
     const textoQ =
       q.enunciado?.trim() || trechos.get(q.numero) || "";
-    if (textoQ.length >= 60) {
-      if (textoIndicaIngles(textoQ) && qMat === "portugues") {
-        motivos.push(
-          "O texto-base está em inglês, mas a matéria no banco é Português — cole o enunciado abaixo e clique em Reclassificar."
-        );
-      }
-      if (textoIndicaPortugues(textoQ) && qMat === "espanhol") {
-        motivos.push(
-          "O texto-base está em português, mas a matéria no banco é Espanhol — cole o enunciado abaixo e clique em Reclassificar."
-        );
-      }
-    } else if (qMat === "portugues" && textoQ.length < 60) {
-      const assuntoSoInterpretacao =
-        /^interpreta[cç][aã]o de texto\.?$/i.test(q.assunto.trim()) ||
-        (norm(q.assunto) === "interpretação de texto" ||
-          norm(q.assunto) === "interpretacao de texto");
-      const vizinhoIngles =
-        (prev && normalizarMateria(prev.materia) === "ingles") ||
-        (next && normalizarMateria(next.materia) === "ingles");
-      if (assuntoSoInterpretacao || vizinhoIngles) {
-        motivos.push(
-          "Classificada como Português com assunto genérico — se o texto-base for em inglês, cole o enunciado e reclassifique."
-        );
-      }
+
+    for (const m of motivosRevisaoIdioma(q, qMat, textoQ)) {
+      if (!motivos.includes(m)) motivos.push(m);
     }
 
     if (prev && next) {
