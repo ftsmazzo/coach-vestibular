@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AdminAuditoriaProva } from "@/components/admin-auditoria-prova";
 import { Button, Card, Input, Label } from "@/components/ui";
 import { buildProvaNome } from "@/lib/prova-nome";
 
@@ -50,6 +51,8 @@ interface Prova {
   questoesFaltando?: number[];
   bancoIncompleto?: boolean;
   questoes: ProvaQuestao[];
+  temTextoFonte?: boolean;
+  tamanhoTextoFonte?: number;
 }
 
 export default function AdminProvaDetailPage() {
@@ -60,6 +63,7 @@ export default function AdminProvaDetailPage() {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [csvFileName, setCsvFileName] = useState("");
   const [csvIncluirGabarito, setCsvIncluirGabarito] = useState(false);
+  const [csvSoAtualizar, setCsvSoAtualizar] = useState(true);
   const [importandoCsv, setImportandoCsv] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [textoProva, setTextoProva] = useState("");
@@ -136,6 +140,7 @@ export default function AdminProvaDetailPage() {
     const fd = new FormData();
     fd.append("file", file);
     if (csvIncluirGabarito) fd.append("incluirGabarito", "true");
+    if (csvSoAtualizar) fd.append("modo", "adicionar");
     try {
       const res = await fetch(`/api/admin/provas/${id}/questoes`, { method: "POST", body: fd });
       const data = await res.json();
@@ -152,7 +157,9 @@ export default function AdminProvaDetailPage() {
           ? ` ${data.avisos.join(" ")}`
           : "";
       setMsg(
-        `Importadas ${data.imported} questões (substituiu todas as linhas anteriores).${avisoCsv}`
+        `Importadas ${data.imported} questões${
+          data.substituiu ? " (substituiu todas as linhas anteriores)" : " (atualizou só os números do CSV)"
+        }.${avisoCsv}`
       );
       if (csvInputRef.current) csvInputRef.current.value = "";
       setCsvFileName("");
@@ -491,6 +498,16 @@ export default function AdminProvaDetailPage() {
         </div>
       </Card>
 
+      {prova.questoes.length > 0 && (
+        <AdminAuditoriaProva
+          provaId={prova.id}
+          provaNome={prova.nome}
+          temTextoFonte={prova.temTextoFonte}
+          tamanhoTextoFonte={prova.tamanhoTextoFonte}
+          totalQuestoes={prova.totalQuestoes}
+        />
+      )}
+
       {preview && preview.questoes.length > 0 && (
         <Card>
           <h3 className="mb-2 font-semibold">Prévia IA ({preview.questoes.length} questões)</h3>
@@ -526,7 +543,7 @@ export default function AdminProvaDetailPage() {
         <h2 className="mb-2 font-semibold">Importar planilha CSV (GPT)</h2>
         <p className="mb-3 text-sm text-slate-600">
           Colunas usadas por questão: Número, Área/Bloco, Matéria, Assunto, Conhecimento,
-          Dificuldade, Observações, Gabarito (opcional). Colunas extras como Prova, Caderno, Tipo ou
+          Dificuldade, Observações, Enunciado (opcional), Gabarito (opcional). Colunas extras como Prova, Caderno, Tipo ou
           Vestibular são <strong>ignoradas</strong> — os metadados vêm do cadastro acima. Aceita CSV
           com vírgula ou ponto-e-vírgula (Excel BR). Template:{" "}
           <code className="text-xs">docs/templates/prova-questoes.csv</code>
@@ -544,6 +561,14 @@ export default function AdminProvaDetailPage() {
         <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
           <input
             type="checkbox"
+            checked={csvSoAtualizar}
+            onChange={(e) => setCsvSoAtualizar(e.target.checked)}
+          />
+          Só atualizar questões do CSV (recomendado após auditoria — não apaga as demais)
+        </label>
+        <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
             checked={csvIncluirGabarito}
             onChange={(e) => setCsvIncluirGabarito(e.target.checked)}
           />
@@ -555,7 +580,11 @@ export default function AdminProvaDetailPage() {
           onClick={importCsv}
           disabled={importandoCsv || !csvFileName}
         >
-          {importandoCsv ? "Importando..." : "Importar CSV (substitui todas as questões)"}
+          {importandoCsv
+            ? "Importando..."
+            : csvSoAtualizar
+              ? "Importar CSV (atualizar linhas do arquivo)"
+              : "Importar CSV (substitui todas as questões)"}
         </Button>
       </Card>
 

@@ -6,6 +6,7 @@ export interface ProvaQuestaoRow {
   conhecimentoExigido?: string;
   nivelDificuldade?: string;
   observacoes?: string;
+  enunciado?: string;
   gabarito?: string;
 }
 
@@ -125,6 +126,7 @@ export function parseProvaQuestoesCsv(
   ]);
   const iDificuldade = idx(["nivel de dificuldade", "dificuldade"]);
   const iObs = idx(["observacoes", "observacao"]);
+  const iEnunciado = idx(["enunciado", "trecho enunciado", "texto da questao", "texto questao"]);
   const iGabarito = idx(["gabarito", "resposta correta", "alternativa correta"]);
 
   if (iNumero < 0) {
@@ -179,6 +181,7 @@ export function parseProvaQuestoesCsv(
       conhecimentoExigido: iConhec >= 0 ? cols[iConhec]?.trim() || undefined : undefined,
       nivelDificuldade: iDificuldade >= 0 ? cols[iDificuldade]?.trim() || undefined : undefined,
       observacoes: iObs >= 0 ? cols[iObs]?.trim() || undefined : undefined,
+      enunciado: iEnunciado >= 0 ? cols[iEnunciado]?.trim() || undefined : undefined,
       gabarito,
     });
   }

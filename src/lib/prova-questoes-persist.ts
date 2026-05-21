@@ -1,6 +1,12 @@
 import type { QuestaoExtraida } from "@/lib/ai-extract-prova";
 import { prisma } from "@/lib/prisma";
 
+function truncarEnunciado(t?: string | null): string | null {
+  if (!t?.trim()) return null;
+  const s = t.trim();
+  return s.length > 2000 ? `${s.slice(0, 2000)}…` : s;
+}
+
 export async function upsertQuestoesExtraidas(
   provaId: string,
   questoes: QuestaoExtraida[]
@@ -18,6 +24,7 @@ export async function upsertQuestoesExtraidas(
         conhecimentoExigido: q.conhecimentoExigido ?? null,
         nivelDificuldade: q.nivelDificuldade ?? null,
         observacoes: q.observacoes ?? null,
+        enunciado: truncarEnunciado(q.trechoEnunciado),
         gabarito: null,
       },
       update: {
@@ -27,6 +34,7 @@ export async function upsertQuestoesExtraidas(
         conhecimentoExigido: q.conhecimentoExigido ?? null,
         nivelDificuldade: q.nivelDificuldade ?? null,
         observacoes: q.observacoes ?? null,
+        enunciado: truncarEnunciado(q.trechoEnunciado),
       },
     });
     n++;
@@ -50,6 +58,7 @@ export async function substituirQuestoesExtraidas(
       conhecimentoExigido: q.conhecimentoExigido ?? null,
       nivelDificuldade: q.nivelDificuldade ?? null,
       observacoes: q.observacoes ?? null,
+      enunciado: truncarEnunciado(q.trechoEnunciado),
       gabarito: null,
     })),
   });

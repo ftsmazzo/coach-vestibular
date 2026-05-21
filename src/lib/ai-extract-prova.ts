@@ -17,6 +17,8 @@ const questaoExtraidaSchema = z.object({
   conhecimentoExigido: textoOpcional,
   nivelDificuldade: textoOpcional,
   observacoes: textoOpcional,
+  /** Até ~400 caracteres do enunciado (para auditoria admin) */
+  trechoEnunciado: textoOpcional,
 });
 
 const respostaSchema = z.object({
@@ -39,6 +41,7 @@ Para CADA questão no texto, retorne um objeto JSON com:
 - conhecimentoExigido: em uma frase o que o estudante precisa saber/fazer, ou null
 - nivelDificuldade: facil | media | dificil ou null
 - observacoes: interdisciplinar, imagem, ambiguidade — ou null
+- trechoEnunciado: copie as primeiras frases do enunciado desta questão (até ~300 caracteres), ou null
 
 REGRAS:
 - Classifique com a melhor hipótese pedagógica a partir do enunciado.
@@ -175,6 +178,7 @@ function mergeQuestoes(all: QuestaoExtraida[]): QuestaoExtraida[] {
       conhecimentoExigido: q.conhecimentoExigido ?? existing.conhecimentoExigido,
       nivelDificuldade: q.nivelDificuldade ?? existing.nivelDificuldade,
       observacoes: q.observacoes ?? existing.observacoes,
+      trechoEnunciado: q.trechoEnunciado ?? existing.trechoEnunciado,
     });
   }
   return [...map.values()].sort((a, b) => a.numero - b.numero);

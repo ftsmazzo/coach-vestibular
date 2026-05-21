@@ -22,8 +22,11 @@ export async function GET(
   });
   if (!prova) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
   const stats = statsQuestoesProva(prova.questoes, prova.totalQuestoes);
+  const { textoFonte, ...provaSemTexto } = prova;
   return NextResponse.json({
-    ...prova,
+    ...provaSemTexto,
+    temTextoFonte: Boolean(textoFonte?.trim()),
+    tamanhoTextoFonte: textoFonte?.length ?? 0,
     questoesCadastradas: stats.cadastradas,
     maiorNumeroQuestao: stats.maiorNumero,
     questoesFaltando: stats.faltando,

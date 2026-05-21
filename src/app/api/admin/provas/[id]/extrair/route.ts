@@ -84,6 +84,18 @@ export async function POST(
         adicionadas = resultado.questoes.length;
       }
       await refreshProvaGabaritoFlag(provaId);
+      const atualFonte = await prisma.prova.findUnique({
+        where: { id: provaId },
+        select: { textoFonte: true },
+      });
+      const textoSalvar =
+        modo === "adicionar" && atualFonte?.textoFonte?.trim()
+          ? `${atualFonte.textoFonte.trim()}\n\n--- trecho adicional ---\n\n${texto.trim()}`
+          : texto.trim();
+      await prisma.prova.update({
+        where: { id: provaId },
+        data: { textoFonte: textoSalvar.slice(0, 500_000) },
+      });
     }
 
     return NextResponse.json({

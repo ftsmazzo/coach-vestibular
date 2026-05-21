@@ -64,6 +64,7 @@ export async function POST(
           conhecimentoExigido: r.conhecimentoExigido ?? null,
           nivelDificuldade: r.nivelDificuldade ?? null,
           observacoes: r.observacoes ?? null,
+          enunciado: r.enunciado ?? null,
           gabarito: r.gabarito ?? null,
         })),
       });
@@ -80,6 +81,7 @@ export async function POST(
             conhecimentoExigido: r.conhecimentoExigido ?? null,
             nivelDificuldade: r.nivelDificuldade ?? null,
             observacoes: r.observacoes ?? null,
+            enunciado: r.enunciado ?? null,
             gabarito: r.gabarito ?? null,
           },
           update: {
@@ -89,6 +91,7 @@ export async function POST(
             conhecimentoExigido: r.conhecimentoExigido ?? null,
             nivelDificuldade: r.nivelDificuldade ?? null,
             observacoes: r.observacoes ?? null,
+            ...(r.enunciado ? { enunciado: r.enunciado } : {}),
             ...(r.gabarito ? { gabarito: r.gabarito } : {}),
           },
         });

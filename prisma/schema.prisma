@@ -45,6 +45,8 @@ model Prova {
   totalQuestoes   Int
   publicada       Boolean   @default(false)
   gabaritoCompleto Boolean  @default(false)
+  /// Texto completo da última extração (PDF/cola) — para auditoria sem reenviar arquivo
+  textoFonte       String?   @db.Text
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -63,6 +65,8 @@ model ProvaQuestao {
   conhecimentoExigido String?
   nivelDificuldade    String?
   observacoes         String?
+  /// Trecho do enunciado (IA ou texto colado) — apoia auditoria de classificação
+  enunciado           String?   @db.Text
   gabarito            String?
 
   prova     Prova              @relation(fields: [provaId], references: [id], onDelete: Cascade)
