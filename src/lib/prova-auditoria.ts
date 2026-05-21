@@ -66,6 +66,14 @@ function assuntoInterpretacaoGenerica(assunto: string): boolean {
   );
 }
 
+const RE_CONHECIMENTO_PT =
+  /gramática|gramatica|ortografia|coesão|coesao|poesia|crônica|cronica|gênero textual|genero textual|figuras de linguagem|variação linguística|variacao linguistica|sujeito|predicado|pontuação|pontuacao|linguagem formal|intertextualidade|denotação|denotacao|conotação|conotacao|morfologia|sintaxe|semântica|semantica|artigo de opinião|artigo de opiniao/i;
+
+function conhecimentoParecePortuguesNativo(q: QuestaoAuditoriaInput): boolean {
+  const c = q.conhecimentoExigido ?? "";
+  return RE_CONHECIMENTO_PT.test(c) || RE_CONHECIMENTO_PT.test(q.assunto);
+}
+
 function motivosRevisaoIdioma(
   q: QuestaoAuditoriaInput,
   qMat: string,
@@ -75,13 +83,21 @@ function motivosRevisaoIdioma(
   const blob = [textoQ, q.assunto, q.conhecimentoExigido ?? ""].filter(Boolean).join("\n");
 
   if (qMat === "portugues") {
+    if (textoIndicaPortugues(blob)) {
+      return out;
+    }
     if (textoIndicaIngles(blob) || detectarPassagemIngles(blob)) {
       out.push(
         "Texto-base em inglês, mas matéria no banco é Português — cole o enunciado abaixo e clique em Reclassificar."
       );
-    } else if (assuntoInterpretacaoGenerica(q.assunto)) {
+    } else if (
+      assuntoInterpretacaoGenerica(q.assunto) &&
+      q.numero >= 15 &&
+      q.numero <= 35 &&
+      !conhecimentoParecePortuguesNativo(q)
+    ) {
       out.push(
-        "Marcada como Português com assunto genérico «Interpretação de texto» — típico de questão de inglês (ex.: 16, 19). Cole o enunciado completo e reclassifique."
+        "Marcada como Português com assunto genérico na faixa em que a prova costuma ter inglês (ex.: 16, 19). Cole o enunciado e reclassifique se o texto-base for em inglês."
       );
     }
   }
