@@ -233,6 +233,7 @@ export function ajustarMateriaPorIdiomaDoTexto(
   const en = contarMatches(texto, RE_EN);
   const es = contarMatches(texto, RE_ES_FORTE);
   const pt = contarMatches(texto, RE_PT_FORTE);
+  const cmdPt = PT_COMANDO.test(texto);
   const cmdEs = ES_COMANDO.test(texto);
 
   let materia = questao.materia;
