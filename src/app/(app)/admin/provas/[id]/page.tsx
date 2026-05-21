@@ -171,9 +171,13 @@ export default function AdminProvaDetailPage() {
     }
   }
 
-  async function completarFaltantes() {
-    if (!textoFaltantes.trim()) {
-      setMsg("Cole o texto das questões que faltam no banco.");
+  async function classificarTextoParcial(
+    texto: string,
+    vazioMsg: string,
+    onOk?: () => void
+  ) {
+    if (!texto.trim()) {
+      setMsg(vazioMsg);
       return;
     }
     setExtraindo(true);
@@ -181,7 +185,7 @@ export default function AdminProvaDetailPage() {
     const fd = new FormData();
     fd.append("aplicar", "true");
     fd.append("modo", "adicionar");
-    fd.append("texto", textoFaltantes.trim());
+    fd.append("texto", texto.trim());
     const res = await fetch(`/api/admin/provas/${id}/extrair`, { method: "POST", body: fd });
     const data = await res.json();
     setExtraindo(false);
@@ -189,11 +193,19 @@ export default function AdminProvaDetailPage() {
       setMsg(data.error ?? "Erro");
       return;
     }
-    setTextoFaltantes("");
+    onOk?.();
     setMsg(
-      `Adicionadas/atualizadas ${data.adicionadas ?? data.questoes?.length ?? 0} questão(ões). As demais permanecem no banco.`
+      `Atualizada(s) ${data.adicionadas ?? data.questoes?.length ?? 0} questão(ões) no banco. As demais não foram alteradas. Clique em «Auditar» de novo para ver se a inconsistência sumiu.`
     );
     load();
+  }
+
+  async function completarFaltantes() {
+    await classificarTextoParcial(
+      textoFaltantes,
+      "Cole o texto das questões que faltam no banco.",
+      () => setTextoFaltantes("")
+    );
   }
 
   async function extrairIA(aplicar: boolean) {
@@ -499,13 +511,7 @@ export default function AdminProvaDetailPage() {
       </Card>
 
       {prova.questoes.length > 0 && (
-        <AdminAuditoriaProva
-          provaId={prova.id}
-          provaNome={prova.nome}
-          temTextoFonte={prova.temTextoFonte}
-          tamanhoTextoFonte={prova.tamanhoTextoFonte}
-          totalQuestoes={prova.totalQuestoes}
-        />
+        <AdminAuditoriaProva provaId={prova.id} onQuestoesAtualizadas={load} />
       )}
 
       {preview && preview.questoes.length > 0 && (

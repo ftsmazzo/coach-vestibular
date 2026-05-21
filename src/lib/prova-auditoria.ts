@@ -147,15 +147,14 @@ function escCsv(val: string): string {
   return v.includes(",") || v.includes('"') ? `"${v}"` : v;
 }
 
-/** Texto para colar no ChatGPT / planilha e corrigir matéria, assunto e conhecimento. */
+/** Exportação opcional (API); correção é feita na tela de auditoria. */
 export function formatarExportacaoAuditoria(
   provaNome: string,
   alertas: AlertaAuditoria[]
 ): { texto: string; csv: string; numeros: number[] } {
   const linhas: string[] = [
-    `=== AUDITORIA DE CLASSIFICAÇÃO — ${provaNome} ===`,
-    `${alertas.length} questão(ões) suspeita(s). Revise matéria, assunto e conhecimento exigido.`,
-    `Depois importe o CSV corrigido em Admin → Banco de provas → Importar CSV com «Só atualizar questões do CSV» marcado.`,
+    `=== AUDITORIA — ${provaNome} ===`,
+    `${alertas.length} questão(ões) suspeita(s).`,
     "",
   ];
 
@@ -189,9 +188,7 @@ export function formatarExportacaoAuditoria(
       linhas.push("TEXTO DA QUESTÃO (copiar/colar do PDF):");
       linhas.push(a.enunciado);
     } else {
-      linhas.push(
-        "(Sem trecho de enunciado — cole o texto da questão no CSV ou reextraia com texto da prova salvo.)"
-      );
+      linhas.push("(Sem trecho de enunciado salvo.)");
     }
     linhas.push("");
     linhas.push("---");
