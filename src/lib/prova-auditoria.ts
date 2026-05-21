@@ -1,5 +1,9 @@
 import { extrairTrechosPorNumero } from "./prova-texto-parse";
-import { normalizarMateria } from "./prova-materia-ajuste";
+import {
+  normalizarMateria,
+  textoIndicaIngles,
+  textoIndicaPortugues,
+} from "./prova-materia-ajuste";
 
 export interface QuestaoAuditoriaInput {
   numero: number;
@@ -72,6 +76,30 @@ export function auditarClassificacaoQuestoes(
 
     if (q.materia === "A classificar" || q.assunto === "A classificar") {
       motivos.push("Matéria ou assunto ainda «A classificar».");
+    }
+
+    const textoQ =
+      q.enunciado?.trim() || trechos.get(q.numero) || "";
+    if (textoQ.length >= 60) {
+      if (textoIndicaIngles(textoQ) && qMat === "portugues") {
+        motivos.push(
+          "O texto-base está em inglês, mas a matéria no banco é Português — cole o enunciado abaixo e clique em Reclassificar."
+        );
+      }
+      if (textoIndicaPortugues(textoQ) && qMat === "espanhol") {
+        motivos.push(
+          "O texto-base está em português, mas a matéria no banco é Espanhol — cole o enunciado abaixo e clique em Reclassificar."
+        );
+      }
+    } else if (qMat === "portugues") {
+      const vizinhoIngles =
+        (prev && normalizarMateria(prev.materia) === "ingles") ||
+        (next && normalizarMateria(next.materia) === "ingles");
+      if (vizinhoIngles) {
+        motivos.push(
+          "Vizinho em Inglês, mas esta questão está como Português — se o texto-base for em inglês, cole o enunciado e reclassifique."
+        );
+      }
     }
 
     if (prev && next) {

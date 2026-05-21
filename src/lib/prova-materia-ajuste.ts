@@ -6,11 +6,17 @@ const PT_COMANDO =
 const ES_COMANDO =
   /de acuerdo con el texto|según el texto|segun el texto|con base en el texto/i;
 
+/** Inglês — palavras típicas de passagem em EN, raras em PT. */
 const RE_EN =
-  /\b(the|and|of|to|in|is|are|was|were|with|for|that|this|from|have|has|had|been|every|year|can|will|would|their|they|them|you|your|we|our|as|at|by|or|an|be|if|it|its|not|but|all|one|people|who|when|what|which|there|these|those|such|than|then|into|over|after|before|between|about|through|during|without|within|against|among|pets|home|shelter)\b/gi;
+  /\b(the|and|of|to|in|is|are|was|were|with|for|that|this|from|have|has|had|been|every|year|can|will|would|their|they|them|you|your|we|our|as|at|by|or|an|be|if|it|its|not|but|all|one|people|who|when|what|which|there|these|those|such|than|then|into|over|after|before|between|about|through|during|without|within|against|among|pets|home|shelter|adopted|writing|children|world)\b/gi;
 
-const RE_ES =
-  /\b(el|la|los|las|de|del|en|es|son|que|por|para|con|una|uno|como|más|pero|también|está|están|año|años|según|después|antes|entre|sobre|sin|desde|hasta|donde|cuando|todo|toda|todos|todas|este|esta|estos|estas|ese|esa|eso|aquí|allí|muy|puede|pueden|ser|hay|fue|fueron|tiene|tienen|hacer|hecho|vida|mundo|país|ciudad|gente|personas|niño|niños|perro|gato)\b/gi;
+/** Espanhol — só marcadores fortes (evita confundir com português). */
+const RE_ES_FORTE =
+  /\b(según|segun|acuerdo|también|tambien|están|estan|años|anos|después|despues|además|ademas|español|espanol|usted|ellos|ellas|había|habia|niñ[oa]s?|señor|señora|¿|¡)\b/gi;
+
+/** Português — marcadores ortográficos e lexicais fortes. */
+const RE_PT_FORTE =
+  /\b(ção|ções|ão|ões|ã|õ|ç|mente|brasileir|escrita|leitura|entrevista|escritora|adolescência|adolescencia|infância|infancia|perguntas|dúvidas|duvidas|português|portugues|disponível|disponivel|acesso em|sociedade brasileira|menina|menino|já|não|nao|também|tambem|através|atraves|alguma coisa)\b/gi;
 
 const RE_PT_LITERATURA =
   /escrevivência|escrevivencia|conceição evaristo|conceicao evaristo|literatura canônica|literatura canonica|poetisa|escritora brasileira|produção escrita|producao escrita|meus textos|condição de mulher negra|condicao de mulher negra|entrevista, a escritora/i;
@@ -67,12 +73,13 @@ export function normalizarMateria(materia: string): string {
     m === "estatistica" ||
     m === "estatística" ||
     m === "probabilidade" ||
-    m.includes("geometria") && !m.includes("física")
+    (m.includes("geometria") && !m.includes("física"))
   ) {
     return "matematica";
   }
   if (m.includes("matem")) return "matematica";
-  if (m.includes("portugu") || m === "lp" || m.includes("lingua portuguesa")) return "portugues";
+  if (m.includes("portugu") || m === "lp" || m.includes("lingua portuguesa"))
+    return "portugues";
   if (m.includes("ingl")) return "ingles";
   if (m.includes("espan")) return "espanhol";
   if (m.includes("biolog")) return "biologia";
@@ -80,6 +87,27 @@ export function normalizarMateria(materia: string): string {
   if (m.includes("físic") || m.includes("fisic")) return "fisica";
   if (m.includes("quím") || m.includes("quim")) return "quimica";
   return m;
+}
+
+/** Texto-base claramente em inglês (vestibular: pergunta em PT). */
+export function textoIndicaIngles(texto: string): boolean {
+  const t = texto.trim();
+  if (t.length < 60) return false;
+  const en = contarMatches(t, RE_EN);
+  const pt = contarMatches(t, RE_PT_FORTE);
+  const cmdPt = PT_COMANDO.test(t);
+  return en >= 12 && en > pt * 1.2 && cmdPt;
+}
+
+/** Texto-base claramente em português (não espanhol). */
+export function textoIndicaPortugues(texto: string): boolean {
+  const t = texto.trim();
+  if (t.length < 80) return false;
+  if (RE_PT_LITERATURA.test(t)) return true;
+  const pt = contarMatches(t, RE_PT_FORTE);
+  const es = contarMatches(t, RE_ES_FORTE);
+  const en = contarMatches(t, RE_EN);
+  return pt >= 10 && pt > es * 2 && en < 12;
 }
 
 function pareceMateriaPortugues(materia: string): boolean {
@@ -115,10 +143,33 @@ function normalizarMateriaMatematica(questao: QuestaoExtraida): QuestaoExtraida 
   };
 }
 
+function forcarPortuguesLiteratura(
+  texto: string,
+  questao: QuestaoExtraida
+): QuestaoExtraida | null {
+  if (!textoIndicaPortugues(texto)) return null;
+  return {
+    ...questao,
+    materia: "Português",
+    assunto: /entrevista|escrevivência|escrevivencia/i.test(texto)
+      ? "Interpretação de texto — literatura e entrevista"
+      : questao.assunto === "A classificar" ||
+          pareceMateriaEspanhol(questao.materia) ||
+          pareceMateriaIngles(questao.materia)
+        ? "Interpretação de texto"
+        : questao.assunto,
+    observacoes:
+      questao.observacoes ?? "Texto-base em português (literatura/interpretação).",
+  };
+}
+
 function ajustarPorConteudoDisciplinar(
   texto: string,
   questao: QuestaoExtraida
 ): QuestaoExtraida {
+  const ptLit = forcarPortuguesLiteratura(texto, questao);
+  if (ptLit) return ptLit;
+
   let { materia, assunto, observacoes } = questao;
   const t = texto;
 
@@ -135,17 +186,6 @@ function ajustarPorConteudoDisciplinar(
     }
   }
 
-  if (RE_PT_LITERATURA.test(t) && contarMatches(t, RE_EN) < 10) {
-    const nm = normalizarMateria(materia);
-    if (nm !== "ingles" && nm !== "espanhol") {
-      materia = "Português";
-      assunto = /entrevista|escrevivência|escrevivencia/i.test(t)
-        ? "Interpretação de texto — literatura e entrevista"
-        : "Interpretação de texto";
-      observacoes = observacoes ?? "Texto em português (literatura/entrevista).";
-    }
-  }
-
   if (RE_MAT_FUNCOES.test(t)) {
     materia = "Matemática";
     assunto = "Funções — gráfico e área no plano cartesiano";
@@ -157,7 +197,11 @@ function ajustarPorConteudoDisciplinar(
     assunto = "Geometria espacial — áreas e sólidos";
   }
 
-  if (materia === questao.materia && assunto === questao.assunto && observacoes === questao.observacoes) {
+  if (
+    materia === questao.materia &&
+    assunto === questao.assunto &&
+    observacoes === questao.observacoes
+  ) {
     return questao;
   }
   return { ...questao, materia, assunto, observacoes };
@@ -170,25 +214,35 @@ export function ajustarMateriaPorIdiomaDoTexto(
   const texto = textoQuestao.trim();
   if (texto.length < 80) return questao;
 
+  const ptLit = forcarPortuguesLiteratura(texto, questao);
+  if (ptLit) return normalizarMateriaMatematica(ptLit);
+
   const en = contarMatches(texto, RE_EN);
-  const es = contarMatches(texto, RE_ES);
+  const es = contarMatches(texto, RE_ES_FORTE);
+  const pt = contarMatches(texto, RE_PT_FORTE);
   const cmdPt = PT_COMANDO.test(texto);
+  const cmdEs = ES_COMANDO.test(texto);
 
   let materia = questao.materia;
   let assunto = questao.assunto;
   let observacoes = questao.observacoes;
 
-  const passagemIngles = en >= 14 && en > es * 1.4;
-  const passagemEspanhol = es >= 14 && es > en * 1.4 && !passagemIngles;
+  const passagemIngles = en >= 12 && en > pt * 1.2 && en > es * 2 && cmdPt;
+  const passagemEspanhol =
+    es >= 6 &&
+    es > pt &&
+    es > en &&
+    (cmdEs || !cmdPt) &&
+    !textoIndicaPortugues(texto);
 
-  if (passagemIngles && cmdPt && !pareceMateriaIngles(materia)) {
+  if (passagemIngles && !pareceMateriaIngles(materia)) {
     materia = "Inglês";
     if (pareceMateriaPortugues(assunto) || assunto === "A classificar") {
       assunto = "Compreensão de texto em inglês";
     }
     observacoes =
       observacoes ?? "Texto-base em inglês com comando em português (padrão vestibular).";
-  } else if (passagemEspanhol && cmdPt && !pareceMateriaEspanhol(materia)) {
+  } else if (passagemEspanhol && !pareceMateriaEspanhol(materia)) {
     materia = "Espanhol";
     if (assunto === "A classificar" || pareceMateriaPortugues(assunto)) {
       assunto = "Compreensão de texto em espanhol";
@@ -201,7 +255,6 @@ export function ajustarMateriaPorIdiomaDoTexto(
   return ajustarClassificacaoPorConteudo(texto, parcial);
 }
 
-/** Pipeline: idioma → disciplina por palavras-chave → matéria Matemática unificada. */
 export function ajustarClassificacaoPorConteudo(
   textoQuestao: string,
   questao: QuestaoExtraida
@@ -209,10 +262,11 @@ export function ajustarClassificacaoPorConteudo(
   const texto = textoQuestao.trim();
   if (texto.length < 40) return normalizarMateriaMatematica(questao);
 
+  const ptLit = forcarPortuguesLiteratura(texto, questao);
+  if (ptLit) return normalizarMateriaMatematica(ptLit);
+
   let q = questao;
-  const en = contarMatches(texto, RE_EN);
-  const cmdPt = PT_COMANDO.test(texto);
-  if (!(en >= 14 && cmdPt)) {
+  if (!textoIndicaIngles(texto)) {
     q = ajustarPorConteudoDisciplinar(texto, q);
   }
   return normalizarMateriaMatematica(q);
