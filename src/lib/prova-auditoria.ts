@@ -1,4 +1,5 @@
 import { extrairTrechosPorNumero } from "./prova-texto-parse";
+import { normalizarMateria } from "./prova-materia-ajuste";
 
 export interface QuestaoAuditoriaInput {
   numero: number;
@@ -26,7 +27,6 @@ export interface AlertaAuditoria {
   atual: ClassificacaoResumo;
   vizinhoAnterior?: { numero: number; classificacao: ClassificacaoResumo };
   vizinhoPosterior?: { numero: number; classificacao: ClassificacaoResumo };
-  /** Questão distante com mesma classificação (ex.: 29 igual à 21) */
   parRemoto?: { numero: number; classificacao: ClassificacaoResumo };
   enunciado?: string;
 }
@@ -35,6 +35,7 @@ function norm(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+/** Chave estrita: matéria + assunto (detecta cópia errada da IA). */
 function chave(q: Pick<QuestaoAuditoriaInput, "materia" | "assunto">): string {
   return `${norm(q.materia)}|${norm(q.assunto)}`;
 }
@@ -67,6 +68,7 @@ export function auditarClassificacaoQuestoes(
     const prev = sorted[i - 1];
     const next = sorted[i + 1];
     const qKey = chave(q);
+    const qMat = normalizarMateria(q.materia);
 
     if (q.materia === "A classificar" || q.assunto === "A classificar") {
       motivos.push("Matéria ou assunto ainda «A classificar».");
@@ -75,15 +77,17 @@ export function auditarClassificacaoQuestoes(
     if (prev && next) {
       const pk = chave(prev);
       const nk = chave(next);
+      const prevMat = normalizarMateria(prev.materia);
+      const nextMat = normalizarMateria(next.materia);
+
       if (pk === nk && qKey !== pk) {
-        motivos.push(
-          `Questões ${prev.numero} e ${next.numero} têm a mesma classificação (${prev.materia} — ${prev.assunto}), mas esta difere — comum após quebra de página na IA.`
-        );
-      }
-      if (norm(prev.materia) === norm(next.materia) && norm(prev.materia) !== norm(q.materia)) {
-        motivos.push(
-          `Vizinhos ${prev.numero} e ${next.numero} são ${prev.materia}; esta está em ${q.materia}.`
-        );
+        const mesmaDisciplina =
+          prevMat === qMat && nextMat === qMat && prevMat === nextMat;
+        if (!mesmaDisciplina) {
+          motivos.push(
+            `Questões ${prev.numero} e ${next.numero} têm a mesma classificação (${prev.materia} — ${prev.assunto}), mas esta difere — comum após quebra de página na IA.`
+          );
+        }
       }
     }
 
@@ -91,12 +95,16 @@ export function auditarClassificacaoQuestoes(
     for (const other of sorted) {
       if (other.numero === q.numero) continue;
       const dist = Math.abs(other.numero - q.numero);
-      if (dist < 3 || dist > 15) continue;
+      if (dist < 5 || dist > 15) continue;
       if (chave(other) !== qKey) continue;
       if (prev && chave(prev) === qKey) continue;
+      if (next && chave(next) === qKey) continue;
+      const prevMat = prev ? normalizarMateria(prev.materia) : "";
+      const nextMat = next ? normalizarMateria(next.materia) : "";
+      if (prevMat === qMat || nextMat === qMat) continue;
       parRemoto = { numero: other.numero, classificacao: resumo(other) };
       motivos.push(
-        `Mesma classificação da questão ${other.numero} (${other.materia} — ${other.assunto}), mas diferente dos vizinhos ${prev?.numero ?? "—"} / ${next?.numero ?? "—"}.`
+        `Classificação idêntica à questão ${other.numero}, mas vizinhos ${prev?.numero ?? "—"} e ${next?.numero ?? "—"} são de outra matéria — possível erro de quebra de página.`
       );
       break;
     }
@@ -120,7 +128,7 @@ export function auditarClassificacaoQuestoes(
 
     alertas.push({
       numero: q.numero,
-      severidade: motivos.some((m) => m.includes("quebra") || m.includes("Mesma classificação"))
+      severidade: motivos.some((m) => m.includes("quebra") || m.includes("possível erro"))
         ? "alta"
         : "media",
       motivos,
@@ -147,7 +155,6 @@ function escCsv(val: string): string {
   return v.includes(",") || v.includes('"') ? `"${v}"` : v;
 }
 
-/** Exportação opcional (API); correção é feita na tela de auditoria. */
 export function formatarExportacaoAuditoria(
   provaNome: string,
   alertas: AlertaAuditoria[]
@@ -162,36 +169,8 @@ export function formatarExportacaoAuditoria(
     linhas.push(`--- Questão ${a.numero} [${a.severidade.toUpperCase()}] ---`);
     for (const mot of a.motivos) linhas.push(`• ${mot}`);
     linhas.push("");
-    linhas.push("Classificação ATUAL no banco:");
     linhas.push(`  materia: ${a.atual.materia}`);
     linhas.push(`  assunto: ${a.atual.assunto}`);
-    if (a.atual.conhecimentoExigido)
-      linhas.push(`  conhecimento: ${a.atual.conhecimentoExigido}`);
-    if (a.atual.nivelDificuldade) linhas.push(`  dificuldade: ${a.atual.nivelDificuldade}`);
-    if (a.vizinhoAnterior) {
-      linhas.push(
-        `  vizinho anterior (q.${a.vizinhoAnterior.numero}): ${a.vizinhoAnterior.classificacao.materia} — ${a.vizinhoAnterior.classificacao.assunto}`
-      );
-    }
-    if (a.vizinhoPosterior) {
-      linhas.push(
-        `  vizinho posterior (q.${a.vizinhoPosterior.numero}): ${a.vizinhoPosterior.classificacao.materia} — ${a.vizinhoPosterior.classificacao.assunto}`
-      );
-    }
-    if (a.parRemoto) {
-      linhas.push(
-        `  SUGESTÃO (mesmo padrão da q.${a.parRemoto.numero}): ${a.parRemoto.classificacao.materia} — ${a.parRemoto.classificacao.assunto}`
-      );
-    }
-    linhas.push("");
-    if (a.enunciado) {
-      linhas.push("TEXTO DA QUESTÃO (copiar/colar do PDF):");
-      linhas.push(a.enunciado);
-    } else {
-      linhas.push("(Sem trecho de enunciado salvo.)");
-    }
-    linhas.push("");
-    linhas.push("---");
     linhas.push("");
   }
 

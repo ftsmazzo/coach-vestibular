@@ -47,7 +47,9 @@ Para CADA questão no texto, retorne um objeto JSON com:
 REGRAS:
 - Classifique com a melhor hipótese pedagógica a partir do enunciado.
 - LÍNGUA ESTRANGEIRA (obrigatório): se a PASSAGEM/TEXTO-BASE estiver em INGLÊS e o comando ou pergunta estiver em português, matéria = Inglês (NUNCA Português). Assunto típico: compreensão de texto em inglês / reading. O mesmo para espanhol: texto-base em espanhol + pergunta em PT → matéria Espanhol.
-- Português só quando o texto-base principal da questão estiver em português (interpretação, literatura, gramática no texto PT).
+- Português só quando o texto-base principal da questão estiver em português (interpretação, literatura, entrevista, gramática no texto PT).
+- Matéria sempre o nome da disciplina (Matemática, Biologia, Português…). Não use só «Geometria» ou «Geometria» como matéria — use Matemática e o assunto «Geometria espacial», «Funções», «Matrizes», etc.
+- Biologia: ecologia, biomas, hotspots, espécies endêmicas → matéria Biologia (não História por vizinhança).
 - Use "A classificar" em matéria ou assunto só se o enunciado não der base nenhuma.
 - Não misture matéria com assunto.
 - Não invente número de questão que não apareça no trecho.
