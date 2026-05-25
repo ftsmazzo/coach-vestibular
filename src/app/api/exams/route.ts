@@ -9,7 +9,14 @@ const questionSchema = z.object({
   correto: z.boolean(),
   materiaId: z.string().optional(),
   temaId: z.string().optional(),
-  tipoErro: z.enum(["base_teorica", "interpretacao", "atencao", "tempo"]).optional(),
+  tipoErro: z.enum([
+    "CONCEITO_TEORICO",
+    "CALCULO_BOBEIRA",
+    "INTERPRETACAO_ENUNCIADO",
+    "DUVIDA_CRUCIAL",
+    "CHUTE_TOTAL",
+    "FALTA_TEMPO",
+  ]).optional(),
   observacao: z.string().optional(),
 });
 

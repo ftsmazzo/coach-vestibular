@@ -13,10 +13,12 @@ enum UserRole {
 }
 
 enum ErrorType {
-  base_teorica
-  interpretacao
-  atencao
-  tempo
+  CONCEITO_TEORICO
+  CALCULO_BOBEIRA
+  INTERPRETACAO_ENUNCIADO
+  DUVIDA_CRUCIAL
+  CHUTE_TOTAL
+  FALTA_TEMPO
 }
 
 enum QuestStatus {
@@ -30,6 +32,7 @@ enum ProvaTipo {
   SIMULADO
   VESTIBULAR
   OUTRO
+  LISTA_FIXACAO
 }
 
 /// Prova cadastrada pelo admin — banco de questões (uma linha por questão)
@@ -134,7 +137,7 @@ model QuestionAttempt {
   materiaId      String?
   temaId         String?
   tipoErro       ErrorType?
-  observacao     String?
+  observacao     String?    @db.Text
 
   exam         Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
   provaQuestao ProvaQuestao? @relation(fields: [provaQuestaoId], references: [id], onDelete: SetNull)

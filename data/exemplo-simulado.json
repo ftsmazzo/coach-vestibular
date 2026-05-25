@@ -7,14 +7,14 @@
   "checkInEmocional": 2,
   "questoes": [
     { "numero": 1, "correto": true, "materiaId": "biologia", "temaId": "genetica" },
-    { "numero": 2, "correto": false, "materiaId": "quimica", "temaId": "estequiometria", "tipoErro": "base_teorica" },
-    { "numero": 3, "correto": false, "materiaId": "fisica", "temaId": "cinematica", "tipoErro": "interpretacao" },
+    { "numero": 2, "correto": false, "materiaId": "quimica", "temaId": "estequiometria", "tipoErro": "CONCEITO_TEORICO" },
+    { "numero": 3, "correto": false, "materiaId": "fisica", "temaId": "cinematica", "tipoErro": "INTERPRETACAO_ENUNCIADO" },
     { "numero": 4, "correto": true, "materiaId": "matematica", "temaId": "funcoes" },
-    { "numero": 5, "correto": false, "materiaId": "quimica", "temaId": "estequiometria", "tipoErro": "atencao" },
-    { "numero": 6, "correto": false, "materiaId": "biologia", "temaId": "fisiologia_humana", "tipoErro": "base_teorica" },
+    { "numero": 5, "correto": false, "materiaId": "quimica", "temaId": "estequiometria", "tipoErro": "CALCULO_BOBEIRA" },
+    { "numero": 6, "correto": false, "materiaId": "biologia", "temaId": "fisiologia_humana", "tipoErro": "CONCEITO_TEORICO" },
     { "numero": 7, "correto": true, "materiaId": "portugues", "temaId": "interpretacao_texto" },
-    { "numero": 8, "correto": false, "materiaId": "fisica", "temaId": "cinematica", "tipoErro": "base_teorica" },
+    { "numero": 8, "correto": false, "materiaId": "fisica", "temaId": "cinematica", "tipoErro": "CONCEITO_TEORICO" },
     { "numero": 9, "correto": true, "materiaId": "matematica", "temaId": "geometria" },
-    { "numero": 10, "correto": false, "materiaId": "quimica", "temaId": "estequiometria", "tipoErro": "base_teorica" }
+    { "numero": 10, "correto": false, "materiaId": "quimica", "temaId": "estequiometria", "tipoErro": "CONCEITO_TEORICO" }
   ]
 }

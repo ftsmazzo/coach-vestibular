@@ -1,11 +1,11 @@
-import { taxonomy } from "./taxonomy";
+import { taxonomy, TipoErroId } from "./taxonomy";
 
 export interface QuestaoInput {
   numero: number;
   correto: boolean;
   materiaId?: string;
   temaId?: string;
-  tipoErro?: "base_teorica" | "interpretacao" | "atencao" | "tempo";
+  tipoErro?: TipoErroId;
 }
 
 /** Ex.: "3, 5, 8-12, 40" ou uma questão por linha */
@@ -200,15 +200,17 @@ export function parseAnaliseAssistente(texto: string): Map<number, Partial<Quest
 
     const tema = resolverTema(resto.replace(/^[\s:\-–]+/, ""));
     const tipoMatch = resto.match(
-      /base\s*te[oó]rica|interpreta[cç][aã]o|aten[cç][aã]o|tempo|bobeira/i
+      /teoria|conceito|te[oó]rico|c[aá]lculo|bobeira|aten[cç][aã]o|interpreta[cç][aã]o|enunciado|d[uú]vida|crucial|chute|tempo/i
     );
     let tipoErro: QuestaoInput["tipoErro"];
     if (tipoMatch) {
       const t = tipoMatch[0].toLowerCase();
-      if (t.includes("interpret")) tipoErro = "interpretacao";
-      else if (t.includes("aten") || t.includes("bobeira")) tipoErro = "atencao";
-      else if (t.includes("tempo")) tipoErro = "tempo";
-      else tipoErro = "base_teorica";
+      if (t.includes("teor") || t.includes("conceito")) tipoErro = "CONCEITO_TEORICO";
+      else if (t.includes("calculo") || t.includes("bobeira") || t.includes("aten")) tipoErro = "CALCULO_BOBEIRA";
+      else if (t.includes("interpret") || t.includes("enunciado")) tipoErro = "INTERPRETACAO_ENUNCIADO";
+      else if (t.includes("duvida") || t.includes("crucial")) tipoErro = "DUVIDA_CRUCIAL";
+      else if (t.includes("chute")) tipoErro = "CHUTE_TOTAL";
+      else if (t.includes("tempo")) tipoErro = "FALTA_TEMPO";
     }
 
     map.set(numero, {

@@ -99,9 +99,11 @@
     }
   ],
   "tiposErro": [
-    { "id": "base_teorica", "label": "Falta de base teórica", "icone": "book" },
-    { "id": "interpretacao", "label": "Interpretação / leitura", "icone": "text" },
-    { "id": "atencao", "label": "Atenção / cuidado", "icone": "eye" },
-    { "id": "tempo", "label": "Gestão de tempo", "icone": "clock" }
+    { "id": "CONCEITO_TEORICO", "label": "Conceito Teórico", "icone": "book" },
+    { "id": "CALCULO_BOBEIRA", "label": "Cálculo / Bobeira", "icone": "eye" },
+    { "id": "INTERPRETACAO_ENUNCIADO", "label": "Interpretação do Enunciado", "icone": "text" },
+    { "id": "DUVIDA_CRUCIAL", "label": "Dúvida Crucial", "icone": "help-circle" },
+    { "id": "CHUTE_TOTAL", "label": "Chute Total", "icone": "shuffle" },
+    { "id": "FALTA_TEMPO", "label": "Falta de Tempo", "icone": "clock" }
   ]
 }

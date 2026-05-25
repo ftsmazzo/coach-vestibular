@@ -52,7 +52,14 @@ export async function POST(request: Request) {
       correto: acertou,
       materiaId: materiaId || undefined,
       temaId: temaId || undefined,
-      tipoErro: ["base_teorica", "interpretacao", "atencao", "tempo"].includes(tipoErro ?? "")
+      tipoErro: [
+        "CONCEITO_TEORICO",
+        "CALCULO_BOBEIRA",
+        "INTERPRETACAO_ENUNCIADO",
+        "DUVIDA_CRUCIAL",
+        "CHUTE_TOTAL",
+        "FALTA_TEMPO",
+      ].includes(tipoErro ?? "")
         ? tipoErro
         : undefined,
       observacao: row.observacao,

@@ -4,7 +4,7 @@ import type { ProvaTipo } from "@/generated/prisma/client";
 export const TIPOS_PROVA_OFICIAL: ProvaTipo[] = ["ENEM_OFICIAL", "VESTIBULAR"];
 
 /** Simulados de cursinho etc. — termômetro da evolução nos focos */
-export const TIPOS_SIMULADO: ProvaTipo[] = ["SIMULADO", "OUTRO"];
+export const TIPOS_SIMULADO: ProvaTipo[] = ["SIMULADO", "OUTRO", "LISTA_FIXACAO"];
 
 export type AbaProvasAluno = "oficiais" | "simulados";
 
@@ -30,6 +30,7 @@ export function labelTipoProva(tipo: ProvaTipo): string {
     VESTIBULAR: "Vestibular",
     SIMULADO: "Simulado",
     OUTRO: "Outro",
+    LISTA_FIXACAO: "Lista de Fixação",
   };
   return map[tipo] ?? tipo;
 }

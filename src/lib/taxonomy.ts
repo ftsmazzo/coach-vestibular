@@ -1,6 +1,12 @@
 import taxonomyData from "../../data/taxonomy.json";
 
-export type TipoErroId = "base_teorica" | "interpretacao" | "atencao" | "tempo";
+export type TipoErroId =
+  | "CONCEITO_TEORICO"
+  | "CALCULO_BOBEIRA"
+  | "INTERPRETACAO_ENUNCIADO"
+  | "DUVIDA_CRUCIAL"
+  | "CHUTE_TOTAL"
+  | "FALTA_TEMPO";
 
 export interface Tema {
   id: string;
