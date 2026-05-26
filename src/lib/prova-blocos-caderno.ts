@@ -94,11 +94,6 @@ const REGRAS_CABECALHO: Array<{
     materia: "",
     areaBloco: "Ciências Humanas e suas tecnologias",
   },
-  {
-    test: (l) => /^tipo\s*\d+\s*$/i.test(l.trim()),
-    materia: "",
-    areaBloco: l.trim(),
-  },
 ];
 
 function linhaEhCabecalhoBloco(linha: string): boolean {
@@ -112,6 +107,7 @@ function linhaEhCabecalhoBloco(linha: string): boolean {
   if (letras.length < 4) return false;
   const maiusculas = t.replace(/[^A-ZÀ-Ú]/g, "").length;
   const ratio = maiusculas / Math.max(letras.length, 1);
+  if (/^tipo\s*\d+\s*$/i.test(t)) return true;
   const matchRegra = REGRAS_CABECALHO.some((r) => r.test(t));
   return matchRegra || (ratio > 0.55 && t.length < 70);
 }
@@ -124,6 +120,10 @@ function cabecalhoParaBloco(linha: string): {
 } | null {
   const t = linha.trim();
   if (!linhaEhCabecalhoBloco(t)) return null;
+
+  if (/^tipo\s*\d+\s*$/i.test(t)) {
+    return { materia: "", assunto: "", areaBloco: t, titulo: t };
+  }
 
   for (const regra of REGRAS_CABECALHO) {
     if (!regra.test(t)) continue;
