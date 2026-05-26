@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 function truncarEnunciado(t?: string | null): string | null {
   if (!t?.trim()) return null;
   const s = t.trim();
-  return s.length > 2000 ? `${s.slice(0, 2000)}…` : s;
+  // Enunciado completo é base para classificação/pós-correção (auditoria e reclassificar).
+  // Mantemos um limite alto para não cortar "comando + alternativas" em questões longas.
+  return s.length > 6000 ? `${s.slice(0, 6000)}…` : s;
 }
 
 export async function upsertQuestoesExtraidas(

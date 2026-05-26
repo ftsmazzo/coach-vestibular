@@ -38,11 +38,7 @@ Responda apenas com um JSON válido seguindo esta estrutura rígida:
   "questoes": [
     {
       "numero": 1,
-      "areaBloco": "Ciências da Natureza" ou null,
-      "trechoEnunciado": "[Texto de apoio completo...] + [Pergunta/Comando completo]",
-      "conhecimentoExigido": "Frase curta descrevendo o conhecimento exigido" ou null,
-      "nivelDificuldade": "facil" | "media" | "dificil" ou null,
-      "observacoes": "Gráfico" ou "Tabela" ou "Interdisciplinar" ou null
+      "trechoEnunciado": "[Texto de apoio completo...] + [Pergunta/Comando completo]"
     }
   ]
 }`;
@@ -107,7 +103,8 @@ function chunkTextPedagogical(text: string, batchSize = 8): string[] {
 
 async function callOpenAI(
   systemPrompt: string,
-  userContent: string
+  userContent: string,
+  modelOverride?: string
 ): Promise<any> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -121,7 +118,7 @@ async function callOpenAI(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      model: modelOverride ?? process.env.OPENAI_MODEL ?? "gpt-4o-mini",
       temperature: 0.1,
       response_format: { type: "json_object" },
       messages: [
@@ -221,11 +218,7 @@ export async function extrairQuestoesComIA(
   const batches = chunkTextPedagogical(trimmed, 8);
   const questoesPasso1: Array<{
     numero: number;
-    areaBloco: string | null;
     trechoEnunciado: string;
-    conhecimentoExigido: string | null;
-    nivelDificuldade: string | null;
-    observacoes: string | null;
   }> = [];
 
   const allAvisos: string[] = [];
@@ -238,7 +231,22 @@ export async function extrairQuestoesComIA(
         `Lote ${i + 1}/${batches.length} a extrair:\n\n${batches[i]}`
       );
       if (result && Array.isArray(result.questoes)) {
-        questoesPasso1.push(...result.questoes);
+        const brutas = result.questoes as Array<any>;
+        const validas = brutas.filter((q) => {
+          return (
+            q &&
+            typeof q.numero === "number" &&
+            Number.isInteger(q.numero) &&
+            typeof q.trechoEnunciado === "string" &&
+            q.trechoEnunciado.trim().length >= 20
+          );
+        });
+        if (validas.length !== brutas.length) {
+          allAvisos.push(
+            `Passo 1: lote ${i + 1} retornou ${brutas.length} itens, mas ${validas.length} foram válidos (numero + trechoEnunciado).`
+          );
+        }
+        questoesPasso1.push(...validas);
       }
     } catch (error) {
       console.error(`Erro no Passo 1, lote ${i + 1}:`, error);
@@ -252,33 +260,53 @@ export async function extrairQuestoesComIA(
     throw new Error("Nenhuma questão foi extraída no Passo 1 de extração literal.");
   }
 
-  // PASSO 2: Classificação Pedagógica com Visão Global
-  const previewQuestoes = questoesPasso1.map((q) => ({
-    numero: q.numero,
-    enunciadoPreview: q.trechoEnunciado.slice(0, 250),
-  }));
+  // PASSO 2: Classificação Pedagógica (sem preview curto)
+  // Idioma e assunto dependem do enunciado completo; então classificamos em lotes menores.
+  const MAX_ENUNCIADO_PARA_CLASSIFICAR =
+    parseInt(process.env.ENUNCIADO_PARA_CLASSIFICAR_MAX ?? "5000", 10);
+  const CLASS_BATCH_SIZE = parseInt(process.env.CLASS_BATCH_SIZE ?? "8", 10);
+  const modelPasso2 = process.env.OPENAI_MODEL_PASSO_2 ?? process.env.OPENAI_MODEL;
 
-  let classificacoes: Array<{ numero: number; materia: string; assunto: string }> = [];
-  try {
-    const result = await callOpenAI(
-      SYSTEM_PROMPT_PASSO_2,
-      `Aqui estão todas as questões extraídas da prova. Classifique cada uma de acordo com a taxonomia:\n\n${JSON.stringify(previewQuestoes)}`
-    );
-    if (result && Array.isArray(result.classificacoes)) {
-      classificacoes = result.classificacoes;
+  const mapClassificacoes = new Map<number, { materia: string; assunto: string }>();
+  for (let i = 0; i < questoesPasso1.length; i += CLASS_BATCH_SIZE) {
+    const lote = questoesPasso1.slice(i, i + CLASS_BATCH_SIZE);
+    const loteParaIA = lote.map((q) => {
+      const t = q.trechoEnunciado.trim();
+      const cortado =
+        t.length > MAX_ENUNCIADO_PARA_CLASSIFICAR
+          ? `${t.slice(0, MAX_ENUNCIADO_PARA_CLASSIFICAR)}…`
+          : t;
+      return { numero: q.numero, enunciado: cortado };
+    });
+
+    try {
+      const result = await callOpenAI(
+        SYSTEM_PROMPT_PASSO_2,
+        `Classifique as questões abaixo de acordo com a taxonomia:\n\n${JSON.stringify(
+          loteParaIA
+        )}`,
+        modelPasso2
+      );
+      if (result && Array.isArray(result.classificacoes)) {
+        for (const c of result.classificacoes) {
+          if (c?.numero && c.materia && c.assunto) {
+            mapClassificacoes.set(c.numero, { materia: c.materia, assunto: c.assunto });
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Erro no Passo 2 (Classificação) — lote ${i}:`, error);
+      allAvisos.push(
+        `Erro de classificação no lote ${i} — usando fallback para as questões deste lote.`
+      );
     }
-  } catch (error) {
-    console.error("Erro no Passo 2 (Classificação):", error);
-    allAvisos.push("A classificação pedagógica falhou; usando classificação de fallback.");
   }
 
-  // CONSOLIDAÇÃO
-  const mapClassificacoes = new Map<number, { materia: string; assunto: string }>();
-  for (const c of classificacoes) {
-    mapClassificacoes.set(c.numero, {
-      materia: c.materia,
-      assunto: c.assunto,
-    });
+  const naoClassificadas = questoesPasso1.filter((q) => !mapClassificacoes.has(q.numero));
+  if (naoClassificadas.length > 0) {
+    allAvisos.push(
+      `Passo 2: ${naoClassificadas.length} questão(ões) sem classificação (marcadas como «A classificar»).`
+    );
   }
 
   const finalQuestoes: QuestaoExtraida[] = questoesPasso1.map((q) => {
@@ -289,12 +317,13 @@ export async function extrairQuestoesComIA(
 
     return {
       numero: q.numero,
-      areaBloco: q.areaBloco,
+      // Para evitar ruído, o Passo 1 não extrai blocos nem campos pedagógicos.
+      areaBloco: null,
       materia: c.materia,
       assunto: c.assunto,
-      conhecimentoExigido: q.conhecimentoExigido,
-      nivelDificuldade: q.nivelDificuldade,
-      observacoes: q.observacoes,
+      conhecimentoExigido: null,
+      nivelDificuldade: null,
+      observacoes: null,
       trechoEnunciado: q.trechoEnunciado,
     };
   });
