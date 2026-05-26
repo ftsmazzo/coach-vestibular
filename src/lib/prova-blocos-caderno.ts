@@ -1,5 +1,10 @@
 import type { QuestaoExtraida } from "@/lib/ai-extract-prova";
-import { assuntoPadraoMateria } from "@/lib/prova-heuristicas";
+import { assuntoPadraoMateria, inferirMateriaPorEnunciado } from "@/lib/prova-heuristicas";
+import {
+  detectarPassagemEspanhol,
+  detectarPassagemIngles,
+  textoIndicaPortuguesInterpretacao,
+} from "@/lib/prova-materia-ajuste";
 import { normalizarLabelAssunto, normalizarLabelMateria } from "@/lib/taxonomia-validacao";
 
 export interface InfoBlocoCaderno {
@@ -19,7 +24,36 @@ function norm(s: string): string {
     .replace(/\s+/g, " ");
 }
 
-/** Cabeçalhos de bloco UFU/vestibular → matéria da taxonomia. */
+/** Linha de índice/sumário com várias disciplinas — não é cabeçalho de bloco. */
+function linhaPareceIndiceOuLista(linha: string): boolean {
+  const t = linha.trim();
+  if (!t.includes(",")) return false;
+  const n = norm(t);
+  const rotulos = [
+    "historia",
+    "geografia",
+    "sociologia",
+    "filosofia",
+    "biologia",
+    "fisica",
+    "quimica",
+    "matematica",
+    "portugues",
+    "ingles",
+    "espanhol",
+    "linguagens",
+  ];
+  const hits = rotulos.filter((r) => n.includes(r)).length;
+  return hits >= 2;
+}
+
+function linhaEhTituloExato(linha: string, padroes: RegExp[]): boolean {
+  const t = linha.trim();
+  const n = norm(t);
+  return padroes.some((re) => re.test(n) || re.test(t));
+}
+
+/** Cabeçalhos de bloco UFU — só títulos explícitos, não menções em listas. */
 const REGRAS_CABECALHO: Array<{
   test: (linha: string) => boolean;
   materia: string;
@@ -27,70 +61,96 @@ const REGRAS_CABECALHO: Array<{
   areaBloco: string;
 }> = [
   {
-    test: (l) => /matematica\s+e\s+suas\s+tecnologias/.test(norm(l)) || /^\s*matematica\s*$/i.test(l),
+    test: (l) =>
+      linhaEhTituloExato(l, [
+        /^matematica\s+e\s+suas\s+tecnologias$/i,
+        /^matematica$/i,
+      ]),
     materia: "Matemática",
     areaBloco: "Matemática e suas tecnologias",
   },
   {
-    test: (l) => /lingua\s+inglesa|ingles\s+e\s+suas|teste\s+de\s+ingles/i.test(norm(l)),
+    test: (l) =>
+      linhaEhTituloExato(l, [
+        /^lingua\s+inglesa$/i,
+        /^ingles\s+e\s+suas\s+tecnologias$/i,
+        /^ingles$/i,
+      ]),
     materia: "Inglês",
     areaBloco: "Língua Inglesa",
   },
   {
-    test: (l) => /lingua\s+espanhola|espanhol\s+e\s+suas/i.test(norm(l)),
+    test: (l) =>
+      linhaEhTituloExato(l, [
+        /^lingua\s+espanhola$/i,
+        /^espanhol\s+e\s+suas\s+tecnologias$/i,
+        /^espanhol$/i,
+      ]),
     materia: "Espanhol",
     areaBloco: "Língua Espanhola",
   },
   {
-    test: (l) =>
-      /lingua\s+portuguesa|linguagens,?\s+codigos|linguagens\s+e\s+codigos/i.test(norm(l)),
+    test: (l) => {
+      const n = norm(l);
+      return (
+        /^lingua\s+portuguesa$/.test(n) ||
+        (n.startsWith("linguagens") && n.includes("codigos")) ||
+        /^linguagens\s+e\s+codigos/.test(n)
+      );
+    },
     materia: "Português",
     areaBloco: "Linguagens, códigos e suas tecnologias",
   },
   {
-    test: (l) => /^\s*biologia\s*$/i.test(l) || /\bbiologia\b/i.test(l) && l.length < 80,
+    test: (l) => linhaEhTituloExato(l, [/^biologia$/i]),
     materia: "Biologia",
     areaBloco: "Ciências da Natureza",
   },
   {
-    test: (l) => /^\s*fisica\s*$/i.test(l) || /\bfisica\b/i.test(l) && l.length < 80,
+    test: (l) => linhaEhTituloExato(l, [/^fisica$/i]),
     materia: "Física",
     areaBloco: "Ciências da Natureza",
   },
   {
-    test: (l) => /^\s*quimica\s*$/i.test(l) || /\bquimica\b/i.test(l) && l.length < 80,
+    test: (l) => linhaEhTituloExato(l, [/^quimica$/i]),
     materia: "Química",
     areaBloco: "Ciências da Natureza",
   },
   {
     test: (l) =>
-      /ciencias\s+da\s+natureza|natureza\s+e\s+suas\s+tecnologias/i.test(norm(l)),
+      linhaEhTituloExato(l, [
+        /^ciencias\s+da\s+natureza\s+e\s+suas\s+tecnologias$/i,
+        /^ciencias\s+da\s+natureza$/i,
+      ]),
     materia: "",
     areaBloco: "Ciências da Natureza e suas tecnologias",
   },
   {
-    test: (l) => /^\s*sociologia\s*$/i.test(l) || /\bsociologia\b/i.test(l) && l.length < 90,
+    test: (l) => linhaEhTituloExato(l, [/^sociologia$/i]),
     materia: "Sociologia",
     areaBloco: "Ciências Humanas",
   },
   {
-    test: (l) => /^\s*filosofia\s*$/i.test(l) || /\bfilosofia\b/i.test(l) && l.length < 90,
+    test: (l) => linhaEhTituloExato(l, [/^filosofia$/i]),
     materia: "Filosofia",
     areaBloco: "Ciências Humanas",
   },
   {
-    test: (l) => /^\s*historia\s*$/i.test(l) || /\bhistoria\b/i.test(l) && l.length < 90,
+    test: (l) => linhaEhTituloExato(l, [/^historia$/i]),
     materia: "História",
     areaBloco: "Ciências Humanas",
   },
   {
-    test: (l) => /^\s*geografia\s*$/i.test(l) || /\bgeografia\b/i.test(l) && l.length < 90,
+    test: (l) => linhaEhTituloExato(l, [/^geografia$/i]),
     materia: "Geografia",
     areaBloco: "Ciências Humanas",
   },
   {
     test: (l) =>
-      /ciencias\s+humanas|humanas\s+e\s+suas\s+tecnologias/i.test(norm(l)),
+      linhaEhTituloExato(l, [
+        /^ciencias\s+humanas\s+e\s+suas\s+tecnologias$/i,
+        /^ciencias\s+humanas$/i,
+      ]),
     materia: "",
     areaBloco: "Ciências Humanas e suas tecnologias",
   },
@@ -98,18 +158,14 @@ const REGRAS_CABECALHO: Array<{
 
 function linhaEhCabecalhoBloco(linha: string): boolean {
   const t = linha.trim();
-  if (t.length < 3 || t.length > 120) return false;
+  if (t.length < 3 || t.length > 100) return false;
+  if (linhaPareceIndiceOuLista(t)) return false;
   if (/quest[aã]o\s*\d|^\d{1,3}\s*[.)]/i.test(t)) return false;
-  if (/processo\s+seletivo|edital\s+dirps|ufu\s*\/\s*20\d{2}/i.test(t) && t.length > 40) {
+  if (/processo\s+seletivo|edital\s+dirps|ufu\s*\/\s*20\d{2}/i.test(t) && t.length > 45) {
     return false;
   }
-  const letras = t.replace(/[^A-Za-zÀ-ú]/g, "");
-  if (letras.length < 4) return false;
-  const maiusculas = t.replace(/[^A-ZÀ-Ú]/g, "").length;
-  const ratio = maiusculas / Math.max(letras.length, 1);
   if (/^tipo\s*\d+\s*$/i.test(t)) return true;
-  const matchRegra = REGRAS_CABECALHO.some((r) => r.test(t));
-  return matchRegra || (ratio > 0.55 && t.length < 70);
+  return REGRAS_CABECALHO.some((r) => r.test(t));
 }
 
 function cabecalhoParaBloco(linha: string): {
@@ -137,10 +193,53 @@ function cabecalhoParaBloco(linha: string): {
     };
   }
 
-  if (/^[A-ZÀ-Ú0-9\s,–—-]{4,}$/.test(t) && t.length < 70) {
-    return { materia: "", assunto: "", areaBloco: t, titulo: t };
-  }
   return null;
+}
+
+/** Enunciado contradiz o cabeçalho do caderno → não forçar matéria do bloco. */
+export function cabecalhoConfiavelParaQuestao(
+  q: QuestaoExtraida,
+  info: InfoBlocoCaderno
+): boolean {
+  if (!info.materia) return false;
+  const enc = q.trechoEnunciado.trim();
+  if (enc.length < 40) return true;
+
+  const m = norm(info.materia);
+  const n = norm(enc);
+
+  if (m === "sociologia") {
+    if (textoIndicaPortuguesInterpretacao(enc)) return false;
+    if (/literatura|entrevista|poema|gramatica|didascalia|sujeito poetico|interpretacao/.test(n)) {
+      return false;
+    }
+    if (detectarPassagemIngles(enc) || detectarPassagemEspanhol(enc)) return false;
+  }
+
+  if (m === "portugues" && (detectarPassagemIngles(enc) || detectarPassagemEspanhol(enc))) {
+    return false;
+  }
+
+  if (m === "ingles" && detectarPassagemEspanhol(enc) && !detectarPassagemIngles(enc)) {
+    return false;
+  }
+
+  if (m === "espanhol" && detectarPassagemIngles(enc) && !detectarPassagemEspanhol(enc)) {
+    return false;
+  }
+
+  const inferida = inferirMateriaPorEnunciado(enc);
+  if (inferida && norm(inferida) !== m) {
+    const idioma = ["ingles", "espanhol", "portugues"];
+    const ciencia = ["biologia", "matematica", "fisica", "quimica"];
+    if (idioma.includes(norm(inferida)) || ciencia.includes(norm(inferida))) {
+      if (m === "sociologia" || m === "historia" || m === "geografia" || m === "filosofia") {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 interface MarcaQuestao {
@@ -188,6 +287,27 @@ function marcasCabecalhos(texto: string): MarcaCabecalho[] {
   return out;
 }
 
+/** Cabeçalho válido: próximo da questão, não sumário do início do PDF. */
+function cabecalhoParaQuestao(
+  q: MarcaQuestao,
+  cabecalhos: MarcaCabecalho[],
+  primeiraQuestaoPos: number
+): MarcaCabecalho | null {
+  const MAX_ANTES = 12_000;
+  let escolhido: MarcaCabecalho | null = null;
+
+  for (const cab of cabecalhos) {
+    if (cab.pos > q.pos) continue;
+    if (q.pos - cab.pos > MAX_ANTES) continue;
+    if (cab.pos < primeiraQuestaoPos && q.pos - cab.pos > 6000) continue;
+
+    if (!escolhido || cab.pos > escolhido.pos) {
+      escolhido = cab;
+    }
+  }
+  return escolhido;
+}
+
 /** Mapa questão → matéria/assunto inferidos pelos títulos do caderno (PDF). */
 export function extrairMapaBlocosDoCaderno(texto: string): Map<number, InfoBlocoCaderno> {
   const mapa = new Map<number, InfoBlocoCaderno>();
@@ -198,24 +318,21 @@ export function extrairMapaBlocosDoCaderno(texto: string): Map<number, InfoBloco
   const cabecalhos = marcasCabecalhos(t);
   if (questoes.length === 0 || cabecalhos.length === 0) return mapa;
 
-  let cabIdx = 0;
-  let blocoAtual = cabecalhos[0];
+  const primeiraQuestaoPos = questoes[0].pos;
 
   for (const q of questoes) {
-    while (cabIdx + 1 < cabecalhos.length && cabecalhos[cabIdx + 1].pos <= q.pos) {
-      cabIdx++;
-      blocoAtual = cabecalhos[cabIdx];
-    }
+    const blocoAtual = cabecalhoParaQuestao(q, cabecalhos, primeiraQuestaoPos);
+    if (!blocoAtual?.materia) continue;
 
-    if (!blocoAtual.materia) continue;
-
-    mapa.set(q.numero, {
+    const info: InfoBlocoCaderno = {
       numero: q.numero,
       materia: blocoAtual.materia,
       assunto: blocoAtual.assunto,
       areaBloco: blocoAtual.areaBloco,
       tituloCabecalho: blocoAtual.titulo,
-    });
+    };
+
+    mapa.set(q.numero, info);
   }
 
   return mapa;
@@ -235,7 +352,7 @@ export function mesclarTextoParaBlocos(
 }
 
 /**
- * Aplica matéria/assunto do cabeçalho do caderno (prioridade sobre IA genérica).
+ * Aplica matéria do cabeçalho só quando o enunciado não contradiz o bloco.
  */
 export function aplicarBlocosDoCaderno(
   questoes: QuestaoExtraida[],
@@ -245,18 +362,27 @@ export function aplicarBlocosDoCaderno(
   const mapa = extrairMapaBlocosDoCaderno(textoCaderno);
   if (mapa.size === 0) {
     avisos.push(
-      "Nenhum cabeçalho de bloco (ex.: MATEMÁTICA, SOCIOLOGIA) detectado no texto — classificação só pela IA."
+      "Nenhum cabeçalho de bloco explícito detectado — classificação pela IA e heurísticas."
     );
     return { questoes, avisos };
   }
 
   let aplicadas = 0;
+  let ignoradas = 0;
   const blocosVistos = new Set<string>();
 
   for (const q of questoes) {
     const info = mapa.get(q.numero);
-    if (!info?.materia) {
-      if (info?.areaBloco) q.areaBloco = info.areaBloco;
+    if (!info) continue;
+
+    if (info.areaBloco && !info.materia) {
+      q.areaBloco = info.areaBloco;
+      continue;
+    }
+
+    if (!cabecalhoConfiavelParaQuestao(q, info)) {
+      ignoradas++;
+      if (info.areaBloco) q.areaBloco = info.areaBloco;
       continue;
     }
 
@@ -271,8 +397,13 @@ export function aplicarBlocosDoCaderno(
   }
 
   avisos.push(
-    `Caderno: ${aplicadas} questão(ões) ancoradas em ${blocosVistos.size} bloco(s) detectado(s) (${[...blocosVistos].slice(0, 5).join("; ")}${blocosVistos.size > 5 ? "…" : ""}).`
+    `Caderno: ${aplicadas} questão(ões) ancoradas em cabeçalhos (${[...blocosVistos].slice(0, 4).join("; ")}${blocosVistos.size > 4 ? "…" : ""}).`
   );
+  if (ignoradas > 0) {
+    avisos.push(
+      `${ignoradas} questão(ões): cabeçalho do PDF ignorado porque o enunciado indica outra matéria (ex.: Sociologia no índice vs. texto de Português).`
+    );
+  }
   return { questoes, avisos };
 }
 

@@ -13,6 +13,7 @@ import {
 import { taxonomy } from "@/lib/taxonomy";
 import {
   aplicarBlocosDoCaderno,
+  cabecalhoConfiavelParaQuestao,
   extrairMapaBlocosDoCaderno,
   type InfoBlocoCaderno,
 } from "@/lib/prova-blocos-caderno";
@@ -139,7 +140,7 @@ function restaurarMateriaDoCaderno(
   mapa: Map<number, InfoBlocoCaderno>
 ): void {
   const c = mapa.get(q.numero);
-  if (!c?.materia) return;
+  if (!c?.materia || !cabecalhoConfiavelParaQuestao(q, c)) return;
   if (norm(q.materia) !== norm(c.materia)) {
     q.materia = c.materia;
     q.assunto = c.assunto;
@@ -151,8 +152,12 @@ function restaurarMateriaDoCaderno(
 
 function questaoPrecisaIA(q: QuestaoExtraida, mapa: Map<number, InfoBlocoCaderno>): boolean {
   const c = mapa.get(q.numero);
-  if (c?.materia) return false;
-  return q.materia === "A classificar" || q.assunto === "A classificar";
+  if (c?.materia && cabecalhoConfiavelParaQuestao(q, c)) return false;
+  return (
+    q.materia === "A classificar" ||
+    q.assunto === "A classificar" ||
+    classificacaoSuspeita(q)
+  );
 }
 
 function aplicarClassificacoes(
@@ -336,9 +341,11 @@ export async function classificarMateriaEAssuntoMotor(
     if (mapaCaderno.size > 0) restaurarMateriaDoCaderno(q, mapaCaderno);
   }
 
-  const suspeitas = resultado.filter(
-    (q) => classificacaoSuspeita(q) && !mapaCaderno.get(q.numero)?.materia
-  );
+  const suspeitas = resultado.filter((q) => {
+    const c = mapaCaderno.get(q.numero);
+    if (c?.materia && cabecalhoConfiavelParaQuestao(q, c)) return false;
+    return classificacaoSuspeita(q);
+  });
   if (suspeitas.length > 0) {
     avisos.push(
       `Revisão unitária de ${suspeitas.length} questão(ões) suspeita(s): nº ${suspeitas
