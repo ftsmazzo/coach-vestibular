@@ -21,6 +21,10 @@ import {
   PROMPT_SISTEMA_ESTRUTURA,
 } from "@/lib/prova-pipeline-v2-prompts";
 import {
+  areaBlocoPorNumero,
+  validarItemClassificado,
+} from "@/lib/prova-classificacao-regras";
+import {
   montarContextoProvaTxt,
   resolverPoliticaIdiomas,
   resumoEstruturaParaClassificacao,
@@ -122,6 +126,10 @@ function schemaClassificacaoLote() {
                 type: "string",
                 enum: ["facil", "media", "dificil", ""],
               },
+              resumo_enunciado: {
+                type: "string",
+                description: "Uma linha: o que a questão exige (gênero, habilidade, tema).",
+              },
             },
             required: [
               "numero",
@@ -130,6 +138,7 @@ function schemaClassificacaoLote() {
               "assunto",
               "conhecimento",
               "dificuldade",
+              "resumo_enunciado",
             ],
             additionalProperties: false,
           },
@@ -166,15 +175,18 @@ type EstruturaRes = EstruturaProvaDetectada & {
   observacoes: string;
 };
 
+type QuestaoClassificada = {
+  numero: number;
+  area_bloco: string;
+  materia: string;
+  assunto: string;
+  conhecimento: string;
+  dificuldade: string;
+  resumo_enunciado: string;
+};
+
 type ClassificacaoRes = {
-  questoes: Array<{
-    numero: number;
-    area_bloco: string;
-    materia: string;
-    assunto: string;
-    conhecimento: string;
-    dificuldade: string;
-  }>;
+  questoes: QuestaoClassificada[];
 };
 
 function chunks<T>(arr: T[], size: number): T[][] {
@@ -186,11 +198,70 @@ function chunks<T>(arr: T[], size: number): T[][] {
 }
 
 function tamanhoLote(totalNumeros: number): number {
-  const env = parseInt(process.env.PIPELINE_V2_LOTE_SIZE ?? "18", 10);
-  const base = Number.isFinite(env) && env >= 5 ? env : 18;
-  if (totalNumeros <= 25) return Math.min(base, 12);
-  if (totalNumeros <= 60) return base;
-  return Math.min(22, base + 4);
+  const env = parseInt(process.env.PIPELINE_V2_LOTE_SIZE ?? "8", 10);
+  const base = Number.isFinite(env) && env >= 3 ? Math.min(env, 10) : 8;
+  if (totalNumeros <= 20) return Math.min(base, 6);
+  return base;
+}
+
+function questaoParaRow(
+  q: QuestaoClassificada,
+  estrutura: EstruturaRes
+): ProvaQuestaoRow {
+  const areaBloco =
+    q.area_bloco?.trim() ||
+    areaBlocoPorNumero(estrutura.blocos ?? [], q.numero) ||
+    undefined;
+  const materiaRaw = q.materia?.trim() || "A classificar";
+  const materia =
+    materiaRaw === "A classificar" ? materiaRaw : normalizarLabelMateria(materiaRaw);
+  const assunto =
+    materia === "A classificar"
+      ? "A classificar"
+      : normalizarLabelAssunto(materia, q.assunto);
+  return {
+    numero: q.numero,
+    areaBloco,
+    materia,
+    assunto,
+    conhecimentoExigido: q.conhecimento?.trim() || undefined,
+    nivelDificuldade: normalizarDificuldade(q.dificuldade ?? ""),
+    observacoes: q.resumo_enunciado?.trim().slice(0, 200) || undefined,
+  };
+}
+
+function aplicarQuestoesClassificadas(
+  questoes: QuestaoClassificada[],
+  lote: number[],
+  estrutura: EstruturaRes,
+  rowsMap: Map<number, ProvaQuestaoRow>,
+  invalidos: Set<number>
+): void {
+  for (const q of questoes) {
+    if (!lote.includes(q.numero)) continue;
+    const row = questaoParaRow(q, estrutura);
+    const area = row.areaBloco ?? "";
+    const val = validarItemClassificado({
+      numero: q.numero,
+      areaBloco: area,
+      materia: row.materia,
+      assunto: row.assunto,
+      conhecimento: row.conhecimentoExigido,
+      resumoEnunciado: q.resumo_enunciado,
+    });
+    if (!val.ok) {
+      invalidos.add(q.numero);
+      rowsMap.set(q.numero, {
+        ...row,
+        materia: "A classificar",
+        assunto: "A classificar",
+        observacoes: val.motivo?.slice(0, 200),
+      });
+    } else {
+      invalidos.delete(q.numero);
+      rowsMap.set(q.numero, row);
+    }
+  }
 }
 
 function validarRows(
@@ -310,50 +381,78 @@ Preencha o schema estrutural completo a partir do PDF.
   const loteSize = tamanhoLote(numeros.length);
   const lotesNums = chunks(numeros, loteSize);
   const rowsMap = new Map<number, ProvaQuestaoRow>();
+  const invalidosPosIa = new Set<number>();
   let modelClass = modeloPipelinePrincipal();
+
+  const montarInstrucaoClass = (numsStr: string, extra = "") => `${ctxTxt}
+
+${resumoEstrutura ? `Contexto estrutural:\n${resumoEstrutura}\n` : ""}
+Classifique SOMENTE as questões: ${numsStr}
+Para cada item preencha resumo_enunciado (1 linha) antes de decidir materia/assunto.
+area_bloco do PDF tem prioridade sobre palavras do texto (Humanas != Biologia; Linguagens != Geografia salvo mapa/clima explícito).
+${excluirEs ? "Duplicata EN/ES: classifique só o bloco em INGLÊS.\n" : ""}
+${extra}
+Taxonomia:
+${taxonomia}`;
 
   for (let i = 0; i < lotesNums.length; i++) {
     const lote = lotesNums[i];
-    const numsStr = lote.join(", ");
-    const instrucaoClass = `${ctxTxt}
-
-${resumoEstrutura ? `Contexto estrutural já detectado:\n${resumoEstrutura}\n` : ""}
-Classifique SOMENTE as questões de números: ${numsStr}
-
-Use a taxonomia quando couber; respeite area_bloco conforme seções do PDF.
-${excluirEs ? "Há duplicata inglês/espanhol: classifique apenas o bloco em INGLÊS para esses números.\n" : ""}
-Taxonomia do projeto:
-${taxonomia}`;
-
     const classExec = await responsesComPdfSchemaComValidacao<ClassificacaoRes>({
       fileId,
       taskName: `classificacao-lote-${i + 1}`,
       systemPrompt: PROMPT_SISTEMA_CLASSIFICACAO,
-      instrucao: instrucaoClass,
+      instrucao: montarInstrucaoClass(lote.join(", ")),
       schema: schemaClassificacaoLote(),
       validate: (data) => validarClassificacaoLote(data, lote),
     });
-    const classRes = classExec.data;
     modelClass = classExec.model;
-
-    for (const q of classRes.questoes ?? []) {
-      if (!lote.includes(q.numero)) continue;
-      const materia = normalizarLabelMateria(q.materia);
-      const assunto = normalizarLabelAssunto(materia, q.assunto);
-      rowsMap.set(q.numero, {
-        numero: q.numero,
-        areaBloco: q.area_bloco?.trim() || undefined,
-        materia,
-        assunto,
-        conhecimentoExigido: q.conhecimento?.trim() || undefined,
-        nivelDificuldade: normalizarDificuldade(q.dificuldade ?? ""),
-        observacoes: estrutura.observacoes?.slice(0, 200) || undefined,
-      });
-    }
-
-    etapas.push(
-      `Lote ${i + 1}/${lotesNums.length} (${classExec.model}): ${classRes.questoes?.length ?? 0} itens`
+    aplicarQuestoesClassificadas(
+      classExec.data.questoes ?? [],
+      lote,
+      estrutura,
+      rowsMap,
+      invalidosPosIa
     );
+    etapas.push(
+      `Lote ${i + 1}/${lotesNums.length} (${classExec.model}): ${classExec.data.questoes?.length ?? 0} itens`
+    );
+  }
+
+  if (invalidosPosIa.size > 0) {
+    const numsRetry = [...invalidosPosIa].sort((a, b) => a - b);
+    avisos.push(
+      `${numsRetry.length} questão(ões) com validação pós-IA — reclassificando em lote menor: nº ${numsRetry.slice(0, 12).join(", ")}${numsRetry.length > 12 ? "…" : ""}.`
+    );
+    const retryLotes = chunks(numsRetry, 3);
+    for (let j = 0; j < retryLotes.length; j++) {
+      const lote = retryLotes[j];
+      const classExec = await responsesComPdfSchemaComValidacao<ClassificacaoRes>({
+        fileId,
+        taskName: `classificacao-retry-${j + 1}`,
+        systemPrompt: PROMPT_SISTEMA_CLASSIFICACAO,
+        instrucao: montarInstrucaoClass(
+          lote.join(", "),
+          "RETRY: a classificação anterior violou regras de bloco (ex.: Biologia em Humanas, Geografia em Linguagens). Corrija com base no PDF e no resumo_enunciado."
+        ),
+        schema: schemaClassificacaoLote(),
+        validate: (data) => validarClassificacaoLote(data, lote),
+      });
+      modelClass = classExec.model;
+      aplicarQuestoesClassificadas(
+        classExec.data.questoes ?? [],
+        lote,
+        estrutura,
+        rowsMap,
+        invalidosPosIa
+      );
+    }
+    if (invalidosPosIa.size > 0) {
+      avisos.push(
+        `${invalidosPosIa.size} questão(ões) ainda inconsistentes após retry — use Auditoria → Reclassificar com enunciado colado.`
+      );
+    } else {
+      etapas.push("Retry pós-validação: todas as inconsistências corrigidas.");
+    }
   }
 
   let rows: ProvaQuestaoRow[] = [...rowsMap.values()].sort((a, b) => a.numero - b.numero);
@@ -361,7 +460,7 @@ ${taxonomia}`;
   const alinhadas = alinharLoteTaxonomia(
     rows.map((r) => ({
       numero: r.numero,
-      trechoEnunciado: "",
+      trechoEnunciado: r.observacoes ?? "",
       materia: r.materia,
       assunto: r.assunto,
       areaBloco: r.areaBloco ?? null,
