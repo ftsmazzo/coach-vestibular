@@ -551,7 +551,7 @@ export default function AdminProvaDetailPage() {
         questoesNoBanco={prova.questoes.length}
         totalQuestoes={prova.totalQuestoes}
         temTextoFonte={prova.temTextoFonte}
-        tamanhoTextoFonte={prova.tamanhoTextoFonte}
+        tamanhoTextoFonte={prova.tamanhoTextoFonte ?? 0}
         onMensagem={setMsg}
         onAtualizado={load}
       />
