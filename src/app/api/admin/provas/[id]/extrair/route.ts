@@ -13,6 +13,9 @@ import {
   upsertQuestoesExtraidas,
 } from "@/lib/prova-questoes-persist";
 
+/** Extração de prova inteira pode levar vários minutos (OpenAI em lotes). */
+export const maxDuration = 600;
+
 const ETAPAS: EtapaExtracao[] = [
   "enunciados",
   "materia",
@@ -28,6 +31,7 @@ const bodySchema = z.object({
   etapa: z.enum(["enunciados", "materia", "assunto", "conhecimento", "completo"]).default("completo"),
   continuarDeBanco: z.boolean().default(false),
   excluirBlocoEspanhol: z.boolean().optional(),
+  usarTextoFonte: z.boolean().optional(),
 });
 
 function parseEtapa(raw: FormDataEntryValue | string | null): EtapaExtracao {
@@ -69,10 +73,22 @@ export async function POST(
   let etapa: EtapaExtracao = "completo";
   let continuarDeBanco = false;
   let excluirBlocoEspanhol: boolean | undefined;
+  let usarTextoFonte = false;
 
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("multipart/form-data")) {
-    const form = await request.formData();
+    let form: FormData;
+    try {
+      form = await request.formData();
+    } catch {
+      return NextResponse.json(
+        {
+          error:
+            "Não foi possível ler o envio (PDF/texto muito grande ou corpo truncado). Grave o texto na etapa 1 uma vez; nas etapas 2–4 o servidor usa o texto já salvo sem reenviar.",
+        },
+        { status: 413 }
+      );
+    }
     aplicar = form.get("aplicar") === "true";
     modo = form.get("modo") === "adicionar" ? "adicionar" : "substituir";
     etapa = parseEtapa(form.get("etapa"));
@@ -81,10 +97,26 @@ export async function POST(
     if (rawExcluir != null) {
       excluirBlocoEspanhol = rawExcluir === "true";
     }
+    usarTextoFonte = form.get("usarTextoFonte") === "true";
     const textField = form.get("texto") as string | null;
     const file = form.get("file") as File | null;
 
-    if (textField?.trim()) {
+    if (usarTextoFonte) {
+      const salvo = await prisma.prova.findUnique({
+        where: { id: provaId },
+        select: { textoFonte: true },
+      });
+      if (!salvo?.textoFonte?.trim()) {
+        return NextResponse.json(
+          {
+            error:
+              "Não há texto da prova salvo no servidor. Cole o PDF/texto uma vez na etapa 1 ou envie o arquivo.",
+          },
+          { status: 400 }
+        );
+      }
+      texto = salvo.textoFonte.trim();
+    } else if (textField?.trim()) {
       texto = textField.trim();
     } else if (file) {
       const buf = Buffer.from(await file.arrayBuffer());
@@ -107,6 +139,20 @@ export async function POST(
     etapa = body.etapa;
     continuarDeBanco = body.continuarDeBanco;
     excluirBlocoEspanhol = body.excluirBlocoEspanhol;
+    usarTextoFonte = body.usarTextoFonte === true;
+    if (usarTextoFonte && !texto.trim()) {
+      const salvo = await prisma.prova.findUnique({
+        where: { id: provaId },
+        select: { textoFonte: true },
+      });
+      if (!salvo?.textoFonte?.trim()) {
+        return NextResponse.json(
+          { error: "Não há texto da prova salvo no servidor." },
+          { status: 400 }
+        );
+      }
+      texto = salvo.textoFonte.trim();
+    }
   }
 
   const excluirEs =

@@ -502,6 +502,7 @@ export default function AdminProvaDetailPage() {
         textoProva={textoProva}
         pdfFile={pdfFile}
         questoesNoBanco={prova.questoes.length}
+        temTextoFonte={prova.temTextoFonte}
         onMensagem={setMsg}
         onAtualizado={load}
       />

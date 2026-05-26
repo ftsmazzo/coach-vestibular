@@ -48,6 +48,7 @@ interface Props {
   textoProva: string;
   pdfFile: File | null;
   questoesNoBanco: number;
+  temTextoFonte?: boolean;
   onMensagem: (msg: string) => void;
   onAtualizado: () => void;
 }
@@ -57,6 +58,7 @@ export function AdminExtracaoPipeline({
   textoProva,
   pdfFile,
   questoesNoBanco,
+  temTextoFonte = false,
   onMensagem,
   onAtualizado,
 }: Props) {
@@ -71,7 +73,7 @@ export function AdminExtracaoPipeline({
       const etapaUsaBanco =
         etapa === "materia" || etapa === "assunto" || etapa === "conhecimento";
 
-      if (precisaTexto && !textoProva.trim() && !pdfFile) {
+      if (precisaTexto && !textoProva.trim() && !pdfFile && !temTextoFonte) {
         onMensagem("Cole o texto da prova ou envie um PDF.");
         return;
       }
@@ -88,8 +90,16 @@ export function AdminExtracaoPipeline({
       fd.append("etapa", etapa);
       fd.append("continuarDeBanco", String(etapaUsaBanco));
       fd.append("excluirBlocoEspanhol", String(excluirBlocoEspanhol));
-      if (textoProva.trim()) fd.append("texto", textoProva.trim());
-      else if (pdfFile && precisaTexto) fd.append("file", pdfFile);
+      // Etapas 2–4: não reenviar o texto gigante — o servidor usa textoFonte + enunciados do banco
+      if (!etapaUsaBanco) {
+        if (textoProva.trim()) {
+          fd.append("texto", textoProva.trim());
+        } else if (pdfFile && precisaTexto) {
+          fd.append("file", pdfFile);
+        } else if (precisaTexto && temTextoFonte) {
+          fd.append("usarTextoFonte", "true");
+        }
+      }
 
       const res = await fetch(`/api/admin/provas/${provaId}/extrair`, { method: "POST", body: fd });
       const data = await res.json();
@@ -120,7 +130,16 @@ export function AdminExtracaoPipeline({
         );
       }
     },
-    [provaId, textoProva, pdfFile, questoesNoBanco, excluirBlocoEspanhol, onMensagem, onAtualizado]
+    [
+      provaId,
+      textoProva,
+      pdfFile,
+      questoesNoBanco,
+      temTextoFonte,
+      excluirBlocoEspanhol,
+      onMensagem,
+      onAtualizado,
+    ]
   );
 
   const etapaInfo = ETAPAS.find((e) => e.id === etapaAtiva);
@@ -170,7 +189,8 @@ export function AdminExtracaoPipeline({
           <strong>{etapaInfo.titulo}:</strong> {etapaInfo.desc}
           {questoesNoBanco > 0 && etapaAtiva !== "enunciados" && (
             <span className="ml-1">
-              ({questoesNoBanco} questão(ões) no banco — usa enunciados gravados.)
+              ({questoesNoBanco} questão(ões) no banco — usa enunciados gravados
+              {temTextoFonte ? " e texto da prova já salvo no servidor" : ""}.)
             </span>
           )}
         </p>
