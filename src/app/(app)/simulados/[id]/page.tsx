@@ -12,6 +12,7 @@ import { Card, Button, Badge } from "@/components/ui";
 import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
 import { RecalcularDiagnosticoButton } from "@/components/recalcular-diagnostico-button";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
+import { AnaliseErros } from "@/components/analise-erros";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 
 export default async function SimuladoDetailPage({
@@ -175,6 +176,8 @@ export default async function SimuladoDetailPage({
           </p>
         )}
       </Card>
+
+      <AnaliseErros examId={exam.id} attempts={exam.questionAttempts} />
 
       <Link href="/plano">
         <Button>Ver plano da semana</Button>
