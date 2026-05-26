@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@/components/ui";
 import { taxonomy } from "@/lib/taxonomy";
 
@@ -18,23 +18,50 @@ export interface QuestaoRow {
 
 const DIFICULDADES = ["", "Fácil", "Média", "Difícil"];
 
+type FormEdicao = {
+  areaBloco: string;
+  materia: string;
+  assunto: string;
+  conhecimento: string;
+  dificuldade: string;
+  observacoes: string;
+};
+
 interface Props {
   provaId: string;
   questoes: QuestaoRow[];
   numerosAlerta?: number[];
+  /** Abre o modal de edição desta questão (ex.: vindo da auditoria). */
+  abrirEdicaoNumero?: number | null;
+  onEdicaoAberta?: () => void;
   onAtualizado: () => void;
   onMensagem?: (msg: string) => void;
+}
+
+function formDeQuestao(q: QuestaoRow): FormEdicao {
+  return {
+    areaBloco: q.areaBloco ?? "",
+    materia: q.materia,
+    assunto: q.assunto,
+    conhecimento: q.conhecimentoExigido ?? "",
+    dificuldade: q.nivelDificuldade ?? "",
+    observacoes: q.observacoes ?? "",
+  };
 }
 
 export function AdminTabelaQuestoes({
   provaId,
   questoes,
   numerosAlerta = [],
+  abrirEdicaoNumero = null,
+  onEdicaoAberta,
   onAtualizado,
   onMensagem,
 }: Props) {
   const alertaSet = useMemo(() => new Set(numerosAlerta), [numerosAlerta]);
-  const [salvandoId, setSalvandoId] = useState<string | null>(null);
+  const [editando, setEditando] = useState<QuestaoRow | null>(null);
+  const [form, setForm] = useState<FormEdicao | null>(null);
+  const [salvando, setSalvando] = useState(false);
   const [filtro, setFiltro] = useState<"todas" | "alerta">("todas");
 
   const materias = taxonomy.materias.map((m) => m.label);
@@ -44,25 +71,43 @@ export function AdminTabelaQuestoes({
       ? questoes.filter((q) => alertaSet.has(q.numero))
       : questoes;
 
-  async function salvarLinha(q: QuestaoRow, form: HTMLFormElement) {
-    const fd = new FormData(form);
-    setSalvandoId(q.id);
+  useEffect(() => {
+    if (abrirEdicaoNumero == null) return;
+    const q = questoes.find((x) => x.numero === abrirEdicaoNumero);
+    if (q) {
+      setEditando(q);
+      setForm(formDeQuestao(q));
+      onEdicaoAberta?.();
+    }
+  }, [abrirEdicaoNumero, questoes, onEdicaoAberta]);
+
+  function abrirModal(q: QuestaoRow) {
+    setEditando(q);
+    setForm(formDeQuestao(q));
+  }
+
+  function fecharModal() {
+    setEditando(null);
+    setForm(null);
+  }
+
+  async function salvarModal() {
+    if (!editando || !form) return;
+    setSalvando(true);
     onMensagem?.("");
     try {
       const res = await fetch(
-        `/api/admin/provas/${provaId}/questoes/${q.id}`,
+        `/api/admin/provas/${provaId}/questoes/${editando.id}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            areaBloco: String(fd.get("areaBloco") ?? "").trim() || null,
-            materia: String(fd.get("materia") ?? "").trim(),
-            assunto: String(fd.get("assunto") ?? "").trim(),
-            conhecimentoExigido:
-              String(fd.get("conhecimento") ?? "").trim() || null,
-            nivelDificuldade:
-              String(fd.get("dificuldade") ?? "").trim() || null,
-            observacoes: String(fd.get("observacoes") ?? "").trim() || null,
+            areaBloco: form.areaBloco.trim() || null,
+            materia: form.materia.trim(),
+            assunto: form.assunto.trim(),
+            conhecimentoExigido: form.conhecimento.trim() || null,
+            nivelDificuldade: form.dificuldade.trim() || null,
+            observacoes: form.observacoes.trim() || null,
           }),
         }
       );
@@ -71,12 +116,13 @@ export function AdminTabelaQuestoes({
         onMensagem?.(data.error ?? "Erro ao salvar");
         return;
       }
-      onMensagem?.(`Questão ${q.numero} salva.`);
+      onMensagem?.(`Questão ${editando.numero} salva.`);
+      fecharModal();
       onAtualizado();
     } catch {
       onMensagem?.("Falha de rede ao salvar.");
     } finally {
-      setSalvandoId(null);
+      setSalvando(false);
     }
   }
 
@@ -86,142 +132,213 @@ export function AdminTabelaQuestoes({
   }
 
   return (
-    <Card>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="font-semibold">Editar questões (antes de publicar)</h2>
-          <p className="text-sm text-slate-600">
-            Corrija matéria, assunto, conhecimento e dificuldade na hora. Em{" "}
-            <strong>Observações para a IA</strong>, escreva o que a máquina errou (ex.: «é
-            Geografia, mapa climático, não Biologia») — isso entra no prompt ao{" "}
-            <strong>Reclassificar</strong>. Linhas em destaque = alertas da auditoria.
-          </p>
+    <>
+      <Card>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="font-semibold">Tabela de questões</h2>
+            <p className="text-sm text-slate-600">
+              Dados gravados no banco. Use <strong>Editar</strong> na linha para abrir um formulário
+              (uma questão por vez). Linha em destaque = alerta da auditoria.
+            </p>
+          </div>
+          {numerosAlerta.length > 0 && (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={filtro === "todas" ? "primary" : "secondary"}
+                onClick={() => setFiltro("todas")}
+              >
+                Todas ({questoes.length})
+              </Button>
+              <Button
+                type="button"
+                variant={filtro === "alerta" ? "primary" : "secondary"}
+                onClick={() => setFiltro("alerta")}
+              >
+                Só alertas ({numerosAlerta.length})
+              </Button>
+            </div>
+          )}
         </div>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant={filtro === "todas" ? "primary" : "secondary"}
-            onClick={() => setFiltro("todas")}
-          >
-            Todas ({questoes.length})
-          </Button>
-          <Button
-            type="button"
-            variant={filtro === "alerta" ? "primary" : "secondary"}
-            onClick={() => setFiltro("alerta")}
-            disabled={numerosAlerta.length === 0}
-          >
-            Só alertas ({numerosAlerta.length})
-          </Button>
-        </div>
-      </div>
 
-      {lista.length === 0 ? (
-        <p className="text-sm text-slate-500">
-          {filtro === "alerta"
-            ? "Nenhum alerta — rode «Auditar» ou ajuste o filtro."
-            : "Nenhuma questão no banco."}
-        </p>
-      ) : (
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-          {lista.map((q) => (
-            <form
-              key={q.id}
-              className={`rounded-xl border p-3 ${
-                alertaSet.has(q.numero)
-                  ? "border-amber-400 bg-amber-50/80"
-                  : "border-slate-200 bg-white"
-              }`}
-              onSubmit={(e) => {
-                e.preventDefault();
-                salvarLinha(q, e.currentTarget);
-              }}
-            >
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-lg font-bold text-slate-900">
-                  Questão {q.numero}
-                </span>
-                <Button
-                  type="submit"
-                  disabled={salvandoId === q.id}
+        {lista.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            {filtro === "alerta"
+              ? "Nenhum alerta — rode «Auditar» ou volte para todas."
+              : "Nenhuma questão no banco."}
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b text-slate-500">
+                  <th className="p-2">#</th>
+                  <th className="p-2">Área/Bloco</th>
+                  <th className="p-2">Matéria</th>
+                  <th className="p-2">Assunto</th>
+                  <th className="p-2">Conhecimento</th>
+                  <th className="p-2">Dific.</th>
+                  <th className="p-2">Gabarito</th>
+                  <th className="p-2 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.map((q) => (
+                  <tr
+                    key={q.id}
+                    className={`border-b border-slate-100 ${
+                      alertaSet.has(q.numero) ? "bg-amber-50" : ""
+                    }`}
+                  >
+                    <td className="p-2 font-medium">{q.numero}</td>
+                    <td className="p-2 max-w-[8rem] truncate" title={q.areaBloco ?? ""}>
+                      {q.areaBloco ?? "—"}
+                    </td>
+                    <td className="p-2">{q.materia}</td>
+                    <td className="p-2 max-w-[10rem] truncate" title={q.assunto}>
+                      {q.assunto}
+                    </td>
+                    <td className="p-2 max-w-xs truncate" title={q.conhecimentoExigido ?? ""}>
+                      {q.conhecimentoExigido ?? "—"}
+                    </td>
+                    <td className="p-2">{q.nivelDificuldade ?? "—"}</td>
+                    <td className="p-2 font-mono font-bold">{q.gabarito ?? "—"}</td>
+                    <td className="p-2 text-right">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="px-2 py-1 text-xs"
+                        onClick={() => abrirModal(q)}
+                      >
+                        Editar
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {editando && form && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-editar-questao"
+        >
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 id="modal-editar-questao" className="text-lg font-bold">
+                Questão {editando.numero}
+              </h3>
+              <button
+                type="button"
+                className="text-slate-500 hover:text-slate-800"
+                onClick={fecharModal}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid gap-3">
+              <label className="text-xs text-slate-600">
+                Área/Bloco
+                <input
+                  className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
+                  value={form.areaBloco}
+                  onChange={(e) =>
+                    setForm((f) => f && { ...f, areaBloco: e.target.value })
+                  }
+                />
+              </label>
+              <label className="text-xs text-slate-600">
+                Matéria
+                <select
+                  className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
+                  value={form.materia}
+                  onChange={(e) =>
+                    setForm((f) =>
+                      f ? { ...f, materia: e.target.value, assunto: f.assunto } : f
+                    )
+                  }
                 >
-                  {salvandoId === q.id ? "Salvando…" : "Salvar"}
-                </Button>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                <label className="text-xs text-slate-600">
-                  Área/Bloco
-                  <input
-                    name="areaBloco"
-                    className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
-                    defaultValue={q.areaBloco ?? ""}
-                  />
-                </label>
-                <label className="text-xs text-slate-600">
-                  Matéria
-                  <select
-                    name="materia"
-                    className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
-                    defaultValue={q.materia}
-                  >
-                    {materias.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-xs text-slate-600">
-                  Assunto
-                  <input
-                    name="assunto"
-                    list={`assuntos-list-${q.id}`}
-                    className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
-                    defaultValue={q.assunto}
-                  />
-                  <datalist id={`assuntos-list-${q.id}`}>
-                    {temasDaMateria(q.materia).map((t) => (
-                      <option key={t} value={t} />
-                    ))}
-                  </datalist>
-                </label>
-                <label className="text-xs text-slate-600 sm:col-span-2">
-                  Conhecimento exigido
-                  <input
-                    name="conhecimento"
-                    className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
-                    defaultValue={q.conhecimentoExigido ?? ""}
-                  />
-                </label>
-                <label className="text-xs text-slate-600">
-                  Dificuldade
-                  <select
-                    name="dificuldade"
-                    className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
-                    defaultValue={q.nivelDificuldade ?? ""}
-                  >
-                    {DIFICULDADES.map((d) => (
-                      <option key={d || "vazio"} value={d}>
-                        {d || "—"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-xs text-slate-600 sm:col-span-2 lg:col-span-3">
-                  Observações para a IA (orientação do revisor)
-                  <textarea
-                    name="observacoes"
-                    rows={2}
-                    className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
-                    placeholder="Ex.: Texto-base em inglês; matéria correta é Inglês, não Português. / É Filosofia (ética), não Sociologia."
-                    defaultValue={q.observacoes ?? ""}
-                  />
-                </label>
-              </div>
-            </form>
-          ))}
+                  {materias.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs text-slate-600">
+                Assunto
+                <input
+                  list="assuntos-modal"
+                  className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
+                  value={form.assunto}
+                  onChange={(e) =>
+                    setForm((f) => f && { ...f, assunto: e.target.value })
+                  }
+                />
+                <datalist id="assuntos-modal">
+                  {temasDaMateria(form.materia).map((t) => (
+                    <option key={t} value={t} />
+                  ))}
+                </datalist>
+              </label>
+              <label className="text-xs text-slate-600">
+                Conhecimento exigido
+                <input
+                  className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
+                  value={form.conhecimento}
+                  onChange={(e) =>
+                    setForm((f) => f && { ...f, conhecimento: e.target.value })
+                  }
+                />
+              </label>
+              <label className="text-xs text-slate-600">
+                Dificuldade
+                <select
+                  className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
+                  value={form.dificuldade}
+                  onChange={(e) =>
+                    setForm((f) => f && { ...f, dificuldade: e.target.value })
+                  }
+                >
+                  {DIFICULDADES.map((d) => (
+                    <option key={d || "vazio"} value={d}>
+                      {d || "—"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs text-slate-600">
+                Observações para a IA (ao reclassificar)
+                <textarea
+                  rows={2}
+                  className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
+                  value={form.observacoes}
+                  onChange={(e) =>
+                    setForm((f) => f && { ...f, observacoes: e.target.value })
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={fecharModal}>
+                Cancelar
+              </Button>
+              <Button type="button" disabled={salvando} onClick={salvarModal}>
+                {salvando ? "Salvando…" : "Salvar"}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
-    </Card>
+    </>
   );
 }

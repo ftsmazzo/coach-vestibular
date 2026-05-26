@@ -125,6 +125,7 @@ export default function AdminProvaDetailPage() {
   const [extraindo, setExtraindo] = useState(false);
   const [msg, setMsg] = useState("");
   const [numerosAlerta, setNumerosAlerta] = useState<number[]>([]);
+  const [editarQuestaoNumero, setEditarQuestaoNumero] = useState<number | null>(null);
   const [meta, setMeta] = useState({
     banca: "",
     ano: "",
@@ -592,22 +593,25 @@ export default function AdminProvaDetailPage() {
       </details>
 
       {prova.questoes.length > 0 && (
+        <AdminTabelaQuestoes
+          provaId={prova.id}
+          questoes={prova.questoes}
+          numerosAlerta={numerosAlerta}
+          abrirEdicaoNumero={editarQuestaoNumero}
+          onEdicaoAberta={() => setEditarQuestaoNumero(null)}
+          onAtualizado={load}
+          onMensagem={setMsg}
+        />
+      )}
+
+      {prova.questoes.length > 0 && (
         <AdminAuditoriaProva
           provaId={prova.id}
           textoFonteColado={textoProva}
           orientacoesSalvas={orientacoesSalvas}
           onQuestoesAtualizadas={load}
           onAlertasChange={setNumerosAlerta}
-        />
-      )}
-
-      {prova.questoes.length > 0 && (
-        <AdminTabelaQuestoes
-          provaId={prova.id}
-          questoes={prova.questoes}
-          numerosAlerta={numerosAlerta}
-          onAtualizado={load}
-          onMensagem={setMsg}
+          onEditarQuestao={(numero) => setEditarQuestaoNumero(numero)}
         />
       )}
 
@@ -686,35 +690,6 @@ export default function AdminProvaDetailPage() {
           Salvar gabarito em lote
         </Button>
       </Card>
-
-      {prova.questoes.length > 0 && (
-        <Card>
-          <h2 className="mb-2 font-semibold">Gabaritos por questão</h2>
-          <p className="mb-3 text-sm text-slate-600">
-            Visão rápida. Para corrigir matéria/assunto use a tabela editável acima.
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b text-slate-500">
-                  <th className="p-2">#</th>
-                  <th className="p-2">Matéria</th>
-                  <th className="p-2">Gabarito</th>
-                </tr>
-              </thead>
-              <tbody>
-                {prova.questoes.map((q) => (
-                  <tr key={q.id} className="border-b border-slate-100">
-                    <td className="p-2 font-medium">{q.numero}</td>
-                    <td className="p-2">{q.materia}</td>
-                    <td className="p-2 font-mono font-bold">{q.gabarito ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
 
       {/* Histórico de Tentativas dos Alunos */}
       <Card>

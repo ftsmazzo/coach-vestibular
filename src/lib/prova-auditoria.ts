@@ -135,20 +135,6 @@ function motivosRegrasEstruturais(q: QuestaoAuditoriaInput, textoQ: string): str
     out.push("Possível confusão: parece conteúdo de Biologia/Geo, não Física.");
   }
 
-  if (mat && mat !== "A classificar" && !q.conhecimentoExigido?.trim()) {
-    out.push("Sem «conhecimento exigido» — preencha manualmente ou reclassifique com enunciado.");
-  }
-
-  if (mat && mat !== "A classificar" && !q.nivelDificuldade?.trim()) {
-    out.push("Sem dificuldade (Fácil/Média/Difícil).");
-  }
-
-  if (!textoQ.trim() && !q.enunciado?.trim()) {
-    out.push(
-      "Sem enunciado no banco nem texto-fonte — difícil validar; cole enunciado ou salve texto da prova."
-    );
-  }
-
   return out;
 }
 
