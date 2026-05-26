@@ -92,14 +92,22 @@ async function extrairLoteEnunciados(
     `Lote ${idx + 1}/${total} a extrair:\n\n${lote}`
   );
   if (!result || !Array.isArray(result.questoes)) return [];
-  return result.questoes.filter(
-    (q: { numero?: number; trechoEnunciado?: string }) =>
-      q &&
-      typeof q.numero === "number" &&
-      Number.isInteger(q.numero) &&
-      typeof q.trechoEnunciado === "string" &&
-      q.trechoEnunciado.trim().length >= 20
-  );
+  const out: Array<{ numero: number; trechoEnunciado: string }> = [];
+  for (const q of result.questoes) {
+    if (!q) continue;
+    const rawNum = q.numero ?? q.n ?? q.number;
+    const numero =
+      typeof rawNum === "number" && Number.isInteger(rawNum)
+        ? rawNum
+        : typeof rawNum === "string"
+          ? parseInt(rawNum.replace(/\D/g, ""), 10)
+          : NaN;
+    const trecho = String(q.trechoEnunciado ?? q.enunciado ?? "").trim();
+    if (Number.isInteger(numero) && numero > 0 && numero <= 300 && trecho.length >= 20) {
+      out.push({ numero, trechoEnunciado: trecho });
+    }
+  }
+  return out;
 }
 
 export async function extrairQuestoesComIA(

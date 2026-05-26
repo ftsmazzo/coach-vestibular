@@ -337,6 +337,14 @@ export function processarTextoProvaIdioma(
 
   const r = removerTrechosBlocoEspanhol(texto);
   if (r.blocosRemovidos > 0) {
+    const restante = r.texto.trim().length;
+    const original = texto.trim().length;
+    if (restante < Math.max(800, original * 0.12)) {
+      avisos.push(
+        `Remoção do bloco de Espanhol ignorada — sobraram ${restante} de ${original} caracteres. Desmarque «Ignorar Espanhol» ou reenvie o PDF.`
+      );
+      return { texto: texto.replace(/\r\n/g, "\n"), avisos };
+    }
     avisos.push(
       `Bloco de Espanhol removido do texto (${r.blocosRemovidos} seção(ões), ~${Math.round(r.caracteresRemovidos / 1000)}k caracteres) — prova bilíngue com mesma numeração.`
     );

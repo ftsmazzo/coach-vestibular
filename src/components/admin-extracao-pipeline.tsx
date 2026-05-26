@@ -98,6 +98,7 @@ export function AdminExtracaoPipeline({
           fd.append("file", pdfFile);
         } else if (precisaTexto && temTextoFonte) {
           fd.append("usarTextoFonte", "true");
+          onMensagem("Usando texto da prova já salvo no servidor (sem reenviar PDF)…");
         }
       }
 

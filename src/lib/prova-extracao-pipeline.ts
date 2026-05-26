@@ -8,6 +8,7 @@ import {
   detectarPassagemEspanhol,
   detectarPassagemIngles,
 } from "@/lib/prova-materia-ajuste";
+import { extrairTrechosPorNumero } from "@/lib/prova-texto-parse";
 import {
   assuntoPadraoMateria,
   inferirMateriaPorEnunciado,
@@ -166,6 +167,31 @@ function filtrarQuestoesBlocoEspanhol(
     return true;
   });
   return { questoes: filtradas, removidas };
+}
+
+function enunciadosPorRegex(texto: string): EnunciadoBruto[] {
+  const map = extrairTrechosPorNumero(texto, undefined, { maxTrecho: 0 });
+  const out: EnunciadoBruto[] = [];
+  for (const [numero, trecho] of map) {
+    const t = trecho.trim();
+    if (t.length >= 20) out.push({ numero, trechoEnunciado: t });
+  }
+  return out.sort((a, b) => a.numero - b.numero);
+}
+
+function erroNenhumEnunciado(
+  trimmedLen: number,
+  avisos: string[],
+  extra?: string
+): Error {
+  const errosLotes = avisos.filter((a) => a.startsWith("Etapa 1 lote"));
+  const detalhe =
+    errosLotes.length > 0
+      ? ` Erros OpenAI: ${errosLotes.slice(0, 2).join("; ")}.`
+      : "";
+  return new Error(
+    `Nenhum enunciado extraído (${trimmedLen} caracteres no texto).${detalhe}${extra ?? ""} Reenvie o PDF, cole o texto completo ou desmarque «Ignorar Espanhol».`
+  );
 }
 
 async function callOpenAI(
@@ -412,14 +438,32 @@ export async function executarPipelineExtracao(
           `${duplicatasResolvidas} duplicata(s) de número resolvida(s) — preferência por enunciado em inglês quando havia versão em espanhol.`
         );
       }
+      if (questoes.length === 0) {
+        const regexFallback = enunciadosPorRegex(trimmed);
+        if (regexFallback.length > 0) {
+          questoes = regexFallback.map((q) => questaoBase(q.numero, q.trechoEnunciado));
+          avisos.push(
+            `OpenAI não retornou enunciados — ${regexFallback.length} questão(ões) extraída(s) por regex do texto (UFU: «1.», «Questão 1», etc.).`
+          );
+        }
+      }
     }
-    if (questoes.length === 0) throw new Error("Nenhum enunciado extraído.");
+    if (questoes.length === 0) {
+      throw erroNenhumEnunciado(trimmed.length, avisos);
+    }
     const { questoes: semEs, removidas } = filtrarQuestoesBlocoEspanhol(questoes, excluirEs);
     if (removidas.length > 0) {
       avisos.push(
         `Questões do bloco de Espanhol omitidas (nº ${removidas.slice(0, 12).join(", ")}${removidas.length > 12 ? "…" : ""}).`
       );
       questoes = semEs;
+    }
+    if (questoes.length === 0) {
+      throw erroNenhumEnunciado(
+        trimmed.length,
+        avisos,
+        " Todos os enunciados detectados parecem ser do bloco de Espanhol."
+      );
     }
     if (etapa === "enunciados") {
       return {

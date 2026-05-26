@@ -116,12 +116,39 @@ export async function POST(
         );
       }
       texto = salvo.textoFonte.trim();
+      if (texto.length < 500) {
+        return NextResponse.json(
+          {
+            error:
+              "Texto salvo no servidor está incompleto (provável upload truncado). Reenvie o PDF ou cole o texto na etapa 1.",
+          },
+          { status: 400 }
+        );
+      }
+      if (!/\d{1,3}\s*[.)]/.test(texto) && !/quest[aã]o\s*\d/i.test(texto)) {
+        return NextResponse.json(
+          {
+            error:
+              "Texto salvo não parece conter questões numeradas. Reenvie o PDF ou cole o texto completo.",
+          },
+          { status: 400 }
+        );
+      }
     } else if (textField?.trim()) {
       texto = textField.trim();
     } else if (file) {
       const buf = Buffer.from(await file.arrayBuffer());
       if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
         texto = await extractTextFromPdf(buf);
+        if (texto.length < 200) {
+          return NextResponse.json(
+            {
+              error:
+                "PDF com pouco texto extraível (pode ser escaneado). Cole o texto da prova manualmente ou use um PDF com texto selecionável.",
+            },
+            { status: 400 }
+          );
+        }
       } else if (file.type.startsWith("text/") || file.name.endsWith(".txt")) {
         texto = await buf.toString("utf-8");
       } else {

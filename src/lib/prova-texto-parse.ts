@@ -2,8 +2,10 @@
 
 export function extrairTrechosPorNumero(
   texto: string,
-  numerosAlvo?: number[]
+  numerosAlvo?: number[],
+  opts?: { maxTrecho?: number }
 ): Map<number, string> {
+  const maxTrecho = opts?.maxTrecho ?? 2500;
   const textoNorm = texto.replace(/\r\n/g, "\n").trim();
   if (!textoNorm) return new Map();
 
@@ -36,7 +38,9 @@ export function extrairTrechosPorNumero(
     const { numero, start } = marcas[i];
     const end = i + 1 < marcas.length ? marcas[i + 1].start : textoNorm.length;
     let trecho = textoNorm.slice(start, end).trim();
-    if (trecho.length > 2500) trecho = `${trecho.slice(0, 2500)}…`;
+    if (maxTrecho > 0 && trecho.length > maxTrecho) {
+      trecho = `${trecho.slice(0, maxTrecho)}…`;
+    }
     if (!map.has(numero)) map.set(numero, trecho);
   }
 
