@@ -12,7 +12,15 @@ export function mapMateriaAssuntoToTaxonomy(materia: string, assunto: string) {
     .replace(/\p{Diacritic}/gu, "");
 
   let materiaId: string | undefined;
+  if (mNorm.includes("ingles") || mNorm === "english" || mNorm.includes("lingua inglesa")) {
+    materiaId = "ingles";
+  } else if (mNorm.includes("espanhol") || mNorm === "spanish") {
+    materiaId = "espanhol";
+  } else if (mNorm.includes("lingua portuguesa") || mNorm === "lp") {
+    materiaId = "portugues";
+  }
   for (const m of taxonomy.materias) {
+    if (materiaId) break;
     const label = m.label
       .toLowerCase()
       .normalize("NFD")

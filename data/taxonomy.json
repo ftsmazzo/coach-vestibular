@@ -72,6 +72,22 @@
       ]
     },
     {
+      "id": "ingles",
+      "label": "Inglês",
+      "temas": [
+        { "id": "compreensao_texto", "label": "Compreensão de texto" },
+        { "id": "gramatica_vocabulario", "label": "Gramática e vocabulário" }
+      ]
+    },
+    {
+      "id": "espanhol",
+      "label": "Espanhol",
+      "temas": [
+        { "id": "compreensao_texto", "label": "Compreensão de texto" },
+        { "id": "gramatica_vocabulario", "label": "Gramática e vocabulário" }
+      ]
+    },
+    {
       "id": "portugues",
       "label": "Português",
       "temas": [

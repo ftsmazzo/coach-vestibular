@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminAuditoriaProva } from "@/components/admin-auditoria-prova";
+import { AdminExtracaoPipeline } from "@/components/admin-extracao-pipeline";
 import { Button, Card, Input, Label } from "@/components/ui";
 import { buildProvaNome } from "@/lib/prova-nome";
 
@@ -19,21 +20,6 @@ interface ProvaQuestao {
   gabarito: string | null;
 }
 
-interface QuestaoPreview {
-  numero: number;
-  areaBloco?: string | null;
-  materia: string;
-  assunto: string;
-  conhecimentoExigido?: string | null;
-  nivelDificuldade?: string | null;
-  observacoes?: string | null;
-}
-
-interface ExtracaoPreview {
-  questoes: QuestaoPreview[];
-  avisos: string[];
-  resumo?: string;
-}
 
 interface Prova {
   id: string;
@@ -133,7 +119,6 @@ export default function AdminProvaDetailPage() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [textoProva, setTextoProva] = useState("");
   const [textoFaltantes, setTextoFaltantes] = useState("");
-  const [preview, setPreview] = useState<ExtracaoPreview | null>(null);
   const [extraindo, setExtraindo] = useState(false);
   const [msg, setMsg] = useState("");
   const [meta, setMeta] = useState({
@@ -271,40 +256,6 @@ export default function AdminProvaDetailPage() {
       "Cole o texto das questões que faltam no banco.",
       () => setTextoFaltantes("")
     );
-  }
-
-  async function extrairIA(aplicar: boolean) {
-    setExtraindo(true);
-    setMsg("");
-    const fd = new FormData();
-    fd.append("aplicar", String(aplicar));
-    fd.append("modo", "substituir");
-    if (textoProva.trim()) fd.append("texto", textoProva.trim());
-    else if (pdfFile) fd.append("file", pdfFile);
-    else {
-      setMsg("Cole o texto da prova ou envie um PDF.");
-      setExtraindo(false);
-      return;
-    }
-    const res = await fetch(`/api/admin/provas/${id}/extrair`, { method: "POST", body: fd });
-    const data = await res.json();
-    setExtraindo(false);
-    if (!res.ok) {
-      setMsg(data.error ?? "Erro na extração");
-      return;
-    }
-    if (aplicar) {
-      setPreview(null);
-      setMsg(`IA aplicou ${data.questoes?.length ?? 0} questões no banco.`);
-      load();
-    } else {
-      setPreview({
-        questoes: data.questoes,
-        avisos: data.avisos ?? [],
-        resumo: data.resumo,
-      });
-      setMsg(`Prévia: ${data.questoes.length} questões extraídas. Revise e clique em Aplicar.`);
-    }
   }
 
   async function limparGabaritos() {
@@ -518,15 +469,11 @@ export default function AdminProvaDetailPage() {
         </Button>
       </Card>
 
-      <Card className="border-teal-200 bg-teal-50/40">
-        <h2 className="mb-2 font-semibold text-teal-900">Extração com IA (principal)</h2>
-        <p className="mb-3 text-sm text-teal-800">
-          Envie o PDF da prova ou cole o texto completo. <strong>Substitui</strong> todas as questões
-          ao aplicar. Para só as faltantes, use o bloco amarelo acima. Não preenche gabarito.
-        </p>
-        <p className="mb-3 text-xs text-teal-700">
-          Requer <code>OPENAI_API_KEY</code> no servidor. Alternativa: exporte CSV do GPT e importe
-          abaixo.
+      <Card>
+        <h2 className="mb-2 font-semibold text-slate-800">Texto / PDF da prova</h2>
+        <p className="mb-3 text-sm text-slate-600">
+          Cole o texto completo ou envie o PDF. Use o fluxo em etapas abaixo (recomendado). Não
+          preenche gabarito. Requer <code className="text-xs">OPENAI_API_KEY</code>.
         </p>
         <div className="space-y-3">
           <div>
@@ -547,67 +494,20 @@ export default function AdminProvaDetailPage() {
               onChange={(e) => setTextoProva(e.target.value)}
             />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" disabled={extraindo} onClick={() => extrairIA(false)}>
-              {extraindo ? "Extraindo..." : "Pré-visualizar extração"}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={extraindo || !preview}
-              onClick={() => extrairIA(true)}
-            >
-              Aplicar direto no banco
-            </Button>
-            {preview && (
-              <Button type="button" disabled={extraindo} onClick={() => extrairIA(true)}>
-                Confirmar e aplicar prévia
-              </Button>
-            )}
-          </div>
-          {preview?.avisos && preview.avisos.length > 0 && (
-            <ul className="text-xs text-amber-800">
-              {preview.avisos.map((a, i) => (
-                <li key={i}>• {a}</li>
-              ))}
-            </ul>
-          )}
         </div>
       </Card>
 
+      <AdminExtracaoPipeline
+        provaId={prova.id}
+        textoProva={textoProva}
+        pdfFile={pdfFile}
+        questoesNoBanco={prova.questoes.length}
+        onMensagem={setMsg}
+        onAtualizado={load}
+      />
+
       {prova.questoes.length > 0 && (
         <AdminAuditoriaProva provaId={prova.id} onQuestoesAtualizadas={load} />
-      )}
-
-      {preview && preview.questoes.length > 0 && (
-        <Card>
-          <h3 className="mb-2 font-semibold">Prévia IA ({preview.questoes.length} questões)</h3>
-          <div className="max-h-64 overflow-auto text-xs">
-            <table className="w-full">
-              <thead>
-                <tr className="text-slate-500">
-                  <th className="p-1">#</th>
-                  <th className="p-1">Matéria</th>
-                  <th className="p-1">Assunto</th>
-                  <th className="p-1">Conhec.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {preview.questoes.slice(0, 20).map((q) => (
-                  <tr key={q.numero} className="border-t">
-                    <td className="p-1">{q.numero}</td>
-                    <td className="p-1">{q.materia}</td>
-                    <td className="p-1">{q.assunto}</td>
-                    <td className="p-1 truncate max-w-[120px]">{q.conhecimentoExigido ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {preview.questoes.length > 20 && (
-              <p className="mt-2 text-slate-500">+ {preview.questoes.length - 20} questões...</p>
-            )}
-          </div>
-        </Card>
       )}
 
       <Card>

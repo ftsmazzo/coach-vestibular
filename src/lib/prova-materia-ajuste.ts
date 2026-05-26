@@ -94,6 +94,18 @@ export function normalizarMateria(materia: string): string {
 }
 
 /** Passagem em inglês (comando em PT ou em EN). */
+export function detectarPassagemEspanhol(texto: string): boolean {
+  const t = texto.trim();
+  if (t.length < 60) return false;
+  if (textoIndicaPortugues(t)) return false;
+  const es = contarMatches(t, RE_ES_FORTE);
+  const pt = contarMatches(t, RE_PT_FORTE);
+  const en = contarMatches(t, RE_EN);
+  const cmdEs = ES_COMANDO.test(t);
+  const cmdPt = PT_COMANDO.test(t);
+  return es >= 6 && es > pt && es > en && (cmdEs || !cmdPt);
+}
+
 export function detectarPassagemIngles(texto: string): boolean {
   const t = texto.trim();
   if (t.length < 60) return false;
@@ -252,14 +264,14 @@ export function ajustarMateriaPorIdiomaDoTexto(
   if (passagemIngles && !pareceMateriaIngles(materia)) {
     materia = "Inglês";
     if (pareceMateriaPortugues(assunto) || assunto === "A classificar") {
-      assunto = "Compreensão de texto em inglês";
+      assunto = "Compreensão de texto";
     }
     observacoes =
       observacoes ?? "Texto-base em inglês com comando em português (padrão vestibular).";
   } else if (passagemEspanhol && !pareceMateriaEspanhol(materia)) {
     materia = "Espanhol";
     if (assunto === "A classificar" || pareceMateriaPortugues(assunto)) {
-      assunto = "Compreensão de texto em espanhol";
+      assunto = "Compreensão de texto";
     }
     observacoes =
       observacoes ?? "Texto-base em espanhol com comando em português (padrão vestibular).";
