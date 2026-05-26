@@ -97,12 +97,14 @@ export function normalizarMateria(materia: string): string {
 export function detectarPassagemEspanhol(texto: string): boolean {
   const t = texto.trim();
   if (t.length < 60) return false;
-  if (textoIndicaPortugues(t)) return false;
   const es = contarMatches(t, RE_ES_FORTE);
   const pt = contarMatches(t, RE_PT_FORTE);
   const en = contarMatches(t, RE_EN);
   const cmdEs = ES_COMANDO.test(t);
   const cmdPt = PT_COMANDO.test(t);
+  // Não chamar textoIndicaPortugues* aqui — evita recursão com textoIndicaPortuguesInterpretacao.
+  if (RE_PT_LITERATURA.test(t)) return false;
+  if (PT_COMANDO.test(t) && pt >= 12 && pt > en * 2 && pt > es * 2) return false;
   return es >= 6 && es > pt && es > en && (cmdEs || !cmdPt);
 }
 
