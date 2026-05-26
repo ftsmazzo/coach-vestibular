@@ -137,6 +137,124 @@ function inferTipoErro(attempts: AttemptInput[]): Record<string, number> {
   return counts;
 }
 
+// -------------------------------------------------------------
+// HELPER FUNCTIONS FOR METACOGNITIVE OVERRIDES & AGGREGATION
+// -------------------------------------------------------------
+
+export interface GroupedError {
+  materia: string;
+  tema: string;
+  materiaId: string;
+  temaId: string;
+  errosCount: number;
+  questoesNumeros: number[];
+  causas: string[];
+  anotacoes: string[];
+}
+
+function preprocessAttemptsWithOverrides(attempts: AttemptInput[]): AttemptInput[] {
+  return attempts.map((a) => {
+    if (!a.observacao) return a;
+    
+    // Normalize string to ignore accents and case
+    const obs = a.observacao.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    let materiaId = a.materiaId;
+    let temaId = a.temaId;
+
+    // 1. Identify corrected materia & tema based on student's notes
+    if (obs.includes("geografia")) {
+      materiaId = "geografia";
+      temaId = obs.includes("fisic") ? "fisicos" : "humanos";
+    } else if (obs.includes("historia")) {
+      materiaId = "historia";
+      temaId = obs.includes("brasil") ? "brasil_republica" : "geral_contemporanea";
+    } else if (obs.includes("ingles") || obs.includes("english")) {
+      // Map foreign language (English) under languages (portugues / interpretacao_texto)
+      materiaId = "portugues";
+      temaId = "interpretacao_texto";
+    } else if (obs.includes("gramatica") || obs.includes("pronome") || obs.includes("tempo verbal") || obs.includes("tempos verbais") || obs.includes("conjuncao") || obs.includes("regencia") || obs.includes("crase")) {
+      materiaId = "portugues";
+      temaId = "gramatica";
+    } else if (obs.includes("literatura")) {
+      materiaId = "portugues";
+      temaId = "literatura";
+    } else if (obs.includes("redacao")) {
+      materiaId = "portugues";
+      temaId = "redacao";
+    } else if (obs.includes("interpretacao") || obs.includes("leitura")) {
+      materiaId = "portugues";
+      temaId = "interpretacao_texto";
+    } else if (obs.includes("biologia") || obs.includes("biologica") || obs.includes("citologia") || obs.includes("genetica") || obs.includes("ecologia") || obs.includes("fisiologia") || obs.includes("evolucao") || obs.includes("botanica")) {
+      materiaId = "biologia";
+      if (obs.includes("citologia")) temaId = "citologia";
+      else if (obs.includes("genetica")) temaId = "genetica";
+      else if (obs.includes("ecologia")) temaId = "ecologia";
+      else if (obs.includes("fisiologia")) temaId = "fisiologia_humana";
+      else if (obs.includes("evolucao")) temaId = "evolucao";
+      else if (obs.includes("botanica")) temaId = "botanica";
+    } else if (obs.includes("quimica") || obs.includes("estequiometria") || obs.includes("termoquimica") || obs.includes("equilibrio") || obs.includes("eletroquimica")) {
+      materiaId = "quimica";
+      if (obs.includes("estequiometria")) temaId = "estequiometria";
+      else if (obs.includes("termoquimica")) temaId = "termoquimica";
+      else if (obs.includes("equilibrio")) temaId = "equilibrio";
+      else if (obs.includes("eletroquimica")) temaId = "eletroquimica";
+    } else if (obs.includes("fisica") || obs.includes("optica") || obs.includes("cinematica") || obs.includes("eletricidade") || obs.includes("ondas") || obs.includes("trabalho") || obs.includes("lente") || obs.includes("espelho")) {
+      materiaId = "fisica";
+      if (obs.includes("optica") || obs.includes("lente") || obs.includes("espelho")) temaId = "optica";
+      else if (obs.includes("cinematica")) temaId = "cinematica";
+      else if (obs.includes("eletricidade")) temaId = "eletricidade";
+      else if (obs.includes("ondas")) temaId = "ondas";
+    } else if (obs.includes("matematica") || obs.includes("calculo") || obs.includes("geometria") || obs.includes("trigonometria") || obs.includes("probabilidade") || obs.includes("algebra") || obs.includes("funcao")) {
+      materiaId = "matematica";
+      if (obs.includes("trigonometria")) temaId = "trigonometria";
+      else if (obs.includes("probabilidade")) temaId = "probabilidade";
+      else if (obs.includes("algebra")) temaId = "algebra";
+      else if (obs.includes("geometria")) temaId = "geometria";
+      else if (obs.includes("funcao")) temaId = "funcoes";
+    }
+
+    return {
+      ...a,
+      materiaId,
+      temaId,
+    };
+  });
+}
+
+function aggregateCurrentErrors(attempts: AttemptInput[]): GroupedError[] {
+  const map = new Map<string, GroupedError>();
+
+  for (const a of attempts) {
+    if (a.correto) continue;
+    const matId = a.materiaId || "geral";
+    const temId = a.temaId || "geral";
+    const key = `${matId}:${temId}`;
+    
+    const matLabel = getMateriaLabel(matId);
+    const temLabel = getTemaLabel(matId, temId);
+    
+    const existing = map.get(key) ?? {
+      materia: matLabel,
+      tema: temLabel,
+      materiaId: matId,
+      temaId: temId,
+      errosCount: 0,
+      questoesNumeros: [],
+      causas: [],
+      anotacoes: [],
+    };
+
+    existing.errosCount++;
+    existing.questoesNumeros.push(a.numero);
+    if (a.tipoErro) existing.causas.push(a.tipoErro);
+    if (a.observacao) existing.anotacoes.push(`Q${a.numero}: "${a.observacao}"`);
+    
+    map.set(key, existing);
+  }
+
+  return Array.from(map.values());
+}
+
 function detectRecoveryMode(overallAcerto: number, checkIn?: number | null) {
   return overallAcerto < 0.45 || (checkIn !== undefined && checkIn !== null && checkIn <= 2);
 }
@@ -146,17 +264,21 @@ export async function buildDiagnosis(
   historicalAttempts: AttemptInput[][],
   options?: { checkInScore?: number | null; examLabel?: string; provaTipo?: string | null }
 ): Promise<DiagnosisResult> {
-  const total = currentAttempts.length;
-  const acertos = currentAttempts.filter((a) => a.correto).length;
+  // Pre-process current and historical attempts with student's overrides
+  const cleanCurrentAttempts = preprocessAttemptsWithOverrides(currentAttempts);
+  const cleanHistoricalAttempts = historicalAttempts.map((hist) => preprocessAttemptsWithOverrides(hist));
+
+  const total = cleanCurrentAttempts.length;
+  const acertos = cleanCurrentAttempts.filter((a) => a.correto).length;
   const overallAcerto = total > 0 ? acertos / total : 0;
 
   const weight = getProvaTipoWeight(options?.provaTipo);
-  const temaScores = computeTemaScores(currentAttempts, weight);
-  const materiaScores = computeMateriaScores(currentAttempts, weight);
-  const tipoErroCounts = inferTipoErro(currentAttempts);
+  const temaScores = computeTemaScores(cleanCurrentAttempts, weight);
+  const materiaScores = computeMateriaScores(cleanCurrentAttempts, weight);
+  const tipoErroCounts = inferTipoErro(cleanCurrentAttempts);
 
   const temaRecurrence = new Map<string, number>();
-  for (const hist of historicalAttempts) {
+  for (const hist of cleanHistoricalAttempts) {
     for (const a of hist) {
       if (!a.correto && a.materiaId && a.temaId) {
         const key = `${a.materiaId}:${a.temaId}`;
@@ -164,7 +286,7 @@ export async function buildDiagnosis(
       }
     }
   }
-  for (const a of currentAttempts) {
+  for (const a of cleanCurrentAttempts) {
     if (!a.correto && a.materiaId && a.temaId) {
       const key = `${a.materiaId}:${a.temaId}`;
       temaRecurrence.set(key, (temaRecurrence.get(key) ?? 0) + 1);
@@ -177,7 +299,7 @@ export async function buildDiagnosis(
     .map((t) => {
       const key = `${t.materiaId}:${t.temaId}`;
       const rec = temaRecurrence.get(key) ?? 0;
-      const errosTema = currentAttempts.filter(
+      const errosTema = cleanCurrentAttempts.filter(
         (a) => !a.correto && a.materiaId === t.materiaId && a.temaId === t.temaId
       );
       const tipos = errosTema.map((e) => e.tipoErro).filter(Boolean) as ErrorType[];
@@ -206,7 +328,7 @@ export async function buildDiagnosis(
 
   const recoveryMode = detectRecoveryMode(overallAcerto, options?.checkInScore);
 
-  const errosSemTema = currentAttempts.filter(
+  const errosSemTema = cleanCurrentAttempts.filter(
     (a) => !a.correto && (!a.materiaId || !a.temaId)
   ).length;
 
@@ -265,19 +387,19 @@ export async function buildDiagnosis(
   const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
   if (apiKey) {
     try {
-      // 1. Build the Metacognitive Context (Highly structured and clear to highlight student annotations)
-      const metacognitiveSummary = currentAttempts
-        .filter((a) => !a.correto)
-        .map((a) => {
-          const mat = getMateriaLabel(a.materiaId);
-          const tema = getTemaLabel(a.materiaId, a.temaId);
-          const causa = a.tipoErro || "Sem Classificação";
-          const obs = a.observacao ? a.observacao : "Nenhuma anotação pessoal.";
-          return `- Questão ${a.numero}:
-    * Matéria (banco): ${mat}
-    * Assunto (banco): ${tema}
-    * Causa do erro (tipoErro): ${causa}
-    * Anotação Metacognitiva do Aluno (pode conter correções de matéria/assunto): "${obs}"`;
+      // 1. Build the Metacognitive Context (Highly structured and aggregated by topic to prevent redundancies)
+      const groupedErrors = aggregateCurrentErrors(cleanCurrentAttempts);
+      const metacognitiveSummary = groupedErrors
+        .map((g) => {
+          const causasUnicas = Array.from(new Set(g.causas)).join(", ") || "Sem Classificação";
+          const anotacoesTexto = g.anotacoes.length > 0
+            ? g.anotacoes.map((an) => `      - ${an}`).join("\n")
+            : "      - Nenhuma anotação pessoal.";
+          return `- Tema: ${g.materia} / ${g.tema}
+    * Questões afetadas: ${g.questoesNumeros.join(", ")} (Total: ${g.errosCount} erros)
+    * Causas dos erros: ${causasUnicas}
+    * Anotações metacognitivas coletadas:
+${anotacoesTexto}`;
         })
         .join("\n\n");
 
@@ -293,31 +415,44 @@ export async function buildDiagnosis(
 
       // 3. System Prompt for Gemini
       const systemPrompt = `Você é o Coach Vestibular, um mentor de alta performance cirúrgico, analítico e implacável, especialista em preparar vestibulandos de Medicina de altíssimo nível.
-Sua missão é analisar o diagnóstico de erros de um simulado ou prova e gerar:
+Sua missão é analisar o diagnóstico de erros agrupados por tema e gerar:
 1. Uma narrativa empática, altamente personalizada e motivadora de até 3 frases (campo "mensagem"). Adapte a intensidade e o tom para ser acolhedor se o aluno estiver no Modo Recuperação (checkInScore baixo ou desempenho geral baixo).
 2. Uma lista de focos prioritários de estudos (campo "focos").
 3. Um plano de estudos prático estruturado em blocos de Quests de estudo ativo (campo "studyPlanItems").
 
 Siga rigorosamente as seguintes REGRAS DE FERRO:
 
-1. PRIORIDADE ABSOLUTA DA METACOGNIÇÃO (OVERRIDE DO ALUNO):
-Você DEVE ler a anotação metacognitiva/observação do aluno para cada questão errada ANTES de analisar qualquer classificação padrão de matéria ou assunto do banco de dados. 
-Se na anotação/observação o aluno apontar explícita ou implicitamente que a classificação cadastrada no banco está errada (por exemplo: "essa questão na verdade é de geografia, não de biologia/genética" ou "era sobre pronomes relativos, não interpretação de texto" ou "era sobre tempos verbais"), você DEVE ignorar completamente os metadados do banco e usar a matéria e o tema corrigidos pelo aluno para gerar a Quest correspondente e os focos de estudo.
-Caso a matéria seja corrigida pelo aluno, mapeie-a preferencialmente para um dos seguintes IDs válidos de matéria (biologia, quimica, fisica, matematica, portugues, historia, geografia) e use o tema descrito pelo aluno.
+1. EVITAR REDUNDÂNCIAS (LIMITE DE QUESTS POR TEMA):
+Você deve ser conciso e focado. Se o aluno errou múltiplas questões de um mesmo assunto, gere apenas UMA (ou no máximo duas) Quest integrada abordando a dor desse assunto na semana para não sobrecarregar ou gerar tarefas repetitivas.
 
-2. HIPER-ESPECIFICIDADE NAS TAREFAS (PROIBIDO TERMOS MACRO OU GENÉRICOS):
-Você é terminantemente proibido de gerar títulos macros, vagos ou genéricos como "Estudar Gramática", "Construir Mapa Mental de Óptica", "Fisiologia Humana", "Revisar Genética", "Fazer exercícios de Trigonometria", "Gramática Essencial", "Óptica Geométrica".
+2. PRIORIDADE ABSOLUTA DA METACOGNIÇÃO (OVERRIDE DO ALUNO):
+Você DEVE ler a anotação metacognitiva/observação do aluno para cada questão ANTES de analisar qualquer classificação padrão de matéria ou assunto do banco de dados. 
+Se na anotação/observação o aluno apontar explicitamente que a classificação cadastrada no banco está errada (por exemplo: "essa questão na verdade é de geografia, não de biologia" ou "era sobre pronomes relativos, não interpretação" ou "tempo verbal"), você DEVE ignorar completamente os metadados do banco e usar a matéria e o tema corrigidos pelo aluno para gerar a Quest correspondente e os focos de estudo.
+
+3. HIPER-ESPECIFICIDADE NAS TAREFAS (PROIBIDO TERMOS MACRO OU GENÉRICOS):
+É terminantemente proibido gerar títulos macros, vagos ou genéricos como "Estudar Gramática", "Construir Mapa Mental de Óptica", "Fisiologia Humana", "Revisar Genética", "Fazer exercícios de Trigonometria", "Gramática Essencial", "Óptica Geométrica".
 Os títulos e descrições das Quests DEVEM ser extremamente específicos, focados nos micro-temas exatos do erro e citando diretamente a dor descrita pelo aluno.
 - Exemplo Inaceitável: "Revise Gramática e construa mapa mental."
-- Exemplo Correto: "Foco em Pronomes Relativos: cujo e onde" (mencionando na descrição para revisar especificamente o uso de 'cujo' e 'onde' conforme apontado pelo aluno).
-- Exemplo Correto 2: "Óptica: Espelhos Côncavos e Convexos" (focando a Quest apenas nas equações de Gauss para espelhos esféricos e esquecendo a parte teórica de refração que o aluno já domina).
+- Exemplo Correto: "Foco em Pronomes Relativos: cujo e onde"
+- Exemplo Correto 2: "Óptica: Espelhos Côncavos e Convexos"
 
-3. ESTRUTURAÇÃO DAS AÇÕES POR TIPO DE ERRO:
-- Se o tipo de erro de uma questão for "CALCULO_BOBEIRA" ou "INTERPRETACAO_ENUNCIADO" (como erros de distração de sinal, sinal invertido, pegadinha de atenção ou pressa): a Quest gerada DEVE ser uma tarefa prática de mecânica de prova ou agilidade operacional (por exemplo: "Montar checklist mental de conferência de sinal antes de preencher a resposta", "Resolver 5 blocos de exercícios rápidos em 10 minutos para treinar velocidade", "Marcar fisicamente os dados e o comando da questão"). É TERMINANTEMENTE PROIBIDO mandar o aluno assistir aulas teóricas, rever teoria do início ou ler apostilas básicas nestes casos!
-- Se o tipo de erro for "CONCEITO_TEORICO", a Quest gerada deve ser de estudo ativo de base teórica (por exemplo: construir um mapa mental focado de fórmulas, explicar o conceito teórico complexo em voz alta, fazer um fichamento cirúrgico de um ponto específico da teoria).
+4. FRAMEWORK PEDAGÓGICO RÍGIDO (PROIBIDO INVENTAR DINÂMICAS LIVRES):
+Você não pode propor dinâmicas genéricas livres (como "faça um mapa mental genérico", "estude a teoria", "leia o capítulo"). Você DEVE classificar e estruturar cada Quest gerada escolhendo rigorosamente e EXCLUSIVAMENTE entre as 3 estruturas pedagógicas de alta performance a seguir:
 
-4. LEITURA ATIVA DAS ANOTAÇÕES NA DESCRIÇÃO (TEXTO DINÂMICO):
-A descrição de cada Quest DEVE obrigatoriamente iniciar com um texto dinâmico mostrando de forma clara e empática que você leu de fato a anotação pessoal que o aluno escreveu, usando exatamente o padrão: "Com base na sua anotação da QX, onde você mencionou que [resumo da anotação/dor do aluno], sua tarefa será...".
+  A) MODELO LACUNA DE BASE (Uso obrigatório para causa dominante "CONCEITO_TEORICO" ou "CHUTE_TOTAL"):
+     - Foco: Aplicar estudo ativo direcionado EXCLUSIVAMENTE na micro-lacuna citada (ex: focar apenas no uso do pronome relativo 'cuyo' e 'onde' e as regências associadas, esquecendo o restante de gramática).
+     - Atividade: Fazer um flashcard de auto-explicação ou fichamento cirúrgico dos pontos chaves dessa lacuna e resolver 5 questões de aplicação direta desse micro-assunto.
+     
+  B) MODELO ENGENHARIA REVERSA (Uso obrigatório para causa dominante "DUVIDA_CRUCIAL"):
+     - Foco: Mapear passo a passo a resolução comentada de questões para identificar a bifurcação mental exata que fez o aluno escolher a alternativa errada.
+     - Atividade: Pegar 3 questões parecidas do assunto (incluindo a que ele errou), resolver destrinchando cada etapa do cálculo ou da lógica textual, e circular o ponto exato da pegadinha ou da dúvida cruel.
+     
+  C) MODELO BLOCO DE VELOCIDADE (Uso obrigatório para causa dominante "CALCULO_BOBEIRA", "INTERPRETACAO_ENUNCIADO" ou "FALTA_TEMPO"):
+     - Foco: Treinar agilidade e mecânica operacional sob pressão de tempo (proibido mandar estudar teoria!).
+     - Atividade: Resolver um bloco rápido de 5 a 10 questões do tema em um simulado cronometrado de 10 minutos, marcando fisicamente a caneta os verbos de comando do enunciado e conferindo o sinal a cada linha escrita (checklist de sinal).
+
+5. LEITURA ATIVA DAS ANOTAÇÕES NA DESCRIÇÃO (TEXTO DINÂMICO):
+A descrição de cada Quest DEVE obrigatoriamente iniciar com um texto dinâmico mostrando de forma clara e empática que você leu de fato a anotação pessoal que o aluno escreveu, usando exatamente o padrão: "Com base na sua anotação da QX, onde você mencionou que [resumo da anotação/dor do aluno], sua tarefa será [aplicar o Modelo A, B ou C correspondente]...".
 
 Você deve responder APENAS com um objeto JSON estruturado seguindo exatamente este formato (não adicione blocos de código markdown ao redor do JSON):
 {
