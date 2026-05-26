@@ -7,7 +7,6 @@ const nextConfig: NextConfig = {
   // Provas UFU: PDF/texto colado pode passar de 10MB (middleware clona o body)
   experimental: {
     proxyClientMaxBodySize: "64mb",
-    middlewareClientMaxBodySize: "64mb",
   },
 };
 
