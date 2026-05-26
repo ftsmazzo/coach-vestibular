@@ -126,13 +126,26 @@ export function textoIndicaIngles(texto: string): boolean {
 
 /** Texto-base claramente em português (não espanhol). */
 export function textoIndicaPortugues(texto: string): boolean {
+  return textoIndicaPortuguesInterpretacao(texto);
+}
+
+/**
+ * Só força Português quando é interpretação/literatura — NÃO por ter comando em PT
+ * (quase toda questão de vestibular tem pergunta em português).
+ */
+export function textoIndicaPortuguesInterpretacao(texto: string): boolean {
   const t = texto.trim();
   if (t.length < 80) return false;
+  if (detectarPassagemIngles(t) || detectarPassagemEspanhol(t)) return false;
+  if (RE_BIOLOGIA.test(t) || RE_MAT_FUNCOES.test(t) || RE_MAT_MATRIZ.test(t) || RE_MAT_GEOM.test(t)) {
+    return false;
+  }
   if (RE_PT_LITERATURA.test(t)) return true;
+  if (!PT_COMANDO.test(t)) return false;
   const pt = contarMatches(t, RE_PT_FORTE);
-  const es = contarMatches(t, RE_ES_FORTE);
   const en = contarMatches(t, RE_EN);
-  return pt >= 10 && pt > es * 2 && en < 12;
+  const es = contarMatches(t, RE_ES_FORTE);
+  return pt >= 12 && pt > en * 2 && pt > es * 2;
 }
 
 function pareceMateriaPortugues(materia: string): boolean {
@@ -172,7 +185,7 @@ function forcarPortuguesLiteratura(
   texto: string,
   questao: QuestaoExtraida
 ): QuestaoExtraida | null {
-  if (!textoIndicaPortugues(texto)) return null;
+  if (!textoIndicaPortuguesInterpretacao(texto)) return null;
   return {
     ...questao,
     materia: "Português",
@@ -192,9 +205,6 @@ function ajustarPorConteudoDisciplinar(
   texto: string,
   questao: QuestaoExtraida
 ): QuestaoExtraida {
-  const ptLit = forcarPortuguesLiteratura(texto, questao);
-  if (ptLit) return ptLit;
-
   let { materia, assunto, observacoes } = questao;
   const t = texto;
 
@@ -232,15 +242,13 @@ function ajustarPorConteudoDisciplinar(
   return { ...questao, materia, assunto, observacoes };
 }
 
-export function ajustarMateriaPorIdiomaDoTexto(
+/** Pós-processamento após IA: idioma + conteúdo científico, sem empurrar tudo para Português. */
+export function ajustarMateriaIdiomaEDisciplina(
   textoQuestao: string,
   questao: QuestaoExtraida
 ): QuestaoExtraida {
   const texto = textoQuestao.trim();
-  if (texto.length < 80) return questao;
-
-  const ptLit = forcarPortuguesLiteratura(texto, questao);
-  if (ptLit) return normalizarMateriaMatematica(ptLit);
+  if (texto.length < 40) return normalizarMateriaMatematica(questao);
 
   const en = contarMatches(texto, RE_EN);
   const es = contarMatches(texto, RE_ES_FORTE);
@@ -252,14 +260,10 @@ export function ajustarMateriaPorIdiomaDoTexto(
   let assunto = questao.assunto;
   let observacoes = questao.observacoes;
 
-  const passagemIngles =
-    detectarPassagemIngles(texto) && en > es * 2;
+  const passagemIngles = detectarPassagemIngles(texto) && en > es * 2;
   const passagemEspanhol =
-    es >= 6 &&
-    es > pt &&
-    es > en &&
-    (cmdEs || !cmdPt) &&
-    !textoIndicaPortugues(texto);
+    detectarPassagemEspanhol(texto) ||
+    (es >= 6 && es > pt && es > en && (cmdEs || !cmdPt) && !textoIndicaPortuguesInterpretacao(texto));
 
   if (passagemIngles && !pareceMateriaIngles(materia)) {
     materia = "Inglês";
@@ -277,23 +281,28 @@ export function ajustarMateriaPorIdiomaDoTexto(
       observacoes ?? "Texto-base em espanhol com comando em português (padrão vestibular).";
   }
 
-  const parcial = { ...questao, materia, assunto, observacoes };
-  return ajustarClassificacaoPorConteudo(texto, parcial);
+  let q: QuestaoExtraida = { ...questao, materia, assunto, observacoes };
+  if (!textoIndicaIngles(texto)) {
+    q = ajustarPorConteudoDisciplinar(texto, q);
+  }
+
+  const ptLit = forcarPortuguesLiteratura(texto, q);
+  if (ptLit) return normalizarMateriaMatematica(ptLit);
+
+  return normalizarMateriaMatematica(q);
 }
 
 export function ajustarClassificacaoPorConteudo(
   textoQuestao: string,
   questao: QuestaoExtraida
 ): QuestaoExtraida {
-  const texto = textoQuestao.trim();
-  if (texto.length < 40) return normalizarMateriaMatematica(questao);
+  return ajustarMateriaIdiomaEDisciplina(textoQuestao, questao);
+}
 
-  const ptLit = forcarPortuguesLiteratura(texto, questao);
-  if (ptLit) return normalizarMateriaMatematica(ptLit);
-
-  let q = questao;
-  if (!textoIndicaIngles(texto)) {
-    q = ajustarPorConteudoDisciplinar(texto, q);
-  }
-  return normalizarMateriaMatematica(q);
+/** Compat: mesmo fluxo unificado. */
+export function ajustarMateriaPorIdiomaDoTexto(
+  textoQuestao: string,
+  questao: QuestaoExtraida
+): QuestaoExtraida {
+  return ajustarMateriaIdiomaEDisciplina(textoQuestao, questao);
 }

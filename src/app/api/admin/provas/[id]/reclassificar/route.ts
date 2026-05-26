@@ -49,17 +49,13 @@ export async function POST(
   ];
 
   try {
-    const rMateria = await extrairQuestoesComIA("", ctx, {
+    const rClass = await extrairQuestoesComIA("", ctx, {
       etapa: "materia",
       baseInicial: base,
     });
-    const rAssunto = await extrairQuestoesComIA("", ctx, {
-      etapa: "assunto",
-      baseInicial: rMateria.questoes,
-    });
     const resultado = await extrairQuestoesComIA("", ctx, {
       etapa: "conhecimento",
-      baseInicial: rAssunto.questoes,
+      baseInicial: rClass.questoes,
     });
 
     const questoes = resultado.questoes.filter((q) => q.numero === numero);

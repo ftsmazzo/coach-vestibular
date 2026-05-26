@@ -28,13 +28,13 @@ const ETAPAS: { id: Etapa; titulo: string; desc: string }[] = [
   },
   {
     id: "materia",
-    titulo: "2. Matéria",
-    desc: "Classifica só a matéria (heurística de idioma + IA focada).",
+    titulo: "2. Matéria e assunto",
+    desc: "Motor Passo 2 (taxonomia completa + pós-processamento de idioma/ciências).",
   },
   {
     id: "assunto",
-    titulo: "3. Assunto",
-    desc: "Escolhe assunto dentro da taxonomia da matéria já definida.",
+    titulo: "3. Refinar assunto",
+    desc: "Opcional: só se quiser ajustar assuntos após a etapa 2.",
   },
   {
     id: "conhecimento",

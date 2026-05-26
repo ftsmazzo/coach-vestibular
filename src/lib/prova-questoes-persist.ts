@@ -63,6 +63,7 @@ export async function atualizarQuestoesPorEtapa(
       update.conhecimentoExigido = null;
     } else if (etapa === "materia") {
       update.materia = q.materia;
+      update.assunto = q.assunto;
       if (enunciado) update.enunciado = enunciado;
     } else if (etapa === "assunto") {
       update.assunto = q.assunto;
