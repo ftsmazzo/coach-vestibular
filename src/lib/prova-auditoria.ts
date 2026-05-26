@@ -5,6 +5,10 @@ import {
   textoIndicaIngles,
   textoIndicaPortugues,
 } from "./prova-materia-ajuste";
+import {
+  assuntoPertenceMateria,
+  encontrarMateriaDoAssunto,
+} from "./taxonomia-validacao";
 
 export interface QuestaoAuditoriaInput {
   numero: number;
