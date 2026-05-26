@@ -364,15 +364,16 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
 
   const historicalAttempts: AttemptInput[][] = historicalExams.map((e) =>
     e.questionAttempts.map((a) => {
-      const mapped =
-        a.provaQuestao &&
-        mapMateriaAssuntoToTaxonomy(a.provaQuestao.materia, a.provaQuestao.assunto);
+      const mat = a.materiaCorrigida || a.provaQuestao?.materia;
+      const ass = a.assuntoCorrigido || a.provaQuestao?.assunto;
+      const mapped = (mat && ass) ? mapMateriaAssuntoToTaxonomy(mat, ass) : undefined;
       return {
         numero: a.numero,
         correto: a.correto,
         materiaId: a.materiaId ?? mapped?.materiaId,
         temaId: a.temaId ?? mapped?.temaId,
         tipoErro: a.tipoErro,
+        observacao: a.observacao,
       };
     })
   );
@@ -380,14 +381,16 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
   const rawAttempts: AttemptInput[] = exam.questionAttempts.map((a) => {
     const pq =
       a.provaQuestao ?? prova.questoes.find((q) => q.numero === a.numero);
-    const mapped =
-      pq && mapMateriaAssuntoToTaxonomy(pq.materia, pq.assunto);
+    const mat = a.materiaCorrigida || pq?.materia;
+    const ass = a.assuntoCorrigido || pq?.assunto;
+    const mapped = (mat && ass) ? mapMateriaAssuntoToTaxonomy(mat, ass) : undefined;
     return {
       numero: a.numero,
       correto: a.correto,
       materiaId: a.materiaId ?? mapped?.materiaId,
       temaId: a.temaId ?? mapped?.temaId,
       tipoErro: a.tipoErro,
+      observacao: a.observacao,
     };
   });
 
@@ -397,8 +400,8 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
     return {
       numero: a.numero,
       correto: a.correto,
-      materia: q.materia,
-      assunto: q.assunto,
+      materia: a.materiaCorrigida || q.materia,
+      assunto: a.assuntoCorrigido || q.assunto,
       conhecimentoExigido: q.conhecimentoExigido,
       nivelDificuldade: q.nivelDificuldade,
     };

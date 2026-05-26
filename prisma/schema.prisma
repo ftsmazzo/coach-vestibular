@@ -138,6 +138,8 @@ model QuestionAttempt {
   temaId         String?
   tipoErro       ErrorType?
   observacao     String?    @db.Text
+  materiaCorrigida String?
+  assuntoCorrigido String?
 
   exam         Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
   provaQuestao ProvaQuestao? @relation(fields: [provaQuestaoId], references: [id], onDelete: SetNull)

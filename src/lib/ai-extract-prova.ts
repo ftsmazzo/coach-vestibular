@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ajustarMateriaPorIdiomaDoTexto } from "@/lib/prova-materia-ajuste";
+import { taxonomy } from "@/lib/taxonomy";
 
 /** IA costuma enviar null em campos vazios. */
 const textoOpcional = z.string().nullish();
@@ -18,8 +19,8 @@ const questaoExtraidaSchema = z.object({
   conhecimentoExigido: textoOpcional,
   nivelDificuldade: textoOpcional,
   observacoes: textoOpcional,
-  /** Até ~400 caracteres do enunciado (para auditoria admin) */
-  trechoEnunciado: textoOpcional,
+  /** Trecho do enunciado (MANDATÓRIO) */
+  trechoEnunciado: z.string().min(5),
 });
 
 const respostaSchema = z.object({
@@ -29,46 +30,6 @@ const respostaSchema = z.object({
 });
 
 export type QuestaoExtraida = z.infer<typeof questaoExtraidaSchema>;
-
-const SYSTEM_PROMPT = `Você classifica questões objetivas de provas vestibulares (ENEM, UFU, Fuvest, simulados).
-
-O cadastro da prova (instituição, ano, caderno) já foi feito pelo admin — NÃO repita nome da prova nem caderno por questão.
-
-Para CADA questão no texto, retorne um objeto JSON com:
-- numero: número da questão na prova
-- areaBloco: bloco grande da prova, se aplicável (ex. Ciências da Natureza) — senão null
-- materia: disciplina principal (Química, Física, Matemática, Biologia, Português, Inglês, Espanhol, História, etc.)
-- assunto: tema específico dentro da matéria (mais específico que matéria)
-- conhecimentoExigido: em uma frase o que o estudante precisa saber/fazer, ou null
-- nivelDificuldade: facil | media | dificil ou null
-- observacoes: interdisciplinar, imagem, ambiguidade — ou null
-- trechoEnunciado: copie as primeiras frases do enunciado desta questão (até ~300 caracteres), ou null
-
-REGRAS:
-- Classifique com a melhor hipótese pedagógica a partir do enunciado.
-- LÍNGUA ESTRANGEIRA (obrigatório): se a PASSAGEM/TEXTO-BASE estiver em INGLÊS e o comando ou pergunta estiver em português, matéria = Inglês (NUNCA Português). Assunto típico: compreensão de texto em inglês / reading. O mesmo para espanhol: texto-base em espanhol + pergunta em PT → matéria Espanhol.
-- Português só quando o texto-base principal da questão estiver em português (interpretação, literatura, entrevista, gramática no texto PT).
-- Matéria sempre o nome da disciplina (Matemática, Biologia, Português…). Não use só «Geometria» ou «Geometria» como matéria — use Matemática e o assunto «Geometria espacial», «Funções», «Matrizes», etc.
-- Biologia: ecologia, biomas, hotspots, espécies endêmicas → matéria Biologia (não História por vizinhança).
-- Use "A classificar" em matéria ou assunto só se o enunciado não der base nenhuma.
-- Não misture matéria com assunto.
-- Não invente número de questão que não apareça no trecho.
-- NÃO inclua gabarito, resposta correta nem letra A–E.
-- NÃO use null em materia nem assunto.
-
-Responda somente com JSON válido (sem markdown):
-{ "questoes": [...], "avisos": [...], "resumo": "..." }`;
-
-function chunkText(text: string, maxLen = 14000): string[] {
-  if (text.length <= maxLen) return [text];
-  const chunks: string[] = [];
-  let start = 0;
-  while (start < text.length) {
-    chunks.push(text.slice(start, start + maxLen));
-    start += maxLen;
-  }
-  return chunks;
-}
 
 function sanitizeQuestaoRaw(q: unknown): unknown {
   if (!q || typeof q !== "object") return q;
@@ -95,7 +56,7 @@ function dedupeAvisos(avisos: string[]): string[] {
   return [...new Set(avisos)];
 }
 
-async function callOpenAI(
+async function callGemini(
   userContent: string,
   provaContext: {
     nome: string;
@@ -105,9 +66,9 @@ async function callOpenAI(
     totalEsperado?: number;
   }
 ): Promise<z.infer<typeof respostaSchema>> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY não configurada no servidor");
+    throw new Error("GEMINI_API_KEY ou OPENAI_API_KEY não configurada no servidor");
   }
 
   const meta = [
@@ -122,48 +83,117 @@ async function callOpenAI(
     .filter(Boolean)
     .join("\n");
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const allowedTaxonomyStr = taxonomy.materias
+    .map((m) => {
+      const temasStr = m.temas.map((t) => `"${t.label}"`).join(", ");
+      return `- Matéria: "${m.label}" | Assuntos permitidos: ${temasStr}`;
+    })
+    .join("\n");
+
+  const systemPrompt = `Você é uma Inteligência Artificial especializada e implacável na classificação pedagógica e extração de questões objetivas de provas de vestibulares brasileiros (ENEM, vestibulares tradicionais, simulados).
+
+Sua tarefa é analisar o texto completo da prova fornecido e extrair todas as questões em um formato estruturado JSON estrito.
+
+REGRAS DE CLASSIFICAÇÃO PEDAGÓGICA (TAXONOMIA):
+Você é terminantemente proibido de retornar null ou strings vazias em 'materia' e 'assunto'.
+Você DEVE escolher a matéria e o assunto de cada questão EXCLUSIVAMENTE a partir da taxonomia oficial abaixo:
+
+${allowedTaxonomyStr}
+
+ATENÇÃO:
+1. A matéria e o assunto devem corresponder exatamente a um dos pares listados acima (com a grafia idêntica, incluindo acentos).
+2. NUNCA use "A classificar" ou retorne null para materia ou assunto. Encontre a melhor correspondência pedagógica.
+3. Inglês/Espanhol: Se o texto-base principal estiver em inglês/espanhol, classifique inicialmente a matéria como "Português" e o assunto como "Interpretação de Texto" (já que a taxonomia oficial não possui Inglês e Espanhol como matérias separadas). O pós-processador do sistema irá ajustar depois.
+
+REGRAS DE EXTRAÇÃO:
+- "trechoEnunciado" é um campo MANDATÓRIO. Você deve extrair as frases centrais do enunciado da questão e da pergunta de forma a dar contexto completo para um diagnóstico de IA (entre 50 e 400 caracteres). Nunca deixe vazio, nulo ou com placeholder.
+- "numero": número da questão (exatamente como aparece na prova).
+- "areaBloco": bloco/área da prova (ex. "Ciências da Natureza", "Matemática e suas Tecnologias") ou null se não aplicável.
+- "conhecimentoExigido": descrição em uma frase curta do que o aluno precisa saber para resolver, ou null.
+- "nivelDificuldade": "facil" | "media" | "dificil" ou null.
+- "observacoes": notas especiais (ex: "interdisciplinar", "tabela", "gráfico", "imagem") ou null.`;
+
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const res = await fetch(geminiUrl, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+      contents: [
         {
           role: "user",
-          content: `${meta}\n\nConteúdo das questões (classifique o pedagógico; resposta em JSON):\n${userContent}`,
+          parts: [
+            {
+              text: `${meta}\n\nConteúdo completo das questões (analise e classifique; resposta em JSON):\n${userContent}`,
+            },
+          ],
         },
       ],
-      max_tokens: 8000,
+      systemInstruction: {
+        parts: [
+          {
+            text: systemPrompt,
+          },
+        ],
+      },
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            questoes: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  numero: { type: "INTEGER" },
+                  areaBloco: { type: "STRING" },
+                  materia: { type: "STRING" },
+                  assunto: { type: "STRING" },
+                  conhecimentoExigido: { type: "STRING" },
+                  nivelDificuldade: { type: "STRING" },
+                  observacoes: { type: "STRING" },
+                  trechoEnunciado: { type: "STRING" },
+                },
+                required: ["numero", "materia", "assunto", "trechoEnunciado"],
+              },
+            },
+            resumo: { type: "STRING" },
+          },
+          required: ["questoes"],
+        },
+        temperature: 0.15,
+      },
     }),
   });
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`OpenAI error: ${res.status} ${err.slice(0, 200)}`);
+    throw new Error(`Gemini error: ${res.status} ${err.slice(0, 200)}`);
   }
 
   const data = await res.json();
-  const raw = data.choices?.[0]?.message?.content;
-  if (!raw) throw new Error("Resposta vazia da IA");
+  const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!jsonText) throw new Error("Resposta vazia do Gemini");
 
-  const finishReason = data.choices?.[0]?.finish_reason;
-  const parsed = stripGabaritoFromRaw(JSON.parse(raw));
-  const result = respostaSchema.parse(parsed);
-
-  const avisos = [...(result.avisos ?? [])];
-  if (finishReason === "length") {
-    avisos.push(
-      "Resposta truncada neste trecho — se faltar questão, use «Completar faltantes» ou CSV."
-    );
+  // Limpador robusto de marcações de markdown de JSON
+  let cleanJson = jsonText.trim();
+  if (cleanJson.startsWith("```json")) {
+    cleanJson = cleanJson.substring(7);
+  } else if (cleanJson.startsWith("```")) {
+    cleanJson = cleanJson.substring(3);
   }
+  if (cleanJson.endsWith("```")) {
+    cleanJson = cleanJson.substring(0, cleanJson.length - 3);
+  }
+  cleanJson = cleanJson.trim();
 
-  return { ...result, avisos: avisos.length ? avisos : undefined };
+  const parsed = JSON.parse(cleanJson);
+  const stripped = stripGabaritoFromRaw(parsed);
+  const result = respostaSchema.parse(stripped);
+
+  return result;
 }
 
 function mergeQuestoes(all: QuestaoExtraida[]): QuestaoExtraida[] {
@@ -203,7 +233,7 @@ function avisosCobertura(
   }
   if (faltando.length > 0) {
     avisos.push(
-      `Faltam ${faltando.length} questão(ões) no banco (de ${totalEsperado}): nº ${faltando.slice(0, 25).join(", ")}${faltando.length > 25 ? "…" : ""}. Use «Completar faltantes» ou CSV.`
+      `Faltam ${faltando.length} questão(ões) no banco (de ${totalEsperado}): nº ${faltando.slice(0, 25).join(", ")}${faltando.length > 25 ? "…" : ""}.`
     );
   }
 
@@ -240,45 +270,28 @@ export async function extrairQuestoesComIA(
     throw new Error("Texto muito curto para extração — envie o PDF convertido ou mais conteúdo");
   }
 
-  const chunks = chunkText(trimmed);
-  const allQuestoes: QuestaoExtraida[] = [];
-  const allAvisos: string[] = [];
+  // We take advantage of Gemini's large context window and send the entire text at once.
+  const result = await callGemini(trimmed, provaContext);
+  
+  const ajustadas = result.questoes.map((q) =>
+    ajustarMateriaPorIdiomaDoTexto(
+      q.trechoEnunciado?.trim() ? `${trimmed}\n${q.trechoEnunciado}` : trimmed,
+      q
+    )
+  );
 
-  for (let i = 0; i < chunks.length; i++) {
-    const result = await callOpenAI(
-      chunks.length > 1
-        ? `[Parte ${i + 1}/${chunks.length}]\n${chunks[i]}`
-        : chunks[i],
-      provaContext
-    );
-    const chunkTexto = chunks[i];
-    const ajustadas = result.questoes.map((q) =>
-      ajustarMateriaPorIdiomaDoTexto(
-        q.trechoEnunciado?.trim() ? `${chunkTexto}\n${q.trechoEnunciado}` : chunkTexto,
-        q
-      )
-    );
-    allQuestoes.push(...ajustadas);
-    if (result.avisos) allAvisos.push(...result.avisos);
-  }
-
-  const questoes = mergeQuestoes(allQuestoes);
-
-  if (chunks.length > 1) {
-    allAvisos.unshift(
-      `Texto longo: ${chunks.length} chamada(s) à IA (sem sobreposição).`
-    );
-  }
+  const questoes = mergeQuestoes(ajustadas);
+  const allAvisos = [...(result.avisos ?? [])];
 
   allAvisos.push(...avisosCobertura(questoes, provaContext.totalEsperado));
 
   if (questoes.length === 0) {
-    allAvisos.push("Nenhuma questão identificada — revise o texto ou use CSV do GPT.");
+    allAvisos.push("Nenhuma questão identificada — revise o texto ou use CSV.");
   }
 
   return {
     questoes,
     avisos: dedupeAvisos(allAvisos),
-    resumo: `${questoes.length} questões extraídas`,
+    resumo: result.resumo || `${questoes.length} questões extraídas`,
   };
 }
