@@ -67,13 +67,14 @@ export function AdminExtracaoPipeline({
   const rodar = useCallback(
     async (etapa: Etapa, aplicar: boolean) => {
       const precisaTexto = etapa === "enunciados" || etapa === "completo";
-      const continuarDeBanco = !precisaTexto || (etapa !== "enunciados" && questoesNoBanco > 0);
+      const etapaUsaBanco =
+        etapa === "materia" || etapa === "assunto" || etapa === "conhecimento";
 
       if (precisaTexto && !textoProva.trim() && !pdfFile) {
         onMensagem("Cole o texto da prova ou envie um PDF.");
         return;
       }
-      if (!precisaTexto && questoesNoBanco === 0) {
+      if (etapaUsaBanco && questoesNoBanco === 0) {
         onMensagem("Grave os enunciados no banco antes desta etapa.");
         return;
       }
@@ -84,7 +85,7 @@ export function AdminExtracaoPipeline({
       fd.append("aplicar", String(aplicar));
       fd.append("modo", etapa === "enunciados" && aplicar ? "substituir" : "adicionar");
       fd.append("etapa", etapa);
-      fd.append("continuarDeBanco", String(continuarDeBanco && etapa !== "enunciados"));
+      fd.append("continuarDeBanco", String(etapaUsaBanco));
       if (textoProva.trim()) fd.append("texto", textoProva.trim());
       else if (pdfFile && precisaTexto) fd.append("file", pdfFile);
 
