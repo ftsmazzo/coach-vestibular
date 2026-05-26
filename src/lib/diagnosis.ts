@@ -265,17 +265,21 @@ export async function buildDiagnosis(
   const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
   if (apiKey) {
     try {
-      // 1. Build the Metacognitive Context
+      // 1. Build the Metacognitive Context (Highly structured and clear to highlight student annotations)
       const metacognitiveSummary = currentAttempts
         .filter((a) => !a.correto)
         .map((a) => {
           const mat = getMateriaLabel(a.materiaId);
           const tema = getTemaLabel(a.materiaId, a.temaId);
           const causa = a.tipoErro || "Sem Classificação";
-          const obs = a.observacao ? ` (Nota: ${a.observacao})` : "";
-          return `- Questão ${a.numero} de ${mat} / ${tema}: Errou por ${causa}${obs}`;
+          const obs = a.observacao ? a.observacao : "Nenhuma anotação pessoal.";
+          return `- Questão ${a.numero}:
+    * Matéria (banco): ${mat}
+    * Assunto (banco): ${tema}
+    * Causa do erro (tipoErro): ${causa}
+    * Anotação Metacognitiva do Aluno (pode conter correções de matéria/assunto): "${obs}"`;
         })
-        .join("\n");
+        .join("\n\n");
 
       // 2. Build Vulnerability context
       const vulnerabilitySummary = temaScores
@@ -288,18 +292,34 @@ export async function buildDiagnosis(
         .join("\n");
 
       // 3. System Prompt for Gemini
-      const systemPrompt = `Você é o Coach Vestibular, um mentor de alta performance especialista em vestibulandos de Medicina.
+      const systemPrompt = `Você é o Coach Vestibular, um mentor de alta performance cirúrgico, analítico e implacável, especialista em preparar vestibulandos de Medicina de altíssimo nível.
 Sua missão é analisar o diagnóstico de erros de um simulado ou prova e gerar:
-1. Uma narrativa empática e motivadora de até 3 frases (campo "mensagem"). Adapte a intensidade e o tom para ser acolhedor se o aluno estiver no Modo Recuperação (checkInScore baixo ou desempenho geral baixo).
+1. Uma narrativa empática, altamente personalizada e motivadora de até 3 frases (campo "mensagem"). Adapte a intensidade e o tom para ser acolhedor se o aluno estiver no Modo Recuperação (checkInScore baixo ou desempenho geral baixo).
 2. Uma lista de focos prioritários de estudos (campo "focos").
 3. Um plano de estudos prático estruturado em blocos de Quests de estudo ativo (campo "studyPlanItems").
 
-Diretrizes rígidas médicas de estudo:
-- Se a vulnerabilidade de um assunto for ALTA e a causa dominante for CONCEITO_TEORICO: O plano DEVE passar uma Quest de estudo ativo de base (ex: construir mapa mental dos pontos chaves do tema ou assistir bloco teórico específico).
-- Se a causa dominante for CALCULO_BOBEIRA ou INTERPRETACAO_ENUNCIADO: O plano NÃO DEVE mandar o aluno rever teoria. Deve gerar uma Quest de simulado focado em bloco de tempo pequeno, técnicas de sublinhar o comando da questão ou listas de velocidade.
-- O tom deve ser empático e adaptado ao checkInScore emocional (Modo Recuperação se checkInScore <= 2).
+Siga rigorosamente as seguintes REGRAS DE FERRO:
 
-Você deve responder APENAS com um objeto JSON estruturado seguindo exatamente este formato (não adicione formatação markdown ao redor do JSON):
+1. PRIORIDADE ABSOLUTA DA METACOGNIÇÃO (OVERRIDE DO ALUNO):
+Você DEVE ler a anotação metacognitiva/observação do aluno para cada questão errada ANTES de analisar qualquer classificação padrão de matéria ou assunto do banco de dados. 
+Se na anotação/observação o aluno apontar explícita ou implicitamente que a classificação cadastrada no banco está errada (por exemplo: "essa questão na verdade é de geografia, não de biologia/genética" ou "era sobre pronomes relativos, não interpretação de texto" ou "era sobre tempos verbais"), você DEVE ignorar completamente os metadados do banco e usar a matéria e o tema corrigidos pelo aluno para gerar a Quest correspondente e os focos de estudo.
+Caso a matéria seja corrigida pelo aluno, mapeie-a preferencialmente para um dos seguintes IDs válidos de matéria (biologia, quimica, fisica, matematica, portugues, historia, geografia) e use o tema descrito pelo aluno.
+
+2. HIPER-ESPECIFICIDADE NAS TAREFAS (PROIBIDO TERMOS MACRO OU GENÉRICOS):
+Você é terminantemente proibido de gerar títulos macros, vagos ou genéricos como "Estudar Gramática", "Construir Mapa Mental de Óptica", "Fisiologia Humana", "Revisar Genética", "Fazer exercícios de Trigonometria", "Gramática Essencial", "Óptica Geométrica".
+Os títulos e descrições das Quests DEVEM ser extremamente específicos, focados nos micro-temas exatos do erro e citando diretamente a dor descrita pelo aluno.
+- Exemplo Inaceitável: "Revise Gramática e construa mapa mental."
+- Exemplo Correto: "Foco em Pronomes Relativos: cujo e onde" (mencionando na descrição para revisar especificamente o uso de 'cujo' e 'onde' conforme apontado pelo aluno).
+- Exemplo Correto 2: "Óptica: Espelhos Côncavos e Convexos" (focando a Quest apenas nas equações de Gauss para espelhos esféricos e esquecendo a parte teórica de refração que o aluno já domina).
+
+3. ESTRUTURAÇÃO DAS AÇÕES POR TIPO DE ERRO:
+- Se o tipo de erro de uma questão for "CALCULO_BOBEIRA" ou "INTERPRETACAO_ENUNCIADO" (como erros de distração de sinal, sinal invertido, pegadinha de atenção ou pressa): a Quest gerada DEVE ser uma tarefa prática de mecânica de prova ou agilidade operacional (por exemplo: "Montar checklist mental de conferência de sinal antes de preencher a resposta", "Resolver 5 blocos de exercícios rápidos em 10 minutos para treinar velocidade", "Marcar fisicamente os dados e o comando da questão"). É TERMINANTEMENTE PROIBIDO mandar o aluno assistir aulas teóricas, rever teoria do início ou ler apostilas básicas nestes casos!
+- Se o tipo de erro for "CONCEITO_TEORICO", a Quest gerada deve ser de estudo ativo de base teórica (por exemplo: construir um mapa mental focado de fórmulas, explicar o conceito teórico complexo em voz alta, fazer um fichamento cirúrgico de um ponto específico da teoria).
+
+4. LEITURA ATIVA DAS ANOTAÇÕES NA DESCRIÇÃO (TEXTO DINÂMICO):
+A descrição de cada Quest DEVE obrigatoriamente iniciar com um texto dinâmico mostrando de forma clara e empática que você leu de fato a anotação pessoal que o aluno escreveu, usando exatamente o padrão: "Com base na sua anotação da QX, onde você mencionou que [resumo da anotação/dor do aluno], sua tarefa será...".
+
+Você deve responder APENAS com um objeto JSON estruturado seguindo exatamente este formato (não adicione blocos de código markdown ao redor do JSON):
 {
   "mensagem": "...",
   "focos": [
@@ -350,7 +370,7 @@ ${metacognitiveSummary || "Nenhum erro metacognitivo registrado."}
 Vulnerabilidade por Tema (Ponderada por Peso de Prova):
 ${vulnerabilitySummary || "Nenhuma vulnerabilidade calculada."}
 
-Gere o diagnóstico estruturado e as Quests de estudo agora.`,
+Gere o diagnóstico estruturado e as Quests de estudo agora seguindo rigorosamente as Regras de Ferro.`,
                 },
               ],
             },
@@ -373,7 +393,19 @@ Gere o diagnóstico estruturado e as Quests de estudo agora.`,
         const data = await res.json();
         const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (jsonText) {
-          const parsed = JSON.parse(jsonText.trim());
+          // Limpador robusto de marcações de markdown de JSON
+          let cleanJson = jsonText.trim();
+          if (cleanJson.startsWith("```json")) {
+            cleanJson = cleanJson.substring(7);
+          } else if (cleanJson.startsWith("```")) {
+            cleanJson = cleanJson.substring(3);
+          }
+          if (cleanJson.endsWith("```")) {
+            cleanJson = cleanJson.substring(0, cleanJson.length - 3);
+          }
+          cleanJson = cleanJson.trim();
+
+          const parsed = JSON.parse(cleanJson);
           return {
             overallAcerto,
             materiaScores,
