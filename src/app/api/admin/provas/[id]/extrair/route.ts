@@ -27,6 +27,7 @@ const bodySchema = z.object({
   modo: z.enum(["substituir", "adicionar"]).default("substituir"),
   etapa: z.enum(["enunciados", "materia", "assunto", "conhecimento", "completo"]).default("completo"),
   continuarDeBanco: z.boolean().default(false),
+  excluirBlocoEspanhol: z.boolean().optional(),
 });
 
 function parseEtapa(raw: FormDataEntryValue | string | null): EtapaExtracao {
@@ -67,6 +68,7 @@ export async function POST(
   let modo: "substituir" | "adicionar" = "substituir";
   let etapa: EtapaExtracao = "completo";
   let continuarDeBanco = false;
+  let excluirBlocoEspanhol: boolean | undefined;
 
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("multipart/form-data")) {
@@ -75,6 +77,10 @@ export async function POST(
     modo = form.get("modo") === "adicionar" ? "adicionar" : "substituir";
     etapa = parseEtapa(form.get("etapa"));
     continuarDeBanco = form.get("continuarDeBanco") === "true";
+    const rawExcluir = form.get("excluirBlocoEspanhol");
+    if (rawExcluir != null) {
+      excluirBlocoEspanhol = rawExcluir === "true";
+    }
     const textField = form.get("texto") as string | null;
     const file = form.get("file") as File | null;
 
@@ -100,7 +106,11 @@ export async function POST(
     modo = body.modo;
     etapa = body.etapa;
     continuarDeBanco = body.continuarDeBanco;
+    excluirBlocoEspanhol = body.excluirBlocoEspanhol;
   }
+
+  const excluirEs =
+    excluirBlocoEspanhol ?? process.env.EXCLUIR_BLOCO_ESPANHOL !== "false";
 
   const precisaTexto = etapa === "enunciados" || etapa === "completo";
   let baseInicial: QuestaoExtraida[] | undefined;
@@ -141,13 +151,14 @@ export async function POST(
     });
     const partesCaderno = [texto.trim(), fonteDb?.textoFonte?.trim()].filter(Boolean);
     const textoCaderno = partesCaderno.join("\n\n");
+    const textoParaPipeline = texto.trim();
     const textoCadernoFinal =
       baseInicial?.length && etapa !== "enunciados"
         ? mesclarTextoParaBlocos(textoCaderno, baseInicial)
         : textoCaderno;
 
     const resultado = await extrairQuestoesComIA(
-      texto,
+      textoParaPipeline || texto,
       {
         nome: prova.nome,
         banca: prova.banca,
@@ -155,7 +166,12 @@ export async function POST(
         caderno: prova.caderno,
         totalEsperado: prova.totalQuestoes,
       },
-      { etapa, baseInicial, textoCaderno: textoCadernoFinal || undefined }
+      {
+        etapa,
+        baseInicial,
+        textoCaderno: textoCadernoFinal || undefined,
+        excluirBlocoEspanhol: excluirEs,
+      }
     );
 
     let adicionadas = 0;
@@ -195,6 +211,7 @@ export async function POST(
       aplicado: aplicar,
       modo,
       etapa,
+      excluirBlocoEspanhol: excluirEs,
       adicionadas: aplicar ? adicionadas : 0,
       caracteresProcessados: texto.length,
     });

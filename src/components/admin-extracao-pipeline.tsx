@@ -63,6 +63,7 @@ export function AdminExtracaoPipeline({
   const [etapaAtiva, setEtapaAtiva] = useState<Etapa>("enunciados");
   const [preview, setPreview] = useState<ExtracaoPreview | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const [excluirBlocoEspanhol, setExcluirBlocoEspanhol] = useState(true);
 
   const rodar = useCallback(
     async (etapa: Etapa, aplicar: boolean) => {
@@ -86,6 +87,7 @@ export function AdminExtracaoPipeline({
       fd.append("modo", etapa === "enunciados" && aplicar ? "substituir" : "adicionar");
       fd.append("etapa", etapa);
       fd.append("continuarDeBanco", String(etapaUsaBanco));
+      fd.append("excluirBlocoEspanhol", String(excluirBlocoEspanhol));
       if (textoProva.trim()) fd.append("texto", textoProva.trim());
       else if (pdfFile && precisaTexto) fd.append("file", pdfFile);
 
@@ -118,7 +120,7 @@ export function AdminExtracaoPipeline({
         );
       }
     },
-    [provaId, textoProva, pdfFile, questoesNoBanco, onMensagem, onAtualizado]
+    [provaId, textoProva, pdfFile, questoesNoBanco, excluirBlocoEspanhol, onMensagem, onAtualizado]
   );
 
   const etapaInfo = ETAPAS.find((e) => e.id === etapaAtiva);
@@ -131,6 +133,20 @@ export function AdminExtracaoPipeline({
         do PDF/texto salvo e usa <strong>gpt-4o</strong> só onde o bloco não define a matéria.
         Grave os enunciados antes; mantenha o texto completo da prova salvo no servidor.
       </p>
+
+      <label className="mb-3 flex cursor-pointer items-start gap-2 text-sm text-teal-900">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          checked={excluirBlocoEspanhol}
+          onChange={(e) => setExcluirBlocoEspanhol(e.target.checked)}
+        />
+        <span>
+          <strong>Ignorar bloco de Espanhol</strong> (UFU e similares: inglês e espanhol com a
+          mesma numeração). Remove o trecho «Língua Espanhola» do texto e prefere enunciado em
+          inglês quando houver duplicata.
+        </span>
+      </label>
 
       <div className="mb-4 flex flex-wrap gap-2">
         {ETAPAS.map((e) => (

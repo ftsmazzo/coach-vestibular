@@ -268,6 +268,82 @@ function marcasQuestoes(texto: string): MarcaQuestao[] {
   return marcas;
 }
 
+function prioridadeBlocoIdioma(materia: string): number {
+  const m = norm(materia);
+  if (m === "espanhol") return 0;
+  if (m === "ingles") return 10;
+  return 5;
+}
+
+/** Remove do texto o bloco entre «Língua Espanhola» e o próximo cabeçalho de outra área. */
+export function removerTrechosBlocoEspanhol(texto: string): {
+  texto: string;
+  caracteresRemovidos: number;
+  blocosRemovidos: number;
+} {
+  const t = texto.replace(/\r\n/g, "\n");
+  if (t.length < 200) {
+    return { texto: t, caracteresRemovidos: 0, blocosRemovidos: 0 };
+  }
+
+  const faixas: Array<{ inicio: number; fim: number }> = [];
+  let pos = 0;
+  let inicioEspanhol: number | null = null;
+
+  for (const line of t.split(/\n/)) {
+    const bloco = cabecalhoParaBloco(line);
+    if (bloco?.materia === "Espanhol" && inicioEspanhol === null) {
+      inicioEspanhol = pos;
+    } else if (inicioEspanhol !== null && bloco && bloco.materia !== "Espanhol") {
+      faixas.push({ inicio: inicioEspanhol, fim: pos });
+      inicioEspanhol = null;
+    } else if (inicioEspanhol !== null && /^tipo\s*\d+\s*$/i.test(line.trim())) {
+      faixas.push({ inicio: inicioEspanhol, fim: pos });
+      inicioEspanhol = null;
+    }
+    pos += line.length + 1;
+  }
+  if (inicioEspanhol !== null) {
+    faixas.push({ inicio: inicioEspanhol, fim: t.length });
+  }
+
+  if (faixas.length === 0) {
+    return { texto: t, caracteresRemovidos: 0, blocosRemovidos: 0 };
+  }
+
+  let resultado = "";
+  let cursor = 0;
+  for (const f of faixas) {
+    resultado += t.slice(cursor, f.inicio);
+    cursor = f.fim;
+  }
+  resultado += t.slice(cursor);
+  const removido = faixas.reduce((s, f) => s + (f.fim - f.inicio), 0);
+
+  return {
+    texto: resultado.trim(),
+    caracteresRemovidos: removido,
+    blocosRemovidos: faixas.length,
+  };
+}
+
+export function processarTextoProvaIdioma(
+  texto: string,
+  opts?: { excluirBlocoEspanhol?: boolean }
+): { texto: string; avisos: string[] } {
+  const excluir = opts?.excluirBlocoEspanhol !== false;
+  const avisos: string[] = [];
+  if (!excluir) return { texto: texto.replace(/\r\n/g, "\n"), avisos };
+
+  const r = removerTrechosBlocoEspanhol(texto);
+  if (r.blocosRemovidos > 0) {
+    avisos.push(
+      `Bloco de Espanhol removido do texto (${r.blocosRemovidos} seção(ões), ~${Math.round(r.caracteresRemovidos / 1000)}k caracteres) — prova bilíngue com mesma numeração.`
+    );
+  }
+  return { texto: r.texto, avisos };
+}
+
 function marcasCabecalhos(texto: string): MarcaCabecalho[] {
   const out: MarcaCabecalho[] = [];
   let pos = 0;
@@ -332,7 +408,13 @@ export function extrairMapaBlocosDoCaderno(texto: string): Map<number, InfoBloco
       tituloCabecalho: blocoAtual.titulo,
     };
 
-    mapa.set(q.numero, info);
+    const prev = mapa.get(q.numero);
+    if (
+      !prev ||
+      prioridadeBlocoIdioma(info.materia) > prioridadeBlocoIdioma(prev.materia)
+    ) {
+      mapa.set(q.numero, info);
+    }
   }
 
   return mapa;
@@ -356,7 +438,8 @@ export function mesclarTextoParaBlocos(
  */
 export function aplicarBlocosDoCaderno(
   questoes: QuestaoExtraida[],
-  textoCaderno: string
+  textoCaderno: string,
+  opts?: { ignorarBlocoEspanhol?: boolean }
 ): { questoes: QuestaoExtraida[]; avisos: string[] } {
   const avisos: string[] = [];
   const mapa = extrairMapaBlocosDoCaderno(textoCaderno);
@@ -371,9 +454,13 @@ export function aplicarBlocosDoCaderno(
   let ignoradas = 0;
   const blocosVistos = new Set<string>();
 
+  const ignorarEs = opts?.ignorarBlocoEspanhol !== false;
+
   for (const q of questoes) {
     const info = mapa.get(q.numero);
     if (!info) continue;
+
+    if (ignorarEs && norm(info.materia) === "espanhol") continue;
 
     if (info.areaBloco && !info.materia) {
       q.areaBloco = info.areaBloco;

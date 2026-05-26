@@ -109,6 +109,7 @@ export async function extrairQuestoesComIA(
     etapa?: EtapaExtracao;
     baseInicial?: QuestaoExtraida[];
     textoCaderno?: string;
+    excluirBlocoEspanhol?: boolean;
   }
 ): Promise<{
   questoes: QuestaoExtraida[];
@@ -133,6 +134,7 @@ export async function extrairQuestoesComIA(
     extrairEnunciadosLote: extrairLoteEnunciados,
     baseInicial: options?.baseInicial,
     textoCaderno: options?.textoCaderno,
+    excluirBlocoEspanhol: options?.excluirBlocoEspanhol,
   });
 
   return {

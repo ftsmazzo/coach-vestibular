@@ -1,6 +1,13 @@
 import type { QuestaoExtraida } from "@/lib/ai-extract-prova";
 import { classificarMateriaEAssuntoMotor } from "@/lib/prova-classificacao-motor";
-import { mesclarTextoParaBlocos } from "@/lib/prova-blocos-caderno";
+import {
+  mesclarTextoParaBlocos,
+  processarTextoProvaIdioma,
+} from "@/lib/prova-blocos-caderno";
+import {
+  detectarPassagemEspanhol,
+  detectarPassagemIngles,
+} from "@/lib/prova-materia-ajuste";
 import {
   assuntoPadraoMateria,
   inferirMateriaPorEnunciado,
@@ -91,17 +98,74 @@ function questaoBase(numero: number, trecho: string): QuestaoExtraida {
   };
 }
 
-function mergeEnunciados(listas: EnunciadoBruto[][]): EnunciadoBruto[] {
+function pontuacaoPreferenciaIdioma(trecho: string): number {
+  const es = detectarPassagemEspanhol(trecho);
+  const en = detectarPassagemIngles(trecho);
+  if (en && !es) return 10;
+  if (es && !en) return 0;
+  if (en && es) return 6;
+  return 5;
+}
+
+function escolherEnunciadoDuplicado(a: EnunciadoBruto, b: EnunciadoBruto): EnunciadoBruto {
+  const pa = pontuacaoPreferenciaIdioma(a.trechoEnunciado);
+  const pb = pontuacaoPreferenciaIdioma(b.trechoEnunciado);
+  if (pa > pb) return a;
+  if (pb > pa) return b;
+  return a.trechoEnunciado.length >= b.trechoEnunciado.length ? a : b;
+}
+
+function mergeEnunciados(listas: EnunciadoBruto[][]): {
+  itens: EnunciadoBruto[];
+  duplicatasResolvidas: number;
+} {
   const map = new Map<number, EnunciadoBruto>();
+  let duplicatasResolvidas = 0;
   for (const lista of listas) {
     for (const q of lista) {
       const prev = map.get(q.numero);
-      if (!prev || q.trechoEnunciado.length > prev.trechoEnunciado.length) {
+      if (!prev) {
         map.set(q.numero, q);
+      } else {
+        duplicatasResolvidas++;
+        map.set(q.numero, escolherEnunciadoDuplicado(prev, q));
       }
     }
   }
-  return [...map.values()].sort((a, b) => a.numero - b.numero);
+  const itens = [...map.values()].sort((a, b) => a.numero - b.numero);
+  return { itens, duplicatasResolvidas };
+}
+
+function normMateria(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+/** Remove questões só do bloco de Espanhol quando a prova traz EN e ES com o mesmo número. */
+function filtrarQuestoesBlocoEspanhol(
+  questoes: QuestaoExtraida[],
+  excluir: boolean
+): { questoes: QuestaoExtraida[]; removidas: number[] } {
+  if (!excluir) return { questoes, removidas: [] };
+  const removidas: number[] = [];
+  const filtradas = questoes.filter((q) => {
+    const es = detectarPassagemEspanhol(q.trechoEnunciado);
+    const en = detectarPassagemIngles(q.trechoEnunciado);
+    if (en && !es) return true;
+    if (es && !en) {
+      removidas.push(q.numero);
+      return false;
+    }
+    if (normMateria(q.materia) === "espanhol" && !en) {
+      removidas.push(q.numero);
+      return false;
+    }
+    return true;
+  });
+  return { questoes: filtradas, removidas };
 }
 
 async function callOpenAI(
@@ -159,9 +223,10 @@ JSON: { "conhecimentos": [{ "numero": 1, "conhecimentoExigido": "..." }] }`;
 export async function classificarMateriaEAssunto(
   base: QuestaoExtraida[],
   avisosIn: string[] = [],
-  textoCaderno?: string
+  textoCaderno?: string,
+  opts?: { excluirBlocoEspanhol?: boolean }
 ): Promise<{ questoes: QuestaoExtraida[]; avisos: string[] }> {
-  const r = await classificarMateriaEAssuntoMotor(base, avisosIn, textoCaderno);
+  const r = await classificarMateriaEAssuntoMotor(base, avisosIn, textoCaderno, opts);
   r.avisos.push(...aplicarFallbacksClassificacao(r.questoes));
   return r;
 }
@@ -169,9 +234,10 @@ export async function classificarMateriaEAssunto(
 export async function classificarMaterias(
   base: QuestaoExtraida[],
   avisosIn: string[] = [],
-  textoCaderno?: string
+  textoCaderno?: string,
+  opts?: { excluirBlocoEspanhol?: boolean }
 ): Promise<{ questoes: QuestaoExtraida[]; avisos: string[] }> {
-  return classificarMateriaEAssunto(base, avisosIn, textoCaderno);
+  return classificarMateriaEAssunto(base, avisosIn, textoCaderno, opts);
 }
 
 export async function classificarAssuntos(
@@ -278,6 +344,7 @@ export async function executarPipelineExtracao(
     ) => Promise<EnunciadoBruto[]>;
     baseInicial?: QuestaoExtraida[];
     textoCaderno?: string;
+    excluirBlocoEspanhol?: boolean;
   }
 ): Promise<{
   questoes: QuestaoExtraida[];
@@ -287,6 +354,9 @@ export async function executarPipelineExtracao(
 }> {
   const avisos: string[] = [];
   let questoes: QuestaoExtraida[] = options.baseInicial ?? [];
+  const excluirEs =
+    options.excluirBlocoEspanhol ??
+    process.env.EXCLUIR_BLOCO_ESPANHOL !== "false";
 
   if (
     (etapa === "materia" ||
@@ -300,7 +370,9 @@ export async function executarPipelineExtracao(
 
   if (etapa === "enunciados" || etapa === "completo") {
     const lotes: EnunciadoBruto[][] = [];
-    const trimmed = textoProva.trim();
+    const proc = processarTextoProvaIdioma(textoProva, { excluirBlocoEspanhol: excluirEs });
+    avisos.push(...proc.avisos);
+    const trimmed = proc.texto.trim();
     if (trimmed.length < 100 && questoes.length === 0) {
       throw new Error("Texto muito curto para extração.");
     }
@@ -333,10 +405,22 @@ export async function executarPipelineExtracao(
           );
         }
       }
-      const merged = mergeEnunciados(lotes);
+      const { itens: merged, duplicatasResolvidas } = mergeEnunciados(lotes);
       questoes = merged.map((q) => questaoBase(q.numero, q.trechoEnunciado));
+      if (duplicatasResolvidas > 0) {
+        avisos.push(
+          `${duplicatasResolvidas} duplicata(s) de número resolvida(s) — preferência por enunciado em inglês quando havia versão em espanhol.`
+        );
+      }
     }
     if (questoes.length === 0) throw new Error("Nenhum enunciado extraído.");
+    const { questoes: semEs, removidas } = filtrarQuestoesBlocoEspanhol(questoes, excluirEs);
+    if (removidas.length > 0) {
+      avisos.push(
+        `Questões do bloco de Espanhol omitidas (nº ${removidas.slice(0, 12).join(", ")}${removidas.length > 12 ? "…" : ""}).`
+      );
+      questoes = semEs;
+    }
     if (etapa === "enunciados") {
       return {
         questoes,
@@ -347,13 +431,22 @@ export async function executarPipelineExtracao(
     }
   }
 
-  const textoBlocos =
+  const textoCadernoBruto =
     options.textoCaderno?.trim() ||
     (questoes.length > 0 ? mesclarTextoParaBlocos(textoProva, questoes) : textoProva);
+  const procCaderno = processarTextoProvaIdioma(textoCadernoBruto, {
+    excluirBlocoEspanhol: excluirEs,
+  });
+  if (procCaderno.avisos.length > 0 && etapa !== "enunciados") {
+    avisos.push(...procCaderno.avisos.filter((a) => !avisos.includes(a)));
+  }
+  const textoBlocos = procCaderno.texto;
 
   if (etapa === "materia" || etapa === "completo") {
     if (questoes.length === 0) throw new Error("Sem enunciados — rode a etapa 1 antes.");
-    const r = await classificarMaterias(questoes, avisos, textoBlocos);
+    const r = await classificarMaterias(questoes, avisos, textoBlocos, {
+      excluirBlocoEspanhol: excluirEs,
+    });
     questoes = r.questoes;
     avisos.push(...r.avisos);
     if (etapa === "materia") {

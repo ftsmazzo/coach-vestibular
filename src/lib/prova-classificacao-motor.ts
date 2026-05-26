@@ -287,7 +287,8 @@ export async function classificarQuestaoUnica(
 export async function classificarMateriaEAssuntoMotor(
   base: QuestaoExtraida[],
   avisosIn: string[] = [],
-  textoCaderno?: string
+  textoCaderno?: string,
+  opts?: { excluirBlocoEspanhol?: boolean }
 ): Promise<{ questoes: QuestaoExtraida[]; avisos: string[] }> {
   const avisos = [...avisosIn];
   let resultado = base.map((q) => ({
@@ -298,7 +299,9 @@ export async function classificarMateriaEAssuntoMotor(
 
   let mapaCaderno = new Map<number, InfoBlocoCaderno>();
   if (textoCaderno?.trim()) {
-    const blocos = aplicarBlocosDoCaderno(resultado, textoCaderno);
+    const blocos = aplicarBlocosDoCaderno(resultado, textoCaderno, {
+      ignorarBlocoEspanhol: opts?.excluirBlocoEspanhol !== false,
+    });
     resultado = blocos.questoes;
     avisos.push(...blocos.avisos);
     mapaCaderno = extrairMapaBlocosDoCaderno(textoCaderno);
