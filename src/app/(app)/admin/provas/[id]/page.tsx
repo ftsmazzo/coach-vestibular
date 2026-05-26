@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminAuditoriaProva } from "@/components/admin-auditoria-prova";
 import { AdminExtracaoPipeline } from "@/components/admin-extracao-pipeline";
+import { AdminProvaPipelineV2 } from "@/components/admin-prova-pipeline-v2";
 import { Button, Card, Input, Label } from "@/components/ui";
 import { buildProvaNome } from "@/lib/prova-nome";
 
@@ -497,19 +498,25 @@ export default function AdminProvaDetailPage() {
       </Card>
 
       <Card>
-        <h2 className="mb-2 font-semibold text-slate-800">Texto / PDF da prova</h2>
+        <h2 className="mb-2 font-semibold text-slate-800">PDF da prova</h2>
         <p className="mb-3 text-sm text-slate-600">
-          Cole o texto completo ou envie o PDF. Use o fluxo em etapas abaixo (recomendado). Não
-          preenche gabarito. Requer <code className="text-xs">OPENAI_API_KEY</code>.
+          Envie o PDF editado (questões 1–{prova.totalQuestoes}). A classificação usa a OpenAI
+          Responses API direto no arquivo — como o seu agente GPT. Requer{" "}
+          <code className="text-xs">OPENAI_API_KEY</code>.
         </p>
         <div className="space-y-3">
           <div>
-            <Label>PDF da prova</Label>
+            <Label>Arquivo PDF</Label>
             <Input
               type="file"
               accept=".pdf,application/pdf"
               onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
             />
+            {pdfFile && (
+              <p className="mt-1 text-xs text-slate-600">
+                Selecionado: {pdfFile.name} ({(pdfFile.size / 1024).toFixed(0)} KB)
+              </p>
+            )}
           </div>
           <div>
             <Label>Ou cole o texto da prova (recomendado: prova inteira, questões 1–65)</Label>
@@ -544,17 +551,34 @@ export default function AdminProvaDetailPage() {
         </div>
       </Card>
 
-      <AdminExtracaoPipeline
+      <AdminProvaPipelineV2
         provaId={prova.id}
-        textoProva={textoProva}
-        pdfFile={pdfFile}
-        questoesNoBanco={prova.questoes.length}
         totalQuestoes={prova.totalQuestoes}
-        temTextoFonte={prova.temTextoFonte}
-        tamanhoTextoFonte={prova.tamanhoTextoFonte ?? 0}
+        pdfFile={pdfFile}
+        gabaritoLote={gabaritoLote}
+        incluirGabarito={csvIncluirGabarito}
         onMensagem={setMsg}
         onAtualizado={load}
       />
+
+      <details className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+        <summary className="cursor-pointer text-sm font-medium text-slate-700">
+          Fluxo antigo (extração de enunciados + etapas) — legado
+        </summary>
+        <div className="mt-3 space-y-3">
+          <AdminExtracaoPipeline
+            provaId={prova.id}
+            textoProva={textoProva}
+            pdfFile={pdfFile}
+            questoesNoBanco={prova.questoes.length}
+            totalQuestoes={prova.totalQuestoes}
+            temTextoFonte={prova.temTextoFonte}
+            tamanhoTextoFonte={prova.tamanhoTextoFonte ?? 0}
+            onMensagem={setMsg}
+            onAtualizado={load}
+          />
+        </div>
+      </details>
 
       {prova.questoes.length > 0 && (
         <AdminAuditoriaProva provaId={prova.id} onQuestoesAtualizadas={load} />
