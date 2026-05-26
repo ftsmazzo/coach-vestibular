@@ -68,7 +68,17 @@
         { "id": "geometria", "label": "Geometria" },
         { "id": "probabilidade", "label": "Probabilidade e Estatística" },
         { "id": "trigonometria", "label": "Trigonometria" },
-        { "id": "algebra", "label": "Álgebra" }
+        { "id": "algebra", "label": "Álgebra" },
+        { "id": "matrizes", "label": "Matrizes" }
+      ]
+    },
+    {
+      "id": "filosofia",
+      "label": "Filosofia",
+      "temas": [
+        { "id": "etica", "label": "Ética" },
+        { "id": "politica", "label": "Filosofia Política" },
+        { "id": "geral", "label": "Filosofia" }
       ]
     },
     {

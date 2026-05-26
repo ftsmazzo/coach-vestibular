@@ -5,7 +5,14 @@ import {
   detectarPassagemEspanhol,
   textoIndicaPortuguesInterpretacao,
 } from "@/lib/prova-materia-ajuste";
+import {
+  alinharLoteTaxonomia,
+  normalizarLabelAssunto,
+  normalizarLabelMateria,
+} from "@/lib/taxonomia-validacao";
 import { taxonomy } from "@/lib/taxonomy";
+
+export { normalizarLabelAssunto, normalizarLabelMateria } from "@/lib/taxonomia-validacao";
 
 export type EtapaExtracao =
   | "enunciados"
@@ -39,31 +46,6 @@ function norm(s: string): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "");
-}
-
-/** Casa label da IA com a taxonomia oficial (grafia idêntica). */
-export function normalizarLabelMateria(raw: string): string {
-  const n = norm(raw);
-  for (const m of taxonomy.materias) {
-    if (norm(m.label) === n || n.includes(norm(m.label)) || norm(m.label).includes(n)) {
-      return m.label;
-    }
-  }
-  if (n.includes("lingua portuguesa") || n === "lp") return "Português";
-  if (n.includes("english") || n.includes("ingles")) return "Inglês";
-  if (n.includes("espanhol") || n.includes("spanish")) return "Espanhol";
-  return raw.trim() || "A classificar";
-}
-
-export function normalizarLabelAssunto(materiaLabel: string, raw: string): string {
-  const mat = taxonomy.materias.find((m) => m.label === materiaLabel);
-  if (!mat) return raw.trim() || "A classificar";
-  const n = norm(raw);
-  for (const t of mat.temas) {
-    const tl = norm(t.label);
-    if (tl === n || n.includes(tl) || tl.includes(n)) return t.label;
-  }
-  return raw.trim() || mat.temas[0]?.label || "A classificar";
 }
 
 /** Heurística antes da IA — evita “tudo Interpretação de Texto”. */
@@ -240,6 +222,7 @@ REGRAS OBRIGATÓRIAS:
 6. Forças, energia, circuitos, óptica → "Física". Reações, mol, tabela periódica → "Química".
 7. Use "Português" + "Interpretação de Texto" apenas para textos literários, charges ou interpretação de texto em português — NÃO para questões de ciências.
 8. Não marque todas as questões como Português por padrão. Analise o conteúdo cognitivo exigido.
+9. O assunto DEVE ser um dos listados para a matéria escolhida — nunca coloque assunto de Química em Português, etc.
 
 JSON: { "classificacoes": [{ "numero": 1, "materia": "Biologia", "assunto": "Ecologia" }] }`;
 }
@@ -311,6 +294,16 @@ export async function classificarMateriaEAssunto(
     q.materia = ajustada.materia;
     q.assunto = ajustada.assunto;
     q.observacoes = ajustada.observacoes;
+  }
+
+  const { questoes: alinhadas, corrigidas } = alinharLoteTaxonomia(resultado);
+  for (let i = 0; i < resultado.length; i++) {
+    resultado[i] = alinhadas[i];
+  }
+  if (corrigidas > 0) {
+    avisos.push(
+      `${corrigidas} par(es) matéria/assunto corrigidos para bater com a taxonomia (ex.: assunto de Química com matéria errada).`
+    );
   }
 
   avisos.push(...aplicarFallbacksClassificacao(resultado));

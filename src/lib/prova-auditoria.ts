@@ -145,6 +145,23 @@ export function auditarClassificacaoQuestoes(
       motivos.push("Matéria ou assunto ainda «A classificar».");
     }
 
+    if (
+      q.materia !== "A classificar" &&
+      q.assunto !== "A classificar" &&
+      !assuntoPertenceMateria(q.materia, q.assunto)
+    ) {
+      const dono = encontrarMateriaDoAssunto(q.assunto);
+      if (dono && dono.materia !== q.materia) {
+        motivos.push(
+          `Assunto «${q.assunto}» é de ${dono.materia}, mas a questão está como ${q.materia}.`
+        );
+      } else {
+        motivos.push(
+          `Assunto «${q.assunto}» não pertence à taxonomia de ${q.materia}.`
+        );
+      }
+    }
+
     const textoQ =
       q.enunciado?.trim() || trechos.get(q.numero) || "";
 

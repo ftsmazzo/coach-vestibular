@@ -192,11 +192,11 @@ function forcarPortuguesLiteratura(
     ...questao,
     materia: "Português",
     assunto: /entrevista|escrevivência|escrevivencia/i.test(texto)
-      ? "Interpretação de texto — literatura e entrevista"
+      ? "Literatura"
       : questao.assunto === "A classificar" ||
           pareceMateriaEspanhol(questao.materia) ||
           pareceMateriaIngles(questao.materia)
-        ? "Interpretação de texto"
+        ? "Interpretação de Texto"
         : questao.assunto,
     observacoes:
       questao.observacoes ?? "Texto-base em português (literatura/interpretação).",
@@ -214,24 +214,20 @@ function ajustarPorConteudoDisciplinar(
     const nm = normalizarMateria(materia);
     if (nm === "historia" || nm === "geografia" || nm === "portugues") {
       materia = "Biologia";
-      assunto = /hotspot|bioma|endêm|endem/i.test(t)
-        ? "Ecologia — biodiversidade e biomas brasileiros"
-        : assunto === "A classificar"
-          ? "Ecologia"
-          : assunto;
+      assunto = assunto === "A classificar" ? "Ecologia" : assunto;
       observacoes = observacoes ?? "Conteúdo de ecologia/biomas (não História).";
     }
   }
 
   if (RE_MAT_FUNCOES.test(t)) {
     materia = "Matemática";
-    assunto = "Funções — gráfico e área no plano cartesiano";
+    assunto = "Funções";
   } else if (RE_MAT_MATRIZ.test(t)) {
     materia = "Matemática";
     assunto = "Matrizes";
   } else if (RE_MAT_GEOM.test(t)) {
     materia = "Matemática";
-    assunto = "Geometria espacial — áreas e sólidos";
+    assunto = "Geometria";
   }
 
   if (
@@ -264,8 +260,9 @@ export function ajustarMateriaIdiomaEDisciplina(
 
   const passagemIngles = detectarPassagemIngles(texto) && en > es * 2;
   const passagemEspanhol =
-    detectarPassagemEspanhol(texto) ||
-    (es >= 6 && es > pt && es > en && (cmdEs || !cmdPt) && !textoIndicaPortuguesInterpretacao(texto));
+    !passagemIngles &&
+    (detectarPassagemEspanhol(texto) ||
+      (es >= 8 && es > pt * 1.2 && es > en * 1.2 && cmdEs && !textoIndicaPortuguesInterpretacao(texto)));
 
   if (passagemIngles && !pareceMateriaIngles(materia)) {
     materia = "Inglês";
