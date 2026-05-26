@@ -29,7 +29,7 @@ const allowedTaxonomyStr = taxonomy.materias
   })
   .join("\n");
 
-import { modeloClassificacao } from "@/lib/openai-modelos";
+import { limitesTokensCompletacao, modeloClassificacao } from "@/lib/openai-modelos";
 
 export { modeloClassificacao };
 
@@ -53,6 +53,7 @@ async function callOpenAIClassificacao(
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY não configurada no servidor");
 
+  const model = modeloClassificacao();
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -60,14 +61,14 @@ async function callOpenAIClassificacao(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: modeloClassificacao(),
+      model,
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent },
       ],
-      max_tokens: 16000,
+      ...limitesTokensCompletacao(model, 16000),
     }),
   });
 

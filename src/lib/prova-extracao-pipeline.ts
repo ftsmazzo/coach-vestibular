@@ -19,7 +19,7 @@ import {
   normalizarLabelMateria,
 } from "@/lib/taxonomia-validacao";
 import { taxonomy } from "@/lib/taxonomy";
-import { modeloExtracao } from "@/lib/openai-modelos";
+import { limitesTokensCompletacao, modeloExtracao } from "@/lib/openai-modelos";
 
 export { inferirMateriaPorEnunciado } from "@/lib/prova-heuristicas";
 export { normalizarLabelAssunto, normalizarLabelMateria } from "@/lib/taxonomia-validacao";
@@ -203,6 +203,7 @@ async function callOpenAI(
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY não configurada no servidor");
 
+  const model = modelOverride ?? modeloExtracao();
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -210,14 +211,14 @@ async function callOpenAI(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: modelOverride ?? modeloExtracao(),
+      model,
       temperature: 0.1,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent },
       ],
-      max_tokens: 16000,
+      ...limitesTokensCompletacao(model, 16000),
     }),
   });
 

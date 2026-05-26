@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { modeloExtracao } from "@/lib/openai-modelos";
+import { limitesTokensCompletacao, modeloExtracao } from "@/lib/openai-modelos";
 import {
   executarPipelineExtracao,
   type EtapaExtracao,
@@ -54,6 +54,7 @@ async function callOpenAI(systemPrompt: string, userContent: string): Promise<an
     throw new Error("OPENAI_API_KEY não configurada no servidor");
   }
 
+  const model = modeloExtracao();
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -61,14 +62,14 @@ async function callOpenAI(systemPrompt: string, userContent: string): Promise<an
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: modeloExtracao(),
+      model,
       temperature: 0.1,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent },
       ],
-      max_tokens: 16000,
+      ...limitesTokensCompletacao(model, 16000),
     }),
   });
 

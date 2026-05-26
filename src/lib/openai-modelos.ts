@@ -34,3 +34,19 @@ export function modeloExtracao(): string {
   if (base) return base;
   return modeloPipelinePrincipal();
 }
+
+/** GPT-5 / o-series: Chat Completions usa max_completion_tokens em vez de max_tokens. */
+export function modeloUsaApiChatNova(model: string): boolean {
+  const id = model.trim().toLowerCase();
+  return /^gpt-5/.test(id) || /^o[0-9]/.test(id) || id.includes("gpt-5");
+}
+
+export function limitesTokensCompletacao(
+  model: string,
+  max: number
+): { max_tokens: number } | { max_completion_tokens: number } {
+  if (modeloUsaApiChatNova(model)) {
+    return { max_completion_tokens: max };
+  }
+  return { max_tokens: max };
+}
