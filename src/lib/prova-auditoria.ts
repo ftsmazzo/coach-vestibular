@@ -6,6 +6,13 @@ import {
   textoIndicaPortugues,
 } from "./prova-materia-ajuste";
 import {
+  materiaCompativelComBloco,
+  temGatilhoBiologico,
+  temGatilhoGeografico,
+  validarItemClassificado,
+} from "./prova-classificacao-regras";
+import { inferirMateriaPorEnunciado } from "./prova-heuristicas";
+import {
   assuntoPertenceMateria,
   encontrarMateriaDoAssunto,
 } from "./taxonomia-validacao";
@@ -76,6 +83,93 @@ const RE_CONHECIMENTO_PT =
 function conhecimentoParecePortuguesNativo(q: QuestaoAuditoriaInput): boolean {
   const c = q.conhecimentoExigido ?? "";
   return RE_CONHECIMENTO_PT.test(c) || RE_CONHECIMENTO_PT.test(q.assunto);
+}
+
+/** Regras em TODA questão — não depende de vizinho ou proximidade. */
+function motivosRegrasEstruturais(q: QuestaoAuditoriaInput, textoQ: string): string[] {
+  const out: string[] = [];
+  const mat = q.materia.trim();
+  const assunto = q.assunto.trim();
+  const blob = [textoQ, q.assunto, q.conhecimentoExigido ?? "", q.observacoes ?? ""]
+    .filter(Boolean)
+    .join("\n");
+
+  if (mat === "A classificar" || assunto === "A classificar") {
+    out.push("Classificação incompleta (A classificar).");
+  }
+
+  if (q.areaBloco?.trim() && mat && mat !== "A classificar") {
+    if (!materiaCompativelComBloco(q.areaBloco, mat)) {
+      out.push(
+        `Bloco/área «${q.areaBloco.slice(0, 50)}» incompatível com matéria «${mat}» (ex.: Humanas ≠ Biologia, Linguagens ≠ Geografia).`
+      );
+    }
+    const val = validarItemClassificado({
+      numero: q.numero,
+      areaBloco: q.areaBloco,
+      materia: mat,
+      assunto,
+      conhecimento: q.conhecimentoExigido ?? undefined,
+      resumoEnunciado: blob.slice(0, 400),
+    });
+    if (!val.ok && val.motivo) {
+      out.push(val.motivo);
+    }
+  }
+
+  if (mat === "Biologia" && blob.length > 20 && !temGatilhoBiologico(blob)) {
+    out.push(
+      "Biologia sem gatilho biológico claro (célula, DNA, ecologia, fisiologia, etc.) no texto salvo."
+    );
+  }
+
+  if (
+    mat === "Geografia" &&
+    q.areaBloco?.toLowerCase().includes("linguagem") &&
+    !temGatilhoGeografico(blob)
+  ) {
+    out.push("Geografia em bloco de Linguagens sem conteúdo cartográfico/espacial explícito.");
+  }
+
+  if (mat === "Física" && /bioma|ecologia|biodiversidade|hotspot/i.test(blob) && !/força|circuito|cinemática|cinematica|velocidade|newton|joule|optica|óptica/i.test(blob)) {
+    out.push("Possível confusão: parece conteúdo de Biologia/Geo, não Física.");
+  }
+
+  if (mat && mat !== "A classificar" && !q.conhecimentoExigido?.trim()) {
+    out.push("Sem «conhecimento exigido» — preencha manualmente ou reclassifique com enunciado.");
+  }
+
+  if (mat && mat !== "A classificar" && !q.nivelDificuldade?.trim()) {
+    out.push("Sem dificuldade (Fácil/Média/Difícil).");
+  }
+
+  if (!textoQ.trim() && !q.enunciado?.trim()) {
+    out.push(
+      "Sem enunciado no banco nem texto-fonte — difícil validar; cole enunciado ou salve texto da prova."
+    );
+  }
+
+  return out;
+}
+
+/** Quando há texto suficiente, compara com palavras-chave (não depende de vizinho). */
+function motivosConflitoConteudo(
+  q: QuestaoAuditoriaInput,
+  textoQ: string
+): string[] {
+  if (textoQ.trim().length < 100) return [];
+  const inferida = inferirMateriaPorEnunciado(textoQ);
+  if (!inferida) return [];
+  const ni = norm(inferida);
+  const na = norm(q.materia);
+  if (ni === na || q.materia === "A classificar") return [];
+  const humanas = new Set(["historia", "geografia", "filosofia", "sociologia"]);
+  if (humanas.has(ni) && humanas.has(na)) return [];
+  const natureza = new Set(["biologia", "fisica", "quimica"]);
+  if (natureza.has(ni) && natureza.has(na)) return [];
+  return [
+    `Conteúdo do texto sugere «${inferida}», mas está gravado como «${q.materia}» — edite na tabela ou reclassifique.`,
+  ];
 }
 
 function motivosRevisaoIdioma(
@@ -169,7 +263,15 @@ export function auditarClassificacaoQuestoes(
     const textoQ =
       q.enunciado?.trim() || trechos.get(q.numero) || "";
 
+    for (const m of motivosRegrasEstruturais(q, textoQ)) {
+      if (!motivos.includes(m)) motivos.push(m);
+    }
+
     for (const m of motivosRevisaoIdioma(q, qMat, textoQ)) {
+      if (!motivos.includes(m)) motivos.push(m);
+    }
+
+    for (const m of motivosConflitoConteudo(q, textoQ)) {
       if (!motivos.includes(m)) motivos.push(m);
     }
 
@@ -217,9 +319,17 @@ export function auditarClassificacaoQuestoes(
 
     alertas.push({
       numero: q.numero,
-      severidade: motivos.some((m) => m.includes("quebra") || m.includes("possível erro"))
-        ? "alta"
-        : "media",
+      severidade:
+        motivos.some(
+          (m) =>
+            m.includes("quebra") ||
+            m.includes("possível erro") ||
+            m.includes("incompatível") ||
+            m.includes("Biologia") ||
+            m.includes("INCONSISTÊNCIA")
+        )
+          ? "alta"
+          : "media",
       motivos,
       atual: resumo(q),
       vizinhoAnterior: prev

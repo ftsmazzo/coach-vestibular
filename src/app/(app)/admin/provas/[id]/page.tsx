@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminAuditoriaProva } from "@/components/admin-auditoria-prova";
+import { AdminTabelaQuestoes } from "@/components/admin-tabela-questoes";
 import { AdminExtracaoPipeline } from "@/components/admin-extracao-pipeline";
 import { AdminProvaPipelineV2 } from "@/components/admin-prova-pipeline-v2";
 import { Button, Card, Input, Label } from "@/components/ui";
@@ -123,6 +124,7 @@ export default function AdminProvaDetailPage() {
   const [textoFaltantes, setTextoFaltantes] = useState("");
   const [extraindo, setExtraindo] = useState(false);
   const [msg, setMsg] = useState("");
+  const [numerosAlerta, setNumerosAlerta] = useState<number[]>([]);
   const [meta, setMeta] = useState({
     banca: "",
     ano: "",
@@ -131,6 +133,15 @@ export default function AdminProvaDetailPage() {
     totalQuestoes: "",
     descricao: "",
   });
+
+  const orientacoesSalvas = useMemo(() => {
+    if (!prova?.questoes.length) return {};
+    return Object.fromEntries(
+      prova.questoes
+        .filter((q) => q.observacoes?.trim())
+        .map((q) => [q.numero, q.observacoes!.trim()])
+    );
+  }, [prova?.questoes]);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/admin/provas/${id}`);
@@ -581,7 +592,23 @@ export default function AdminProvaDetailPage() {
       </details>
 
       {prova.questoes.length > 0 && (
-        <AdminAuditoriaProva provaId={prova.id} onQuestoesAtualizadas={load} />
+        <AdminAuditoriaProva
+          provaId={prova.id}
+          textoFonteColado={textoProva}
+          orientacoesSalvas={orientacoesSalvas}
+          onQuestoesAtualizadas={load}
+          onAlertasChange={setNumerosAlerta}
+        />
+      )}
+
+      {prova.questoes.length > 0 && (
+        <AdminTabelaQuestoes
+          provaId={prova.id}
+          questoes={prova.questoes}
+          numerosAlerta={numerosAlerta}
+          onAtualizado={load}
+          onMensagem={setMsg}
+        />
       )}
 
       <Card>
@@ -660,42 +687,34 @@ export default function AdminProvaDetailPage() {
         </Button>
       </Card>
 
-      <Card>
-        <h2 className="mb-4 font-semibold">Tabela de questões</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b text-slate-500">
-                <th className="p-2">#</th>
-                <th className="p-2">Área/Bloco</th>
-                <th className="p-2">Matéria</th>
-                <th className="p-2">Assunto</th>
-                <th className="p-2">Conhecimento</th>
-                <th className="p-2">Dific.</th>
-                <th className="p-2">Gabarito</th>
-              </tr>
-            </thead>
-            <tbody>
-              {prova.questoes.map((q) => (
-                <tr key={q.id} className="border-b border-slate-100">
-                  <td className="p-2 font-medium">{q.numero}</td>
-                  <td className="p-2">{q.areaBloco ?? "—"}</td>
-                  <td className="p-2">{q.materia}</td>
-                  <td className="p-2">{q.assunto}</td>
-                  <td className="p-2 max-w-xs truncate" title={q.conhecimentoExigido ?? ""}>
-                    {q.conhecimentoExigido ?? "—"}
-                  </td>
-                  <td className="p-2">{q.nivelDificuldade ?? "—"}</td>
-                  <td className="p-2 font-mono font-bold">{q.gabarito ?? "—"}</td>
+      {prova.questoes.length > 0 && (
+        <Card>
+          <h2 className="mb-2 font-semibold">Gabaritos por questão</h2>
+          <p className="mb-3 text-sm text-slate-600">
+            Visão rápida. Para corrigir matéria/assunto use a tabela editável acima.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b text-slate-500">
+                  <th className="p-2">#</th>
+                  <th className="p-2">Matéria</th>
+                  <th className="p-2">Gabarito</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {prova.questoes.length === 0 && (
-          <p className="mt-4 text-slate-500">Importe um CSV ou extraia com IA para preencher o banco.</p>
-        )}
-      </Card>
+              </thead>
+              <tbody>
+                {prova.questoes.map((q) => (
+                  <tr key={q.id} className="border-b border-slate-100">
+                    <td className="p-2 font-medium">{q.numero}</td>
+                    <td className="p-2">{q.materia}</td>
+                    <td className="p-2 font-mono font-bold">{q.gabarito ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* Histórico de Tentativas dos Alunos */}
       <Card>

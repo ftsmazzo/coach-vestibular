@@ -10,6 +10,9 @@ import { upsertQuestoesExtraidas } from "@/lib/prova-questoes-persist";
 const bodySchema = z.object({
   numero: z.number().int().positive(),
   texto: z.string().min(15, "Cole o enunciado completo da questão"),
+  /** Orientação humana para a IA (persiste no banco se salvarOrientacao for true). */
+  observacoes: z.string().max(2000).optional(),
+  salvarOrientacao: z.boolean().optional(),
 });
 
 export async function POST(
@@ -25,24 +28,35 @@ export async function POST(
     return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
   }
 
-  const { numero, texto } = bodySchema.parse(await request.json());
+  const { numero, texto, observacoes, salvarOrientacao } = bodySchema.parse(
+    await request.json()
+  );
   const enunciado = texto.trim();
 
   const existente = await prisma.provaQuestao.findUnique({
     where: { provaId_numero: { provaId, numero } },
   });
 
+  const orientacaoHumana =
+    observacoes?.trim() ||
+    (salvarOrientacao !== false ? existente?.observacoes?.trim() : undefined) ||
+    undefined;
+
   try {
     const salva = await classificarQuestaoUnica({
       numero,
       trechoEnunciado: enunciado,
-      materia: "A classificar",
-      assunto: "A classificar",
+      materia: existente?.materia ?? "A classificar",
+      assunto: existente?.assunto ?? "A classificar",
       areaBloco: existente?.areaBloco ?? null,
-      conhecimentoExigido: null,
-      nivelDificuldade: null,
-      observacoes: null,
+      conhecimentoExigido: existente?.conhecimentoExigido ?? null,
+      nivelDificuldade: existente?.nivelDificuldade ?? null,
+      observacoes: orientacaoHumana ?? null,
     });
+
+    if (orientacaoHumana) {
+      salva.observacoes = orientacaoHumana;
+    }
 
     if (salva.materia === "A classificar" || salva.assunto === "A classificar") {
       return NextResponse.json(

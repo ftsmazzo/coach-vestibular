@@ -21,6 +21,10 @@ import {
   assuntoPadraoMateria,
   inferirMateriaPorEnunciado,
 } from "@/lib/prova-heuristicas";
+import {
+  montarBlocoOrientacaoRevisor,
+  REGRA_PROMPT_ORIENTACAO_REVISOR,
+} from "@/lib/prova-orientacao-revisor";
 
 const allowedTaxonomyStr = taxonomy.materias
   .map((m) => {
@@ -117,6 +121,7 @@ Regras:
 - Humanas (Filosofia, Sociologia, História, Geografia) não são Biologia.
 - dificuldade: facil, media ou dificil (obrigatório se a questão for legível).
 - conhecimento: uma frase curta do que a questão exige.
+- ${REGRA_PROMPT_ORIENTACAO_REVISOR}
 
 JSON: { "numero": ${numero}, "materia": "...", "assunto": "...", "conhecimento": "...", "dificuldade": "facil|media|dificil" }`;
 }
@@ -125,12 +130,11 @@ function formatarLoteParaIA(questoes: QuestaoExtraida[], maxChars: number): stri
   return questoes
     .map((q) => {
       const enc = cortarEnunciado(q.trechoEnunciado, maxChars);
-      const hints: string[] = [];
-      if (q.areaBloco) hints.push(`Bloco no caderno: ${q.areaBloco}`);
-      if (q.materia && q.materia !== "A classificar") {
-        hints.push(`Matéria no caderno (prioridade): ${q.materia}`);
-      }
-      const cab = hints.length ? `${hints.join(". ")}\n` : "";
+      const cab = montarBlocoOrientacaoRevisor({
+        areaBloco: q.areaBloco,
+        materiaAtual: q.materia,
+        observacoes: q.observacoes,
+      });
       return `### Questão ${q.numero}\n${cab}${enc}\n`;
     })
     .join("\n");
@@ -196,10 +200,14 @@ function aplicarDificuldade(raw: unknown): string | null {
 
 async function classificarUnitario(q: QuestaoExtraida, maxChars: number): Promise<boolean> {
   const enc = cortarEnunciado(q.trechoEnunciado, maxChars);
-  const hints = q.areaBloco ? `Bloco/área no caderno: ${q.areaBloco}\n` : "";
+  const cab = montarBlocoOrientacaoRevisor({
+    areaBloco: q.areaBloco,
+    materiaAtual: q.materia,
+    observacoes: q.observacoes,
+  });
   const res = await callOpenAIClassificacao(
     buildPromptUnitario(q.numero),
-    `${hints}Enunciado:\n${enc}`
+    `${cab}Enunciado:\n${enc}`
   );
   if (res.numero === q.numero && res.materia && res.assunto) {
     q.materia = normalizarLabelMateria(String(res.materia));
@@ -311,8 +319,7 @@ export async function classificarQuestaoUnica(
   const maxChars = parseInt(process.env.ENUNCIADO_PARA_CLASSIFICAR_MAX ?? "6000", 10);
   const copia = { ...q };
   await classificarUnitario(copia, maxChars);
-  const p = posProcessarQuestao(copia);
-  const alinhada = alinharLoteTaxonomia([p]).questoes[0];
+  const alinhada = alinharLoteTaxonomia([copia]).questoes[0];
   return alinhada;
 }
 

@@ -219,6 +219,7 @@ function questaoParaRow(
     materia === "A classificar"
       ? "A classificar"
       : normalizarLabelAssunto(materia, q.assunto);
+  const resumo = q.resumo_enunciado?.trim() ?? "";
   return {
     numero: q.numero,
     areaBloco,
@@ -226,7 +227,8 @@ function questaoParaRow(
     assunto,
     conhecimentoExigido: q.conhecimento?.trim() || undefined,
     nivelDificuldade: normalizarDificuldade(q.dificuldade ?? ""),
-    observacoes: q.resumo_enunciado?.trim().slice(0, 200) || undefined,
+    enunciado: resumo || undefined,
+    observacoes: resumo ? resumo.slice(0, 200) : undefined,
   };
 }
 

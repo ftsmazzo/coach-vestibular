@@ -115,7 +115,24 @@ export async function POST(
 
     let gravadas = 0;
     if (aplicar) {
-      gravadas = await persistirQuestoesClassificadas(provaId, resultado.rows, {
+      const antigas = await prisma.provaQuestao.findMany({
+        where: { provaId },
+        select: { numero: true, observacoes: true },
+      });
+      const obsHumana = new Map(
+        antigas
+          .filter((a) => a.observacoes?.trim())
+          .map((a) => [a.numero, a.observacoes!.trim()])
+      );
+      const rowsComHints =
+        obsHumana.size > 0
+          ? resultado.rows.map((r) => ({
+              ...r,
+              observacoes: obsHumana.get(r.numero) ?? r.observacoes,
+            }))
+          : resultado.rows;
+
+      gravadas = await persistirQuestoesClassificadas(provaId, rowsComHints, {
         substituir,
       });
       await refreshProvaGabaritoFlag(provaId);

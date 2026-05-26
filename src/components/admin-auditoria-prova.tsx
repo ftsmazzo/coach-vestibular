@@ -23,15 +23,35 @@ interface ResultadoAuditoria {
 
 interface Props {
   provaId: string;
+  textoFonteColado?: string;
+  /** observacoes já salvas por número (tabela editável). */
+  orientacoesSalvas?: Record<number, string>;
   onQuestoesAtualizadas?: () => void;
+  onAlertasChange?: (numeros: number[]) => void;
 }
 
-export function AdminAuditoriaProva({ provaId, onQuestoesAtualizadas }: Props) {
+export function AdminAuditoriaProva({
+  provaId,
+  textoFonteColado = "",
+  orientacoesSalvas = {},
+  onQuestoesAtualizadas,
+  onAlertasChange,
+}: Props) {
   const [auditing, setAuditing] = useState(false);
   const [resultado, setResultado] = useState<ResultadoAuditoria | null>(null);
   const [msg, setMsg] = useState("");
   const [textos, setTextos] = useState<Record<number, string>>({});
+  const [orientacoes, setOrientacoes] = useState<Record<number, string>>({});
   const [reclassificando, setReclassificando] = useState<number | null>(null);
+
+  function orientacaoPara(numero: number, motivos?: string[]): string {
+    const manual = orientacoes[numero]?.trim() || orientacoesSalvas[numero]?.trim();
+    if (manual) return manual;
+    if (motivos?.length) {
+      return `Auditoria: ${motivos.slice(0, 2).join(" ")}`.slice(0, 500);
+    }
+    return "";
+  }
 
   const auditar = useCallback(async () => {
     setAuditing(true);
@@ -40,7 +60,10 @@ export function AdminAuditoriaProva({ provaId, onQuestoesAtualizadas }: Props) {
       const res = await fetch(`/api/admin/provas/${provaId}/auditar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          textoFonte: textoFonteColado.trim() || undefined,
+          salvarTextoFonte: Boolean(textoFonteColado.trim()),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -48,18 +71,21 @@ export function AdminAuditoriaProva({ provaId, onQuestoesAtualizadas }: Props) {
         setResultado(null);
         return;
       }
-      setResultado({ suspeitas: data.suspeitas, alertas: data.alertas });
+      const alertas = data.alertas ?? [];
+      const nums = alertas.map((a: { numero: number }) => a.numero);
+      setResultado({ suspeitas: data.suspeitas, alertas });
+      onAlertasChange?.(nums);
       setMsg(
         data.suspeitas === 0
-          ? "Nenhuma inconsistência encontrada."
-          : `${data.suspeitas} questão(ões) para corrigir abaixo.`
+          ? "Nenhuma inconsistência nas regras estruturais."
+          : `${data.suspeitas} questão(ões) com problema (bloco×matéria, biologia, campos vazios, idioma…). Corrija na tabela abaixo ou reclassifique.`
       );
     } catch {
       setMsg("Erro de rede ao auditar.");
     } finally {
       setAuditing(false);
     }
-  }, [provaId]);
+  }, [provaId, textoFonteColado, onAlertasChange]);
 
   async function reclassificar(numero: number) {
     const texto = textos[numero]?.trim();
@@ -73,7 +99,12 @@ export function AdminAuditoriaProva({ provaId, onQuestoesAtualizadas }: Props) {
       const res = await fetch(`/api/admin/provas/${provaId}/reclassificar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ numero, texto }),
+        body: JSON.stringify({
+          numero,
+          texto,
+          observacoes: orientacaoPara(numero, resultado?.alertas.find((x) => x.numero === numero)?.motivos) || undefined,
+          salvarOrientacao: true,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -101,9 +132,10 @@ export function AdminAuditoriaProva({ provaId, onQuestoesAtualizadas }: Props) {
     <Card className="border-violet-200 bg-violet-50/40">
       <h2 className="mb-2 font-semibold text-violet-900">Auditoria e correção</h2>
       <p className="mb-3 text-sm text-violet-900">
-        1) <strong>Auditar</strong> — regras no servidor, sem IA. 2) <strong>Reclassificar</strong> — usa o
-        mesmo modelo do pipeline (<code className="text-xs">OPENAI_MODEL_PIPELINE</code>). 3) Auditar de
-        novo até a lista ficar vazia.
+        Audita <strong>todas</strong> as questões. Corrija na tabela ou use{" "}
+        <strong>Reclassificar</strong> com enunciado +{" "}
+        <strong>orientação para a IA</strong> (o que ela errou). Sem orientação, só o texto da
+        questão.
       </p>
       <Button type="button" disabled={auditing} onClick={auditar}>
         {auditing ? "Analisando..." : "Auditar classificações"}
@@ -145,6 +177,26 @@ export function AdminAuditoriaProva({ provaId, onQuestoesAtualizadas }: Props) {
                   setTextos((t) => ({ ...t, [a.numero]: e.target.value }))
                 }
               />
+              <label className="mb-1 mt-3 block text-sm font-medium text-slate-800">
+                Orientação para a IA (opcional — salva ao reclassificar)
+              </label>
+              <textarea
+                className="w-full rounded-xl border border-amber-200 bg-amber-50/50 p-3 text-sm"
+                rows={2}
+                placeholder="Ex.: Matéria correta: Geografia (clima/relevo). Não é Biologia."
+                value={
+                  orientacoes[a.numero] ??
+                  orientacoesSalvas[a.numero] ??
+                  ""
+                }
+                onChange={(e) =>
+                  setOrientacoes((t) => ({ ...t, [a.numero]: e.target.value }))
+                }
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Se vazio, usa motivos da auditoria como dica. Para persistir sem reclassificar,
+                salve na tabela editável abaixo.
+              </p>
               <Button
                 type="button"
                 className="mt-2"

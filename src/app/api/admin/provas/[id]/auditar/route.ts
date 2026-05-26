@@ -6,6 +6,7 @@ import {
   auditarClassificacaoQuestoes,
   formatarExportacaoAuditoria,
 } from "@/lib/prova-auditoria";
+import { extrairTrechosPorNumero } from "@/lib/prova-texto-parse";
 
 const bodySchema = z.object({
   textoFonte: z.string().optional(),
@@ -50,6 +51,9 @@ export async function POST(
     });
   }
 
+  const trechos =
+    texto.length > 200 ? extrairTrechosPorNumero(texto) : new Map<number, string>();
+
   const questoesInput = prova.questoes.map((q) => ({
     numero: q.numero,
     materia: q.materia,
@@ -58,8 +62,24 @@ export async function POST(
     nivelDificuldade: q.nivelDificuldade,
     areaBloco: q.areaBloco,
     observacoes: q.observacoes,
-    enunciado: q.enunciado,
+    enunciado: q.enunciado?.trim() || trechos.get(q.numero) || null,
   }));
+
+  if (texto.length > 200) {
+    const semEnunciado = prova.questoes.filter((q) => !q.enunciado?.trim());
+    if (semEnunciado.length > 0) {
+      await Promise.all(
+        semEnunciado.map((q) => {
+          const trecho = trechos.get(q.numero);
+          if (!trecho || trecho.length < 40) return Promise.resolve();
+          return prisma.provaQuestao.update({
+            where: { id: q.id },
+            data: { enunciado: trecho.slice(0, 6000) },
+          });
+        })
+      );
+    }
+  }
 
   const alertas = auditarClassificacaoQuestoes(questoesInput, texto || null);
   const exportacao = formatarExportacaoAuditoria(prova.nome, alertas);
