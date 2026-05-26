@@ -437,7 +437,7 @@ export async function executarPipelineExtracao(
   const procCaderno = processarTextoProvaIdioma(textoCadernoBruto, {
     excluirBlocoEspanhol: excluirEs,
   });
-  if (procCaderno.avisos.length > 0 && etapa !== "enunciados") {
+  if (procCaderno.avisos.length > 0) {
     avisos.push(...procCaderno.avisos.filter((a) => !avisos.includes(a)));
   }
   const textoBlocos = procCaderno.texto;
