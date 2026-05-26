@@ -50,6 +50,12 @@ export function inferirMateriaPorEnunciado(enunciado: string): string | null {
   if (/geografia humana|clima|cartografia|urbanizacao/.test(n)) {
     return "Geografia";
   }
+  if (/sociologia|movimento[s]?\s+sociais|estrutura\s+social|desigualdade\s+social/.test(n)) {
+    return "Sociologia";
+  }
+  if (/filosofia|etica|kant|platão|platao|aristoteles/.test(n)) {
+    return "Filosofia";
+  }
   if (/gramatica|regencia verbal|crase|sintaxe|morfologia|pontuacao/.test(n)) {
     return "Português";
   }

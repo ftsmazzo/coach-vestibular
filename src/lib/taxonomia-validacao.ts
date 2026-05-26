@@ -20,6 +20,7 @@ export function normalizarLabelMateria(raw: string): string {
   if (n.includes("english") || n.includes("ingles")) return "Inglês";
   if (n.includes("espanhol") || n.includes("spanish")) return "Espanhol";
   if (n.includes("filosof")) return "Filosofia";
+  if (n.includes("sociolog")) return "Sociologia";
   return raw.trim() || "A classificar";
 }
 

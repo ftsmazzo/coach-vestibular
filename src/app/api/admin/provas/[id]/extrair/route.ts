@@ -6,6 +6,7 @@ import { extractTextFromPdf } from "@/lib/pdf-text";
 import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 import type { EtapaExtracao } from "@/lib/prova-extracao-pipeline";
+import { mesclarTextoParaBlocos } from "@/lib/prova-blocos-caderno";
 import {
   atualizarQuestoesPorEtapa,
   substituirQuestoesExtraidas,
@@ -134,6 +135,17 @@ export async function POST(
   }
 
   try {
+    const fonteDb = await prisma.prova.findUnique({
+      where: { id: provaId },
+      select: { textoFonte: true },
+    });
+    const partesCaderno = [texto.trim(), fonteDb?.textoFonte?.trim()].filter(Boolean);
+    const textoCaderno = partesCaderno.join("\n\n");
+    const textoCadernoFinal =
+      baseInicial?.length && etapa !== "enunciados"
+        ? mesclarTextoParaBlocos(textoCaderno, baseInicial)
+        : textoCaderno;
+
     const resultado = await extrairQuestoesComIA(
       texto,
       {
@@ -143,7 +155,7 @@ export async function POST(
         caderno: prova.caderno,
         totalEsperado: prova.totalQuestoes,
       },
-      { etapa, baseInicial }
+      { etapa, baseInicial, textoCaderno: textoCadernoFinal || undefined }
     );
 
     let adicionadas = 0;

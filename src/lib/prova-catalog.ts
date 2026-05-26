@@ -18,6 +18,8 @@ export function mapMateriaAssuntoToTaxonomy(materia: string, assunto: string) {
     materiaId = "espanhol";
   } else if (mNorm.includes("filosof")) {
     materiaId = "filosofia";
+  } else if (mNorm.includes("sociolog")) {
+    materiaId = "sociologia";
   } else if (mNorm.includes("lingua portuguesa") || mNorm === "lp") {
     materiaId = "portugues";
   }

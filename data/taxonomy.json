@@ -108,6 +108,15 @@
       ]
     },
     {
+      "id": "sociologia",
+      "label": "Sociologia",
+      "temas": [
+        { "id": "sociedade_cultura", "label": "Sociedade e cultura" },
+        { "id": "movimentos_sociais", "label": "Movimentos sociais" },
+        { "id": "geral", "label": "Sociologia" }
+      ]
+    },
+    {
       "id": "historia",
       "label": "História",
       "temas": [

@@ -127,9 +127,9 @@ export function AdminExtracaoPipeline({
     <Card className="border-teal-200 bg-teal-50/40">
       <h2 className="mb-2 font-semibold text-teal-900">Extração em etapas (recomendado)</h2>
       <p className="mb-3 text-sm text-teal-800">
-        Etapa 2 usa <strong>gpt-4o</strong> por padrão (variável{" "}
-        <code className="text-xs">OPENAI_MODEL_PASSO_2</code>) — lotes em paralelo, revisão
-        automática das classificações suspeitas. Grave os enunciados antes.
+        Etapa 2 lê os <strong>cabeçalhos do caderno</strong> (MATEMÁTICA, SOCIOLOGIA, TIPO 1…)
+        do PDF/texto salvo e usa <strong>gpt-4o</strong> só onde o bloco não define a matéria.
+        Grave os enunciados antes; mantenha o texto completo da prova salvo no servidor.
       </p>
 
       <div className="mb-4 flex flex-wrap gap-2">

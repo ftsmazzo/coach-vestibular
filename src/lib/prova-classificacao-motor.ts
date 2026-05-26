@@ -12,6 +12,11 @@ import {
 } from "@/lib/taxonomia-validacao";
 import { taxonomy } from "@/lib/taxonomy";
 import {
+  aplicarBlocosDoCaderno,
+  extrairMapaBlocosDoCaderno,
+  type InfoBlocoCaderno,
+} from "@/lib/prova-blocos-caderno";
+import {
   assuntoPadraoMateria,
   inferirMateriaPorEnunciado,
 } from "@/lib/prova-heuristicas";
@@ -118,9 +123,36 @@ function formatarLoteParaIA(questoes: QuestaoExtraida[], maxChars: number): stri
   return questoes
     .map((q) => {
       const enc = cortarEnunciado(q.trechoEnunciado, maxChars);
-      return `### Questão ${q.numero}\n${enc}\n`;
+      const hints: string[] = [];
+      if (q.areaBloco) hints.push(`Bloco no caderno: ${q.areaBloco}`);
+      if (q.materia && q.materia !== "A classificar") {
+        hints.push(`Matéria no caderno (prioridade): ${q.materia}`);
+      }
+      const cab = hints.length ? `${hints.join(". ")}\n` : "";
+      return `### Questão ${q.numero}\n${cab}${enc}\n`;
     })
     .join("\n");
+}
+
+function restaurarMateriaDoCaderno(
+  q: QuestaoExtraida,
+  mapa: Map<number, InfoBlocoCaderno>
+): void {
+  const c = mapa.get(q.numero);
+  if (!c?.materia) return;
+  if (norm(q.materia) !== norm(c.materia)) {
+    q.materia = c.materia;
+    q.assunto = c.assunto;
+    q.areaBloco = c.areaBloco;
+    q.observacoes =
+      q.observacoes ?? `Corrigido para matéria do cabeçalho «${c.tituloCabecalho}».`;
+  }
+}
+
+function questaoPrecisaIA(q: QuestaoExtraida, mapa: Map<number, InfoBlocoCaderno>): boolean {
+  const c = mapa.get(q.numero);
+  if (c?.materia) return false;
+  return q.materia === "A classificar" || q.assunto === "A classificar";
 }
 
 function aplicarClassificacoes(
@@ -249,14 +281,23 @@ export async function classificarQuestaoUnica(
 
 export async function classificarMateriaEAssuntoMotor(
   base: QuestaoExtraida[],
-  avisosIn: string[] = []
+  avisosIn: string[] = [],
+  textoCaderno?: string
 ): Promise<{ questoes: QuestaoExtraida[]; avisos: string[] }> {
   const avisos = [...avisosIn];
-  const resultado = base.map((q) => ({
+  let resultado = base.map((q) => ({
     ...q,
     materia: q.materia === "A classificar" ? "A classificar" : q.materia,
     assunto: q.assunto === "A classificar" ? "A classificar" : q.assunto,
   }));
+
+  let mapaCaderno = new Map<number, InfoBlocoCaderno>();
+  if (textoCaderno?.trim()) {
+    const blocos = aplicarBlocosDoCaderno(resultado, textoCaderno);
+    resultado = blocos.questoes;
+    avisos.push(...blocos.avisos);
+    mapaCaderno = extrairMapaBlocosDoCaderno(textoCaderno);
+  }
 
   const batchSize = Math.max(2, parseInt(process.env.CLASS_BATCH_SIZE ?? "4", 10));
   const paralelo = Math.max(1, parseInt(process.env.CLASSIFICACAO_PARALLEL ?? "4", 10));
@@ -271,10 +312,12 @@ export async function classificarMateriaEAssuntoMotor(
   }
 
   const tarefas = lotes.map((lote, idx) => async () => {
+    const paraIA = lote.filter((q) => questaoPrecisaIA(q, mapaCaderno));
+    if (paraIA.length === 0) return;
     try {
-      const n = await classificarLote(lote, maxChars);
-      if (n < lote.length) {
-        avisos.push(`Lote ${idx + 1}: IA classificou ${n}/${lote.length} questões.`);
+      const n = await classificarLote(paraIA, maxChars);
+      if (n < paraIA.length) {
+        avisos.push(`Lote ${idx + 1}: IA classificou ${n}/${paraIA.length} questões.`);
       }
     } catch (e) {
       avisos.push(
@@ -290,9 +333,12 @@ export async function classificarMateriaEAssuntoMotor(
     q.materia = p.materia;
     q.assunto = p.assunto;
     q.observacoes = p.observacoes;
+    if (mapaCaderno.size > 0) restaurarMateriaDoCaderno(q, mapaCaderno);
   }
 
-  const suspeitas = resultado.filter(classificacaoSuspeita);
+  const suspeitas = resultado.filter(
+    (q) => classificacaoSuspeita(q) && !mapaCaderno.get(q.numero)?.materia
+  );
   if (suspeitas.length > 0) {
     avisos.push(
       `Revisão unitária de ${suspeitas.length} questão(ões) suspeita(s): nº ${suspeitas

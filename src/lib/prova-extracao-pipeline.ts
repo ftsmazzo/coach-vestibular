@@ -1,5 +1,6 @@
 import type { QuestaoExtraida } from "@/lib/ai-extract-prova";
 import { classificarMateriaEAssuntoMotor } from "@/lib/prova-classificacao-motor";
+import { mesclarTextoParaBlocos } from "@/lib/prova-blocos-caderno";
 import {
   assuntoPadraoMateria,
   inferirMateriaPorEnunciado,
@@ -157,18 +158,20 @@ JSON: { "conhecimentos": [{ "numero": 1, "conhecimentoExigido": "..." }] }`;
 /** Motor principal: gpt-4o, lotes paralelos, revisão unitária nas suspeitas. */
 export async function classificarMateriaEAssunto(
   base: QuestaoExtraida[],
-  avisosIn: string[] = []
+  avisosIn: string[] = [],
+  textoCaderno?: string
 ): Promise<{ questoes: QuestaoExtraida[]; avisos: string[] }> {
-  const r = await classificarMateriaEAssuntoMotor(base, avisosIn);
+  const r = await classificarMateriaEAssuntoMotor(base, avisosIn, textoCaderno);
   r.avisos.push(...aplicarFallbacksClassificacao(r.questoes));
   return r;
 }
 
 export async function classificarMaterias(
   base: QuestaoExtraida[],
-  avisosIn: string[] = []
+  avisosIn: string[] = [],
+  textoCaderno?: string
 ): Promise<{ questoes: QuestaoExtraida[]; avisos: string[] }> {
-  return classificarMateriaEAssunto(base, avisosIn);
+  return classificarMateriaEAssunto(base, avisosIn, textoCaderno);
 }
 
 export async function classificarAssuntos(
@@ -274,6 +277,7 @@ export async function executarPipelineExtracao(
       total: number
     ) => Promise<EnunciadoBruto[]>;
     baseInicial?: QuestaoExtraida[];
+    textoCaderno?: string;
   }
 ): Promise<{
   questoes: QuestaoExtraida[];
@@ -343,9 +347,13 @@ export async function executarPipelineExtracao(
     }
   }
 
+  const textoBlocos =
+    options.textoCaderno?.trim() ||
+    (questoes.length > 0 ? mesclarTextoParaBlocos(textoProva, questoes) : textoProva);
+
   if (etapa === "materia" || etapa === "completo") {
     if (questoes.length === 0) throw new Error("Sem enunciados — rode a etapa 1 antes.");
-    const r = await classificarMaterias(questoes, avisos);
+    const r = await classificarMaterias(questoes, avisos, textoBlocos);
     questoes = r.questoes;
     avisos.push(...r.avisos);
     if (etapa === "materia") {

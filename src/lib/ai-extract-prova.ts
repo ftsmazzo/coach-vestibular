@@ -108,6 +108,7 @@ export async function extrairQuestoesComIA(
   options?: {
     etapa?: EtapaExtracao;
     baseInicial?: QuestaoExtraida[];
+    textoCaderno?: string;
   }
 ): Promise<{
   questoes: QuestaoExtraida[];
@@ -131,6 +132,7 @@ export async function extrairQuestoesComIA(
   const resultado = await executarPipelineExtracao(trimmed, provaContext, etapa, {
     extrairEnunciadosLote: extrairLoteEnunciados,
     baseInicial: options?.baseInicial,
+    textoCaderno: options?.textoCaderno,
   });
 
   return {
