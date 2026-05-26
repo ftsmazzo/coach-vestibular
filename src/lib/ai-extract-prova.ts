@@ -56,6 +56,31 @@ function dedupeAvisos(avisos: string[]): string[] {
   return [...new Set(avisos)];
 }
 
+function chunkTextPedagogical(text: string, batchSize = 8): string[] {
+  // Match standard question markers in typical exam files (e.g. Questão 1, QUESTÃO 2, Q1, Q. 3)
+  const regex = /(?=Quest(?:ã|a)o\s+\d+|QUEST(?:Ã|A)O\s+\d+|\bQ\s*\d+\b|\bQ\.\s*\d+\b)/gi;
+  const chunks = text.split(regex).map((c) => c.trim()).filter((c) => c.length > 20);
+  
+  if (chunks.length <= 1) {
+    // Fallback: chunk by character count if no question markers are found
+    const maxLen = 12000;
+    const fallbackChunks: string[] = [];
+    let start = 0;
+    while (start < text.length) {
+      fallbackChunks.push(text.slice(start, start + maxLen));
+      start += maxLen;
+    }
+    return fallbackChunks;
+  }
+  
+  // Group the question chunks into batches
+  const batches: string[] = [];
+  for (let i = 0; i < chunks.length; i += batchSize) {
+    batches.push(chunks.slice(i, i + batchSize).join("\n\n--- NOVA QUESTÃO ---\n\n"));
+  }
+  return batches;
+}
+
 async function callGemini(
   userContent: string,
   provaContext: {
@@ -92,7 +117,9 @@ async function callGemini(
 
   const systemPrompt = `Você é uma Inteligência Artificial especializada e implacável na classificação pedagógica e extração de questões objetivas de provas de vestibulares brasileiros (ENEM, vestibulares tradicionais, simulados).
 
-Sua tarefa é analisar o texto completo da prova fornecido e extrair todas as questões em um formato estruturado JSON estrito.
+Sua tarefa é analisar o lote de questões fornecido e extrair todas as questões em um formato estruturado JSON estrito.
+
+ATENÇÃO: ANALISE CADA QUESTÃO INDIVIDUALMENTE. É TERMINANTEMENTE PROIBIDO REPETIR A MESMA MATÉRIA PARA TODAS AS QUESTÕES APENAS PARA POUPAR TEMPO. CRUZE O CONTEÚDO REAL DA QUESTÃO COM A LISTA DE MATÉRIAS E ASSUNTOS DO PROJETO.
 
 REGRAS DE CLASSIFICAÇÃO PEDAGÓGICA (TAXONOMIA):
 Você é terminantemente proibido de retornar null ou strings vazias em 'materia' e 'assunto'.
@@ -125,7 +152,7 @@ REGRAS DE EXTRAÇÃO:
           role: "user",
           parts: [
             {
-              text: `${meta}\n\nConteúdo completo das questões (analise e classifique; resposta em JSON):\n${userContent}`,
+              text: `${meta}\n\nConteúdo parcial de questões a processar neste lote (analise e classifique; resposta em JSON):\n${userContent}`,
             },
           ],
         },
@@ -270,28 +297,55 @@ export async function extrairQuestoesComIA(
     throw new Error("Texto muito curto para extração — envie o PDF convertido ou mais conteúdo");
   }
 
-  // We take advantage of Gemini's large context window and send the entire text at once.
-  const result = await callGemini(trimmed, provaContext);
-  
-  const ajustadas = result.questoes.map((q) =>
-    ajustarMateriaPorIdiomaDoTexto(
-      q.trechoEnunciado?.trim() ? `${trimmed}\n${q.trechoEnunciado}` : trimmed,
-      q
-    )
-  );
+  // Fatiamento pedagógico do texto em lotes
+  const batches = chunkTextPedagogical(trimmed, 8);
+  const allQuestoes: QuestaoExtraida[] = [];
+  const allAvisos: string[] = [];
 
-  const questoes = mergeQuestoes(ajustadas);
-  const allAvisos = [...(result.avisos ?? [])];
+  for (let i = 0; i < batches.length; i++) {
+    try {
+      const result = await callGemini(
+        `[Lote ${i + 1}/${batches.length}]\n\n${batches[i]}`,
+        provaContext
+      );
+      
+      const batchTexto = batches[i];
+      const ajustadas = result.questoes.map((q) =>
+        ajustarMateriaPorIdiomaDoTexto(
+          q.trechoEnunciado?.trim() ? `${batchTexto}\n${q.trechoEnunciado}` : batchTexto,
+          q
+        )
+      );
+      
+      allQuestoes.push(...ajustadas);
+      if (result.avisos) {
+        allAvisos.push(...result.avisos);
+      }
+    } catch (error) {
+      console.error(`Erro ao processar lote ${i + 1}:`, error);
+      allAvisos.push(
+        `Erro no lote ${i + 1}: ${error instanceof Error ? error.message : "Erro desconhecido"}`
+      );
+    }
+  }
+
+  const questoes = mergeQuestoes(allQuestoes);
+
+  if (batches.length > 1) {
+    allAvisos.unshift(
+      `Processamento em lote concluído: ${batches.length} chamadas sequenciais realizadas para evitar sobrecargas e omissões.`
+    );
+  }
 
   allAvisos.push(...avisosCobertura(questoes, provaContext.totalEsperado));
 
   if (questoes.length === 0) {
-    allAvisos.push("Nenhuma questão identificada — revise o texto ou use CSV.");
+    allAvisos.push("Nenhuma questão identificada — revise o texto ou envie em lotes menores.");
   }
 
   return {
     questoes,
     avisos: dedupeAvisos(allAvisos),
-    resumo: result.resumo || `${questoes.length} questões extraídas`,
+    resumo: `${questoes.length} questões extraídas com sucesso.`,
   };
 }
