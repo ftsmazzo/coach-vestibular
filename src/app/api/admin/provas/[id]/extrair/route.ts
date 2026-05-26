@@ -12,6 +12,10 @@ import {
   substituirQuestoesExtraidas,
   upsertQuestoesExtraidas,
 } from "@/lib/prova-questoes-persist";
+import {
+  minCaracteresTextoProva,
+  textoProvaPareceIncompleto,
+} from "@/lib/prova-texto-minimo";
 
 /** Extração de prova inteira pode levar vários minutos (OpenAI em lotes). */
 export const maxDuration = 600;
@@ -74,6 +78,7 @@ export async function POST(
   let continuarDeBanco = false;
   let excluirBlocoEspanhol: boolean | undefined;
   let usarTextoFonte = false;
+  let fonteTexto: "pdf" | "colado" | "textoFonte" | "nenhum" = "nenhum";
 
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("multipart/form-data")) {
@@ -101,7 +106,35 @@ export async function POST(
     const textField = form.get("texto") as string | null;
     const file = form.get("file") as File | null;
 
-    if (usarTextoFonte) {
+    // PDF e texto colado têm prioridade sobre texto antigo no banco
+    if (file) {
+      const buf = Buffer.from(await file.arrayBuffer());
+      if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+        texto = await extractTextFromPdf(buf);
+        fonteTexto = "pdf";
+        if (texto.length < 200) {
+          return NextResponse.json(
+            {
+              error:
+                "PDF com pouco texto extraível (pode ser escaneado). Cole o texto da prova manualmente ou use um PDF com texto selecionável.",
+              caracteresExtraidos: texto.length,
+            },
+            { status: 400 }
+          );
+        }
+      } else if (file.type.startsWith("text/") || file.name.endsWith(".txt")) {
+        texto = await buf.toString("utf-8");
+        fonteTexto = "pdf";
+      } else {
+        return NextResponse.json(
+          { error: "Formato não suportado. Use PDF ou TXT, ou cole o texto." },
+          { status: 400 }
+        );
+      }
+    } else if (textField?.trim()) {
+      texto = textField.trim();
+      fonteTexto = "colado";
+    } else if (usarTextoFonte) {
       const salvo = await prisma.prova.findUnique({
         where: { id: provaId },
         select: { textoFonte: true },
@@ -110,53 +143,13 @@ export async function POST(
         return NextResponse.json(
           {
             error:
-              "Não há texto da prova salvo no servidor. Cole o PDF/texto uma vez na etapa 1 ou envie o arquivo.",
+              "Não há texto da prova salvo no servidor. Cole o texto no campo ou envie o PDF.",
           },
           { status: 400 }
         );
       }
       texto = salvo.textoFonte.trim();
-      if (texto.length < 500) {
-        return NextResponse.json(
-          {
-            error:
-              "Texto salvo no servidor está incompleto (provável upload truncado). Reenvie o PDF ou cole o texto na etapa 1.",
-          },
-          { status: 400 }
-        );
-      }
-      if (!/\d{1,3}\s*[.)]/.test(texto) && !/quest[aã]o\s*\d/i.test(texto)) {
-        return NextResponse.json(
-          {
-            error:
-              "Texto salvo não parece conter questões numeradas. Reenvie o PDF ou cole o texto completo.",
-          },
-          { status: 400 }
-        );
-      }
-    } else if (textField?.trim()) {
-      texto = textField.trim();
-    } else if (file) {
-      const buf = Buffer.from(await file.arrayBuffer());
-      if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
-        texto = await extractTextFromPdf(buf);
-        if (texto.length < 200) {
-          return NextResponse.json(
-            {
-              error:
-                "PDF com pouco texto extraível (pode ser escaneado). Cole o texto da prova manualmente ou use um PDF com texto selecionável.",
-            },
-            { status: 400 }
-          );
-        }
-      } else if (file.type.startsWith("text/") || file.name.endsWith(".txt")) {
-        texto = await buf.toString("utf-8");
-      } else {
-        return NextResponse.json(
-          { error: "Formato não suportado. Use PDF ou TXT, ou cole o texto." },
-          { status: 400 }
-        );
-      }
+      fonteTexto = "textoFonte";
     }
   } else {
     const body = bodySchema.parse(await request.json());
@@ -167,7 +160,9 @@ export async function POST(
     continuarDeBanco = body.continuarDeBanco;
     excluirBlocoEspanhol = body.excluirBlocoEspanhol;
     usarTextoFonte = body.usarTextoFonte === true;
-    if (usarTextoFonte && !texto.trim()) {
+    if (texto.trim()) {
+      fonteTexto = "colado";
+    } else if (usarTextoFonte) {
       const salvo = await prisma.prova.findUnique({
         where: { id: provaId },
         select: { textoFonte: true },
@@ -179,6 +174,7 @@ export async function POST(
         );
       }
       texto = salvo.textoFonte.trim();
+      fonteTexto = "textoFonte";
     }
   }
 
@@ -213,6 +209,25 @@ export async function POST(
   if (precisaTexto && !texto.trim()) {
     return NextResponse.json(
       { error: "Envie PDF, texto ou TXT da prova para extrair enunciados." },
+      { status: 400 }
+    );
+  }
+
+  if (precisaTexto && textoProvaPareceIncompleto(texto.length, prova.totalQuestoes)) {
+    const minimo = minCaracteresTextoProva(prova.totalQuestoes);
+    const dicaFonte =
+      fonteTexto === "textoFonte"
+        ? " O sistema usou um texto antigo truncado salvo no servidor — clique em «Limpar texto salvo», cole a prova inteira no campo (ou envie o PDF) e tente de novo."
+        : fonteTexto === "pdf"
+          ? " O PDF enviou pouco texto — cole o conteúdo manualmente no campo «Ou cole o texto»."
+          : " Cole a prova completa no campo de texto (todas as questões 1–65), não só um trecho.";
+    return NextResponse.json(
+      {
+        error: `Texto insuficiente: ${texto.length} caracteres recebidos, esperado pelo menos ~${minimo} para ${prova.totalQuestoes} questões.${dicaFonte}`,
+        caracteresRecebidos: texto.length,
+        minimoEsperado: minimo,
+        fonte: fonteTexto,
+      },
       { status: 400 }
     );
   }
@@ -287,6 +302,7 @@ export async function POST(
       excluirBlocoEspanhol: excluirEs,
       adicionadas: aplicar ? adicionadas : 0,
       caracteresProcessados: texto.length,
+      fonteTexto,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erro na extração";

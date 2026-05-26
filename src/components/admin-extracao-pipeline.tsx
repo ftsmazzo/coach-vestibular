@@ -48,7 +48,9 @@ interface Props {
   textoProva: string;
   pdfFile: File | null;
   questoesNoBanco: number;
+  totalQuestoes: number;
   temTextoFonte?: boolean;
+  tamanhoTextoFonte?: number;
   onMensagem: (msg: string) => void;
   onAtualizado: () => void;
 }
@@ -58,14 +60,20 @@ export function AdminExtracaoPipeline({
   textoProva,
   pdfFile,
   questoesNoBanco,
+  totalQuestoes,
   temTextoFonte = false,
+  tamanhoTextoFonte = 0,
   onMensagem,
   onAtualizado,
 }: Props) {
   const [etapaAtiva, setEtapaAtiva] = useState<Etapa>("enunciados");
   const [preview, setPreview] = useState<ExtracaoPreview | null>(null);
   const [carregando, setCarregando] = useState(false);
-  const [excluirBlocoEspanhol, setExcluirBlocoEspanhol] = useState(true);
+  const [excluirBlocoEspanhol, setExcluirBlocoEspanhol] = useState(false);
+  const [usarTextoSalvo, setUsarTextoSalvo] = useState(false);
+
+  const minChars = Math.max(1500, Math.min(totalQuestoes * 80, 400_000));
+  const charsColados = textoProva.trim().length;
 
   const rodar = useCallback(
     async (etapa: Etapa, aplicar: boolean) => {
@@ -73,8 +81,19 @@ export function AdminExtracaoPipeline({
       const etapaUsaBanco =
         etapa === "materia" || etapa === "assunto" || etapa === "conhecimento";
 
-      if (precisaTexto && !textoProva.trim() && !pdfFile && !temTextoFonte) {
-        onMensagem("Cole o texto da prova ou envie um PDF.");
+      if (
+        precisaTexto &&
+        !textoProva.trim() &&
+        !pdfFile &&
+        !(usarTextoSalvo && temTextoFonte)
+      ) {
+        onMensagem("Cole o texto da prova no campo acima ou envie o PDF.");
+        return;
+      }
+      if (precisaTexto && textoProva.trim() && charsColados < minChars) {
+        onMensagem(
+          `Texto colado tem ${charsColados.toLocaleString("pt-BR")} caracteres — para ${totalQuestoes} questões espere pelo menos ~${minChars.toLocaleString("pt-BR")}. Cole a prova inteira (1–${totalQuestoes}).`
+        );
         return;
       }
       if (etapaUsaBanco && questoesNoBanco === 0) {
@@ -84,25 +103,45 @@ export function AdminExtracaoPipeline({
 
       setCarregando(true);
       onMensagem("");
-      const fd = new FormData();
-      fd.append("aplicar", String(aplicar));
-      fd.append("modo", etapa === "enunciados" && aplicar ? "substituir" : "adicionar");
-      fd.append("etapa", etapa);
-      fd.append("continuarDeBanco", String(etapaUsaBanco));
-      fd.append("excluirBlocoEspanhol", String(excluirBlocoEspanhol));
-      // Etapas 2–4: não reenviar o texto gigante — o servidor usa textoFonte + enunciados do banco
-      if (!etapaUsaBanco) {
-        if (textoProva.trim()) {
-          fd.append("texto", textoProva.trim());
-        } else if (pdfFile && precisaTexto) {
-          fd.append("file", pdfFile);
-        } else if (precisaTexto && temTextoFonte) {
-          fd.append("usarTextoFonte", "true");
-          onMensagem("Usando texto da prova já salvo no servidor (sem reenviar PDF)…");
+
+      const payloadBase = {
+        aplicar,
+        modo: etapa === "enunciados" && aplicar ? "substituir" : "adicionar",
+        etapa,
+        continuarDeBanco: etapaUsaBanco,
+        excluirBlocoEspanhol,
+      };
+
+      let res: Response;
+
+      // Texto colado: JSON (evita truncar FormData e não usa texto antigo do banco)
+      if (!etapaUsaBanco && textoProva.trim() && !pdfFile) {
+        res = await fetch(`/api/admin/provas/${provaId}/extrair`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...payloadBase,
+            texto: textoProva.trim(),
+            usarTextoFonte: false,
+          }),
+        });
+      } else {
+        const fd = new FormData();
+        fd.append("aplicar", String(aplicar));
+        fd.append("modo", payloadBase.modo);
+        fd.append("etapa", etapa);
+        fd.append("continuarDeBanco", String(etapaUsaBanco));
+        fd.append("excluirBlocoEspanhol", String(excluirBlocoEspanhol));
+        if (!etapaUsaBanco) {
+          if (pdfFile && precisaTexto) {
+            fd.append("file", pdfFile);
+          } else if (precisaTexto && usarTextoSalvo && temTextoFonte) {
+            fd.append("usarTextoFonte", "true");
+          }
         }
+        res = await fetch(`/api/admin/provas/${provaId}/extrair`, { method: "POST", body: fd });
       }
 
-      const res = await fetch(`/api/admin/provas/${provaId}/extrair`, { method: "POST", body: fd });
       const data = await res.json();
       setCarregando(false);
 
@@ -136,7 +175,11 @@ export function AdminExtracaoPipeline({
       textoProva,
       pdfFile,
       questoesNoBanco,
+      totalQuestoes,
       temTextoFonte,
+      usarTextoSalvo,
+      charsColados,
+      minChars,
       excluirBlocoEspanhol,
       onMensagem,
       onAtualizado,
@@ -154,7 +197,24 @@ export function AdminExtracaoPipeline({
         Grave os enunciados antes; mantenha o texto completo da prova salvo no servidor.
       </p>
 
-      <label className="mb-3 flex cursor-pointer items-start gap-2 text-sm text-teal-900">
+      {temTextoFonte && (
+        <p
+          className={`mb-2 text-sm ${tamanhoTextoFonte < minChars ? "font-medium text-amber-800" : "text-teal-800"}`}
+        >
+          Texto salvo no servidor: {tamanhoTextoFonte.toLocaleString("pt-BR")} caracteres
+          {tamanhoTextoFonte < minChars
+            ? " — incompleto (upload antigo truncado). Limpe e cole de novo."
+            : "."}
+        </p>
+      )}
+      {charsColados > 0 && (
+        <p className="mb-2 text-sm text-slate-700">
+          Texto no campo: {charsColados.toLocaleString("pt-BR")} caracteres
+          {charsColados < minChars ? ` (mínimo sugerido ~${minChars.toLocaleString("pt-BR")})` : " — OK."}
+        </p>
+      )}
+
+      <label className="mb-2 flex cursor-pointer items-start gap-2 text-sm text-teal-900">
         <input
           type="checkbox"
           className="mt-0.5"
@@ -162,11 +222,25 @@ export function AdminExtracaoPipeline({
           onChange={(e) => setExcluirBlocoEspanhol(e.target.checked)}
         />
         <span>
-          <strong>Ignorar bloco de Espanhol</strong> (UFU e similares: inglês e espanhol com a
-          mesma numeração). Remove o trecho «Língua Espanhola» do texto e prefere enunciado em
-          inglês quando houver duplicata.
+          <strong>Ignorar bloco de Espanhol</strong> — só marque se o PDF ainda tiver a prova de
+          espanhol com a mesma numeração. Se você já editou o PDF, deixe desmarcado.
         </span>
       </label>
+
+      {temTextoFonte && (
+        <label className="mb-3 flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={usarTextoSalvo}
+            onChange={(e) => setUsarTextoSalvo(e.target.checked)}
+          />
+          <span>
+            Usar texto salvo no servidor (sem PDF nem cola no campo) — só se tiver salvado o texto
+            completo antes.
+          </span>
+        </label>
+      )}
 
       <div className="mb-4 flex flex-wrap gap-2">
         {ETAPAS.map((e) => (

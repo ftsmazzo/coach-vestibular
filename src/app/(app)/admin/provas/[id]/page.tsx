@@ -38,7 +38,7 @@ interface Prova {
   bancoIncompleto?: boolean;
   questoes: ProvaQuestao[];
   temTextoFonte?: boolean;
-  tamanhoTextoFonte?: number;
+  tamanhoTextoFonte?: number | null;
   tentativas?: {
     id: string;
     data: string;
@@ -118,6 +118,7 @@ export default function AdminProvaDetailPage() {
   const [importandoCsv, setImportandoCsv] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [textoProva, setTextoProva] = useState("");
+  const [salvandoTexto, setSalvandoTexto] = useState(false);
   const [textoFaltantes, setTextoFaltantes] = useState("");
   const [extraindo, setExtraindo] = useState(false);
   const [msg, setMsg] = useState("");
@@ -248,6 +249,32 @@ export default function AdminProvaDetailPage() {
       `Atualizada(s) ${data.adicionadas ?? data.questoes?.length ?? 0} questão(ões) no banco. As demais não foram alteradas. Clique em «Auditar» de novo para ver se a inconsistência sumiu.`
     );
     load();
+  }
+
+  async function salvarTextoFonte() {
+    if (!textoProva.trim()) {
+      setMsg("Cole o texto da prova antes de salvar.");
+      return;
+    }
+    setSalvandoTexto(true);
+    setMsg("");
+    const res = await fetch(`/api/admin/provas/${id}/texto-fonte`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto: textoProva.trim() }),
+    });
+    const data = await res.json();
+    setSalvandoTexto(false);
+    setMsg(res.ok ? data.mensagem ?? "Texto salvo." : data.error ?? "Erro ao salvar texto");
+    if (res.ok) load();
+  }
+
+  async function limparTextoFonte() {
+    if (!confirm("Remover o texto da prova salvo no servidor?")) return;
+    const res = await fetch(`/api/admin/provas/${id}/texto-fonte`, { method: "DELETE" });
+    const data = await res.json();
+    setMsg(res.ok ? data.mensagem ?? "Texto removido." : data.error ?? "Erro");
+    if (res.ok) load();
   }
 
   async function completarFaltantes() {
@@ -485,14 +512,34 @@ export default function AdminProvaDetailPage() {
             />
           </div>
           <div>
-            <Label>Ou cole o texto da prova</Label>
+            <Label>Ou cole o texto da prova (recomendado: prova inteira, questões 1–65)</Label>
             <textarea
-              className="mt-1 w-full rounded-xl border p-3 text-sm"
-              rows={5}
-              placeholder="Texto extraído do PDF, ou enunciados colados..."
+              className="mt-1 w-full rounded-xl border p-3 text-sm font-mono"
+              rows={12}
+              placeholder="Cole aqui o texto completo da prova (Ctrl+A do PDF). O sistema precisa de dezenas de milhares de caracteres, não só um resumo."
               value={textoProva}
               onChange={(e) => setTextoProva(e.target.value)}
             />
+            <p className="mt-1 text-xs text-slate-600">
+              {textoProva.trim().length > 0
+                ? `${textoProva.trim().length.toLocaleString("pt-BR")} caracteres no campo`
+                : "Nenhum texto colado — sem isso, o sistema pode usar um texto antigo truncado (~600 caracteres) do servidor."}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={salvandoTexto || !textoProva.trim()}
+                onClick={salvarTextoFonte}
+              >
+                {salvandoTexto ? "Salvando…" : "Salvar texto no servidor"}
+              </Button>
+              {prova?.temTextoFonte && (
+                <Button type="button" variant="secondary" onClick={limparTextoFonte}>
+                  Limpar texto salvo
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </Card>
@@ -502,7 +549,9 @@ export default function AdminProvaDetailPage() {
         textoProva={textoProva}
         pdfFile={pdfFile}
         questoesNoBanco={prova.questoes.length}
+        totalQuestoes={prova.totalQuestoes}
         temTextoFonte={prova.temTextoFonte}
+        tamanhoTextoFonte={prova.tamanhoTextoFonte}
         onMensagem={setMsg}
         onAtualizado={load}
       />
