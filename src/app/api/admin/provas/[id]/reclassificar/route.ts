@@ -28,13 +28,17 @@ export async function POST(
   const { numero, texto } = bodySchema.parse(await request.json());
   const enunciado = texto.trim();
 
+  const existente = await prisma.provaQuestao.findUnique({
+    where: { provaId_numero: { provaId, numero } },
+  });
+
   try {
     const salva = await classificarQuestaoUnica({
       numero,
       trechoEnunciado: enunciado,
       materia: "A classificar",
       assunto: "A classificar",
-      areaBloco: null,
+      areaBloco: existente?.areaBloco ?? null,
       conhecimentoExigido: null,
       nivelDificuldade: null,
       observacoes: null,
@@ -61,6 +65,7 @@ export async function POST(
       materia: atualizada?.materia ?? salva.materia,
       assunto: atualizada?.assunto ?? salva.assunto,
       conhecimentoExigido: atualizada?.conhecimentoExigido ?? salva.conhecimentoExigido,
+      nivelDificuldade: atualizada?.nivelDificuldade ?? salva.nivelDificuldade,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erro na reclassificação";

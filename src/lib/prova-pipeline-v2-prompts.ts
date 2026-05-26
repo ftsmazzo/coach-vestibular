@@ -47,6 +47,8 @@ Regras obrigatórias:
 - História: processos históricos, períodos, eventos, regimes, guerras, colonização.
 - Se incerto, materia vazia ou "A classificar". Nunca chute Biologia.
 - resumo_enunciado: obrigatório, uma linha, sem copiar o enunciado inteiro.
+- dificuldade: facil, media ou dificil na maioria das questões legíveis (mínimo ~70% do lote).
+- Física: forças, energia, circuitos, cinemática, óptica — não confundir com Geografia nem Biologia.
 - Responda somente no formato solicitado.
 
 ${REGRAS_OURO_CLASSIFICACAO}

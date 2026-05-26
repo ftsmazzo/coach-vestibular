@@ -71,6 +71,7 @@ export function validarClassificacaoLote(
   }
 
   let semPedagogia = 0;
+  let semDificuldade = 0;
   for (const q of noLote) {
     const d = (q.dificuldade ?? "").trim().toLowerCase();
     if (d && !["facil", "media", "dificil", "fácil", "média", "difícil"].includes(d)) {
@@ -79,6 +80,14 @@ export function validarClassificacaoLote(
     const materiaVazia = !q.materia?.trim() || q.materia.trim() === "A classificar";
     const conhecimentoVazio = !q.conhecimento?.trim();
     if (materiaVazia && conhecimentoVazio) semPedagogia++;
+    if (!d && !materiaVazia) semDificuldade++;
+  }
+
+  const maxSemDificuldade = Math.floor(noLote.length * 0.65);
+  if (semDificuldade > maxSemDificuldade) {
+    throw new Error(
+      `Poucas questões com dificuldade (${noLote.length - semDificuldade}/${noLote.length}); preencha facil/media/dificil`
+    );
   }
 
   const maxSemPedagogia = Math.ceil(noLote.length * 0.5);

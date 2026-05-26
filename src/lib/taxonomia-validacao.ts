@@ -98,7 +98,7 @@ const ASSUNTO_ALIASES: Array<{ re: RegExp; materia: string; assunto: string }> =
     assunto: "Gramática",
   },
   {
-    re: /hotspot|bioma|endemismo|biodiversidade/i,
+    re: /hotspot|endemismo|biodiversidade|dna\b|mitose|meiose/i,
     materia: "Biologia",
     assunto: "Ecologia",
   },

@@ -111,9 +111,14 @@ function buildPromptUnitario(numero: number): string {
 TAXONOMIA:
 ${allowedTaxonomyStr}
 
-Foque no conteúdo necessário para resolver. Não use Português para questões de ciências ou matemática.
+Regras:
+- Foque no conteúdo cognitivo (Física, Química, Biologia, etc.), não só palavras soltas como "bioma" em texto de Geografia.
+- Inglês só se o texto-base principal estiver em inglês; pergunta em português não basta.
+- Humanas (Filosofia, Sociologia, História, Geografia) não são Biologia.
+- dificuldade: facil, media ou dificil (obrigatório se a questão for legível).
+- conhecimento: uma frase curta do que a questão exige.
 
-JSON: { "numero": ${numero}, "materia": "...", "assunto": "..." }`;
+JSON: { "numero": ${numero}, "materia": "...", "assunto": "...", "conhecimento": "...", "dificuldade": "facil|media|dificil" }`;
 }
 
 function formatarLoteParaIA(questoes: QuestaoExtraida[], maxChars: number): string {
@@ -179,15 +184,30 @@ async function classificarLote(questoes: QuestaoExtraida[], maxChars: number): P
   return aplicarClassificacoes(questoes, rows);
 }
 
+function aplicarDificuldade(raw: unknown): string | null {
+  const n = String(raw ?? "")
+    .trim()
+    .toLowerCase();
+  if (n === "facil" || n === "fácil") return "Fácil";
+  if (n === "media" || n === "média") return "Média";
+  if (n === "dificil" || n === "difícil") return "Difícil";
+  return null;
+}
+
 async function classificarUnitario(q: QuestaoExtraida, maxChars: number): Promise<boolean> {
   const enc = cortarEnunciado(q.trechoEnunciado, maxChars);
+  const hints = q.areaBloco ? `Bloco/área no caderno: ${q.areaBloco}\n` : "";
   const res = await callOpenAIClassificacao(
     buildPromptUnitario(q.numero),
-    `Enunciado:\n${enc}`
+    `${hints}Enunciado:\n${enc}`
   );
   if (res.numero === q.numero && res.materia && res.assunto) {
     q.materia = normalizarLabelMateria(String(res.materia));
     q.assunto = normalizarLabelAssunto(q.materia, String(res.assunto));
+    const conh = String(res.conhecimento ?? "").trim();
+    if (conh) q.conhecimentoExigido = conh;
+    const dif = aplicarDificuldade(res.dificuldade);
+    if (dif) q.nivelDificuldade = dif;
     return true;
   }
   if (Array.isArray(res.classificacoes) && res.classificacoes[0]) {
@@ -247,21 +267,37 @@ export function classificacaoSuspeita(q: QuestaoExtraida): boolean {
 }
 
 function posProcessarQuestao(q: QuestaoExtraida): QuestaoExtraida {
+  const mAt = norm(q.materia);
+  const materiaDefinida =
+    q.materia &&
+    q.materia !== "A classificar" &&
+    !["a classificar", ""].includes(mAt);
+
   const inferida = inferirMateriaPorEnunciado(q.trechoEnunciado);
-  if (inferida) {
+  if (inferida && !materiaDefinida) {
     const mInf = norm(inferida);
-    const mAt = norm(q.materia);
     const idioma = mInf === "ingles" || mInf === "espanhol";
     const ciencia = ["biologia", "matematica", "fisica", "quimica"].includes(mInf);
-    if (idioma || (ciencia && mAt === "portugues")) {
+    if (idioma || ciencia) {
       return {
         ...q,
         materia: inferida,
-        assunto: assuntoPadraoMateria(inferida),
+        assunto:
+          q.assunto && q.assunto !== "A classificar"
+            ? q.assunto
+            : assuntoPadraoMateria(inferida),
+        conhecimentoExigido: q.conhecimentoExigido,
+        nivelDificuldade: q.nivelDificuldade,
       };
     }
   }
-  return ajustarMateriaIdiomaEDisciplina(q.trechoEnunciado, q);
+
+  const ajustada = ajustarMateriaIdiomaEDisciplina(q.trechoEnunciado, q);
+  return {
+    ...ajustada,
+    conhecimentoExigido: q.conhecimentoExigido ?? ajustada.conhecimentoExigido,
+    nivelDificuldade: q.nivelDificuldade ?? ajustada.nivelDificuldade,
+  };
 }
 
 /**

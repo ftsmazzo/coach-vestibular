@@ -119,7 +119,9 @@ export function detectarPassagemIngles(texto: string): boolean {
   const cmdEn = EN_COMANDO.test(t);
 
   if (en >= 18 && en > pt * 1.5) return true;
-  return en >= 10 && en > pt * 1.2 && (cmdPt || cmdEn);
+  // Não usar cmdPt aqui — quase toda questão BR tem pergunta em português; isso gerava PT→Inglês.
+  if (cmdEn && en >= 8 && en > pt * 1.3) return true;
+  return en >= 14 && en > pt * 2 && !cmdPt;
 }
 
 export function textoIndicaIngles(texto: string): boolean {
@@ -212,10 +214,20 @@ function ajustarPorConteudoDisciplinar(
 
   if (RE_BIOLOGIA.test(t)) {
     const nm = normalizarMateria(materia);
-    if (nm === "historia" || nm === "geografia" || nm === "portugues") {
+    const jaCienciaNatureza =
+      nm === "biologia" || nm === "fisica" || nm === "quimica";
+    const jaHumanasOuLing =
+      nm === "historia" ||
+      nm === "geografia" ||
+      nm === "filosofia" ||
+      nm === "sociologia" ||
+      nm === "portugues" ||
+      nm === "literatura";
+    // Só empurra Biologia se a IA ainda não definiu disciplina (evita Geo/Filo→Bio).
+    if (!jaCienciaNatureza && !jaHumanasOuLing && (nm === "a classificar" || !materia.trim())) {
       materia = "Biologia";
       assunto = assunto === "A classificar" ? "Ecologia" : assunto;
-      observacoes = observacoes ?? "Conteúdo de ecologia/biomas (não História).";
+      observacoes = observacoes ?? "Conteúdo de ecologia/biomas detectado no texto.";
     }
   }
 

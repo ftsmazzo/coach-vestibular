@@ -8,7 +8,10 @@ const GATILHOS_BIOLOGIA =
   /c[eé]lula|dna|rna|gene|mitose|meiose|ecossistema|cadeia alimentar|fotoss[ií]ntese|homeostase|horm[oô]nio|imunidade|evolu[cç][aã]o|fisiologia|citologia|organismo|hereditariedade|pat[oó]geno/i;
 
 const GATILHOS_GEOGRAFIA =
-  /mapa|escala|latitude|longitude|clima|relevo|cartograf|urbaniza[cç][aã]o|geopol[ií]tica|hidrografia|bioma|vegeta[cç][aã]o|metropoliza[cç][aã]o|coordenada/i;
+  /mapa|escala|latitude|longitude|clima|relevo|cartograf|urbaniza[cç][aã]o|geopol[ií]tica|hidrografia|vegeta[cç][aã]o|metropoliza[cç][aã]o|coordenada/i;
+
+const GATILHOS_FISICA =
+  /cinem[aá]tica|velocidade|acelera[cç][aã]o|for[cç]a|newton|joule|ohm|circuito|corrente|tens[aã]o|optica|lente|refra[cç][aã]o|ondas|energia mec[aâ]nica/i;
 
 export function temGatilhoBiologico(texto: string): boolean {
   return GATILHOS_BIOLOGIA.test(texto);
@@ -79,6 +82,14 @@ export function validarItemClassificado(
       ok: false,
       motivo: "Assunto Interpretação de Texto exige Português ou Literatura",
     };
+  }
+
+  if (mat === "Biologia" && temGatilhoGeografico(blob) && !temGatilhoBiologico(blob)) {
+    return { ok: false, motivo: "Biologia sem gatilho biológico (parece Geografia)" };
+  }
+
+  if (mat === "Biologia" && GATILHOS_FISICA.test(blob) && !temGatilhoBiologico(blob)) {
+    return { ok: false, motivo: "Biologia sem gatilho biológico (parece Física)" };
   }
 
   if (mat === "Biologia" && area.toLowerCase().includes("humanas")) {

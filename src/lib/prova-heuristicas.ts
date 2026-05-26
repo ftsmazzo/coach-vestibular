@@ -32,23 +32,33 @@ export function inferirMateriaPorEnunciado(enunciado: string): string | null {
   ) {
     return "Português";
   }
-  if (/hotspot|biodiversidade|bioma|endemismo|ecologia|fisiologia humana|citologia|genetica/.test(n)) {
-    return "Biologia";
-  }
   if (/tetraedro|matriz quadrada|funcao de variavel|y\s*=\s*f\s*\(|determinante|trigonometria/.test(n)) {
     return "Matemática";
   }
-  if (/cinematica|eletricidade|optica|termodinamica|forca resultante/.test(n)) {
+  if (
+    /cinematica|eletricidade|optica|termodinamica|forca resultante|velocidade|aceleração|aceleracao|newton|joule|ohm|circuito|corrente eletrica|lente|refração|reflexao/.test(
+      n
+    )
+  ) {
     return "Física";
+  }
+  if (/geografia humana|cartografia|urbanizacao|latitude|longitude|clima\b|relevo|hidrografia|metropolizacao/.test(n)) {
+    return "Geografia";
+  }
+  if (
+    /hotspot|biodiversidade|endemismo|citologia|genetica|dna\b|rna\b|mitose|meiose|fotossintese|homeostase/.test(
+      n
+    ) ||
+    (/bioma|ecologia|fisiologia humana/.test(n) &&
+      !/cinematica|forca resultante|circuito|optica|termodinamica/.test(n))
+  ) {
+    return "Biologia";
   }
   if (/estequiometria|equilibrio quimico|eletroquimica|atomistica/.test(n)) {
     return "Química";
   }
   if (/brasil republica|revolucao industrial|idade media|imperialismo/.test(n)) {
     return "História";
-  }
-  if (/geografia humana|clima|cartografia|urbanizacao/.test(n)) {
-    return "Geografia";
   }
   if (/sociologia|movimento[s]?\s+sociais|estrutura\s+social|desigualdade\s+social/.test(n)) {
     return "Sociologia";
