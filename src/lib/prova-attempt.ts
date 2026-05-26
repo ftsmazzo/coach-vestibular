@@ -208,7 +208,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     provaEhOficial(prova.tipo) ? "prova_oficial" : "simulado"
   );
 
-  let diagnosis = buildDiagnosis(
+  let diagnosis = await buildDiagnosis(
     rawAttempts.map(({ numero, correto, materiaId, temaId, tipoErro }) => ({
       numero,
       correto,
@@ -217,7 +217,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
       tipoErro: tipoErro as ErrorType | null | undefined,
     })),
     historicalAttempts,
-    { checkInScore: input.checkInScore, examLabel: rotulos.curto }
+    { checkInScore: input.checkInScore, examLabel: rotulos.curto, provaTipo: prova.tipo }
   );
 
   diagnosis = enriquecerDiagnosticoComProva(
@@ -307,7 +307,8 @@ async function aplicarPlanoEQuests(
     data: { status: "skipped" },
   });
 
-  const { items, recoveryMode } = generateStudyPlan(diagnosis, { ehProvaOficial });
+  const items = diagnosis.aiStudyPlanItems || generateStudyPlan(diagnosis, { ehProvaOficial }).items;
+  const recoveryMode = diagnosis.recoveryMode;
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
 
@@ -392,9 +393,10 @@ export async function recalcularDiagnosticoExam(examId: string, userId: string) 
     };
   });
 
-  let diagnosis = buildDiagnosis(rawAttempts, historicalAttempts, {
+  let diagnosis = await buildDiagnosis(rawAttempts, historicalAttempts, {
     checkInScore: exam.checkInScore,
     examLabel: rotulos.curto,
+    provaTipo: prova.tipo,
   });
 
   diagnosis = enriquecerDiagnosticoComProva(

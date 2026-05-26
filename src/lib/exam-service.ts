@@ -39,10 +39,15 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
     include: { questionAttempts: true },
   });
 
-  const diagnosis = buildDiagnosis(
+  const nameUpper = input.nome.toUpperCase();
+  const inferredProvaTipo = nameUpper.includes("ENEM") || nameUpper.includes("VESTIBULAR")
+    ? "ENEM_OFICIAL"
+    : "SIMULADO";
+
+  const diagnosis = await buildDiagnosis(
     input.questoes,
     historicalExams.map((e) => e.questionAttempts),
-    { checkInScore: input.checkInScore, examLabel: input.nome }
+    { checkInScore: input.checkInScore, examLabel: input.nome, provaTipo: inferredProvaTipo }
   );
 
   const exam = await prisma.exam.create({
@@ -96,7 +101,8 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
     },
   });
 
-  const { items, recoveryMode } = generateStudyPlan(diagnosis);
+  const items = diagnosis.aiStudyPlanItems || generateStudyPlan(diagnosis).items;
+  const recoveryMode = diagnosis.recoveryMode;
   const weekStart = getWeekStart(new Date());
 
   await prisma.studyPlan.create({

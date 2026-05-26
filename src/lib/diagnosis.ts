@@ -1,5 +1,6 @@
 import type { ErrorType } from "@/generated/prisma/client";
 import { getMateriaLabel, getTemaLabel } from "./taxonomy";
+import type { StudyPlanItem } from "./study-plan";
 
 export interface TemaScore {
   materiaId: string;
@@ -10,6 +11,7 @@ export interface TemaScore {
   erros: number;
   acertos: number;
   taxaAcerto: number;
+  vulnerabilidade?: number;
   tendencia?: "up" | "down" | "stable";
 }
 
@@ -19,6 +21,7 @@ export interface MateriaScore {
   total: number;
   erros: number;
   taxaAcerto: number;
+  vulnerabilidade?: number;
 }
 
 export interface DiagnosisResult {
@@ -44,6 +47,7 @@ export interface DiagnosisResult {
   recoveryMode: boolean;
   mensagem: string;
   tipoErroCounts: Record<string, number>;
+  aiStudyPlanItems?: StudyPlanItem[];
 }
 
 export interface AttemptInput {
@@ -52,9 +56,17 @@ export interface AttemptInput {
   materiaId?: string | null;
   temaId?: string | null;
   tipoErro?: ErrorType | null;
+  observacao?: string | null;
 }
 
-function computeTemaScores(attempts: AttemptInput[]): TemaScore[] {
+function getProvaTipoWeight(tipo?: string | null): number {
+  if (tipo === "ENEM_OFICIAL" || tipo === "VESTIBULAR") return 3;
+  if (tipo === "SIMULADO") return 2;
+  if (tipo === "LISTA_FIXACAO") return 1;
+  return 2; // Default to Simulado
+}
+
+function computeTemaScores(attempts: AttemptInput[], weight: number): TemaScore[] {
   const map = new Map<string, TemaScore>();
 
   for (const a of attempts) {
@@ -69,18 +81,25 @@ function computeTemaScores(attempts: AttemptInput[]): TemaScore[] {
       erros: 0,
       acertos: 0,
       taxaAcerto: 0,
+      vulnerabilidade: 0,
     };
     existing.total++;
     if (a.correto) existing.acertos++;
     else existing.erros++;
     existing.taxaAcerto = existing.total > 0 ? existing.acertos / existing.total : 0;
+    
+    // Weighted vulnerability calculation
+    const weightedErrors = existing.erros * weight;
+    const weightedTotal = existing.total * weight;
+    existing.vulnerabilidade = weightedTotal > 0 ? weightedErrors / weightedTotal : 0;
+    
     map.set(key, existing);
   }
 
   return Array.from(map.values()).sort((a, b) => a.taxaAcerto - b.taxaAcerto);
 }
 
-function computeMateriaScores(attempts: AttemptInput[]): MateriaScore[] {
+function computeMateriaScores(attempts: AttemptInput[], weight: number): MateriaScore[] {
   const map = new Map<string, MateriaScore>();
 
   for (const a of attempts) {
@@ -91,11 +110,18 @@ function computeMateriaScores(attempts: AttemptInput[]): MateriaScore[] {
       total: 0,
       erros: 0,
       taxaAcerto: 0,
+      vulnerabilidade: 0,
     };
     existing.total++;
     if (!a.correto) existing.erros++;
     existing.taxaAcerto =
       existing.total > 0 ? (existing.total - existing.erros) / existing.total : 0;
+      
+    // Weighted vulnerability calculation
+    const weightedErrors = existing.erros * weight;
+    const weightedTotal = existing.total * weight;
+    existing.vulnerabilidade = weightedTotal > 0 ? weightedErrors / weightedTotal : 0;
+    
     map.set(a.materiaId, existing);
   }
 
@@ -115,17 +141,18 @@ function detectRecoveryMode(overallAcerto: number, checkIn?: number | null) {
   return overallAcerto < 0.45 || (checkIn !== undefined && checkIn !== null && checkIn <= 2);
 }
 
-export function buildDiagnosis(
+export async function buildDiagnosis(
   currentAttempts: AttemptInput[],
   historicalAttempts: AttemptInput[][],
-  options?: { checkInScore?: number | null; examLabel?: string }
-): DiagnosisResult {
+  options?: { checkInScore?: number | null; examLabel?: string; provaTipo?: string | null }
+): Promise<DiagnosisResult> {
   const total = currentAttempts.length;
   const acertos = currentAttempts.filter((a) => a.correto).length;
   const overallAcerto = total > 0 ? acertos / total : 0;
 
-  const temaScores = computeTemaScores(currentAttempts);
-  const materiaScores = computeMateriaScores(currentAttempts);
+  const weight = getProvaTipoWeight(options?.provaTipo);
+  const temaScores = computeTemaScores(currentAttempts, weight);
+  const materiaScores = computeMateriaScores(currentAttempts, weight);
   const tipoErroCounts = inferTipoErro(currentAttempts);
 
   const temaRecurrence = new Map<string, number>();
@@ -232,6 +259,138 @@ export function buildDiagnosis(
   if (errosSemTema > 0 && focos.length === 0) {
     mensagem +=
       ` Para diagnóstico por tema, registre o gabarito completo (número + letra) ou envie o caderno na Fase 2.`;
+  }
+
+  // --- GOOGLE GEMINI DEEP INTEL INTEGRATION ---
+  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
+  if (apiKey) {
+    try {
+      // 1. Build the Metacognitive Context
+      const metacognitiveSummary = currentAttempts
+        .filter((a) => !a.correto)
+        .map((a) => {
+          const mat = getMateriaLabel(a.materiaId);
+          const tema = getTemaLabel(a.materiaId, a.temaId);
+          const causa = a.tipoErro || "Sem Classificação";
+          const obs = a.observacao ? ` (Nota: ${a.observacao})` : "";
+          return `- Questão ${a.numero} de ${mat} / ${tema}: Errou por ${causa}${obs}`;
+        })
+        .join("\n");
+
+      // 2. Build Vulnerability context
+      const vulnerabilitySummary = temaScores
+        .map(
+          (t) =>
+            `- ${t.materiaLabel} — ${t.temaLabel}: Vulnerabilidade Ponderada ${t.vulnerabilidade?.toFixed(
+              2
+            )} (Erros: ${t.erros}/${t.total}, Tipo de Prova: ${options?.provaTipo || "SIMULADO"})`
+        )
+        .join("\n");
+
+      // 3. System Prompt for Gemini
+      const systemPrompt = `Você é o Coach Vestibular, um mentor de alta performance especialista em vestibulandos de Medicina.
+Sua missão é analisar o diagnóstico de erros de um simulado ou prova e gerar:
+1. Uma narrativa empática e motivadora de até 3 frases (campo "mensagem"). Adapte a intensidade e o tom para ser acolhedor se o aluno estiver no Modo Recuperação (checkInScore baixo ou desempenho geral baixo).
+2. Uma lista de focos prioritários de estudos (campo "focos").
+3. Um plano de estudos prático estruturado em blocos de Quests de estudo ativo (campo "studyPlanItems").
+
+Diretrizes rígidas médicas de estudo:
+- Se a vulnerabilidade de um assunto for ALTA e a causa dominante for CONCEITO_TEORICO: O plano DEVE passar uma Quest de estudo ativo de base (ex: construir mapa mental dos pontos chaves do tema ou assistir bloco teórico específico).
+- Se a causa dominante for CALCULO_BOBEIRA ou INTERPRETACAO_ENUNCIADO: O plano NÃO DEVE mandar o aluno rever teoria. Deve gerar uma Quest de simulado focado em bloco de tempo pequeno, técnicas de sublinhar o comando da questão ou listas de velocidade.
+- O tom deve ser empático e adaptado ao checkInScore emocional (Modo Recuperação se checkInScore <= 2).
+
+Você deve responder APENAS com um objeto JSON estruturado seguindo exatamente este formato (não adicione formatação markdown ao redor do JSON):
+{
+  "mensagem": "...",
+  "focos": [
+    {
+      "materiaId": "...",
+      "temaId": "...",
+      "label": "Matéria — Tema",
+      "prioridade": "alta" | "media",
+      "motivo": "...",
+      "tipoErroDominante": "..."
+    }
+  ],
+  "studyPlanItems": [
+    {
+      "ordem": 1,
+      "titulo": "...",
+      "descricao": "...",
+      "duracaoMin": 60,
+      "materiaId": "...",
+      "temaId": "...",
+      "tipoErro": "...",
+      "bloco": "foco_profundo",
+      "geraQuest": true
+    }
+  ]
+}`;
+
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const res = await fetch(geminiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: `Diagnóstico Geral:
+- Acertos: ${acertos}/${total} (${(overallAcerto * 100).toFixed(0)}%)
+- Modo Recuperação: ${recoveryMode ? "Sim" : "Não"}
+- Check-In Emocional (1 a 5): ${options?.checkInScore ?? "Não informado"}
+
+Resumo dos Erros Metacognitivos:
+${metacognitiveSummary || "Nenhum erro metacognitivo registrado."}
+
+Vulnerabilidade por Tema (Ponderada por Peso de Prova):
+${vulnerabilitySummary || "Nenhuma vulnerabilidade calculada."}
+
+Gere o diagnóstico estruturado e as Quests de estudo agora.`,
+                },
+              ],
+            },
+          ],
+          systemInstruction: {
+            parts: [
+              {
+                text: systemPrompt,
+              },
+            ],
+          },
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.2,
+          },
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (jsonText) {
+          const parsed = JSON.parse(jsonText.trim());
+          return {
+            overallAcerto,
+            materiaScores,
+            temaScores,
+            focos: parsed.focos || focosFinal,
+            fortes,
+            fracos,
+            recoveryMode,
+            mensagem: parsed.mensagem || mensagem,
+            tipoErroCounts,
+            aiStudyPlanItems: parsed.studyPlanItems,
+          };
+        }
+      }
+    } catch (err) {
+      console.error("Erro na inteligência profunda do Gemini:", err);
+    }
   }
 
   return {
