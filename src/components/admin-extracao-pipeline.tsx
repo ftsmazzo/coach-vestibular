@@ -127,8 +127,9 @@ export function AdminExtracaoPipeline({
     <Card className="border-teal-200 bg-teal-50/40">
       <h2 className="mb-2 font-semibold text-teal-900">Extração em etapas (recomendado)</h2>
       <p className="mb-3 text-sm text-teal-800">
-        Cada fase usa um prompt dedicado: enunciado literal → matéria → assunto → conhecimento.
-        Grave os enunciados antes de classificar. Inglês e Espanhol entram na taxonomia oficial.
+        Etapa 2 usa <strong>gpt-4o</strong> por padrão (variável{" "}
+        <code className="text-xs">OPENAI_MODEL_PASSO_2</code>) — lotes em paralelo, revisão
+        automática das classificações suspeitas. Grave os enunciados antes.
       </p>
 
       <div className="mb-4 flex flex-wrap gap-2">

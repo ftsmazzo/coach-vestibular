@@ -1,17 +1,17 @@
 import type { QuestaoExtraida } from "@/lib/ai-extract-prova";
+import { classificarMateriaEAssuntoMotor } from "@/lib/prova-classificacao-motor";
 import {
-  ajustarMateriaIdiomaEDisciplina,
-  detectarPassagemIngles,
-  detectarPassagemEspanhol,
-  textoIndicaPortuguesInterpretacao,
-} from "@/lib/prova-materia-ajuste";
+  assuntoPadraoMateria,
+  inferirMateriaPorEnunciado,
+} from "@/lib/prova-heuristicas";
+import { textoIndicaPortuguesInterpretacao } from "@/lib/prova-materia-ajuste";
 import {
-  alinharLoteTaxonomia,
   normalizarLabelAssunto,
   normalizarLabelMateria,
 } from "@/lib/taxonomia-validacao";
 import { taxonomy } from "@/lib/taxonomy";
 
+export { inferirMateriaPorEnunciado } from "@/lib/prova-heuristicas";
 export { normalizarLabelAssunto, normalizarLabelMateria } from "@/lib/taxonomia-validacao";
 
 export type EtapaExtracao =
@@ -46,66 +46,6 @@ function norm(s: string): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "");
-}
-
-/** Heurística antes da IA — evita “tudo Interpretação de Texto”. */
-export function inferirMateriaPorEnunciado(enunciado: string): string | null {
-  const t = enunciado.trim();
-  if (!t) return null;
-  if (detectarPassagemIngles(t)) return "Inglês";
-  if (detectarPassagemEspanhol(t)) return "Espanhol";
-
-  const n = norm(t);
-  if (
-    /escrevivencia|conceicao evaristo|literatura canonica|entrevista, a escritora|poesia|cordel|teatro|didascal/.test(
-      n
-    )
-  ) {
-    return "Português";
-  }
-  if (/hotspot|biodiversidade|bioma|endemismo|ecologia|fisiologia humana|citologia|genetica/.test(n)) {
-    return "Biologia";
-  }
-  if (/tetraedro|matriz quadrada|funcao de variavel|y\s*=\s*f\s*\(|determinante|trigonometria/.test(n)) {
-    return "Matemática";
-  }
-  if (/cinematica|eletricidade|optica|termodinamica|forca resultante/.test(n)) {
-    return "Física";
-  }
-  if (/estequiometria|equilibrio quimico|eletroquimica|atomistica/.test(n)) {
-    return "Química";
-  }
-  if (/brasil republica|revolucao industrial|idade media|imperialismo/.test(n)) {
-    return "História";
-  }
-  if (/geografia humana|clima|cartografia|urbanizacao/.test(n)) {
-    return "Geografia";
-  }
-  if (/gramatica|regencia verbal|crase|sintaxe|morfologia|pontuacao/.test(n)) {
-    return "Português";
-  }
-  if (
-    /de acordo com o texto|segundo o texto|com base no texto|no fragmento|na entrevista/.test(n) &&
-    !/hotspot|biodiversidade|tetraedro|matriz|funcao de variavel|cinematica|estequiometria/.test(n)
-  ) {
-    return "Português";
-  }
-  return null;
-}
-
-function assuntoPadraoMateria(materiaLabel: string): string {
-  const mat = taxonomy.materias.find((m) => m.label === materiaLabel);
-  return mat?.temas[0]?.label ?? "A classificar";
-}
-
-function aplicarHeuristicaInicial(q: QuestaoExtraida): QuestaoExtraida {
-  const h = inferirMateriaPorEnunciado(q.trechoEnunciado);
-  if (!h) return q;
-  return {
-    ...q,
-    materia: h,
-    assunto: q.assunto === "A classificar" ? assuntoPadraoMateria(h) : q.assunto,
-  };
 }
 
 function aplicarFallbacksClassificacao(questoes: QuestaoExtraida[]): string[] {
@@ -200,33 +140,6 @@ async function callOpenAI(
   return JSON.parse(raw);
 }
 
-const allowedTaxonomyStr = taxonomy.materias
-  .map((m) => {
-    const temasStr = m.temas.map((t) => `"${t.label}"`).join(", ");
-    return `- Matéria: "${m.label}" | Assuntos: ${temasStr}`;
-  })
-  .join("\n");
-
-function buildPromptMateriaEAssunto(): string {
-  return `Você classifica questões de vestibular com precisão disciplinar.
-Leia cada enunciado completo e escolha matéria E assunto SOMENTE da taxonomia abaixo (grafia idêntica).
-
-${allowedTaxonomyStr}
-
-REGRAS OBRIGATÓRIAS:
-1. Proibido retornar null, vazio ou "A classificar".
-2. Texto-base principal em inglês (mesmo com pergunta em português) → matéria "Inglês" + assunto da taxonomia de Inglês.
-3. Texto-base em espanhol → matéria "Espanhol".
-4. Conteúdo de biologia, ecologia, corpo humano, células, DNA → "Biologia" (NÃO Português nem História).
-5. Cálculos, gráficos, geometria, matrizes, funções → "Matemática".
-6. Forças, energia, circuitos, óptica → "Física". Reações, mol, tabela periódica → "Química".
-7. Use "Português" + "Interpretação de Texto" apenas para textos literários, charges ou interpretação de texto em português — NÃO para questões de ciências.
-8. Não marque todas as questões como Português por padrão. Analise o conteúdo cognitivo exigido.
-9. O assunto DEVE ser um dos listados para a matéria escolhida — nunca coloque assunto de Química em Português, etc.
-
-JSON: { "classificacoes": [{ "numero": 1, "materia": "Biologia", "assunto": "Ecologia" }] }`;
-}
-
 function buildPromptAssunto(materiaLabel: string): string {
   const mat = taxonomy.materias.find((m) => m.label === materiaLabel);
   const temas = mat?.temas.map((t) => t.label).join(", ") ?? "";
@@ -241,76 +154,14 @@ const PROMPT_CONHECIMENTO = `Para cada questão, escreva UMA frase curta do conh
 Use o enunciado e a classificação já definida. Não invente gabarito.
 JSON: { "conhecimentos": [{ "numero": 1, "conhecimentoExigido": "..." }] }`;
 
-/** Motor principal de classificação (igual ao Passo 2 antigo, com taxonomia atualizada). */
+/** Motor principal: gpt-4o, lotes paralelos, revisão unitária nas suspeitas. */
 export async function classificarMateriaEAssunto(
   base: QuestaoExtraida[],
   avisosIn: string[] = []
 ): Promise<{ questoes: QuestaoExtraida[]; avisos: string[] }> {
-  const avisos = [...avisosIn];
-  const BATCH = parseInt(process.env.CLASS_BATCH_SIZE ?? "8", 10);
-  const MAX_ENUNCIADO = parseInt(process.env.ENUNCIADO_PARA_CLASSIFICAR_MAX ?? "5000", 10);
-  const modelClassificacao =
-    process.env.OPENAI_MODEL_PASSO_2 ?? process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-
-  const resultado = base.map((q) => aplicarHeuristicaInicial({ ...q }));
-
-  for (let i = 0; i < resultado.length; i += BATCH) {
-    const lote = resultado.slice(i, i + BATCH);
-    const payload = lote.map((q) => {
-      const t = q.trechoEnunciado.trim();
-      const cortado = t.length > MAX_ENUNCIADO ? `${t.slice(0, MAX_ENUNCIADO)}…` : t;
-      return {
-        numero: q.numero,
-        materiaAtual: q.materia !== "A classificar" ? q.materia : undefined,
-        enunciado: cortado,
-      };
-    });
-
-    try {
-      const res = await callOpenAI(
-        buildPromptMateriaEAssunto(),
-        `Classifique cada questão:\n\n${JSON.stringify(payload)}`,
-        modelClassificacao
-      );
-      if (Array.isArray(res.classificacoes)) {
-        for (const row of res.classificacoes) {
-          const q = resultado.find((x) => x.numero === row.numero);
-          if (!q || !row.materia || !row.assunto) continue;
-          q.materia = normalizarLabelMateria(row.materia);
-          q.assunto = normalizarLabelAssunto(q.materia, row.assunto);
-        }
-      } else {
-        avisos.push(`Etapa 2 lote ${i}: resposta sem array classificacoes.`);
-      }
-    } catch (e) {
-      avisos.push(
-        `Etapa 2 (matéria+assunto) lote ${i}: ${e instanceof Error ? e.message : "erro"}`
-      );
-    }
-  }
-
-  for (const q of resultado) {
-    const ajustada = ajustarMateriaIdiomaEDisciplina(q.trechoEnunciado, q);
-    q.materia = ajustada.materia;
-    q.assunto = ajustada.assunto;
-    q.observacoes = ajustada.observacoes;
-  }
-
-  const { questoes: alinhadas, corrigidas } = alinharLoteTaxonomia(resultado);
-  for (let i = 0; i < resultado.length; i++) {
-    resultado[i] = alinhadas[i];
-  }
-  if (corrigidas > 0) {
-    avisos.push(
-      `${corrigidas} par(es) matéria/assunto corrigidos para bater com a taxonomia (ex.: assunto de Química com matéria errada).`
-    );
-  }
-
-  avisos.push(...aplicarFallbacksClassificacao(resultado));
-  avisos.push(
-    `Etapa 2: matéria e assunto definidos para ${resultado.length} questão(ões) (motor Passo 2).`
-  );
-  return { questoes: resultado, avisos };
+  const r = await classificarMateriaEAssuntoMotor(base, avisosIn);
+  r.avisos.push(...aplicarFallbacksClassificacao(r.questoes));
+  return r;
 }
 
 export async function classificarMaterias(
@@ -364,11 +215,6 @@ export async function classificarAssuntos(
     }
   }
 
-  for (const q of resultado) {
-    const ajustada = ajustarMateriaIdiomaEDisciplina(q.trechoEnunciado, q);
-    q.materia = ajustada.materia;
-    q.assunto = ajustada.assunto;
-  }
   avisos.push(...aplicarFallbacksClassificacao(resultado));
 
   avisos.push(`Etapa 3: assuntos refinados.`);

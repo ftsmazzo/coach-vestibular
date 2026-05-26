@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
-import { extrairQuestoesComIA } from "@/lib/ai-extract-prova";
+import { classificarQuestaoUnica } from "@/lib/prova-classificacao-motor";
 import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
-import { ajustarMateriaPorIdiomaDoTexto } from "@/lib/prova-materia-ajuste";
 import { upsertQuestoesExtraidas } from "@/lib/prova-questoes-persist";
 
 const bodySchema = z.object({
@@ -27,16 +26,9 @@ export async function POST(
 
   const { numero, texto } = bodySchema.parse(await request.json());
   const enunciado = texto.trim();
-  const ctx = {
-    nome: prova.nome,
-    banca: prova.banca,
-    ano: prova.ano,
-    caderno: prova.caderno,
-    totalEsperado: 1,
-  };
 
-  const base = [
-    {
+  try {
+    const salva = await classificarQuestaoUnica({
       numero,
       trechoEnunciado: enunciado,
       materia: "A classificar",
@@ -45,34 +37,18 @@ export async function POST(
       conhecimentoExigido: null,
       nivelDificuldade: null,
       observacoes: null,
-    },
-  ];
-
-  try {
-    const rClass = await extrairQuestoesComIA("", ctx, {
-      etapa: "materia",
-      baseInicial: base,
-    });
-    const resultado = await extrairQuestoesComIA("", ctx, {
-      etapa: "conhecimento",
-      baseInicial: rClass.questoes,
     });
 
-    const questoes = resultado.questoes.filter((q) => q.numero === numero);
-    if (questoes.length === 0) {
+    if (salva.materia === "A classificar" || salva.assunto === "A classificar") {
       return NextResponse.json(
-        { error: "A IA não retornou classificação para esta questão. Cole mais texto do enunciado." },
+        { error: "A IA não classificou esta questão. Cole mais texto do enunciado." },
         { status: 422 }
       );
     }
 
-    const normalizadas = questoes.map((q) =>
-      ajustarMateriaPorIdiomaDoTexto(enunciado, { ...q, numero })
-    );
-    await upsertQuestoesExtraidas(provaId, normalizadas);
+    await upsertQuestoesExtraidas(provaId, [salva]);
     await refreshProvaGabaritoFlag(provaId);
 
-    const salva = normalizadas[0];
     const atualizada = await prisma.provaQuestao.findUnique({
       where: { provaId_numero: { provaId, numero } },
     });
@@ -83,7 +59,6 @@ export async function POST(
       materia: atualizada?.materia ?? salva.materia,
       assunto: atualizada?.assunto ?? salva.assunto,
       conhecimentoExigido: atualizada?.conhecimentoExigido ?? salva.conhecimentoExigido,
-      avisos: resultado.avisos,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erro na reclassificação";
