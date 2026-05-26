@@ -23,46 +23,71 @@ const questaoExtraidaSchema = z.object({
   trechoEnunciado: z.string().min(5),
 });
 
-const respostaSchema = z.object({
-  questoes: z.array(questaoExtraidaSchema),
-  avisos: z.array(z.string()).optional(),
-  resumo: z.string().optional(),
-});
-
 export type QuestaoExtraida = z.infer<typeof questaoExtraidaSchema>;
 
-function sanitizeQuestaoRaw(q: unknown): unknown {
-  if (!q || typeof q !== "object") return q;
-  const row = q as Record<string, unknown>;
-  const { gabarito: _g, resposta: _r, respostaCorreta: _c, ...rest } = row;
-  return {
-    ...rest,
-    materia: normalizarClassificacao(rest.materia),
-    assunto: normalizarClassificacao(rest.assunto),
-  };
-}
+const SYSTEM_PROMPT_PASSO_1 = `Você é um extrator literal implacável de questões de provas de vestibulares.
+Sua única tarefa é extrair as questões contidas no texto fornecido exatamente como estão escritas, sem resumir, parafrasear, explicar ou interpretar absolutamente nada.
 
-function stripGabaritoFromRaw(parsed: unknown): unknown {
-  if (!parsed || typeof parsed !== "object") return parsed;
-  const obj = parsed as { questoes?: unknown[] };
-  if (!Array.isArray(obj.questoes)) return parsed;
-  return {
-    ...obj,
-    questoes: obj.questoes.map(sanitizeQuestaoRaw),
-  };
-}
+REGRAS DE OURO:
+1. O campo "trechoEnunciado" DEVE conter a cópia literal ("ipsis litteris") de todo o texto de apoio da questão, poemas, textos de referência, charges (se houver, descreva entre colchetes [como esta]) e a pergunta/comando em si. Não mude uma única palavra.
+2. É terminantemente proibido resumir os enunciados. Capturar o texto completo e literal.
+3. Não tente classificar a matéria ou assunto nesta etapa. Foque apenas na extração textual exata.
+
+Responda apenas com um JSON válido seguindo esta estrutura rígida:
+{
+  "questoes": [
+    {
+      "numero": 1,
+      "areaBloco": "Ciências da Natureza" ou null,
+      "trechoEnunciado": "[Texto de apoio completo...] + [Pergunta/Comando completo]",
+      "conhecimentoExigido": "Frase curta descrevendo o conhecimento exigido" ou null,
+      "nivelDificuldade": "facil" | "media" | "dificil" ou null,
+      "observacoes": "Gráfico" ou "Tabela" ou "Interdisciplinar" ou null
+    }
+  ]
+}`;
+
+const allowedTaxonomyStr = taxonomy.materias
+  .map((m) => {
+    const temasStr = m.temas.map((t) => `"${t.label}"`).join(", ");
+    return `- Matéria: "${m.label}" | Assuntos permitidos: ${temasStr}`;
+  })
+  .join("\n");
+
+const SYSTEM_PROMPT_PASSO_2 = `Você é um classificador pedagógico de altíssima precisão para vestibulares brasileiros.
+Sua missão é ler uma lista de questões (contendo seus enunciados literais pré-extraídos) e classificar a matéria e o assunto de cada uma delas cruzando rigorosamente e exclusivamente com a taxonomia oficial do projeto.
+
+REGRAS DE CLASSIFICAÇÃO PEDAGÓGICA (TAXONOMIA):
+Você é terminantemente proibido de retornar null ou strings vazias para 'materia' e 'assunto'.
+Você DEVE escolher a matéria e o assunto de cada questão EXCLUSIVAMENTE a partir da taxonomia oficial abaixo:
+
+${allowedTaxonomyStr}
+
+ATENÇÃO:
+1. A matéria e o assunto devem corresponder exatamente a um dos pares listados acima (com a grafia idêntica, incluindo acentos).
+2. NUNCA use "A classificar" ou retorne null para materia ou assunto. Encontre a melhor correspondência pedagógica.
+3. Inglês/Espanhol: Se o texto-base principal estiver em inglês/espanhol, classifique inicialmente a matéria como "Português" e o assunto como "Interpretação de Texto" (já que a taxonomia oficial não possui Inglês e Espanhol como matérias separadas). O pós-processador do sistema irá ajustar depois.
+
+Responda apenas com um JSON válido relacionando o número da questão à classificação oficial:
+{
+  "classificacoes": [
+    {
+      "numero": 1,
+      "materia": "Física",
+      "assunto": "Cinemática"
+    }
+  ]
+}`;
 
 function dedupeAvisos(avisos: string[]): string[] {
   return [...new Set(avisos)];
 }
 
 function chunkTextPedagogical(text: string, batchSize = 8): string[] {
-  // Match standard question markers in typical exam files (e.g. Questão 1, QUESTÃO 2, Q1, Q. 3)
   const regex = /(?=Quest(?:ã|a)o\s+\d+|QUEST(?:Ã|A)O\s+\d+|\bQ\s*\d+\b|\bQ\.\s*\d+\b)/gi;
   const chunks = text.split(regex).map((c) => c.trim()).filter((c) => c.length > 20);
   
   if (chunks.length <= 1) {
-    // Fallback: chunk by character count if no question markers are found
     const maxLen = 12000;
     const fallbackChunks: string[] = [];
     let start = 0;
@@ -73,7 +98,6 @@ function chunkTextPedagogical(text: string, batchSize = 8): string[] {
     return fallbackChunks;
   }
   
-  // Group the question chunks into batches
   const batches: string[] = [];
   for (let i = 0; i < chunks.length; i += batchSize) {
     batches.push(chunks.slice(i, i + batchSize).join("\n\n--- NOVA QUESTÃO ---\n\n"));
@@ -81,146 +105,43 @@ function chunkTextPedagogical(text: string, batchSize = 8): string[] {
   return batches;
 }
 
-async function callGemini(
-  userContent: string,
-  provaContext: {
-    nome: string;
-    banca: string;
-    ano?: number | null;
-    caderno?: string | null;
-    totalEsperado?: number;
-  }
-): Promise<z.infer<typeof respostaSchema>> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
+async function callOpenAI(
+  systemPrompt: string,
+  userContent: string
+): Promise<any> {
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY ou OPENAI_API_KEY não configurada no servidor");
+    throw new Error("OPENAI_API_KEY não configurada no servidor");
   }
 
-  const meta = [
-    `Prova cadastrada: ${provaContext.nome}`,
-    `Banca/vestibular: ${provaContext.banca}`,
-    provaContext.ano ? `Ano: ${provaContext.ano}` : null,
-    provaContext.caderno ? `Caderno/tipo: ${provaContext.caderno}` : null,
-    provaContext.totalEsperado
-      ? `Total esperado: ${provaContext.totalEsperado}`
-      : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  const allowedTaxonomyStr = taxonomy.materias
-    .map((m) => {
-      const temasStr = m.temas.map((t) => `"${t.label}"`).join(", ");
-      return `- Matéria: "${m.label}" | Assuntos permitidos: ${temasStr}`;
-    })
-    .join("\n");
-
-  const systemPrompt = `Você é uma Inteligência Artificial especializada e implacável na classificação pedagógica e extração de questões objetivas de provas de vestibulares brasileiros (ENEM, vestibulares tradicionais, simulados).
-
-Sua tarefa é analisar o lote de questões fornecido e extrair todas as questões em um formato estruturado JSON estrito.
-
-ATENÇÃO: ANALISE CADA QUESTÃO INDIVIDUALMENTE. É TERMINANTEMENTE PROIBIDO REPETIR A MESMA MATÉRIA PARA TODAS AS QUESTÕES APENAS PARA POUPAR TEMPO. CRUZE O CONTEÚDO REAL DA QUESTÃO COM A LISTA DE MATÉRIAS E ASSUNTOS DO PROJETO.
-
-REGRAS DE CLASSIFICAÇÃO PEDAGÓGICA (TAXONOMIA):
-Você é terminantemente proibido de retornar null ou strings vazias em 'materia' e 'assunto'.
-Você DEVE escolher a matéria e o assunto de cada questão EXCLUSIVAMENTE a partir da taxonomia oficial abaixo:
-
-${allowedTaxonomyStr}
-
-ATENÇÃO:
-1. A matéria e o assunto devem corresponder exatamente a um dos pares listados acima (com a grafia idêntica, incluindo acentos).
-2. NUNCA use "A classificar" ou retorne null para materia ou assunto. Encontre a melhor correspondência pedagógica.
-3. Inglês/Espanhol: Se o texto-base principal estiver em inglês/espanhol, classifique inicialmente a matéria como "Português" e o assunto como "Interpretação de Texto" (já que a taxonomia oficial não possui Inglês e Espanhol como matérias separadas). O pós-processador do sistema irá ajustar depois.
-
-REGRAS DE EXTRAÇÃO:
-- "trechoEnunciado" é um campo MANDATÓRIO. Você deve extrair as frases centrais do enunciado da questão e da pergunta de forma a dar contexto completo para um diagnóstico de IA (entre 50 e 400 caracteres). Nunca deixe vazio, nulo ou com placeholder.
-- "numero": número da questão (exatamente como aparece na prova).
-- "areaBloco": bloco/área da prova (ex. "Ciências da Natureza", "Matemática e suas Tecnologias") ou null se não aplicável.
-- "conhecimentoExigido": descrição em uma frase curta do que o aluno precisa saber para resolver, ou null.
-- "nivelDificuldade": "facil" | "media" | "dificil" ou null.
-- "observacoes": notas especiais (ex: "interdisciplinar", "tabela", "gráfico", "imagem") ou null.`;
-
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-  const res = await fetch(geminiUrl, {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: `${meta}\n\nConteúdo parcial de questões a processar neste lote (analise e classifique; resposta em JSON):\n${userContent}`,
-            },
-          ],
-        },
+      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      temperature: 0.1,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent },
       ],
-      systemInstruction: {
-        parts: [
-          {
-            text: systemPrompt,
-          },
-        ],
-      },
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            questoes: {
-              type: "ARRAY",
-              items: {
-                type: "OBJECT",
-                properties: {
-                  numero: { type: "INTEGER" },
-                  areaBloco: { type: "STRING" },
-                  materia: { type: "STRING" },
-                  assunto: { type: "STRING" },
-                  conhecimentoExigido: { type: "STRING" },
-                  nivelDificuldade: { type: "STRING" },
-                  observacoes: { type: "STRING" },
-                  trechoEnunciado: { type: "STRING" },
-                },
-                required: ["numero", "materia", "assunto", "trechoEnunciado"],
-              },
-            },
-            resumo: { type: "STRING" },
-          },
-          required: ["questoes"],
-        },
-        temperature: 0.15,
-      },
+      max_tokens: 16000,
     }),
   });
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Gemini error: ${res.status} ${err.slice(0, 200)}`);
+    throw new Error(`OpenAI error: ${res.status} ${err.slice(0, 200)}`);
   }
 
   const data = await res.json();
-  const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!jsonText) throw new Error("Resposta vazia do Gemini");
+  const raw = data.choices?.[0]?.message?.content;
+  if (!raw) throw new Error("Resposta vazia da OpenAI");
 
-  // Limpador robusto de marcações de markdown de JSON
-  let cleanJson = jsonText.trim();
-  if (cleanJson.startsWith("```json")) {
-    cleanJson = cleanJson.substring(7);
-  } else if (cleanJson.startsWith("```")) {
-    cleanJson = cleanJson.substring(3);
-  }
-  if (cleanJson.endsWith("```")) {
-    cleanJson = cleanJson.substring(0, cleanJson.length - 3);
-  }
-  cleanJson = cleanJson.trim();
-
-  const parsed = JSON.parse(cleanJson);
-  const stripped = stripGabaritoFromRaw(parsed);
-  const result = respostaSchema.parse(stripped);
-
-  return result;
+  return JSON.parse(raw);
 }
 
 function mergeQuestoes(all: QuestaoExtraida[]): QuestaoExtraida[] {
@@ -297,55 +218,105 @@ export async function extrairQuestoesComIA(
     throw new Error("Texto muito curto para extração — envie o PDF convertido ou mais conteúdo");
   }
 
-  // Fatiamento pedagógico do texto em lotes
   const batches = chunkTextPedagogical(trimmed, 8);
-  const allQuestoes: QuestaoExtraida[] = [];
+  const questoesPasso1: Array<{
+    numero: number;
+    areaBloco: string | null;
+    trechoEnunciado: string;
+    conhecimentoExigido: string | null;
+    nivelDificuldade: string | null;
+    observacoes: string | null;
+  }> = [];
+
   const allAvisos: string[] = [];
 
+  // PASSO 1: Extração Literal
   for (let i = 0; i < batches.length; i++) {
     try {
-      const result = await callGemini(
-        `[Lote ${i + 1}/${batches.length}]\n\n${batches[i]}`,
-        provaContext
+      const result = await callOpenAI(
+        SYSTEM_PROMPT_PASSO_1,
+        `Lote ${i + 1}/${batches.length} a extrair:\n\n${batches[i]}`
       );
-      
-      const batchTexto = batches[i];
-      const ajustadas = result.questoes.map((q) =>
-        ajustarMateriaPorIdiomaDoTexto(
-          q.trechoEnunciado?.trim() ? `${batchTexto}\n${q.trechoEnunciado}` : batchTexto,
-          q
-        )
-      );
-      
-      allQuestoes.push(...ajustadas);
-      if (result.avisos) {
-        allAvisos.push(...result.avisos);
+      if (result && Array.isArray(result.questoes)) {
+        questoesPasso1.push(...result.questoes);
       }
     } catch (error) {
-      console.error(`Erro ao processar lote ${i + 1}:`, error);
+      console.error(`Erro no Passo 1, lote ${i + 1}:`, error);
       allAvisos.push(
-        `Erro no lote ${i + 1}: ${error instanceof Error ? error.message : "Erro desconhecido"}`
+        `Erro de extração literal no lote ${i + 1}: ${error instanceof Error ? error.message : "Erro desconhecido"}`
       );
     }
   }
 
-  const questoes = mergeQuestoes(allQuestoes);
+  if (questoesPasso1.length === 0) {
+    throw new Error("Nenhuma questão foi extraída no Passo 1 de extração literal.");
+  }
+
+  // PASSO 2: Classificação Pedagógica com Visão Global
+  const previewQuestoes = questoesPasso1.map((q) => ({
+    numero: q.numero,
+    enunciadoPreview: q.trechoEnunciado.slice(0, 250),
+  }));
+
+  let classificacoes: Array<{ numero: number; materia: string; assunto: string }> = [];
+  try {
+    const result = await callOpenAI(
+      SYSTEM_PROMPT_PASSO_2,
+      `Aqui estão todas as questões extraídas da prova. Classifique cada uma de acordo com a taxonomia:\n\n${JSON.stringify(previewQuestoes)}`
+    );
+    if (result && Array.isArray(result.classificacoes)) {
+      classificacoes = result.classificacoes;
+    }
+  } catch (error) {
+    console.error("Erro no Passo 2 (Classificação):", error);
+    allAvisos.push("A classificação pedagógica falhou; usando classificação de fallback.");
+  }
+
+  // CONSOLIDAÇÃO
+  const mapClassificacoes = new Map<number, { materia: string; assunto: string }>();
+  for (const c of classificacoes) {
+    mapClassificacoes.set(c.numero, {
+      materia: c.materia,
+      assunto: c.assunto,
+    });
+  }
+
+  const finalQuestoes: QuestaoExtraida[] = questoesPasso1.map((q) => {
+    const c = mapClassificacoes.get(q.numero) ?? {
+      materia: "A classificar",
+      assunto: "A classificar",
+    };
+
+    return {
+      numero: q.numero,
+      areaBloco: q.areaBloco,
+      materia: c.materia,
+      assunto: c.assunto,
+      conhecimentoExigido: q.conhecimentoExigido,
+      nivelDificuldade: q.nivelDificuldade,
+      observacoes: q.observacoes,
+      trechoEnunciado: q.trechoEnunciado,
+    };
+  });
+
+  // Pós-processamento de idioma (Inglês/Espanhol)
+  const ajustadas = finalQuestoes.map((q) =>
+    ajustarMateriaPorIdiomaDoTexto(q.trechoEnunciado, q)
+  );
+
+  const questoes = mergeQuestoes(ajustadas);
 
   if (batches.length > 1) {
     allAvisos.unshift(
-      `Processamento em lote concluído: ${batches.length} chamadas sequenciais realizadas para evitar sobrecargas e omissões.`
+      `Arquitetura de Dois Passos (Two-Pass) concluída: ${batches.length} lotes literais extraídos e classificação unificada executada.`
     );
   }
 
   allAvisos.push(...avisosCobertura(questoes, provaContext.totalEsperado));
 
-  if (questoes.length === 0) {
-    allAvisos.push("Nenhuma questão identificada — revise o texto ou envie em lotes menores.");
-  }
-
   return {
     questoes,
     avisos: dedupeAvisos(allAvisos),
-    resumo: `${questoes.length} questões extraídas com sucesso.`,
+    resumo: `${questoes.length} questões extraídas de forma literal e classificadas com sucesso.`,
   };
 }
