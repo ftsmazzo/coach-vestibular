@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { parseProvaQuestoesCsv } from "@/lib/parse-prova-csv";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
+import { persistirQuestoesClassificadas } from "@/lib/prova-questoes-persist";
 
 const questaoSchema = z.object({
   numero: z.number().int().positive(),
@@ -52,51 +53,7 @@ export async function POST(
       );
     }
 
-    if (substituir) {
-      await prisma.provaQuestao.deleteMany({ where: { provaId } });
-      await prisma.provaQuestao.createMany({
-        data: rows.map((r) => ({
-          provaId,
-          numero: r.numero,
-          areaBloco: r.areaBloco ?? null,
-          materia: r.materia,
-          assunto: r.assunto,
-          conhecimentoExigido: r.conhecimentoExigido ?? null,
-          nivelDificuldade: r.nivelDificuldade ?? null,
-          observacoes: r.observacoes ?? null,
-          enunciado: r.enunciado ?? null,
-          gabarito: r.gabarito ?? null,
-        })),
-      });
-    } else {
-      for (const r of rows) {
-        await prisma.provaQuestao.upsert({
-          where: { provaId_numero: { provaId, numero: r.numero } },
-          create: {
-            provaId,
-            numero: r.numero,
-            areaBloco: r.areaBloco ?? null,
-            materia: r.materia,
-            assunto: r.assunto,
-            conhecimentoExigido: r.conhecimentoExigido ?? null,
-            nivelDificuldade: r.nivelDificuldade ?? null,
-            observacoes: r.observacoes ?? null,
-            enunciado: r.enunciado ?? null,
-            gabarito: r.gabarito ?? null,
-          },
-          update: {
-            areaBloco: r.areaBloco ?? null,
-            materia: r.materia,
-            assunto: r.assunto,
-            conhecimentoExigido: r.conhecimentoExigido ?? null,
-            nivelDificuldade: r.nivelDificuldade ?? null,
-            observacoes: r.observacoes ?? null,
-            ...(r.enunciado ? { enunciado: r.enunciado } : {}),
-            ...(r.gabarito ? { gabarito: r.gabarito } : {}),
-          },
-        });
-      }
-    }
+    const imported = await persistirQuestoesClassificadas(provaId, rows, { substituir });
 
     await refreshProvaGabaritoFlag(provaId);
 
@@ -105,7 +62,7 @@ export async function POST(
       orderBy: { numero: "asc" },
     });
     return NextResponse.json({
-      imported: rows.length,
+      imported,
       substituiu: substituir,
       avisos,
       questoes,

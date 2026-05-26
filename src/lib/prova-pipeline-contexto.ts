@@ -1,0 +1,106 @@
+import { labelTipoProva } from "@/lib/prova-tipo";
+import type { ProvaTipo } from "@/generated/prisma/client";
+
+/** Metadados da prova no cadastro — o PDF pode divergir; a IA deve inferir do documento. */
+export interface ProvaPipelineContext {
+  nome: string;
+  banca: string;
+  tipo: ProvaTipo;
+  ano?: number | null;
+  dia?: number | null;
+  caderno?: string | null;
+  descricao?: string | null;
+  totalEsperado: number;
+}
+
+export type FormatoLayoutProva =
+  | "desconhecido"
+  | "enem_por_area"
+  | "vestibular_secoes"
+  | "simulado_linear"
+  | "multiplos_tipos"
+  | "lista_fixacao";
+
+export type IdiomasEstrangeirosDetectados =
+  | "nenhum"
+  | "duplicata_ingles_espanhol"
+  | "somente_ingles"
+  | "somente_espanhol"
+  | "outro";
+
+export type EstruturaProvaDetectada = {
+  tipo_prova?: string;
+  formato_layout?: FormatoLayoutProva;
+  idiomas_estrangeiros?: IdiomasEstrangeirosDetectados;
+  total_questoes_detectado?: number;
+  numeros?: number[];
+  blocos?: Array<{ titulo: string; questao_inicio: number; questao_fim: number }>;
+  observacoes?: string;
+};
+
+export function montarContextoProvaTxt(ctx: ProvaPipelineContext): string {
+  const linhas = [
+    `Prova: ${ctx.nome}`,
+    `Banca/instituição: ${ctx.banca}`,
+    `Categoria no sistema: ${labelTipoProva(ctx.tipo)}`,
+    ctx.ano ? `Ano: ${ctx.ano}` : "",
+    ctx.dia != null ? `Dia/etapa (se ENEM): ${ctx.dia}` : "",
+    ctx.caderno ? `Caderno/tipo no cadastro: ${ctx.caderno}` : "",
+    ctx.descricao?.trim() ? `Notas do admin: ${ctx.descricao.trim().slice(0, 400)}` : "",
+    `Total de questões cadastrado (referência, pode diferir do PDF): ${ctx.totalEsperado}`,
+    "",
+    "Instrução: adapte-se ao layout REAL do PDF (ENEM, vestibular estadual, simulado de cursinho, lista, etc.).",
+    "Não assuma formato de uma banca específica — leia cabeçalhos, blocos e numeração como aparecem.",
+  ];
+  return linhas.filter(Boolean).join("\n");
+}
+
+export function resumoEstruturaParaClassificacao(estrutura: EstruturaProvaDetectada): string {
+  const partes: string[] = [];
+  if (estrutura.formato_layout && estrutura.formato_layout !== "desconhecido") {
+    partes.push(`Formato detectado: ${estrutura.formato_layout}`);
+  }
+  if (estrutura.tipo_prova?.trim()) {
+    partes.push(`Tipo/caderno no PDF: ${estrutura.tipo_prova.trim()}`);
+  }
+  if (estrutura.blocos?.length) {
+    const bl = estrutura.blocos
+      .slice(0, 12)
+      .map((b) => `«${b.titulo}» Q${b.questao_inicio}–${b.questao_fim}`)
+      .join("; ");
+    partes.push(`Blocos/seções: ${bl}`);
+  }
+  if (estrutura.idiomas_estrangeiros && estrutura.idiomas_estrangeiros !== "nenhum") {
+    partes.push(`Idiomas no PDF: ${estrutura.idiomas_estrangeiros}`);
+  }
+  if (estrutura.observacoes?.trim()) {
+    partes.push(`Observações da leitura: ${estrutura.observacoes.trim().slice(0, 280)}`);
+  }
+  return partes.join("\n");
+}
+
+/** Preferir inglês em duplicata EN/ES: automático quando o PDF indica. */
+export function resolverPoliticaIdiomas(
+  estrutura: EstruturaProvaDetectada,
+  opts?: { incluirBlocoEspanhol?: boolean; forcarExcluirEspanhol?: boolean }
+): { excluirBlocoEspanhol: boolean; automatico: boolean } {
+  if (opts?.incluirBlocoEspanhol === true) {
+    return { excluirBlocoEspanhol: false, automatico: false };
+  }
+  if (opts?.forcarExcluirEspanhol === true) {
+    return { excluirBlocoEspanhol: true, automatico: false };
+  }
+  const dup = estrutura.idiomas_estrangeiros === "duplicata_ingles_espanhol";
+  return { excluirBlocoEspanhol: dup, automatico: dup };
+}
+
+/** Mínimo de questões para aceitar estrutura — escala com tamanho da prova. */
+export function minimoQuestoesEstrutura(totalEsperado: number): number {
+  const ratio = parseFloat(process.env.PIPELINE_V2_MIN_COVERAGE ?? "0.55");
+  const r = Number.isFinite(ratio) && ratio > 0 && ratio <= 1 ? ratio : 0.55;
+  const ref = Math.max(1, Math.min(totalEsperado, 300));
+  if (ref <= 15) return Math.max(3, Math.ceil(ref * r));
+  if (ref <= 40) return Math.max(6, Math.ceil(ref * r));
+  if (ref <= 90) return Math.max(12, Math.ceil(ref * r));
+  return Math.max(20, Math.ceil(ref * r));
+}

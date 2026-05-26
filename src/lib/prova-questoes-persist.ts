@@ -1,6 +1,12 @@
 import type { QuestaoExtraida } from "@/lib/ai-extract-prova";
 import type { EtapaExtracao } from "@/lib/prova-extracao-pipeline";
+import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
 import { prisma } from "@/lib/prisma";
+import {
+  alinharLoteTaxonomia,
+  normalizarLabelAssunto,
+  normalizarLabelMateria,
+} from "@/lib/taxonomia-validacao";
 
 function truncarEnunciado(t?: string | null): string | null {
   if (!t?.trim()) return null;
@@ -8,6 +14,108 @@ function truncarEnunciado(t?: string | null): string | null {
   // Enunciado completo é base para classificação/pós-correção (auditoria e reclassificar).
   // Mantemos um limite alto para não cortar "comando + alternativas" em questões longas.
   return s.length > 6000 ? `${s.slice(0, 6000)}…` : s;
+}
+
+function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
+  const base = rows.map((r) => ({
+    numero: r.numero,
+    areaBloco: r.areaBloco?.trim() || undefined,
+    materia: normalizarLabelMateria(r.materia),
+    assunto: normalizarLabelAssunto(
+      normalizarLabelMateria(r.materia),
+      r.assunto
+    ),
+    conhecimentoExigido: r.conhecimentoExigido?.trim() || undefined,
+    nivelDificuldade: r.nivelDificuldade?.trim() || undefined,
+    observacoes: r.observacoes?.trim() || undefined,
+    enunciado: r.enunciado?.trim() || undefined,
+    gabarito:
+      r.gabarito?.trim().toUpperCase().replace(/[^A-E]/g, "").slice(0, 1) || undefined,
+  }));
+
+  const alinhadas = alinharLoteTaxonomia(
+    base.map((r) => ({
+      numero: r.numero,
+      trechoEnunciado: r.enunciado ?? "",
+      materia: r.materia,
+      assunto: r.assunto,
+      areaBloco: r.areaBloco ?? null,
+      conhecimentoExigido: r.conhecimentoExigido ?? null,
+      nivelDificuldade: r.nivelDificuldade ?? null,
+      observacoes: r.observacoes ?? null,
+    }))
+  );
+
+  return alinhadas.questoes.map((q, i) => ({
+    ...base[i],
+    materia: q.materia,
+    assunto: q.assunto,
+    areaBloco: q.areaBloco ?? undefined,
+    conhecimentoExigido: q.conhecimentoExigido ?? undefined,
+  }));
+}
+
+/** Grava classificação no banco (pipeline PDF ou CSV do ChatGPT). */
+export async function persistirQuestoesClassificadas(
+  provaId: string,
+  rows: ProvaQuestaoRow[],
+  opts?: { substituir?: boolean }
+): Promise<number> {
+  const substituir = opts?.substituir !== false;
+  const normalizadas = normalizarRows(rows);
+  if (normalizadas.length === 0) return 0;
+
+  if (substituir) {
+    await prisma.$transaction([
+      prisma.provaQuestao.deleteMany({ where: { provaId } }),
+      prisma.provaQuestao.createMany({
+        data: normalizadas.map((r) => ({
+          provaId,
+          numero: r.numero,
+          areaBloco: r.areaBloco ?? null,
+          materia: r.materia,
+          assunto: r.assunto,
+          conhecimentoExigido: r.conhecimentoExigido ?? null,
+          nivelDificuldade: r.nivelDificuldade ?? null,
+          observacoes: r.observacoes ?? null,
+          enunciado: truncarEnunciado(r.enunciado),
+          gabarito: r.gabarito ?? null,
+        })),
+      }),
+    ]);
+    return normalizadas.length;
+  }
+
+  let n = 0;
+  for (const r of normalizadas) {
+    await prisma.provaQuestao.upsert({
+      where: { provaId_numero: { provaId, numero: r.numero } },
+      create: {
+        provaId,
+        numero: r.numero,
+        areaBloco: r.areaBloco ?? null,
+        materia: r.materia,
+        assunto: r.assunto,
+        conhecimentoExigido: r.conhecimentoExigido ?? null,
+        nivelDificuldade: r.nivelDificuldade ?? null,
+        observacoes: r.observacoes ?? null,
+        enunciado: truncarEnunciado(r.enunciado),
+        gabarito: r.gabarito ?? null,
+      },
+      update: {
+        areaBloco: r.areaBloco ?? null,
+        materia: r.materia,
+        assunto: r.assunto,
+        conhecimentoExigido: r.conhecimentoExigido ?? null,
+        nivelDificuldade: r.nivelDificuldade ?? null,
+        observacoes: r.observacoes ?? null,
+        ...(r.enunciado ? { enunciado: truncarEnunciado(r.enunciado) } : {}),
+        ...(r.gabarito ? { gabarito: r.gabarito } : {}),
+      },
+    });
+    n++;
+  }
+  return n;
 }
 
 export async function upsertQuestoesExtraidas(

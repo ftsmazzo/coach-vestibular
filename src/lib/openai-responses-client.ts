@@ -97,23 +97,36 @@ function extrairTextoOutput(data: Record<string, unknown>): string {
 export async function responsesComPdfSchema<T>(opts: {
   fileId: string;
   instrucao: string;
+  systemPrompt?: string;
   schema: JsonSchemaFormat;
   model?: string;
 }): Promise<T> {
   const apiKey = getApiKey();
   const model = opts.model ?? modeloPipelinePrincipal();
 
+  const input: Array<{
+    role: string;
+    content: Array<{ type: string; text?: string; file_id?: string }>;
+  }> = [];
+
+  if (opts.systemPrompt?.trim()) {
+    input.push({
+      role: "system",
+      content: [{ type: "input_text", text: opts.systemPrompt.trim() }],
+    });
+  }
+
+  input.push({
+    role: "user",
+    content: [
+      { type: "input_text", text: opts.instrucao },
+      { type: "input_file", file_id: opts.fileId },
+    ],
+  });
+
   const body = {
     model,
-    input: [
-      {
-        role: "user",
-        content: [
-          { type: "input_text", text: opts.instrucao },
-          { type: "input_file", file_id: opts.fileId },
-        ],
-      },
-    ],
+    input,
     text: {
       format: {
         type: "json_schema",
@@ -143,19 +156,54 @@ export async function responsesComPdfSchema<T>(opts: {
   return JSON.parse(raw) as T;
 }
 
+export type ResponsesPdfOpts<T> = {
+  fileId: string;
+  instrucao: string;
+  systemPrompt?: string;
+  schema: JsonSchemaFormat;
+  taskName: string;
+  validate: (data: T) => void;
+};
+
+/** Primary → validação → retry → fallback (só se qualidade ou API falhar). */
+export async function responsesComPdfSchemaComValidacao<T>(
+  opts: ResponsesPdfOpts<T>
+): Promise<{ data: T; model: string; tier: "primary" | "fallback"; attempt: number }> {
+  const { executarComFallback } = await import("@/lib/executar-com-fallback");
+
+  const exec = await executarComFallback<T>({
+    taskName: opts.taskName,
+    run: (model) =>
+      responsesComPdfSchema<T>({
+        fileId: opts.fileId,
+        instrucao: opts.instrucao,
+        systemPrompt: opts.systemPrompt,
+        schema: opts.schema,
+        model,
+      }),
+    validate: opts.validate,
+  });
+
+  return {
+    data: exec.resultado,
+    model: exec.model,
+    tier: exec.tier,
+    attempt: exec.attempt,
+  };
+}
+
+/** @deprecated Use responsesComPdfSchemaComValidacao com validate. */
 export async function responsesComPdfSchemaComFallback<T>(opts: {
   fileId: string;
   instrucao: string;
+  systemPrompt?: string;
   schema: JsonSchemaFormat;
+  taskName?: string;
 }): Promise<{ data: T; model: string }> {
-  try {
-    const model = modeloPipelinePrincipal();
-    const data = await responsesComPdfSchema<T>({ ...opts, model });
-    return { data, model };
-  } catch (e1) {
-    const fallback = modeloPipelineFallback();
-    if (fallback === modeloPipelinePrincipal()) throw e1;
-    const data = await responsesComPdfSchema<T>({ ...opts, model: fallback });
-    return { data, model: fallback };
-  }
+  const r = await responsesComPdfSchemaComValidacao<T>({
+    ...opts,
+    taskName: opts.taskName ?? "openai",
+    validate: () => {},
+  });
+  return { data: r.data, model: r.model };
 }

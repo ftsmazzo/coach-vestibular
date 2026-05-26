@@ -585,12 +585,10 @@ export default function AdminProvaDetailPage() {
       )}
 
       <Card>
-        <h2 className="mb-2 font-semibold">Importar planilha CSV (GPT)</h2>
+        <h2 className="mb-2 font-semibold">Importar planilha CSV (alternativa)</h2>
         <p className="mb-3 text-sm text-slate-600">
-          Colunas usadas por questão: Número, Área/Bloco, Matéria, Assunto, Conhecimento,
-          Dificuldade, Observações, Enunciado (opcional), Gabarito (opcional). Colunas extras como Prova, Caderno, Tipo ou
-          Vestibular são <strong>ignoradas</strong> — os metadados vêm do cadastro acima. Aceita CSV
-          com vírgula ou ponto-e-vírgula (Excel BR). Template:{" "}
+          Se você já classificou no ChatGPT e exportou CSV, importe aqui — mesmo destino: banco de
+          questões. Ou use «Já tenho CSV do ChatGPT» no bloco roxo acima. Template:{" "}
           <code className="text-xs">docs/templates/prova-questoes.csv</code>
         </p>
         <input
@@ -611,14 +609,6 @@ export default function AdminProvaDetailPage() {
           />
           Só atualizar questões do CSV (recomendado após auditoria — não apaga as demais)
         </label>
-        <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-          <input
-            type="checkbox"
-            checked={csvIncluirGabarito}
-            onChange={(e) => setCsvIncluirGabarito(e.target.checked)}
-          />
-          Importar coluna Gabarito do CSV (só se for gabarito oficial)
-        </label>
         <Button
           type="button"
           className="mt-3"
@@ -636,9 +626,17 @@ export default function AdminProvaDetailPage() {
       <Card>
         <h2 className="mb-2 font-semibold">Gabarito oficial (somente admin)</h2>
         <p className="mb-2 text-sm text-slate-600">
-          A extração por IA <strong>não</strong> deve preencher gabarito. Se o ENEM ainda tiver letras
-          erradas da IA antiga, limpe tudo e cole o gabarito oficial abaixo.
+          O pipeline de classificação <strong>não inventa</strong> gabarito. Cole o oficial abaixo
+          e marque «Aplicar gabarito ao gravar» — o sistema cruza em código ao gravar PDF ou CSV.
         </p>
+        <label className="mb-2 flex items-center gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={csvIncluirGabarito}
+            onChange={(e) => setCsvIncluirGabarito(e.target.checked)}
+          />
+          Aplicar gabarito ao gravar (pipeline PDF ou import CSV)
+        </label>
         <div className="mb-3 flex flex-wrap gap-2">
           <Button type="button" variant="secondary" onClick={limparGabaritos}>
             Zerar todos os gabaritos

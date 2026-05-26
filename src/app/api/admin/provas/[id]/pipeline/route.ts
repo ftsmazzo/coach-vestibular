@@ -4,49 +4,9 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 import { executarPipelineProvaV2 } from "@/lib/prova-pipeline-v2";
-import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
+import { persistirQuestoesClassificadas } from "@/lib/prova-questoes-persist";
 
 export const maxDuration = 600;
-
-async function persistirRows(
-  provaId: string,
-  rows: ProvaQuestaoRow[],
-  substituir: boolean
-): Promise<number> {
-  if (substituir) {
-    await prisma.provaQuestao.deleteMany({ where: { provaId } });
-  }
-  let n = 0;
-  for (const r of rows) {
-    await prisma.provaQuestao.upsert({
-      where: { provaId_numero: { provaId, numero: r.numero } },
-      create: {
-        provaId,
-        numero: r.numero,
-        areaBloco: r.areaBloco ?? null,
-        materia: r.materia,
-        assunto: r.assunto,
-        conhecimentoExigido: r.conhecimentoExigido ?? null,
-        nivelDificuldade: r.nivelDificuldade ?? null,
-        observacoes: r.observacoes ?? null,
-        enunciado: r.enunciado ?? null,
-        gabarito: r.gabarito?.toUpperCase() ?? null,
-      },
-      update: {
-        areaBloco: r.areaBloco ?? null,
-        materia: r.materia,
-        assunto: r.assunto,
-        conhecimentoExigido: r.conhecimentoExigido ?? null,
-        nivelDificuldade: r.nivelDificuldade ?? null,
-        observacoes: r.observacoes ?? null,
-        ...(r.enunciado ? { enunciado: r.enunciado } : {}),
-        ...(r.gabarito ? { gabarito: r.gabarito.toUpperCase() } : {}),
-      },
-    });
-    n++;
-  }
-  return n;
-}
 
 export async function POST(
   request: Request,
@@ -60,9 +20,10 @@ export async function POST(
   if (!prova) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
 
   const contentType = request.headers.get("content-type") ?? "";
-  let aplicar = false;
+  let aplicar = true;
   let substituir = true;
   let incluirGabarito = false;
+  let incluirBlocoEspanhol = false;
   let excluirBlocoEspanhol = false;
   let gabaritoTexto = "";
   let pdfBuffer: Buffer | null = null;
@@ -77,9 +38,10 @@ export async function POST(
         { status: 413 }
       );
     }
-    aplicar = form.get("aplicar") === "true";
+    aplicar = form.get("aplicar") !== "false";
     substituir = form.get("substituir") !== "false";
     incluirGabarito = form.get("incluirGabarito") === "true";
+    incluirBlocoEspanhol = form.get("incluirBlocoEspanhol") === "true";
     excluirBlocoEspanhol = form.get("excluirBlocoEspanhol") === "true";
     gabaritoTexto = String(form.get("gabarito") ?? "").trim();
     const file = form.get("file") as File | null;
@@ -90,9 +52,10 @@ export async function POST(
   } else {
     const body = z
       .object({
-        aplicar: z.boolean().default(false),
+        aplicar: z.boolean().default(true),
         substituir: z.boolean().default(true),
         incluirGabarito: z.boolean().default(false),
+        incluirBlocoEspanhol: z.boolean().default(false),
         excluirBlocoEspanhol: z.boolean().default(false),
         gabarito: z.string().optional(),
         pdfBase64: z.string().optional(),
@@ -101,13 +64,14 @@ export async function POST(
     aplicar = body.aplicar;
     substituir = body.substituir;
     incluirGabarito = body.incluirGabarito;
+    incluirBlocoEspanhol = body.incluirBlocoEspanhol;
     excluirBlocoEspanhol = body.excluirBlocoEspanhol;
     gabaritoTexto = body.gabarito?.trim() ?? "";
     if (body.pdfBase64) {
       pdfBuffer = Buffer.from(body.pdfBase64, "base64");
     }
     if (!pdfBuffer) {
-      return NextResponse.json({ error: "Envie o PDF (multipart ou pdfBase64)." }, { status: 400 });
+      return NextResponse.json({ error: "Envie o PDF." }, { status: 400 });
     }
   }
 
@@ -121,24 +85,27 @@ export async function POST(
       {
         nome: prova.nome,
         banca: prova.banca,
+        tipo: prova.tipo,
         ano: prova.ano,
+        dia: prova.dia,
         caderno: prova.caderno,
+        descricao: prova.descricao,
         totalEsperado: prova.totalQuestoes,
-        tipoProva: prova.tipo,
       },
       {
         gabaritoTexto,
         incluirGabarito,
+        incluirBlocoEspanhol,
         excluirBlocoEspanhol,
+        gerarCsv: !aplicar,
       }
     );
 
-    let gravadas = 0;
     if (resultado.rows.length === 0) {
       return NextResponse.json(
         {
           error:
-            "Nenhuma questão classificada. Confira o PDF (texto selecionável) ou marque «Ignorar Espanhol» se aplicável.",
+            "Nenhuma questão classificada. Confira o PDF (texto selecionável), o total de questões no cadastro e se o arquivo corresponde à prova.",
           avisos: resultado.avisos,
           etapas: resultado.etapas,
         },
@@ -146,16 +113,24 @@ export async function POST(
       );
     }
 
+    let gravadas = 0;
     if (aplicar) {
-      gravadas = await persistirRows(provaId, resultado.rows, substituir);
+      gravadas = await persistirQuestoesClassificadas(provaId, resultado.rows, {
+        substituir,
+      });
       await refreshProvaGabaritoFlag(provaId);
     }
 
     return NextResponse.json({
-      ...resultado,
       aplicado: aplicar,
       gravadas,
+      totalClassificadas: resultado.rows.length,
       totalEsperado: prova.totalQuestoes,
+      modeloUsado: resultado.modeloUsado,
+      avisos: resultado.avisos,
+      etapas: resultado.etapas,
+      rows: aplicar ? undefined : resultado.rows,
+      csv: resultado.csv || undefined,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erro no pipeline";
