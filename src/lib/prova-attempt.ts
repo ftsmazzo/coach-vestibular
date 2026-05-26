@@ -325,9 +325,9 @@ async function aplicarPlanoEQuests(
 }
 
 /** Recalcula diagnóstico, plano e quests a partir do gabarito já salvo (sem redigitar). */
-export async function recalcularDiagnosticoExam(examId: string, userId: string) {
-  const exam = await prisma.exam.findFirst({
-    where: { id: examId, userId },
+export async function recalcularDiagnosticoExam(examId: string, requestUserId?: string) {
+  const exam = await prisma.exam.findUnique({
+    where: { id: examId },
     include: {
       prova: { include: { questoes: true } },
       questionAttempts: { include: { provaQuestao: true }, orderBy: { numero: "asc" } },
@@ -336,6 +336,17 @@ export async function recalcularDiagnosticoExam(examId: string, userId: string) 
   });
 
   if (!exam) throw new Error("EXAM_NOT_FOUND");
+
+  if (requestUserId) {
+    const reqUser = await prisma.user.findUnique({ where: { id: requestUserId } });
+    if (!reqUser) throw new Error("UNAUTHORIZED");
+    if (exam.userId !== requestUserId && reqUser.role !== "ADMIN") {
+      throw new Error("UNAUTHORIZED");
+    }
+  }
+
+  const userId = exam.userId;
+
   if (!exam.prova || !exam.provaId) throw new Error("SEM_PROVA_VINCULADA");
   if (exam.questionAttempts.length === 0) throw new Error("SEM_QUESTOES");
 

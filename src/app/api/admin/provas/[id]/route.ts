@@ -18,6 +18,17 @@ export async function GET(
     include: {
       questoes: { orderBy: { numero: "asc" } },
       _count: { select: { tentativas: true } },
+      tentativas: {
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { data: "desc" },
+      },
     },
   });
   if (!prova) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });

@@ -16,6 +16,9 @@ export async function POST(
     return NextResponse.json(result);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro";
+    if (msg === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "Você não tem permissão para recalcular esta tentativa" }, { status: 403 });
+    }
     if (msg === "EXAM_NOT_FOUND") {
       return NextResponse.json({ error: "Registro não encontrado" }, { status: 404 });
     }

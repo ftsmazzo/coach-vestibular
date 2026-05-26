@@ -46,7 +46,7 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
     }, {} as Record<string, { tipoErro: string; observacao: string }>)
   );
 
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error" | "saved_no_recalc">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleChangeError = (attemptId: string, value: string) => {
@@ -57,7 +57,7 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
         tipoErro: value,
       },
     }));
-    if (saveStatus === "saved") setSaveStatus("idle");
+    if (saveStatus === "saved" || saveStatus === "saved_no_recalc") setSaveStatus("idle");
   };
 
   const handleChangeObservation = (attemptId: string, value: string) => {
@@ -68,7 +68,7 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
         observacao: value,
       },
     }));
-    if (saveStatus === "saved") setSaveStatus("idle");
+    if (saveStatus === "saved" || saveStatus === "saved_no_recalc") setSaveStatus("idle");
   };
 
   const handleSave = async () => {
@@ -84,7 +84,8 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
         })),
       };
 
-      const res = await fetch(`/api/exams/${examId}/classificar-erro`, {
+      // 1. Save classification
+      const resClassify = await fetch(`/api/exams/${examId}/classificar-erro`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,8 +93,23 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
+      if (!resClassify.ok) {
         throw new Error("Falha ao salvar as alterações.");
+      }
+
+      // 2. Recalculate study plan using the endpoint
+      const resRecalc = await fetch(`/api/exams/${examId}/recalcular`, {
+        method: "POST",
+      });
+
+      if (!resRecalc.ok) {
+        const recalcData = await resRecalc.json();
+        if (recalcData.error) {
+          setSaveStatus("saved_no_recalc");
+          setErrorMessage(recalcData.error);
+          return;
+        }
+        throw new Error("Falha ao atualizar o plano de estudos.");
       }
 
       setSaveStatus("saved");
@@ -196,7 +212,13 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
         <div>
           {saveStatus === "saved" && (
             <p className="text-sm font-medium text-emerald-600 flex items-center gap-1.5 animate-fade-in">
-              <span>✓</span> Análise salva com sucesso! O coach já absorveu os seus erros.
+              <span>✓</span> Análise salva e Plano de Estudos atualizado com sucesso pelo Gemini! 🧠
+            </p>
+          )}
+          {saveStatus === "saved_no_recalc" && (
+            <p className="text-sm font-medium text-amber-600 flex flex-col gap-0.5 animate-fade-in">
+              <span className="flex items-center gap-1.5"><span>✓</span> Análise salva com sucesso!</span>
+              <span className="text-xs text-slate-500 font-normal">Nota: O plano não pôde ser recalculado ({errorMessage}).</span>
             </p>
           )}
           {saveStatus === "error" && (
@@ -207,7 +229,7 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
           {saveStatus === "saving" && (
             <p className="text-sm text-slate-500 flex items-center gap-2">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-              Salvando sua análise metacognitiva...
+              Processando análise e recalculando seu plano de estudos...
             </p>
           )}
         </div>
@@ -217,7 +239,7 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
           disabled={saveStatus === "saving"}
           className="px-6 py-2.5 shadow-sm font-bold flex items-center gap-2"
         >
-          {saveStatus === "saving" ? "Salvando..." : "Salvar Análise"} 🧠
+          {saveStatus === "saving" ? "Atualizando..." : "Salvar Análise e Atualizar Meu Plano de Estudos"} 🧠
         </Button>
       </div>
     </div>

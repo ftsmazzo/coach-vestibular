@@ -53,6 +53,71 @@ interface Prova {
   questoes: ProvaQuestao[];
   temTextoFonte?: boolean;
   tamanhoTextoFonte?: number;
+  tentativas?: {
+    id: string;
+    data: string;
+    nota: number | null;
+    user: {
+      name: string;
+      email: string;
+    };
+  }[];
+}
+
+function ForcarRecalculoButton({ examId }: { examId: string }) {
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleRecalculate = async () => {
+    setStatus("loading");
+    setErrorMessage("");
+    try {
+      const res = await fetch(`/api/exams/${examId}/recalcular`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Erro ao recalcular");
+      }
+      setStatus("success");
+      setTimeout(() => setStatus("idle"), 3000);
+    } catch (err: any) {
+      console.error(err);
+      setStatus("error");
+      setErrorMessage(err.message || "Erro desconhecido");
+    }
+  };
+
+  return (
+    <div className="inline-flex flex-col items-end gap-1">
+      <Button
+        type="button"
+        disabled={status === "loading"}
+        onClick={handleRecalculate}
+        variant={status === "success" ? "primary" : status === "error" ? "danger" : "secondary"}
+        className={`px-3 py-1.5 text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+          status === "success"
+            ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+            : status === "idle"
+            ? "bg-slate-100 text-slate-800 hover:bg-slate-200"
+            : ""
+        }`}
+      >
+        {status === "loading" && (
+          <span className="h-3 w-3 animate-spin rounded-full border border-teal-600 border-t-transparent" />
+        )}
+        {status === "loading" && "Recalculando..."}
+        {status === "success" && "✓ Sucesso!"}
+        {status === "error" && "✗ Erro"}
+        {status === "idle" && "Forçar Recálculo de Plano (Gemini) 🧠"}
+      </Button>
+      {errorMessage && (
+        <span className="text-[10px] font-medium text-rose-600 max-w-[200px] text-right truncate" title={errorMessage}>
+          {errorMessage}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export default function AdminProvaDetailPage() {
@@ -657,6 +722,67 @@ export default function AdminProvaDetailPage() {
         </div>
         {prova.questoes.length === 0 && (
           <p className="mt-4 text-slate-500">Importe um CSV ou extraia com IA para preencher o banco.</p>
+        )}
+      </Card>
+
+      {/* Histórico de Tentativas dos Alunos */}
+      <Card>
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <span>📊</span> Histórico de Tentativas de Alunos
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Gerenciamento das tentativas realizadas pelos alunos e atualização arbitrária de snapshots diagnósticos via Gemini.
+            </p>
+          </div>
+          <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800">
+            {prova.tentativas?.length ?? 0} { (prova.tentativas?.length ?? 0) === 1 ? "tentativa" : "tentativas" }
+          </span>
+        </div>
+
+        {prova.tentativas && prova.tentativas.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b text-slate-500">
+                  <th className="p-3 font-semibold text-xs uppercase tracking-wider">Aluno</th>
+                  <th className="p-3 font-semibold text-xs uppercase tracking-wider">E-mail</th>
+                  <th className="p-3 font-semibold text-xs uppercase tracking-wider">Data de Realização</th>
+                  <th className="p-3 font-semibold text-xs uppercase tracking-wider text-center">Nota / Acertos</th>
+                  <th className="p-3 font-semibold text-xs uppercase tracking-wider text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {prova.tentativas.map((attempt) => (
+                  <tr key={attempt.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="p-3 font-medium text-slate-900">{attempt.user.name}</td>
+                    <td className="p-3 text-slate-600">{attempt.user.email}</td>
+                    <td className="p-3 text-slate-600">
+                      {new Date(attempt.data).toLocaleDateString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="p-3 text-slate-900 font-bold text-center">
+                      {attempt.nota != null ? `${attempt.nota.toFixed(1)}%` : "—"}
+                    </td>
+                    <td className="p-3 text-right">
+                      <ForcarRecalculoButton examId={attempt.id} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-slate-500">
+            <p className="text-sm">Nenhum aluno realizou esta prova ainda.</p>
+            <p className="text-xs text-slate-400 mt-1">As tentativas aparecerão aqui assim que forem finalizadas.</p>
+          </div>
         )}
       </Card>
 
