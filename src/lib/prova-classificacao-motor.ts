@@ -29,14 +29,9 @@ const allowedTaxonomyStr = taxonomy.materias
   })
   .join("\n");
 
-/** Extração pode usar mini; classificação pede modelo mais capaz. */
-export function modeloClassificacao(): string {
-  const passo2 = process.env.OPENAI_MODEL_PASSO_2?.trim();
-  if (passo2) return passo2;
-  const base = process.env.OPENAI_MODEL?.trim();
-  if (base && base !== "gpt-4o-mini") return base;
-  return "gpt-4o";
-}
+import { modeloClassificacao } from "@/lib/openai-modelos";
+
+export { modeloClassificacao };
 
 function norm(s: string): string {
   return s

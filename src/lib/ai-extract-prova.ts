@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { modeloExtracao } from "@/lib/openai-modelos";
 import {
   executarPipelineExtracao,
   type EtapaExtracao,
@@ -60,7 +61,7 @@ async function callOpenAI(systemPrompt: string, userContent: string): Promise<an
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      model: modeloExtracao(),
       temperature: 0.1,
       response_format: { type: "json_object" },
       messages: [

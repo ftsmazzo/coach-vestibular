@@ -1,18 +1,7 @@
-function modeloPipelinePrincipal(): string {
-  return (
-    process.env.OPENAI_MODEL_PIPELINE?.trim() ||
-    process.env.OPENAI_MODEL_PASSO_2?.trim() ||
-    "gpt-4o"
-  );
-}
-
-function modeloPipelineFallback(): string {
-  return (
-    process.env.OPENAI_MODEL_PIPELINE_FALLBACK?.trim() ||
-    process.env.OPENAI_MODEL_PASSO_2?.trim() ||
-    "gpt-4o"
-  );
-}
+import {
+  modeloPipelineFallback,
+  modeloPipelinePrincipal,
+} from "@/lib/openai-modelos";
 
 export type FallbackExecResult<T> = {
   model: string;

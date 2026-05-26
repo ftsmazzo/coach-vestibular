@@ -19,6 +19,7 @@ import {
   normalizarLabelMateria,
 } from "@/lib/taxonomia-validacao";
 import { taxonomy } from "@/lib/taxonomy";
+import { modeloExtracao } from "@/lib/openai-modelos";
 
 export { inferirMateriaPorEnunciado } from "@/lib/prova-heuristicas";
 export { normalizarLabelAssunto, normalizarLabelMateria } from "@/lib/taxonomia-validacao";
@@ -209,7 +210,7 @@ async function callOpenAI(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: modelOverride ?? process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      model: modelOverride ?? modeloExtracao(),
       temperature: 0.1,
       response_format: { type: "json_object" },
       messages: [

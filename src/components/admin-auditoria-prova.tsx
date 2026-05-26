@@ -87,7 +87,7 @@ export function AdminAuditoriaProva({ provaId, onQuestoesAtualizadas }: Props) {
       });
       onQuestoesAtualizadas?.();
       setMsg(
-        `Questão ${numero} atualizada: ${data.materia} — ${data.assunto}. Conferindo auditoria…`
+        `Questão ${numero} atualizada (${data.modeloUsado ?? "IA"}): ${data.materia} — ${data.assunto}. Conferindo auditoria…`
       );
       await auditar();
     } catch {
@@ -101,8 +101,9 @@ export function AdminAuditoriaProva({ provaId, onQuestoesAtualizadas }: Props) {
     <Card className="border-violet-200 bg-violet-50/40">
       <h2 className="mb-2 font-semibold text-violet-900">Auditoria e correção</h2>
       <p className="mb-3 text-sm text-violet-900">
-        1) Auditar → 2) Para cada questão listada, cole o texto do caderno e clique em Reclassificar →
-        3) Auditar de novo até a lista ficar vazia.
+        1) <strong>Auditar</strong> — regras no servidor, sem IA. 2) <strong>Reclassificar</strong> — usa o
+        mesmo modelo do pipeline (<code className="text-xs">OPENAI_MODEL_PIPELINE</code>). 3) Auditar de
+        novo até a lista ficar vazia.
       </p>
       <Button type="button" disabled={auditing} onClick={auditar}>
         {auditing ? "Analisando..." : "Auditar classificações"}

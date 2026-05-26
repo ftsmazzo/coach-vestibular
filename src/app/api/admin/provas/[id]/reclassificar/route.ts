@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { classificarQuestaoUnica } from "@/lib/prova-classificacao-motor";
+import { modeloClassificacao } from "@/lib/openai-modelos";
 import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 import { upsertQuestoesExtraidas } from "@/lib/prova-questoes-persist";
@@ -56,6 +57,7 @@ export async function POST(
     return NextResponse.json({
       ok: true,
       numero,
+      modeloUsado: modeloClassificacao(),
       materia: atualizada?.materia ?? salva.materia,
       assunto: atualizada?.assunto ?? salva.assunto,
       conhecimentoExigido: atualizada?.conhecimentoExigido ?? salva.conhecimentoExigido,
