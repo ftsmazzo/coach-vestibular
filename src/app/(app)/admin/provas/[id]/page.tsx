@@ -126,6 +126,7 @@ export default function AdminProvaDetailPage() {
   const [msg, setMsg] = useState("");
   const [numerosAlerta, setNumerosAlerta] = useState<number[]>([]);
   const [editarQuestaoNumero, setEditarQuestaoNumero] = useState<number | null>(null);
+  const [atualizarAuditoria, setAtualizarAuditoria] = useState(0);
   const [meta, setMeta] = useState({
     banca: "",
     ano: "",
@@ -159,6 +160,11 @@ export default function AdminProvaDetailPage() {
       });
     }
   }, [id]);
+
+  const aoAtualizarQuestoes = useCallback(async () => {
+    await load();
+    setAtualizarAuditoria((n) => n + 1);
+  }, [load]);
 
   useEffect(() => {
     load();
@@ -599,7 +605,7 @@ export default function AdminProvaDetailPage() {
           numerosAlerta={numerosAlerta}
           abrirEdicaoNumero={editarQuestaoNumero}
           onEdicaoAberta={() => setEditarQuestaoNumero(null)}
-          onAtualizado={load}
+          onAtualizado={aoAtualizarQuestoes}
           onMensagem={setMsg}
         />
       )}
@@ -609,9 +615,10 @@ export default function AdminProvaDetailPage() {
           provaId={prova.id}
           textoFonteColado={textoProva}
           orientacoesSalvas={orientacoesSalvas}
-          onQuestoesAtualizadas={load}
+          onQuestoesAtualizadas={aoAtualizarQuestoes}
           onAlertasChange={setNumerosAlerta}
           onEditarQuestao={(numero) => setEditarQuestaoNumero(numero)}
+          atualizarAuditoria={atualizarAuditoria}
         />
       )}
 

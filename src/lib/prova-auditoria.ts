@@ -17,6 +17,22 @@ import {
   encontrarMateriaDoAssunto,
 } from "./taxonomia-validacao";
 
+const MARCA_CONFERIDO = "[CONFERIDO]";
+
+/** Revisor salvou a questão como conferida — não aplicar heurísticas “suspeitas”. */
+export function questaoConferidaPeloRevisor(observacoes?: string | null): boolean {
+  return observacoes?.includes(MARCA_CONFERIDO) ?? false;
+}
+
+export function marcarObservacoesConferidas(
+  observacoes: string,
+  conferida: boolean
+): string {
+  const semMarca = observacoes.replace(/\[CONFERIDO\]\s*/gi, "").trim();
+  if (!conferida) return semMarca;
+  return semMarca ? `${MARCA_CONFERIDO} ${semMarca}` : MARCA_CONFERIDO;
+}
+
 export interface QuestaoAuditoriaInput {
   numero: number;
   materia: string;
@@ -86,7 +102,11 @@ function conhecimentoParecePortuguesNativo(q: QuestaoAuditoriaInput): boolean {
 }
 
 /** Regras em TODA questão — não depende de vizinho ou proximidade. */
-function motivosRegrasEstruturais(q: QuestaoAuditoriaInput, textoQ: string): string[] {
+function motivosRegrasEstruturais(
+  q: QuestaoAuditoriaInput,
+  textoQ: string,
+  conferida: boolean
+): string[] {
   const out: string[] = [];
   const mat = q.materia.trim();
   const assunto = q.assunto.trim();
@@ -117,22 +137,28 @@ function motivosRegrasEstruturais(q: QuestaoAuditoriaInput, textoQ: string): str
     }
   }
 
-  if (mat === "Biologia" && blob.length > 20 && !temGatilhoBiologico(blob)) {
-    out.push(
-      "Biologia sem gatilho biológico claro (célula, DNA, ecologia, fisiologia, etc.) no texto salvo."
-    );
-  }
+  if (!conferida) {
+    if (mat === "Biologia" && blob.length > 20 && !temGatilhoBiologico(blob)) {
+      out.push(
+        "Biologia sem gatilho biológico claro (célula, DNA, ecologia, fisiologia, etc.) no texto salvo."
+      );
+    }
 
-  if (
-    mat === "Geografia" &&
-    q.areaBloco?.toLowerCase().includes("linguagem") &&
-    !temGatilhoGeografico(blob)
-  ) {
-    out.push("Geografia em bloco de Linguagens sem conteúdo cartográfico/espacial explícito.");
-  }
+    if (
+      mat === "Geografia" &&
+      q.areaBloco?.toLowerCase().includes("linguagem") &&
+      !temGatilhoGeografico(blob)
+    ) {
+      out.push("Geografia em bloco de Linguagens sem conteúdo cartográfico/espacial explícito.");
+    }
 
-  if (mat === "Física" && /bioma|ecologia|biodiversidade|hotspot/i.test(blob) && !/força|circuito|cinemática|cinematica|velocidade|newton|joule|optica|óptica/i.test(blob)) {
-    out.push("Possível confusão: parece conteúdo de Biologia/Geo, não Física.");
+    if (
+      mat === "Física" &&
+      /bioma|ecologia|biodiversidade|hotspot/i.test(blob) &&
+      !/força|circuito|cinemática|cinematica|velocidade|newton|joule|optica|óptica/i.test(blob)
+    ) {
+      out.push("Possível confusão: parece conteúdo de Biologia/Geo, não Física.");
+    }
   }
 
   return out;
@@ -153,6 +179,10 @@ function motivosConflitoConteudo(
   if (humanas.has(ni) && humanas.has(na)) return [];
   const natureza = new Set(["biologia", "fisica", "quimica"]);
   if (natureza.has(ni) && natureza.has(na)) return [];
+  // Comando em português é normal em Humanas/Filosofia/etc. — não alertar “parece Português”.
+  if (ni === "portugues" && (humanas.has(na) || na === "filosofia" || na === "sociologia")) {
+    return [];
+  }
   return [
     `Conteúdo do texto sugere «${inferida}», mas está gravado como «${q.materia}» — edite na tabela ou reclassifique.`,
   ];
@@ -249,19 +279,23 @@ export function auditarClassificacaoQuestoes(
     const textoQ =
       q.enunciado?.trim() || trechos.get(q.numero) || "";
 
-    for (const m of motivosRegrasEstruturais(q, textoQ)) {
+    const conferida = questaoConferidaPeloRevisor(q.observacoes);
+
+    for (const m of motivosRegrasEstruturais(q, textoQ, conferida)) {
       if (!motivos.includes(m)) motivos.push(m);
     }
 
-    for (const m of motivosRevisaoIdioma(q, qMat, textoQ)) {
-      if (!motivos.includes(m)) motivos.push(m);
+    if (!conferida) {
+      for (const m of motivosRevisaoIdioma(q, qMat, textoQ)) {
+        if (!motivos.includes(m)) motivos.push(m);
+      }
+
+      for (const m of motivosConflitoConteudo(q, textoQ)) {
+        if (!motivos.includes(m)) motivos.push(m);
+      }
     }
 
-    for (const m of motivosConflitoConteudo(q, textoQ)) {
-      if (!motivos.includes(m)) motivos.push(m);
-    }
-
-    if (prev && next) {
+    if (!conferida && prev && next) {
       const pk = chave(prev);
       const nk = chave(next);
       const prevMat = normalizarMateria(prev.materia);
@@ -279,21 +313,23 @@ export function auditarClassificacaoQuestoes(
     }
 
     let parRemoto: AlertaAuditoria["parRemoto"];
-    for (const other of sorted) {
-      if (other.numero === q.numero) continue;
-      const dist = Math.abs(other.numero - q.numero);
-      if (dist < 5 || dist > 15) continue;
-      if (chave(other) !== qKey) continue;
-      if (prev && chave(prev) === qKey) continue;
-      if (next && chave(next) === qKey) continue;
-      const prevMat = prev ? normalizarMateria(prev.materia) : "";
-      const nextMat = next ? normalizarMateria(next.materia) : "";
-      if (prevMat === qMat || nextMat === qMat) continue;
-      parRemoto = { numero: other.numero, classificacao: resumo(other) };
-      motivos.push(
-        `Classificação idêntica à questão ${other.numero}, mas vizinhos ${prev?.numero ?? "—"} e ${next?.numero ?? "—"} são de outra matéria — possível erro de quebra de página.`
-      );
-      break;
+    if (!conferida) {
+      for (const other of sorted) {
+        if (other.numero === q.numero) continue;
+        const dist = Math.abs(other.numero - q.numero);
+        if (dist < 5 || dist > 15) continue;
+        if (chave(other) !== qKey) continue;
+        if (prev && chave(prev) === qKey) continue;
+        if (next && chave(next) === qKey) continue;
+        const prevMat = prev ? normalizarMateria(prev.materia) : "";
+        const nextMat = next ? normalizarMateria(next.materia) : "";
+        if (prevMat === qMat || nextMat === qMat) continue;
+        parRemoto = { numero: other.numero, classificacao: resumo(other) };
+        motivos.push(
+          `Classificação idêntica à questão ${other.numero}, mas vizinhos ${prev?.numero ?? "—"} e ${next?.numero ?? "—"} são de outra matéria — possível erro de quebra de página.`
+        );
+        break;
+      }
     }
 
     if (motivos.length === 0) continue;

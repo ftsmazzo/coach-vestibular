@@ -69,11 +69,5 @@ export function inferirMateriaPorEnunciado(enunciado: string): string | null {
   if (/gramatica|regencia verbal|crase|sintaxe|morfologia|pontuacao/.test(n)) {
     return "Português";
   }
-  if (
-    /de acordo com o texto|segundo o texto|com base no texto|no fragmento|na entrevista/.test(n) &&
-    !/hotspot|biodiversidade|tetraedro|matriz|funcao de variavel|cinematica|estequiometria/.test(n)
-  ) {
-    return "Português";
-  }
   return null;
 }

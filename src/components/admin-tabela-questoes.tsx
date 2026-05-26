@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@/components/ui";
 import { taxonomy } from "@/lib/taxonomy";
+import {
+  marcarObservacoesConferidas,
+  questaoConferidaPeloRevisor,
+} from "@/lib/prova-auditoria";
 
 export interface QuestaoRow {
   id: string;
@@ -45,7 +49,7 @@ function formDeQuestao(q: QuestaoRow): FormEdicao {
     assunto: q.assunto,
     conhecimento: q.conhecimentoExigido ?? "",
     dificuldade: q.nivelDificuldade ?? "",
-    observacoes: q.observacoes ?? "",
+    observacoes: (q.observacoes ?? "").replace(/\[CONFERIDO\]\s*/gi, "").trim(),
   };
 }
 
@@ -62,6 +66,7 @@ export function AdminTabelaQuestoes({
   const [editando, setEditando] = useState<QuestaoRow | null>(null);
   const [form, setForm] = useState<FormEdicao | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [conferida, setConferida] = useState(true);
   const [filtro, setFiltro] = useState<"todas" | "alerta">("todas");
 
   const materias = taxonomy.materias.map((m) => m.label);
@@ -84,6 +89,9 @@ export function AdminTabelaQuestoes({
   function abrirModal(q: QuestaoRow) {
     setEditando(q);
     setForm(formDeQuestao(q));
+    setConferida(
+      questaoConferidaPeloRevisor(q.observacoes) || !q.observacoes?.trim()
+    );
   }
 
   function fecharModal() {
@@ -107,7 +115,8 @@ export function AdminTabelaQuestoes({
             assunto: form.assunto.trim(),
             conhecimentoExigido: form.conhecimento.trim() || null,
             nivelDificuldade: form.dificuldade.trim() || null,
-            observacoes: form.observacoes.trim() || null,
+            observacoes:
+              marcarObservacoesConferidas(form.observacoes, conferida) || null,
           }),
         }
       );
@@ -320,11 +329,20 @@ export function AdminTabelaQuestoes({
                 <textarea
                   rows={2}
                   className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
-                  value={form.observacoes}
+                  value={form.observacoes.replace(/\[CONFERIDO\]\s*/gi, "")}
                   onChange={(e) =>
                     setForm((f) => f && { ...f, observacoes: e.target.value })
                   }
                 />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={conferida}
+                  onChange={(e) => setConferida(e.target.checked)}
+                />
+                Conferida por mim — remove alertas de heurística (mantém só erro grave
+                de bloco/taxonomia)
               </label>
             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button, Card } from "@/components/ui";
 
 interface AlertaAuditoria {
@@ -25,6 +25,8 @@ interface Props {
   onQuestoesAtualizadas?: () => void;
   onAlertasChange?: (numeros: number[]) => void;
   onEditarQuestao?: (numero: number) => void;
+  /** Incrementa após salvar questão — reexecuta auditoria se já rodou antes. */
+  atualizarAuditoria?: number;
 }
 
 export function AdminAuditoriaProva({
@@ -34,6 +36,7 @@ export function AdminAuditoriaProva({
   onQuestoesAtualizadas,
   onAlertasChange,
   onEditarQuestao,
+  atualizarAuditoria = 0,
 }: Props) {
   const [auditing, setAuditing] = useState(false);
   const [resultado, setResultado] = useState<ResultadoAuditoria | null>(null);
@@ -78,6 +81,13 @@ export function AdminAuditoriaProva({
       setAuditing(false);
     }
   }, [provaId, textoFonteColado, onAlertasChange]);
+
+  useEffect(() => {
+    if (atualizarAuditoria > 0 && resultado !== null) {
+      void auditar();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só reauditar após salvar
+  }, [atualizarAuditoria]);
 
   function abrirReclassificar(a: AlertaAuditoria) {
     setReclassificarNumero(a.numero);
