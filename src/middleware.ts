@@ -39,5 +39,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    /*
+     * Uploads grandes (PDF/texto da prova, CSV): fora do middleware para não
+     * bufferizar o body (limite 10MB). Auth nessas rotas via requireAdmin().
+     */
+    "/((?!_next/static|_next/image|favicon.ico|api/admin/provas/[^/]+/extrair|api/admin/provas/[^/]+/questoes).*)",
+  ],
 };
