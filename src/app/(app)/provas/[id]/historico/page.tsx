@@ -33,7 +33,7 @@ export default async function ProvaHistoricoPage({
   return (
     <div className="space-y-6">
       <header className="space-y-3">
-        <PageBackLink href="/provas">Provas públicas</PageBackLink>
+        <PageBackLink href="/provas">Atividades</PageBackLink>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-xl font-bold leading-snug text-slate-900 sm:text-2xl">{prova.nome}</h1>
           <Badge tone="neutral">{labelTipoProva(prova.tipo)}</Badge>

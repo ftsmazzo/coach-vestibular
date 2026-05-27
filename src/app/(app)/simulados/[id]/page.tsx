@@ -117,7 +117,7 @@ export default async function SimuladoDetailPage({
                 as linhas <code className="text-xs">número,letra</code>.
               </>
             ) : (
-              " Registre de novo a partir do catálogo de provas públicas."
+              " Registre de novo em Atividades."
             )}
           </p>
         </Card>

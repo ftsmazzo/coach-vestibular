@@ -11,7 +11,7 @@ export async function JornadaResumoCard({ userId }: { userId: string }) {
         <p className="text-xs text-slate-700">
           Comece em{" "}
           <Link href="/provas" className="font-medium text-teal-700 underline">
-            Provas públicas
+            Atividades
           </Link>
           .
         </p>

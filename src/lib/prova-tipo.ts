@@ -48,14 +48,18 @@ export type CategoriaRegistro = "prova_oficial" | "simulado";
 /** Cores e rótulos no dashboard (vestibular / simulado / lista). */
 export type TipoAtividadeVisual = "vestibular" | "simulado" | "lista";
 
+export function tipoAtividadeFromProvaTipo(tipo: ProvaTipo): TipoAtividadeVisual {
+  if (provaEhOficial(tipo)) return "vestibular";
+  if (tipo === "LISTA_FIXACAO") return "lista";
+  return "simulado";
+}
+
 export function tipoAtividadeVisual(exam: {
   prova?: { tipo: ProvaTipo } | null;
 }): TipoAtividadeVisual {
   const t = exam.prova?.tipo;
   if (!t) return "simulado";
-  if (provaEhOficial(t)) return "vestibular";
-  if (t === "LISTA_FIXACAO") return "lista";
-  return "simulado";
+  return tipoAtividadeFromProvaTipo(t);
 }
 
 export const TEMA_ATIVIDADE: Record<

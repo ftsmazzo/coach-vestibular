@@ -178,7 +178,7 @@ export default function NovoSimuladoPage() {
     <div className="space-y-6">
       <div>
         <Link href="/provas" className="text-sm text-teal-700 hover:underline">
-          ← Voltar às provas públicas
+          ← Voltar às atividades
         </Link>
         <h1 className="mt-2 text-xl font-bold sm:text-2xl">Registrar resultado</h1>
         <p className="mt-1 text-sm text-slate-600 sm:text-base">

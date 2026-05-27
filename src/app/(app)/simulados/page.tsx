@@ -63,7 +63,7 @@ export default async function SimuladosPage({ searchParams }: PageProps) {
         <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
           <Link href="/provas" className="w-full sm:w-auto">
             <Button variant="secondary" className="w-full sm:w-auto">
-              Provas públicas
+              Atividades
             </Button>
           </Link>
           <Link href="/simulados/novo" className="w-full sm:w-auto">

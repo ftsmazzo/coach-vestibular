@@ -116,7 +116,7 @@ export default async function PlanoPage() {
       {!plan ? (
         <Card>
           <p className="text-slate-600">
-            Registre um resultado em Provas públicas para gerar seu plano automaticamente.
+            Registre um resultado em Atividades para gerar seu plano automaticamente.
           </p>
         </Card>
       ) : planoLegado && analises.length === 0 ? (

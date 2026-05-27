@@ -4,7 +4,7 @@ export function PctDonut({
   size = "lg",
   label,
 }: {
-  pct: number;
+  pct: number | null;
   size?: "sm" | "md" | "lg";
   label?: string;
 }) {
@@ -12,7 +12,7 @@ export function PctDonut({
     size === "lg" ? "h-32 w-32" : size === "sm" ? "h-14 w-14" : "h-20 w-20";
   const text =
     size === "lg" ? "text-3xl" : size === "sm" ? "text-sm" : "text-xl";
-  const dash = Math.min(100, Math.max(0, pct));
+  const dash = pct != null ? Math.min(100, Math.max(0, pct)) : 0;
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -42,7 +42,7 @@ export function PctDonut({
         <span
           className={`absolute inset-0 flex items-center justify-center font-bold text-white ${text}`}
         >
-          {pct}%
+          {pct != null ? `${pct}%` : "—"}
         </span>
       </div>
       {label && <span className="text-xs font-medium text-teal-100">{label}</span>}
