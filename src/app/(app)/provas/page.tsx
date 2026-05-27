@@ -129,8 +129,8 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Provas públicas</h1>
-        <p className="mt-1 max-w-2xl text-slate-600">
+        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Provas públicas</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600 sm:text-base">
           Escolha a prova que você fez (oficial ou simulado), de qualquer ano cadastrado pelo
           admin. Depois informe suas respostas ou só os erros — o conteúdo de cada questão já está
           no banco.

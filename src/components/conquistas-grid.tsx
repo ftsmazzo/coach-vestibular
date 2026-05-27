@@ -11,7 +11,7 @@ export async function ConquistasGrid({ userId }: { userId: string }) {
       <p className="mt-1 text-sm text-slate-600">
         {desbloqueadas.length} de {conquistas.length} desbloqueadas
       </p>
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+      <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {conquistas.map((c) => (
           <li
             key={c.id}

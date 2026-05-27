@@ -71,10 +71,10 @@ export default async function PlanoPage() {
   const planoLegado = Boolean(plan) && !formatoNovo;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Plano desta semana</h1>
-        <p className="text-slate-600">
+        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Plano desta semana</h1>
+        <p className="text-sm text-slate-600 sm:text-base">
           Leia o diagnóstico e a análise por matéria aqui. As atividades práticas ficam em{" "}
           <Link href="/quests" className="font-medium text-teal-700 hover:underline">
             Quests
@@ -133,7 +133,7 @@ export default async function PlanoPage() {
               </p>
             </div>
           ) : (
-            <LinkButton href="/provas" variant="primary" className="mt-4">
+            <LinkButton href="/provas" variant="primary" className="mt-4 w-full sm:w-auto">
               Registrar prova no catálogo
             </LinkButton>
           )}
@@ -189,7 +189,7 @@ export default async function PlanoPage() {
                 {horasQuests > 0 ? ` (~${horasQuests}h)` : ""} com base no que você errou e
                 nas suas anotações.
               </p>
-              <LinkButton href="/quests" className="mt-4">
+              <LinkButton href="/quests" className="mt-4 w-full sm:w-auto">
                 Abrir Quests
               </LinkButton>
             </Card>
@@ -198,11 +198,12 @@ export default async function PlanoPage() {
       )}
 
       {ultimoExam && !planoLegado && (
-        <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
+        <div className="flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <RecalcularDiagnosticoButton
             examId={ultimoExam.id}
             variant="secondary"
             label="Atualizar diagnóstico e plano"
+            className="w-full sm:w-auto"
           />
           <p className="text-xs text-slate-500">
             Use após classificar erros na prova para incorporar suas anotações.

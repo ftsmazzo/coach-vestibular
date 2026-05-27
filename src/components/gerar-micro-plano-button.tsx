@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui";
 
 export function GerarMicroPlanoButton({ provaId }: { provaId: string }) {
@@ -24,11 +25,18 @@ export function GerarMicroPlanoButton({ provaId }: { provaId: string }) {
   }
 
   return (
-    <div>
-      <Button type="button" onClick={gerar} disabled={loading}>
-        {loading ? "Gerando..." : "Gerar micro-plano + quests desta prova"}
+    <div className="space-y-3">
+      <Button type="button" onClick={gerar} disabled={loading} className="w-full sm:w-auto">
+        {loading ? "Gerando..." : "Gerar micro-plano + quests"}
       </Button>
-      {msg && <p className="mt-2 text-sm text-teal-700">{msg}</p>}
+      {msg && <p className="text-sm text-teal-700">{msg}</p>}
+      <p className="text-xs text-teal-800">
+        Depois de gerar, abra{" "}
+        <Link href={`/quests?provaId=${provaId}`} className="font-medium underline">
+          Quests desta prova
+        </Link>
+        .
+      </p>
     </div>
   );
 }

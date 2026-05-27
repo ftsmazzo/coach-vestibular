@@ -205,7 +205,7 @@ export function PerfilEditarForm({ inicial }: { inicial: PerfilInicial }) {
       {erro && <p className="text-sm text-rose-600">{erro}</p>}
       {msg && <p className="text-sm text-teal-700">{msg}</p>}
 
-      <Button type="submit" disabled={loading}>
+      <Button type="submit" disabled={loading} className="w-full sm:w-auto">
         {loading ? "Salvando..." : "Salvar alterações"}
       </Button>
     </form>

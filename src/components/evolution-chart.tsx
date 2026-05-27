@@ -22,7 +22,7 @@ export function EvolutionChart({
   }
 
   return (
-    <div className="h-56 w-full">
+    <div className="h-48 w-full sm:h-56">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />

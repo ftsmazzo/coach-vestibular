@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { buildHistoricoProva } from "@/lib/jornada-historico";
 import { labelTipoProva } from "@/lib/prova-tipo";
+import { PageBackLink } from "@/components/page-back-link";
+import { ProvaSubNav } from "@/components/prova-sub-nav";
 import { Card, Badge, LinkButton } from "@/components/ui";
 import { EvolutionChart } from "@/components/evolution-chart";
 
@@ -31,35 +32,29 @@ export default async function ProvaHistoricoPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/provas" className="text-sm text-teal-700 hover:underline">
-            ← Provas públicas
-          </Link>
-          <Link href={`/provas/${provaId}/lente`} className="text-sm font-medium text-violet-700 hover:underline">
-            Abrir sua lente →
-          </Link>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-900">{prova.nome}</h1>
+      <header className="space-y-3">
+        <PageBackLink href="/provas">Provas públicas</PageBackLink>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl font-bold leading-snug text-slate-900 sm:text-2xl">{prova.nome}</h1>
           <Badge tone="neutral">{labelTipoProva(prova.tipo)}</Badge>
         </div>
-        <p className="mt-1 text-slate-600">
+        <p className="text-sm text-slate-600">
           {prova.banca}
-          {prova.ano ? ` · ${prova.ano}` : ""} — histórico das suas tentativas nesta prova
+          {prova.ano ? ` · ${prova.ano}` : ""} — histórico das suas tentativas
         </p>
-      </div>
+        <ProvaSubNav provaId={provaId} active="historico" />
+      </header>
 
       {tentativas.length === 0 ? (
         <Card>
           <p className="text-slate-600">Você ainda não registrou resultado desta prova.</p>
-          <LinkButton href={`/simulados/novo?provaId=${prova.id}`} className="mt-4">
+          <LinkButton href={`/simulados/novo?provaId=${prova.id}`} className="mt-4 w-full sm:w-auto">
             Registrar primeiro resultado
           </LinkButton>
         </Card>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-3 min-[400px]:gap-4">
             <Card>
               <p className="text-xs text-slate-500">Tentativas</p>
               <p className="text-2xl font-bold text-slate-900">{tentativas.length}</p>
@@ -96,9 +91,9 @@ export default async function ProvaHistoricoPage({
               {[...tentativas].reverse().map((t) => (
                 <li
                   key={t.examId}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3"
+                  className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-medium text-slate-900">
                       Aplicada em {t.dataLabel} · {t.pctAcerto}%
                     </p>
@@ -107,11 +102,19 @@ export default async function ProvaHistoricoPage({
                       {t.recoveryMode ? " · modo recuperação" : ""}
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <LinkButton href={`/simulados/${t.examId}`} variant="secondary">
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto">
+                    <LinkButton
+                      href={`/simulados/${t.examId}`}
+                      variant="secondary"
+                      className="w-full text-center"
+                    >
                       Diagnóstico
                     </LinkButton>
-                    <LinkButton href={`/simulados/novo?provaId=${prova.id}`} variant="ghost">
+                    <LinkButton
+                      href={`/simulados/novo?provaId=${prova.id}`}
+                      variant="ghost"
+                      className="w-full text-center"
+                    >
                       Nova tentativa
                     </LinkButton>
                   </div>

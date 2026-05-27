@@ -48,13 +48,13 @@ export function RecalcularDiagnosticoButton({
   }
 
   return (
-    <div className="inline-flex flex-col items-start gap-1 max-w-md">
+    <div className={`flex w-full flex-col gap-1 sm:max-w-md ${className}`}>
       <Button
         type="button"
         variant={variant}
         disabled={loading}
         aria-busy={loading}
-        className={className}
+        className="w-full sm:w-auto"
         onClick={recalcular}
       >
         {loading ? "Atualizando..." : label}

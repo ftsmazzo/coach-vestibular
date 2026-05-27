@@ -97,6 +97,15 @@ export function touchChipClass(active: boolean) {
   }`;
 }
 
+/** Chip como link (navegação horizontal em provas, abas, etc.) */
+export function linkTouchChipClass(active: boolean) {
+  return `inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition sm:min-h-0 sm:py-1.5 ${
+    active
+      ? "bg-teal-600 text-white shadow-sm"
+      : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+  }`;
+}
+
 export function Badge({
   children,
   tone = "neutral",

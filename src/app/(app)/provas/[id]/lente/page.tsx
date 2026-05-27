@@ -12,6 +12,8 @@ import { LeituraCoachCard } from "@/components/leitura-coach-card";
 import { ComparativoVestibularesChart } from "@/components/comparativo-vestibulares-chart";
 import { EvolutionChart } from "@/components/evolution-chart";
 import { KpiResumoTres } from "@/components/kpi-resumo-tres";
+import { PageBackLink } from "@/components/page-back-link";
+import { ProvaSubNav } from "@/components/prova-sub-nav";
 import { Card, Badge, LinkButton } from "@/components/ui";
 
 export default async function ProvaLentePage({
@@ -52,19 +54,18 @@ export default async function ProvaLentePage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href={`/provas/${provaId}/historico`} className="text-sm text-teal-700 hover:underline">
-          ← Histórico
-        </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-900">Sua lente</h1>
+      <header className="space-y-3">
+        <PageBackLink href="/provas">Provas públicas</PageBackLink>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Sua lente</h1>
           <Badge tone="neutral">{labelTipoProva(prova.tipo)}</Badge>
         </div>
-        <p className="mt-1 text-sm font-medium text-slate-700">{tituloProva}</p>
+        <p className="text-sm font-medium text-slate-700">{tituloProva}</p>
         {prova.nome.length > tituloProva.length && (
-          <p className="mt-0.5 text-xs text-slate-500">{prova.nome}</p>
+          <p className="text-xs text-slate-500">{prova.nome}</p>
         )}
-      </div>
+        <ProvaSubNav provaId={provaId} active="lente" />
+      </header>
 
       {leitura && (
         <LeituraCoachCard
@@ -140,7 +141,7 @@ export default async function ProvaLentePage({
             <GerarMicroPlanoButton provaId={provaId} />
           </div>
         ) : (
-          <LinkButton href={`/simulados/novo?provaId=${provaId}`} className="mt-4">
+          <LinkButton href={`/simulados/novo?provaId=${provaId}`} className="mt-4 w-full sm:w-auto">
             Registrar primeiro resultado
           </LinkButton>
         )}
@@ -152,13 +153,16 @@ export default async function ProvaLentePage({
           {tentativas.map((t) => (
             <li
               key={t.examId}
-              className="flex flex-wrap justify-between gap-2 rounded-lg border px-3 py-2 text-sm"
+              className="flex flex-col gap-2 rounded-lg border px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
             >
-              <span>
+              <span className="font-medium text-slate-800">
                 {t.dataLabel} · {t.pctAcerto}%
               </span>
-              <Link href={`/simulados/${t.examId}`} className="text-teal-700 hover:underline">
-                Análise da prova
+              <Link
+                href={`/simulados/${t.examId}`}
+                className="inline-flex min-h-11 items-center font-medium text-teal-700 hover:underline sm:min-h-0"
+              >
+                Análise da prova →
               </Link>
             </li>
           ))}

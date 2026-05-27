@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { getRankingSnapshot } from "@/lib/ranking";
 import { ConquistasGrid } from "@/components/conquistas-grid";
 import { XpComoGanhar } from "@/components/xp-como-ganhar";
+import { PageBackLink } from "@/components/page-back-link";
 import { Card, Badge } from "@/components/ui";
 
 export default async function ComunidadePage() {
@@ -15,15 +16,13 @@ export default async function ComunidadePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/dashboard" className="text-sm text-teal-700 hover:underline">
-          ← Dashboard
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">Comunidade</h1>
-        <p className="mt-1 text-slate-600">
+      <header>
+        <PageBackLink href="/dashboard">Dashboard</PageBackLink>
+        <h1 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">Comunidade</h1>
+        <p className="mt-1 text-sm text-slate-600 sm:text-base">
           Ranking interno por XP — colabore corrigindo classificações e suba na lista.
         </p>
-      </div>
+      </header>
 
       <Card className="border-violet-200 bg-violet-50/40">
         <p className="text-sm text-violet-950">
@@ -52,13 +51,13 @@ export default async function ComunidadePage() {
             {r.top.map((e) => (
               <li
                 key={e.userId}
-                className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 ${
+                className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
                   e.ehVoce ? "border-violet-300 bg-violet-50/80" : "border-slate-100"
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
                       e.posicao <= 3
                         ? "bg-amber-100 text-amber-900"
                         : "bg-slate-100 text-slate-600"
@@ -66,14 +65,16 @@ export default async function ComunidadePage() {
                   >
                     {e.posicao}
                   </span>
-                  <div>
-                    <p className="font-medium text-slate-900">
-                      {e.apelido}
+                  <div className="min-w-0">
+                    <p className="flex flex-wrap items-center gap-2 font-medium text-slate-900">
+                      <span className="truncate">{e.apelido}</span>
                       {e.ehVoce && <Badge tone="success">Você</Badge>}
                     </p>
                   </div>
                 </div>
-                <span className="text-lg font-semibold text-violet-800">{e.xp} XP</span>
+                <span className="shrink-0 text-base font-semibold tabular-nums text-violet-800 sm:text-lg">
+                  {e.xp} XP
+                </span>
               </li>
             ))}
           </ol>

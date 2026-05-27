@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ModoUsoSelector } from "@/components/modo-uso-selector";
+import { ProvaSubNav } from "@/components/prova-sub-nav";
 import { Button, Card, Input, Label, Select, Textarea, touchChipClass } from "@/components/ui";
 import type { ModoUsoRegistro, ProvaTipo } from "@/generated/prisma/client";
 import { parseListaErros } from "@/lib/gabarito";
@@ -179,8 +180,8 @@ export default function NovoSimuladoPage() {
         <Link href="/provas" className="text-sm text-teal-700 hover:underline">
           ← Voltar às provas públicas
         </Link>
-        <h1 className="mt-2 text-2xl font-bold">Registrar resultado</h1>
-        <p className="mt-1 text-slate-600">
+        <h1 className="mt-2 text-xl font-bold sm:text-2xl">Registrar resultado</h1>
+        <p className="mt-1 text-sm text-slate-600 sm:text-base">
           Seu gabarito é comparado com o oficial do admin. Use a data em que você{" "}
           <strong>fez a prova</strong>, não o dia em que está cadastrando aqui — o gráfico de
           evolução usa essa data.
@@ -217,10 +218,13 @@ export default function NovoSimuladoPage() {
               ))}
             </Select>
             {prova && (
-              <p className="mt-2 text-xs text-slate-500">
-                {prova.banca} · {prova.questoesCount} de {prova.totalQuestoes} questões
-                classificadas no banco
-              </p>
+              <>
+                <p className="mt-2 text-xs text-slate-500">
+                  {prova.banca} · {prova.questoesCount} de {prova.totalQuestoes} questões
+                  classificadas no banco
+                </p>
+                {provaId && <div className="mt-3"><ProvaSubNav provaId={provaId} active="registrar" /></div>}
+              </>
             )}
           </Card>
 

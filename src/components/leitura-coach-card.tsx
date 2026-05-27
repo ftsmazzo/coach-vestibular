@@ -13,14 +13,16 @@ export function LeituraCoachCard({
 }) {
   return (
     <Card className="border-l-4 border-l-teal-500 bg-gradient-to-r from-teal-50/90 to-white">
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
-          Leitura do coach
-        </p>
-        <span className="text-xs text-slate-500">·</span>
-        <p className="text-xs font-medium text-slate-700">{titulo}</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
+            Leitura do coach
+          </p>
+          <span className="hidden text-xs text-slate-500 sm:inline">·</span>
+          <p className="text-xs font-medium text-slate-700 line-clamp-2 sm:line-clamp-1">{titulo}</p>
+        </div>
         {pctReferencia != null && (
-          <span className="ml-auto inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+          <span className="inline-flex w-fit rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 sm:ml-auto">
             {pctReferencia}% na última aplicação
           </span>
         )}

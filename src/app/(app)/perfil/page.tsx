@@ -8,6 +8,7 @@ import { ConquistasGrid } from "@/components/conquistas-grid";
 import { PerfilEditarForm } from "@/components/perfil-editar-form";
 import { XpComoGanhar } from "@/components/xp-como-ganhar";
 import { XpRecentes } from "@/components/xp-recentes";
+import { PageBackLink } from "@/components/page-back-link";
 import { Card, Badge } from "@/components/ui";
 
 export default async function PerfilPage() {
@@ -37,25 +38,26 @@ export default async function PerfilPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/dashboard" className="text-sm text-teal-700 hover:underline">
-          ← Dashboard
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">Seu perfil</h1>
-        <p className="mt-1 text-slate-600">
+      <header>
+        <PageBackLink href="/dashboard">Dashboard</PageBackLink>
+        <h1 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">Seu perfil</h1>
+        <p className="mt-1 text-sm text-slate-600 sm:text-base">
           Edite seus dados, escolha como aparece no ranking e ajuste sua meta.
         </p>
-      </div>
+      </header>
 
       <Card className="border-violet-200 bg-violet-50/40">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <span className="text-3xl font-bold text-violet-900">{user.xp} XP</span>
             <p className="mt-1 text-sm text-slate-600">
               No ranking você aparece como: <strong>{nomeNoRanking}</strong>
             </p>
           </div>
-          <Link href="/comunidade" className="text-sm font-medium text-violet-700 hover:underline">
+          <Link
+            href="/comunidade"
+            className="inline-flex min-h-11 items-center text-sm font-medium text-violet-700 hover:underline sm:min-h-0"
+          >
             Ver ranking →
           </Link>
         </div>
