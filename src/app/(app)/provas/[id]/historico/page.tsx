@@ -37,7 +37,7 @@ export default async function ProvaHistoricoPage({
             ← Provas públicas
           </Link>
           <Link href={`/provas/${provaId}/lente`} className="text-sm font-medium text-violet-700 hover:underline">
-            Abrir lente da prova →
+            Abrir sua lente →
           </Link>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">

@@ -3,9 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { buildHistoricoProva } from "@/lib/jornada-historico";
 import { buildDiagnosisForProva } from "@/lib/jornada-diagnostico";
+import { getLeituraCoachProva } from "@/lib/leitura-coach";
+import { abreviarNomeProva } from "@/lib/prova-label";
 import { labelTipoProva } from "@/lib/prova-tipo";
 import { getMateriaLabel } from "@/lib/taxonomy";
 import { GerarMicroPlanoButton } from "@/components/gerar-micro-plano-button";
+import { LeituraCoachCard } from "@/components/leitura-coach-card";
 import { EvolutionChart } from "@/components/evolution-chart";
 import { Card, Badge, LinkButton } from "@/components/ui";
 
@@ -18,11 +21,15 @@ export default async function ProvaLentePage({
   if (!session) redirect("/login");
 
   const { id: provaId } = await params;
-  const historico = await buildHistoricoProva(session.userId, provaId);
+  const [historico, diagnosis, leitura] = await Promise.all([
+    buildHistoricoProva(session.userId, provaId),
+    buildDiagnosisForProva(session.userId, provaId),
+    getLeituraCoachProva(session.userId, provaId),
+  ]);
   if (!historico) notFound();
 
-  const diagnosis = await buildDiagnosisForProva(session.userId, provaId);
   const { prova, tentativas, evolucao, melhorPct, ultimaPct, tendencia } = historico;
+  const tituloProva = abreviarNomeProva(prova.nome);
 
   return (
     <div className="space-y-6">
@@ -31,11 +38,23 @@ export default async function ProvaLentePage({
           ← Histórico
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-900">Lente da prova</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Sua lente</h1>
           <Badge tone="neutral">{labelTipoProva(prova.tipo)}</Badge>
         </div>
-        <p className="mt-1 text-slate-600">{prova.nome}</p>
+        <p className="mt-1 text-sm font-medium text-slate-700">{tituloProva}</p>
+        {prova.nome.length > tituloProva.length && (
+          <p className="mt-0.5 text-xs text-slate-500">{prova.nome}</p>
+        )}
       </div>
+
+      {leitura && (
+        <LeituraCoachCard
+          titulo={leitura.tituloProva}
+          mensagem={leitura.mensagem}
+          focos={leitura.focos}
+          pctReferencia={leitura.pctReferencia}
+        />
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
@@ -118,7 +137,7 @@ export default async function ProvaLentePage({
                 {t.dataLabel} · {t.pctAcerto}%
               </span>
               <Link href={`/simulados/${t.examId}`} className="text-teal-700 hover:underline">
-                Abrir registro
+                Análise da prova
               </Link>
             </li>
           ))}

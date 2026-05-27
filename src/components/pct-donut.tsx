@@ -5,11 +5,13 @@ export function PctDonut({
   label,
 }: {
   pct: number;
-  size?: "md" | "lg";
+  size?: "sm" | "md" | "lg";
   label?: string;
 }) {
-  const dim = size === "lg" ? "h-32 w-32" : "h-24 w-24";
-  const text = size === "lg" ? "text-3xl" : "text-2xl";
+  const dim =
+    size === "lg" ? "h-32 w-32" : size === "sm" ? "h-14 w-14" : "h-20 w-20";
+  const text =
+    size === "lg" ? "text-3xl" : size === "sm" ? "text-sm" : "text-xl";
   const dash = Math.min(100, Math.max(0, pct));
 
   return (

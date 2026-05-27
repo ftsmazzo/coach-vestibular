@@ -6,12 +6,11 @@ import { buildJornadaDashboardAnalytics } from "@/lib/jornada-analytics";
 import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { filtroRegistrosFromSearchParam } from "@/lib/prova-tipo";
 import { Card, Button, Badge } from "@/components/ui";
-import { EvolutionChart } from "@/components/evolution-chart";
 import { FiltroRegistrosTabs } from "@/components/filtro-registros-tabs";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
 import { DashboardHero } from "@/components/dashboard-hero";
 import { DashboardRegistrosGrid } from "@/components/dashboard-registros-grid";
-import { MateriaJornadaCharts } from "@/components/materia-jornada-charts";
+import { CoachPanoramaJornada } from "@/components/coach-panorama-jornada";
 import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { RankingCard } from "@/components/ranking-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
@@ -36,7 +35,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const latest = data.latest;
   const snapshot = latest?.diagnosticSnapshot;
   const scores = snapshot ? JSON.parse(snapshot.scoresJson) : null;
-  const focos = snapshot ? JSON.parse(snapshot.focosJson) : [];
   const pctLatest = latest ? pctAcertoRegistro(latest.questionAttempts) : 0;
 
   const examHero = latest
@@ -49,13 +47,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         questionAttempts: latest.questionAttempts,
       }
     : undefined;
-
-  const tituloEvolucao =
-    filtro === "provas"
-      ? "Evolução nas provas oficiais"
-      : filtro === "simulados"
-        ? "Evolução nos simulados"
-        : "Sua evolução";
 
   return (
     <div className="space-y-8">
@@ -76,6 +67,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       </div>
 
       <MensagemDiaCard />
+
+      {filtro === "todos" && analytics.totalRegistros > 0 && (
+        <CoachPanoramaJornada
+          analytics={analytics}
+          evolucao={data.evolution}
+          streak={data.streak}
+          counts={data.counts}
+        />
+      )}
 
       {filtro === "todos" && analytics.totalRegistros > 0 && (
         <Card className="border-teal-200 bg-gradient-to-r from-teal-50 to-white">
@@ -144,52 +144,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </Card>
       )}
 
-      {scores?.resumoProva && (
+      {scores?.resumoProva && latest && (
         <div>
-          <p className="mb-2 text-xs text-slate-500">Último registro em detalhe</p>
+          <p className="mb-2 text-xs text-slate-500">Resumo do último registro</p>
           <ResumoDiagnosticoCard
             resumo={scores.resumoProva as ResumoProvaDiagnostico}
-            checkIn={latest?.checkInScore}
+            checkIn={latest.checkInScore}
             compact
           />
         </div>
       )}
-
-      {snapshot?.mensagem && (
-        <Card className="border-l-4 border-l-teal-500 bg-gradient-to-r from-teal-50/80 to-white">
-          <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
-            Leitura do coach (último registro)
-          </p>
-          <p className="mt-2 text-slate-700 leading-relaxed">{snapshot.mensagem}</p>
-          {!scores?.resumoProva && focos.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {focos.map((f: { label: string; prioridade: string }, i: number) => (
-                <Badge key={i} tone={f.prioridade === "alta" ? "danger" : "warning"}>
-                  {f.label}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
-          <h2 className="mb-1 font-semibold text-slate-900">{tituloEvolucao}</h2>
-          <p className="mb-4 text-xs text-slate-500">Percentual de acertos por data de aplicação</p>
-          <EvolutionChart
-            data={data.evolution}
-            emptyMessage="Registre mais provas para ver a linha de evolução."
-          />
-        </Card>
-        <Card className="lg:col-span-2">
-          <MateriaJornadaCharts
-            materiasMedia={analytics.materiasMedia}
-            seriesPorProva={analytics.seriesPorProva}
-            materiaIdsOrdenados={analytics.materiaIdsOrdenados}
-          />
-        </Card>
-      </div>
 
       {data.quests.length > 0 && (
         <Card>

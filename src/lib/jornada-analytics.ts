@@ -5,7 +5,7 @@ import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { pesoBancaParaMeta, textoMetaAluno } from "@/lib/meta-vestibular";
 import { pesoModoUso } from "@/lib/modo-uso";
 import { mapMateriaAssuntoToTaxonomy } from "@/lib/prova-catalog";
-import { categoriaDoRegistro } from "@/lib/prova-tipo";
+import { categoriaDoRegistro, type CategoriaRegistro } from "@/lib/prova-tipo";
 import { getMateriaLabel } from "@/lib/taxonomy";
 
 export interface MateriaMediaJornada {
@@ -30,7 +30,7 @@ export interface RegistroDashboardCard {
   dataLabel: string;
   pct: number;
   modoUso: ModoUsoRegistro;
-  categoria: string;
+  categoria: CategoriaRegistro;
   provaId: string | null;
 }
 

@@ -69,6 +69,11 @@ export function labelCategoriaRegistro(cat: CategoriaRegistro): string {
   return cat === "prova_oficial" ? "Prova oficial" : "Simulado";
 }
 
+/** Marcador nos cards do dashboard (mais curto que labelCategoriaRegistro). */
+export function labelMarcadorAtividade(cat: CategoriaRegistro): string {
+  return cat === "prova_oficial" ? "Vestibular" : "Simulado";
+}
+
 /** Textos do diagnóstico genérico (antes do resumo concreto da prova). */
 export function rotulosDiagnostico(cat: CategoriaRegistro) {
   return cat === "prova_oficial"

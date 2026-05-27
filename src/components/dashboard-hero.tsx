@@ -1,6 +1,6 @@
 import type { ProvaTipo } from "@/generated/prisma/client";
 import { formatDataAplicacao } from "@/lib/data-prova";
-import { labelCategoriaRegistro, categoriaDoRegistro } from "@/lib/prova-tipo";
+import { categoriaDoRegistro, labelMarcadorAtividade } from "@/lib/prova-tipo";
 import { LinkButton } from "@/components/ui";
 import { PctDonut } from "@/components/pct-donut";
 
@@ -12,6 +12,9 @@ export type ExamHero = {
   prova?: { tipo: ProvaTipo } | null;
   questionAttempts: { correto: boolean }[];
 };
+
+const btnCompact =
+  "w-full !rounded-lg !px-3 !py-1.5 !text-xs !font-semibold";
 
 export function DashboardHero({
   exam,
@@ -38,45 +41,49 @@ export function DashboardHero({
   }
 
   const cat = categoriaDoRegistro(exam);
+  const dadosProvaHref = exam.provaId
+    ? `/provas/${exam.provaId}/lente`
+    : `/simulados/${exam.id}`;
 
   return (
     <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-teal-600 to-teal-800 text-white shadow-lg shadow-teal-900/10">
-      <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
-          <PctDonut pct={pct} label="acertos" />
-          <div className="text-center sm:text-left">
-            <span className="inline-flex rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium text-white">
-              {labelCategoriaRegistro(cat)}
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div className="flex min-w-0 flex-col items-center gap-3 sm:flex-row sm:items-center">
+          <PctDonut pct={pct} size="md" label="acertos" />
+          <div className="min-w-0 text-center sm:text-left">
+            <span className="inline-flex rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium text-white">
+              {labelMarcadorAtividade(cat)}
             </span>
-            <h2 className="mt-2 text-xl font-bold leading-tight sm:text-2xl">{exam.nome}</h2>
-            <p className="mt-1 text-sm text-teal-100">
+            <h2 className="mt-1.5 line-clamp-3 text-base font-bold leading-snug sm:text-lg">
+              {exam.nome}
+            </h2>
+            <p className="mt-1 text-xs text-teal-100">
               Aplicada em {formatDataAplicacao(exam.data)}
             </p>
-            <p className="mt-2 text-xs text-teal-200/90">
-              {counts.provas} prova{counts.provas !== 1 ? "s" : ""} oficial
-              {counts.provas !== 1 ? "is" : ""} · {counts.simulados} simulado
-              {counts.simulados !== 1 ? "s" : ""} no histórico
+            <p className="mt-1.5 text-[10px] text-teal-200/90">
+              {counts.provas} {counts.provas === 1 ? "vestibular" : "vestibulares"} · {counts.simulados}{" "}
+              {counts.simulados === 1 ? "simulado" : "simulados"} no histórico
             </p>
           </div>
         </div>
-        <div className="flex flex-col gap-2 sm:min-w-[200px]">
+        <div className="flex shrink-0 flex-col gap-1.5 sm:w-[168px]">
           <LinkButton
             href={`/simulados/${exam.id}`}
-            className="w-full !bg-white !text-teal-800 hover:!bg-teal-50"
+            className={`${btnCompact} !bg-white !text-teal-800 hover:!bg-teal-50`}
           >
-            Ver diagnóstico completo
+            Análise da prova
           </LinkButton>
           <LinkButton
-            href="/plano"
+            href={dadosProvaHref}
             variant="secondary"
-            className="w-full !border !border-white/40 !bg-white/10 !text-white hover:!bg-white/20"
+            className={`${btnCompact} !border !border-white/40 !bg-white/10 !text-white hover:!bg-white/20`}
           >
-            Plano da semana
+            Dados da prova
           </LinkButton>
           <LinkButton
             href="/quests"
             variant="ghost"
-            className="w-full !text-teal-100 hover:!bg-white/10"
+            className={`${btnCompact} !text-teal-100 hover:!bg-white/10`}
           >
             Minhas quests
           </LinkButton>

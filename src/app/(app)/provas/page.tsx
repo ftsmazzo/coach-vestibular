@@ -241,7 +241,7 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
                               variant="secondary"
                               className="w-full flex-1 text-center"
                             >
-                              Lente da prova
+                              Sua lente
                             </LinkButton>
                             <LinkButton
                               href={`/provas/${p.id}/historico`}
