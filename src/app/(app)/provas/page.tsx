@@ -144,8 +144,10 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
             {[user.vestibularAlvo, user.metaProva].filter(Boolean).join(" · ")}
           </p>
           <p className="mt-1 text-xs text-teal-800">
-            Em etapas futuras, o peso dos erros pode priorizar bancas da faculdade alvo. Por
-            enquanto, todas as provas oficiais entram no mesmo diagnóstico de focos.
+            Erros em provas da banca da sua meta pesam mais na jornada e no plano.{" "}
+            <Link href="/perfil" className="font-medium underline">
+              Editar meta
+            </Link>
           </p>
         </Card>
       )}

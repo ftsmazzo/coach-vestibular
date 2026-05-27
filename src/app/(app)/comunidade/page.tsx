@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getRankingSnapshot } from "@/lib/ranking";
 import { XP_SUGESTAO_ACEITA } from "@/lib/modo-uso";
+import { ConquistasGrid } from "@/components/conquistas-grid";
 import { Card, Badge } from "@/components/ui";
 
 export default async function ComunidadePage() {
@@ -85,9 +86,15 @@ export default async function ComunidadePage() {
         )}
       </Card>
 
+      <ConquistasGrid userId={session.userId} />
+
       <p className="text-sm text-slate-500">
         Dica: ao revisar um registro, use <strong>Classificação errada?</strong> nas questões em que
-        a matéria não bate com o enunciado.
+        a matéria não bate com o enunciado.{" "}
+        <Link href="/perfil" className="text-teal-700 hover:underline">
+          Ajuste sua meta de vestibular
+        </Link>{" "}
+        para priorizar a banca certa no plano.
       </p>
     </div>
   );

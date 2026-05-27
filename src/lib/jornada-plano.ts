@@ -1,6 +1,7 @@
 import type { AttemptInput } from "@/lib/diagnosis";
 import type { StudyPlanItem } from "@/lib/study-plan";
 import { buildResumoJornada } from "@/lib/jornada";
+import { PESO_BANCA_ALINHADA_META } from "@/lib/meta-vestibular";
 import { examsRecentesJornada } from "@/lib/jornada-historico";
 import { mapMateriaAssuntoToTaxonomy } from "@/lib/prova-catalog";
 
@@ -70,7 +71,12 @@ export async function itensContextoJornadaNoPlano(userId: string): Promise<Study
         (topMaterias
           ? `Maior pressão acumulada de erro: ${topMaterias}. `
           : "") +
-        `Priorize o que se repete em provas oficiais; use simulados como termômetro.`,
+        `Priorize o que se repete em provas oficiais; use simulados como termômetro.` +
+        (j.metaAlvo && j.bancasPrioritarias.length > 0
+          ? ` Sua meta (${j.metaAlvo}): erros em ${j.bancasPrioritarias.join(", ")} pesam ${Math.round((PESO_BANCA_ALINHADA_META - 1) * 100)}% a mais na jornada.`
+          : j.metaAlvo
+            ? ` Meta: ${j.metaAlvo} — cadastre provas dessa banca para priorização automática.`
+            : ""),
       duracaoMin: 0,
       bloco: "contexto",
       geraQuest: false,

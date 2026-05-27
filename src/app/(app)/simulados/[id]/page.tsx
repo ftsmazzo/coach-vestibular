@@ -8,6 +8,7 @@ import {
   categoriaDoRegistro,
   labelCategoriaRegistro,
 } from "@/lib/prova-tipo";
+import { SugestoesRegistroResumo } from "@/components/sugestoes-registro-resumo";
 import { TabelaQuestoesRegistro } from "@/components/tabela-questoes-registro";
 import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
 import { Card, Badge, LinkButton } from "@/components/ui";
@@ -140,6 +141,8 @@ export default async function SimuladoDetailPage({
           </div>
         </Card>
       )}
+
+      <SugestoesRegistroResumo examId={exam.id} />
 
       <Card>
         <h2 className="mb-1 font-semibold">Questões — seu gabarito × oficial</h2>

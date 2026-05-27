@@ -67,6 +67,17 @@ export async function JornadaResumoCard({ userId }: { userId: string }) {
         </div>
       )}
 
+      {j.metaAlvo && (
+        <p className="mt-3 text-xs text-teal-800">
+          Meta: <strong>{j.metaAlvo}</strong>
+          {j.bancasPrioritarias.length > 0 &&
+            ` · bancas priorizadas: ${j.bancasPrioritarias.join(", ")}`}
+          .{" "}
+          <Link href="/perfil" className="underline">
+            Editar meta
+          </Link>
+        </p>
+      )}
       <p className="mt-4 text-xs text-slate-500">
         Oficiais pesam mais no plano; treinos e revisões de prova antiga mostram se você está
         evoluindo.

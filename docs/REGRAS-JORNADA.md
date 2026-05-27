@@ -1,36 +1,38 @@
 # Jornada, modo de uso e colaboração
 
-## Três camadas (implementadas)
+## Três camadas
 
 | Camada | Onde | O que faz |
 |--------|------|-----------|
-| **Macro — Jornada** | Dashboard → card *Sua jornada* | Todos os registros com peso por `modoUso`; acerto ponderado e pressão por matéria |
-| **Meso — Prova do catálogo** | `/provas/[id]/historico` | Tentativas da mesma prova, gráfico de evolução, melhor/último % |
-| **Micro — Registro** | `/simulados/[id]` | Gabarito, diagnóstico, sugestão de classificação |
+| **Macro — Jornada** | Dashboard → *Sua jornada* | Registros com peso por `modoUso` e banca alinhada à meta |
+| **Meso — Prova do catálogo** | `/provas/[id]/historico` | Tentativas, evolução, melhor % |
+| **Micro — Registro** | `/simulados/[id]` | Gabarito, diagnóstico, sugestões |
 
 ## Modo de uso (`Exam.modoUso`)
 
-| Valor | Significado | Peso |
-|-------|-------------|------|
-| `OFICIAL` | ENEM / vestibular “dia D” | 3 |
-| `TREINO` | Simulado, lista | 1,5 |
-| `REVISAO_PROVA_ANTIGA` | Prova antiga refeita | 1 |
+| Valor | Peso |
+|-------|------|
+| `OFICIAL` | 3 |
+| `TREINO` | 1,5 |
+| `REVISAO_PROVA_ANTIGA` | 1 |
 
-Escolhido pelo aluno em **Registrar resultado**. O admin define o tipo da prova no catálogo; o peso no plano vem da finalidade do registro.
+## Meta de vestibular (`/perfil`)
+
+- **Curso alvo** + **prova/banca meta** (ex.: Medicina · UFU 2026).
+- Erros em provas cuja **banca** combina com a meta ganham **+25%** de peso na jornada e no bloco do plano.
+- Palavras-chave: ENEM, UFU, UNICAMP, USP/FUVEST, UNESP, ITA, etc.
 
 ## Plano semanal
 
-- Gerado após cada registro/recálculo a partir do **último exame** + histórico (mesma prova + jornada global para temas recorrentes).
-- Com **2+ registros**, o plano ganha o bloco *Panorama da sua jornada* (`src/lib/jornada-plano.ts`).
+- Último registro + histórico (mesma prova + jornada global).
+- Com 2+ registros: bloco *Panorama da sua jornada* (inclui meta/banca se configurada).
 
-## Colaboração e ranking
+## Colaboração
 
-- Aluno: **Classificação errada?** em cada questão do registro.
-- Admin: `/admin/sugestoes` — aceitar (+25 XP) ou rejeitar.
-- Aluno: `/comunidade` e card no dashboard — ranking por XP.
+- Sugestões de classificação → +25 XP se aceita.
+- `/comunidade` — ranking; `/perfil` — meta e **conquistas** (medalhas calculadas).
 
-## Roadmap (próximo)
+## Roadmap
 
-- Meta de faculdade com peso por banca no plano.
-- Medalhas / moeda interna além de XP.
-- API de incidência de temas em vestibulares.
+- API externa de incidência de temas em vestibulares.
+- Moeda interna além de XP (loja de recompensas).

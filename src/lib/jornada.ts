@@ -1,6 +1,11 @@
 import type { ModoUsoRegistro } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { labelModoUso, OPCOES_MODO_USO, pesoModoUso } from "@/lib/modo-uso";
+import {
+  bancasPrioritariasDaMeta,
+  pesoBancaParaMeta,
+  textoMetaAluno,
+} from "@/lib/meta-vestibular";
 import { getMateriaLabel } from "@/lib/taxonomy";
 
 export interface ResumoJornada {
@@ -24,13 +29,21 @@ export interface ResumoJornada {
     pesoErros: number;
   }>;
   xp: number;
+  metaAlvo: string;
+  bancasPrioritarias: string[];
 }
 
 export async function buildResumoJornada(userId: string): Promise<ResumoJornada> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { xp: true },
+    select: { xp: true, metaProva: true, vestibularAlvo: true },
   });
+
+  const metaAlvo = textoMetaAluno(user?.metaProva, user?.vestibularAlvo);
+  const bancasPrioritarias = bancasPrioritariasDaMeta(
+    user?.metaProva,
+    user?.vestibularAlvo
+  );
 
   const exams = await prisma.exam.findMany({
     where: { userId },
@@ -54,7 +67,9 @@ export async function buildResumoJornada(userId: string): Promise<ResumoJornada>
   >();
 
   for (const exam of exams) {
-    const peso = pesoModoUso(exam.modoUso);
+    const peso =
+      pesoModoUso(exam.modoUso) *
+      pesoBancaParaMeta(exam.banca, user?.metaProva, user?.vestibularAlvo);
     const modoStats = porModo.get(exam.modoUso) ?? { registros: 0, acertos: 0, total: 0 };
     modoStats.registros++;
     porModo.set(exam.modoUso, modoStats);
@@ -124,5 +139,7 @@ export async function buildResumoJornada(userId: string): Promise<ResumoJornada>
     porModoUso,
     porMateria,
     xp: user?.xp ?? 0,
+    metaAlvo,
+    bancasPrioritarias,
   };
 }
