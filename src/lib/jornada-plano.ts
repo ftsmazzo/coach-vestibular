@@ -2,7 +2,7 @@ import type { AttemptInput } from "@/lib/diagnosis";
 import type { StudyPlanItem } from "@/lib/study-plan";
 import { buildResumoJornada } from "@/lib/jornada";
 import { examsRecentesJornada } from "@/lib/jornada-historico";
-import { mapMateriaAssuntoToTaxonomy } from "@/lib/taxonomia-validacao";
+import { mapMateriaAssuntoToTaxonomy } from "@/lib/prova-catalog";
 
 /** Histórico de attempts de vários registros (jornada) para recorrência de temas. */
 export async function historicalAttemptsDaJornada(
