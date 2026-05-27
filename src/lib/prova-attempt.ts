@@ -6,6 +6,8 @@ import { generateStudyPlan, planToQuests } from "./study-plan";
 import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
 import { parseDataAplicacao } from "./data-prova";
+import type { ModoUsoRegistro } from "@/generated/prisma/client";
+import { modoUsoPadraoParaProva } from "./modo-uso";
 import { provaEhOficial, rotulosDiagnostico } from "./prova-tipo";
 import type { DiagnosisResult } from "./diagnosis";
 
@@ -24,6 +26,8 @@ export interface RegistrarTentativaInput {
   respostas?: string;
   /** Só números errados — análise parcial se não houver gabarito do aluno */
   apenasErros?: number[];
+  /** Como esta atividade entra na jornada (peso no plano global) */
+  modoUso?: ModoUsoRegistro;
 }
 
 type AttemptWithMeta = AttemptInput & {
@@ -204,8 +208,11 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     };
   });
 
+  const modoUso =
+    input.modoUso ?? modoUsoPadraoParaProva(prova.tipo);
+
   const rotulos = rotulosDiagnostico(
-    provaEhOficial(prova.tipo) ? "prova_oficial" : "simulado"
+    modoUso === "OFICIAL" ? "prova_oficial" : "simulado"
   );
 
   let diagnosis = await buildDiagnosis(
@@ -217,7 +224,12 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
       tipoErro: tipoErro as ErrorType | null | undefined,
     })),
     historicalAttempts,
-    { checkInScore: input.checkInScore, examLabel: rotulos.curto, provaTipo: prova.tipo }
+    {
+      checkInScore: input.checkInScore,
+      examLabel: rotulos.curto,
+      provaTipo: prova.tipo,
+      modoUso,
+    }
   );
 
   diagnosis = enriquecerDiagnosticoComProva(
@@ -246,6 +258,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
       nota: input.nota,
       checkInScore: input.checkInScore,
       recoveryMode: diagnosis.recoveryMode,
+      modoUso,
       questionAttempts: {
         create: rawAttempts.map((a) => {
           const q = prova.questoes.find((pq) => pq.numero === a.numero)!;
@@ -422,6 +435,7 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
     checkInScore: exam.checkInScore,
     examLabel: rotulos.curto,
     provaTipo: prova.tipo,
+    modoUso: exam.modoUso,
   });
 
   diagnosis = enriquecerDiagnosticoComProva(

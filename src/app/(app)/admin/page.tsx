@@ -10,7 +10,7 @@ export default async function AdminHomePage() {
   if (!session) redirect("/login");
   if (session.role !== "ADMIN") redirect("/dashboard");
 
-  const [provas, alunos, tentativas, publicadas] = await Promise.all([
+  const [provas, alunos, tentativas, publicadas, sugestoesPendentes] = await Promise.all([
     prisma.prova.findMany({
       include: { questoes: { select: { numero: true } } },
       orderBy: { updatedAt: "desc" },
@@ -18,6 +18,7 @@ export default async function AdminHomePage() {
     prisma.user.count({ where: { role: "STUDENT" } }),
     prisma.exam.count(),
     prisma.prova.count({ where: { publicada: true } }),
+    prisma.sugestaoClassificacao.count({ where: { status: "PENDENTE" } }),
   ]);
 
   const incompletas = provas.filter((p) => {
@@ -64,6 +65,11 @@ export default async function AdminHomePage() {
         </Link>
         <Link href="/admin/usuarios">
           <Button variant="secondary">Alunos e acesso</Button>
+        </Link>
+        <Link href="/admin/sugestoes">
+          <Button variant="secondary">
+            Sugestões{sugestoesPendentes > 0 ? ` (${sugestoesPendentes})` : ""}
+          </Button>
         </Link>
         <Link href="/admin/convites">
           <Button variant="ghost">Convites</Button>

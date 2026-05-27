@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ModoUsoSelector } from "@/components/modo-uso-selector";
 import { Button, Card, Input, Label } from "@/components/ui";
+import type { ModoUsoRegistro, ProvaTipo } from "@/generated/prisma/client";
 import { parseListaErros } from "@/lib/gabarito";
+import { modoUsoPadraoParaProva } from "@/lib/modo-uso";
 import { formatProvaLabel } from "@/lib/prova-label";
 
 interface TentativaResumo {
@@ -20,6 +23,7 @@ interface ProvaOption {
   id: string;
   nome: string;
   banca: string;
+  tipo?: ProvaTipo;
   ano?: number | null;
   caderno?: string | null;
   totalQuestoes: number;
@@ -45,6 +49,7 @@ export default function NovoSimuladoPage() {
   const [respostas, setRespostas] = useState("");
   const [listaErros, setListaErros] = useState("");
   const [modo, setModo] = useState<"gabarito" | "sequencia" | "erros">("gabarito");
+  const [modoUso, setModoUso] = useState<ModoUsoRegistro>("OFICIAL");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -91,6 +96,12 @@ export default function NovoSimuladoPage() {
     }
   }, [modoRegistro, substituirExamId, tentativas]);
 
+  useEffect(() => {
+    if (prova?.tipo) {
+      setModoUso(modoUsoPadraoParaProva(prova.tipo));
+    }
+  }, [provaId, prova?.tipo]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!provaId) {
@@ -112,6 +123,7 @@ export default function NovoSimuladoPage() {
     const body: Record<string, unknown> = {
       provaId,
       data,
+      modoUso,
     };
     if (checkIn != null) body.checkInScore = checkIn;
     if (modoRegistro === "substituir" && substituirExamId) {
@@ -292,6 +304,17 @@ export default function NovoSimuladoPage() {
               )}
             </Card>
           )}
+
+          <Card>
+            <Label>Como você usou esta prova?</Label>
+            <p className="mt-1 text-xs text-slate-500">
+              Isso define o peso no seu plano e na jornada — independente do tipo cadastrado pelo
+              admin.
+            </p>
+            <div className="mt-3">
+              <ModoUsoSelector value={modoUso} onChange={setModoUso} />
+            </div>
+          </Card>
 
           <Card className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">

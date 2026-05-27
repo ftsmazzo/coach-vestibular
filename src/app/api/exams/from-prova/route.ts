@@ -13,6 +13,7 @@ const schema = z.object({
   gabaritoAluno: z.string().optional(),
   respostas: z.string().optional(),
   apenasErros: z.array(z.number().int().positive()).optional(),
+  modoUso: z.enum(["OFICIAL", "TREINO", "REVISAO_PROVA_ANTIGA"]).optional(),
 });
 
 export async function POST(request: Request) {

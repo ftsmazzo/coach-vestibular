@@ -10,6 +10,7 @@ import { EvolutionChart } from "@/components/evolution-chart";
 import { FiltroRegistrosTabs } from "@/components/filtro-registros-tabs";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
 import { DashboardHero } from "@/components/dashboard-hero";
+import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 
@@ -68,6 +69,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       </div>
 
       <MensagemDiaCard />
+
+      {filtro === "todos" && <JornadaResumoCard userId={session.userId} />}
 
       <DashboardHero exam={examHero} pct={pctLatest} counts={data.counts} />
 

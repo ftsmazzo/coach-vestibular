@@ -35,6 +35,19 @@ enum ProvaTipo {
   LISTA_FIXACAO
 }
 
+/// Como o aluno usou esta atividade — define peso na jornada e no plano global
+enum ModoUsoRegistro {
+  OFICIAL
+  TREINO
+  REVISAO_PROVA_ANTIGA
+}
+
+enum StatusSugestaoClassificacao {
+  PENDENTE
+  ACEITA
+  REJEITADA
+}
+
 /// Prova cadastrada pelo admin — banco de questões (uma linha por questão)
 model Prova {
   id              String    @id @default(cuid())
@@ -74,6 +87,7 @@ model ProvaQuestao {
 
   prova     Prova              @relation(fields: [provaId], references: [id], onDelete: Cascade)
   tentativas QuestionAttempt[]
+  sugestoes  SugestaoClassificacao[]
 
   @@unique([provaId, numero])
   @@index([provaId, materia])
@@ -87,10 +101,12 @@ model User {
   role            UserRole @default(STUDENT)
   vestibularAlvo  String?  @default("Medicina")
   metaProva       String?
+  xp              Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  exams               Exam[]
+  exams                    Exam[]
+  sugestoesClassificacao   SugestaoClassificacao[]
   diagnosticSnapshots DiagnosticSnapshot[]
   studyPlans          StudyPlan[]
   quests              Quest[]
@@ -117,14 +133,45 @@ model Exam {
   totalQuestoes  Int
   nota           Float?
   checkInScore   Int?
-  recoveryMode   Boolean  @default(false)
-  createdAt      DateTime @default(now())
+  recoveryMode   Boolean          @default(false)
+  modoUso        ModoUsoRegistro  @default(OFICIAL)
+  createdAt      DateTime         @default(now())
 
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   prova              Prova?              @relation(fields: [provaId], references: [id], onDelete: SetNull)
   questionAttempts   QuestionAttempt[]
   diagnosticSnapshot DiagnosticSnapshot?
   emotionalLog       EmotionalLog?
+  sugestoesClassificacao SugestaoClassificacao[]
+}
+
+/// Aluno sinaliza classificação errada — revisão colaborativa (+ XP se aceita)
+model SugestaoClassificacao {
+  id                String                      @id @default(cuid())
+  userId            String
+  examId            String
+  provaQuestaoId    String?
+  numero            Int
+  materiaAtual      String
+  assuntoAtual      String
+  areaBlocoAtual    String?
+  texto             String                      @db.Text
+  materiaSugerida   String?
+  assuntoSugerido   String?
+  areaBlocoSugerida String?
+  status            StatusSugestaoClassificacao @default(PENDENTE)
+  xpConcedido       Int                         @default(0)
+  respostaAdmin     String?                     @db.Text
+  createdAt         DateTime                    @default(now())
+  reviewedAt        DateTime?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam         Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  provaQuestao ProvaQuestao? @relation(fields: [provaQuestaoId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([userId])
+  @@index([examId])
 }
 
 model QuestionAttempt {

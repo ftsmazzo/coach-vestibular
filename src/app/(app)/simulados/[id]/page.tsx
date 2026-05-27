@@ -3,10 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { prisma } from "@/lib/prisma";
+import { labelModoUso, descricaoModoUso } from "@/lib/modo-uso";
 import {
   categoriaDoRegistro,
   labelCategoriaRegistro,
 } from "@/lib/prova-tipo";
+import { TabelaQuestoesRegistro } from "@/components/tabela-questoes-registro";
 import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
 import { Card, Badge, LinkButton } from "@/components/ui";
 import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
@@ -52,11 +54,13 @@ export default async function SimuladoDetailPage({
             <Badge tone={cat === "prova_oficial" ? "success" : "neutral"}>
               {labelCategoriaRegistro(cat)}
             </Badge>
+            <Badge tone="neutral">{labelModoUso(exam.modoUso)}</Badge>
           </div>
           <p className="text-slate-600">
             Aplicada em {formatDataAplicacao(exam.data)} · {Math.round((acertos / total) * 100)}% ·{" "}
             {exam.banca}
           </p>
+          <p className="mt-1 text-xs text-slate-500">{descricaoModoUso(exam.modoUso)}</p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
           {exam.provaId ? (
@@ -138,51 +142,31 @@ export default async function SimuladoDetailPage({
       )}
 
       <Card>
-        <h2 className="mb-4 font-semibold">Questões — seu gabarito × oficial</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b text-slate-500">
-                <th className="p-2">#</th>
-                <th className="p-2">Sua resposta</th>
-                <th className="p-2">Gabarito oficial</th>
-                <th className="p-2">Matéria / Assunto</th>
-                <th className="p-2">Conhecimento</th>
-                <th className="p-2 text-right">Resultado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {exam.questionAttempts
-                .sort((a, b) => a.numero - b.numero)
-                .map((q) => (
-                  <tr
-                    key={q.id}
-                    className={`border-b border-slate-100 ${
-                      q.correto ? "bg-emerald-50/50" : "bg-rose-50/50"
-                    }`}
-                  >
-                    <td className="p-2 font-medium">{q.numero}</td>
-                    <td className="p-2 font-mono">{q.respostaAluno ?? "—"}</td>
-                    <td className="p-2 font-mono">
-                      {q.provaQuestao?.gabarito ?? "—"}
-                    </td>
-                    <td className="p-2 text-slate-700">
-                      {q.provaQuestao
-                        ? `${q.provaQuestao.materia} / ${q.provaQuestao.assunto}`
-                        : `${getMateriaLabel(q.materiaId)} / ${getTemaLabel(q.materiaId, q.temaId)}`}
-                    </td>
-                    <td className="p-2 max-w-[200px] truncate text-xs text-slate-500" title={q.provaQuestao?.conhecimentoExigido ?? ""}>
-                      {q.provaQuestao?.conhecimentoExigido ?? "—"}
-                      {q.provaQuestao?.nivelDificuldade
-                        ? ` · ${q.provaQuestao.nivelDificuldade}`
-                        : ""}
-                    </td>
-                    <td className="p-2 text-right">{q.correto ? "✓" : "✗"}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
+        <h2 className="mb-1 font-semibold">Questões — seu gabarito × oficial</h2>
+        <p className="mb-4 text-xs text-slate-500">
+          Achou matéria ou assunto errado? Use <strong>Classificação errada?</strong> em cada linha —
+          a equipe revisa e você pode ganhar XP.
+        </p>
+        <TabelaQuestoesRegistro
+          examId={exam.id}
+          linhas={[...exam.questionAttempts]
+            .sort((a, b) => a.numero - b.numero)
+            .map((q) => ({
+              numero: q.numero,
+              respostaAluno: q.respostaAluno,
+              gabarito: q.provaQuestao?.gabarito ?? null,
+              materia: q.provaQuestao
+                ? q.provaQuestao.materia
+                : getMateriaLabel(q.materiaId),
+              assunto: q.provaQuestao
+                ? q.provaQuestao.assunto
+                : getTemaLabel(q.materiaId, q.temaId),
+              conhecimento: q.provaQuestao?.conhecimentoExigido ?? null,
+              nivelDificuldade: q.provaQuestao?.nivelDificuldade ?? null,
+              correto: q.correto,
+              podeSugerir: Boolean(q.provaQuestaoId && q.provaQuestao),
+            }))}
+        />
         {exam.questionAttempts.every((q) => !q.respostaAluno) && (
           <p className="mt-3 text-xs text-amber-700">
             Este registro não incluiu seu gabarito (modo «só erros»). Na próxima vez, use «Meu

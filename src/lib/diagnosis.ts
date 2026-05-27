@@ -1,5 +1,10 @@
-import type { ErrorType } from "@/generated/prisma/client";
+import type { ErrorType, ModoUsoRegistro } from "@/generated/prisma/client";
+import { pesoModoUso } from "@/lib/modo-uso";
 import { getMateriaLabel, getTemaLabel } from "./taxonomy";
+
+function pesoModoUsoFromOptions(modo: ModoUsoRegistro): number {
+  return pesoModoUso(modo);
+}
 import type { StudyPlanItem } from "./study-plan";
 
 export interface TemaScore {
@@ -66,7 +71,7 @@ function getProvaTipoWeight(tipo?: string | null): number {
   if (tipo === "ENEM_OFICIAL" || tipo === "VESTIBULAR") return 3;
   if (tipo === "SIMULADO") return 2;
   if (tipo === "LISTA_FIXACAO") return 1;
-  return 2; // Default to Simulado
+  return 2;
 }
 
 function computeTemaScores(attempts: AttemptInput[], weight: number): TemaScore[] {
@@ -265,7 +270,12 @@ function detectRecoveryMode(overallAcerto: number, checkIn?: number | null) {
 export async function buildDiagnosis(
   currentAttempts: AttemptInput[],
   historicalAttempts: AttemptInput[][],
-  options?: { checkInScore?: number | null; examLabel?: string; provaTipo?: string | null }
+  options?: {
+    checkInScore?: number | null;
+    examLabel?: string;
+    provaTipo?: string | null;
+    modoUso?: ModoUsoRegistro | null;
+  }
 ): Promise<DiagnosisResult> {
   // Pre-process current and historical attempts with student's overrides
   const cleanCurrentAttempts = preprocessAttemptsWithOverrides(currentAttempts);
@@ -275,7 +285,9 @@ export async function buildDiagnosis(
   const acertos = cleanCurrentAttempts.filter((a) => a.correto).length;
   const overallAcerto = total > 0 ? acertos / total : 0;
 
-  const weight = getProvaTipoWeight(options?.provaTipo);
+  const weight = options?.modoUso
+    ? pesoModoUsoFromOptions(options.modoUso)
+    : getProvaTipoWeight(options?.provaTipo);
   const temaScores = computeTemaScores(cleanCurrentAttempts, weight);
   const materiaScores = computeMateriaScores(cleanCurrentAttempts, weight);
   const tipoErroCounts = inferTipoErro(cleanCurrentAttempts);
