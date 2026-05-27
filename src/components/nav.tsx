@@ -9,7 +9,7 @@ import { homePathForRole, isAdminArea } from "@/lib/role-routes";
 const studentLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/provas", label: "Atividades" },
-  { href: "/simulados", label: "Minhas listas" },
+  { href: "/simulados", label: "Listas" },
   { href: "/plano", label: "Plano" },
   { href: "/quests", label: "Quests" },
   { href: "/comunidade", label: "Comunidade" },
@@ -27,7 +27,7 @@ const adminLinks = [
 const bottomNavStudent = [
   { href: "/dashboard", label: "Início", short: "Início", icon: "🏠" },
   { href: "/provas", label: "Atividades", short: "Ativ.", icon: "📋" },
-  { href: "/simulados", label: "Minhas listas", short: "Listas", icon: "📝" },
+  { href: "/simulados", label: "Listas", short: "Listas", icon: "📝" },
   { href: "/plano", label: "Plano", short: "Plano", icon: "📅" },
   { href: "__more__", label: "Mais", short: "Mais", icon: "☰" },
 ] as const;

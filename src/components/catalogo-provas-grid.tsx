@@ -1,7 +1,7 @@
 import type { ProvaTipo } from "@/generated/prisma/client";
 import { abreviarNomeProva } from "@/lib/prova-label";
 import { tipoAtividadeFromProvaTipo } from "@/lib/prova-tipo";
-import { AtividadeCard, AtividadeCardRegistrar } from "@/components/atividade-card";
+import { AtividadeCard } from "@/components/atividade-card";
 
 export type ProvaCatalogoItem = {
   id: string;
@@ -44,16 +44,20 @@ export function CatalogoProvasGrid({ provas }: { provas: ProvaCatalogoItem[] }) 
         const titulo = abreviarNomeProva(p.nome, 42);
         const tipo = tipoAtividadeFromProvaTipo(p.tipo);
         const subtitulo = subtituloProva(p);
-        const registrarHref = `/simulados/novo?provaId=${p.id}`;
+        const lenteHref = `/provas/${p.id}/lente`;
 
         if (!p.ultimaTentativa) {
           return (
-            <AtividadeCardRegistrar
+            <AtividadeCard
               key={p.id}
               titulo={titulo}
               subtitulo={subtitulo}
               tipoAtividade={tipo}
-              registrarHref={registrarHref}
+              pct={null}
+              analiseHref={lenteHref}
+              dadosHref={lenteHref}
+              terceiroHref={`/quests?provaId=${p.id}`}
+              terceiroLabel="Quests"
             />
           );
         }
@@ -67,7 +71,7 @@ export function CatalogoProvasGrid({ provas }: { provas: ProvaCatalogoItem[] }) 
             tipoAtividade={tipo}
             pct={p.ultimaTentativa.pctAcerto}
             analiseHref={`/simulados/${examId}`}
-            dadosHref={`/provas/${p.id}/lente`}
+            dadosHref={lenteHref}
             terceiroHref={`/quests?provaId=${p.id}`}
             terceiroLabel="Quests"
           />

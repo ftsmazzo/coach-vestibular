@@ -66,19 +66,11 @@ export default async function AtividadesPage() {
       <div>
         <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Atividades</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 sm:text-base">
-          Aqui você <strong>registra o resultado</strong> de provas e simulados que já estão no
-          catálogo — com gabarito oficial e classificação por questão (matéria e assunto).
+          Catálogo de provas e simulados com questões classificadas (matéria e assunto). Abra{" "}
+          <strong>Análise</strong> para ver seu diagnóstico ou <strong>Dados</strong> para sua lente
+          e histórico.
         </p>
       </div>
-
-      <Card className="border-teal-200 bg-teal-50/50 p-4">
-        <p className="text-sm font-medium text-teal-950">Como registrar</p>
-        <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-teal-900">
-          <li>Encontre a prova ou simulado que você fez (cards abaixo).</li>
-          <li>Toque em <strong>Registrar resultado</strong> no card (só aparece se ainda não registrou).</li>
-          <li>Informe a data da prova e seu gabarito ou só os erros.</li>
-        </ol>
-      </Card>
 
       {metaLabel && (
         <p className="text-sm text-teal-900">
@@ -93,7 +85,7 @@ export default async function AtividadesPage() {
 
       <Card className="border-dashed border-slate-200 bg-slate-50/80">
         <p className="text-sm text-slate-600">
-          Não achou seu simulado? Envie o PDF — a equipe cadastra as questões com matéria e assunto e
+          Não achou seu simulado ou lista do cursinho? Envie o PDF — a equipe cadastra as questões e
           publica aqui.
         </p>
         <LinkButton href="/listas/solicitar" variant="secondary" className="mt-3">

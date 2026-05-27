@@ -1,106 +1,69 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { formatDataAplicacao } from "@/lib/data-prova";
-import { pctAcertoRegistro } from "@/lib/exam-stats";
-import { abreviarNomeProva } from "@/lib/prova-label";
-import { AtividadeCard } from "@/components/atividade-card";
-import { Card, Button, LinkButton } from "@/components/ui";
-import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
+import { Card, LinkButton } from "@/components/ui";
 
-export default async function MinhasListasPage() {
+/**
+ * Listas de exercícios — módulo em construção.
+ * A lista rápida (só números de erro) foi desativada: sem gabarito cruzado o diagnóstico não presta.
+ */
+export default async function ListasEmConstrucaoPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const listas = await prisma.exam.findMany({
-    where: {
-      userId: session.userId,
-      provaId: null,
-    },
-    orderBy: { data: "desc" },
-    include: { questionAttempts: true },
-  });
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Minhas listas</h1>
-          <p className="mt-1 text-sm text-slate-600 sm:text-base">
-            <strong>Prova ou simulado do catálogo?</strong> Use{" "}
-            <Link href="/provas" className="font-medium text-teal-700 underline">
-              Atividades
-            </Link>{" "}
-            — lá cada questão já tem matéria e assunto cadastrados pela equipe.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
-          <Link href="/provas" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto">Registrar resultado</Button>
-          </Link>
-          <Link href="/listas/nova" className="w-full sm:w-auto">
-            <Button variant="secondary" className="w-full sm:w-auto">
-              Lista rápida (só erros)
-            </Button>
-          </Link>
-        </div>
+      <div>
+        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Listas de exercícios</h1>
+        <p className="mt-1 text-sm text-slate-600 sm:text-base">
+          Em breve: cadastro da lista com gabarito e cruzamento das suas respostas — igual ao
+          catálogo de Atividades, com dados que valem para o plano.
+        </p>
       </div>
 
-      <Card className="border-slate-200 bg-slate-50">
-        <h2 className="text-sm font-semibold text-slate-800">O que é “lista rápida”?</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          É um atalho quando você <strong>não tem</strong> a prova no catálogo: você informa só
-          quantas questões errou e o app estima a matéria pelo número da questão.{" "}
-          <strong>Não dá para anexar PDF nem cadastrar enunciados aqui.</strong>
+      <Card className="border-amber-200 bg-amber-50/50">
+        <p className="text-sm font-medium text-amber-950">Por que pausamos a “lista rápida”?</p>
+        <p className="mt-2 text-sm text-amber-900">
+          Só anotar “errei 3, 5, 8” sem questões cadastradas nem gabarito oficial gera diagnóstico
+          fraco — matéria chutada, assunto vazio. Você merece o mesmo rigor das provas do catálogo.
         </p>
-        <p className="mt-2 text-sm text-slate-600">
-          Para diagnóstico completo (matéria, assunto, quests certinhas), a prova precisa estar em
-          Atividades — feita pela equipe a partir do material que você envia.
-        </p>
-        <LinkButton href="/listas/solicitar" variant="secondary" className="mt-3">
-          Enviar PDF e pedir publicação em Atividades
-        </LinkButton>
       </Card>
 
-      {listas.length === 0 ? (
-        <Card>
-          <p className="text-slate-600">Você ainda não registrou nenhuma lista pessoal.</p>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <Link href="/provas">
-              <Button>Ir para Atividades</Button>
-            </Link>
-            <Link href="/listas/nova">
-              <Button variant="secondary">Lista rápida (só erros)</Button>
-            </Link>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {listas.map((exam) => {
-              const pct = pctAcertoRegistro(exam.questionAttempts);
-              return (
-                <div key={exam.id} className="space-y-2">
-                  <AtividadeCard
-                    titulo={abreviarNomeProva(exam.nome, 42)}
-                    subtitulo={`${formatDataAplicacao(exam.data)} · Lista pessoal`}
-                    tipoAtividade="lista"
-                    pct={pct}
-                    analiseHref={`/simulados/${exam.id}`}
-                    dadosHref={`/simulados/${exam.id}`}
-                    terceiroHref="/quests"
-                    terceiroLabel="Quests"
-                  />
-                  <div className="flex justify-end">
-                    <ExcluirRegistroButton examId={exam.id} nome={exam.nome} variant="danger" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <Card>
+        <h2 className="text-sm font-semibold text-slate-800">Estrutura planejada</h2>
+        <ol className="mt-3 list-inside list-decimal space-y-3 text-sm text-slate-600">
+          <li>
+            <strong>Lista no catálogo (recomendado)</strong> — você envia PDF; a equipe cadastra
+            questões, matéria, assunto e gabarito. Depois você usa{" "}
+            <Link href="/provas" className="text-teal-700 underline">
+              Atividades
+            </Link>{" "}
+            como hoje.
+          </li>
+          <li>
+            <strong>Lista sua (privada)</strong> — você cola o gabarito da lista + suas respostas
+            (ou só erros com matéria por questão); o app cruza e gera o mesmo tipo de análise das
+            provas oficiais.
+          </li>
+          <li>
+            <strong>Importação CSV</strong> — colunas número, acertou, matéria, tema para listas
+            longas sem PDF.
+          </li>
+        </ol>
+        <p className="mt-4 text-xs text-slate-500">
+          Peso na jornada: treino (menor que prova oficial), desde que cada questão tenha
+          classificação real.
+        </p>
+      </Card>
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <LinkButton href="/provas" className="w-full sm:w-auto">
+          Ir para Atividades
+        </LinkButton>
+        <LinkButton href="/listas/solicitar" variant="secondary" className="w-full sm:w-auto">
+          Enviar PDF para o catálogo
+        </LinkButton>
+      </div>
     </div>
   );
 }

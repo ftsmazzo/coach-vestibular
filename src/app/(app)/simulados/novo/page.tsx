@@ -192,13 +192,6 @@ export default function NovoSimuladoPage() {
           Provas e simulados do catálogo. Seu gabarito é comparado com o oficial cadastrado pela
           equipe. Use a data em que você <strong>fez a prova</strong>.
         </p>
-        <p className="mt-2 text-xs text-slate-500">
-          Lista de exercícios em casa?{" "}
-          <Link href="/listas/nova" className="text-teal-700 underline">
-            Registrar lista pessoal
-          </Link>
-          .
-        </p>
       </div>
 
       {provas.length === 0 ? (
