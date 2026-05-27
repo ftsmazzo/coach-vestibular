@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createSession, hashPassword, validateInviteCode } from "@/lib/auth";
+import { consumeInviteCode, createSession, hashPassword, peekInviteCode } from "@/lib/auth";
 
 const schema = z.object({
   email: z.string().email(),
@@ -14,24 +14,31 @@ const schema = z.object({
 export async function POST(request: Request) {
   try {
     const body = schema.parse(await request.json());
-    const validInvite = await validateInviteCode(body.inviteCode);
-    if (!validInvite) {
-      return NextResponse.json({ error: "Código de convite inválido ou esgotado" }, { status: 400 });
+    const email = body.email.trim().toLowerCase();
+
+    const invite = await peekInviteCode(body.inviteCode);
+    if (!invite) {
+      return NextResponse.json(
+        { error: "Código de convite inválido, inativo ou esgotado" },
+        { status: 400 }
+      );
     }
 
-    const existing = await prisma.user.findUnique({ where: { email: body.email } });
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json({ error: "E-mail já cadastrado" }, { status: 400 });
     }
 
     const user = await prisma.user.create({
       data: {
-        email: body.email,
+        email,
         passwordHash: await hashPassword(body.password),
-        name: body.name,
-        vestibularAlvo: body.vestibularAlvo ?? "Medicina",
+        name: body.name.trim(),
+        vestibularAlvo: body.vestibularAlvo?.trim() || "Medicina",
       },
     });
+
+    await consumeInviteCode(body.inviteCode);
 
     await createSession({
       userId: user.id,

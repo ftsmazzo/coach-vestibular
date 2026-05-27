@@ -16,6 +16,7 @@ const studentLinks = [
 const adminLinks = [
   { href: "/admin", label: "Painel" },
   { href: "/admin/provas", label: "Banco de provas" },
+  { href: "/admin/usuarios", label: "Alunos" },
   { href: "/admin/convites", label: "Convites" },
 ];
 

@@ -60,7 +60,7 @@ export default function LoginPage() {
         <p className="mt-4 text-center text-sm text-slate-600">
           Beta fechado?{" "}
           <Link href="/register" className="font-medium text-teal-700 hover:underline">
-            Criar conta com convite
+            Criar conta (com convite)
           </Link>
         </p>
       </Card>

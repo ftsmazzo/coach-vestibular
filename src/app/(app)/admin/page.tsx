@@ -62,8 +62,11 @@ export default async function AdminHomePage() {
         <Link href="/admin/provas">
           <Button>Banco de provas</Button>
         </Link>
+        <Link href="/admin/usuarios">
+          <Button variant="secondary">Alunos e acesso</Button>
+        </Link>
         <Link href="/admin/convites">
-          <Button variant="secondary">Convites beta</Button>
+          <Button variant="ghost">Convites</Button>
         </Link>
         <Link href="/provas">
           <Button variant="ghost">Ver catálogo como aluno</Button>

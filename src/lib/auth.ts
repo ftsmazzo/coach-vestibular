@@ -65,14 +65,31 @@ export async function requireSession() {
   return session;
 }
 
-export async function validateInviteCode(code: string) {
-  const invite = await prisma.inviteCode.findUnique({ where: { code: code.toUpperCase() } });
+/** Verifica convite sem consumir uso (para validar antes de criar conta). */
+export async function peekInviteCode(code: string) {
+  const normalized = code.trim().toUpperCase();
+  if (normalized.length < 4) return null;
+  const invite = await prisma.inviteCode.findUnique({ where: { code: normalized } });
   if (!invite || !invite.active || invite.usedCount >= invite.maxUses) {
-    return false;
+    return null;
   }
+  return invite;
+}
+
+/** Incrementa uso — chamar só após conta criada com sucesso. */
+export async function consumeInviteCode(code: string) {
+  const invite = await peekInviteCode(code);
+  if (!invite) return false;
   await prisma.inviteCode.update({
     where: { id: invite.id },
     data: { usedCount: { increment: 1 } },
   });
   return true;
+}
+
+/** @deprecated Use peekInviteCode + consumeInviteCode */
+export async function validateInviteCode(code: string) {
+  const ok = await peekInviteCode(code);
+  if (!ok) return false;
+  return consumeInviteCode(code);
 }
