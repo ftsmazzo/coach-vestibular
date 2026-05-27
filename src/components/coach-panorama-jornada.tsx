@@ -1,11 +1,13 @@
 import type { JornadaDashboardAnalytics } from "@/lib/jornada-analytics";
+import { materiasComDadosReais } from "@/lib/jornada-analytics";
 import { buildMensagemPanoramaJornada } from "@/lib/leitura-coach";
 import type { StreakRegistros } from "@/lib/streak";
 import { textoStreakDashboard } from "@/lib/streak";
+import { AreaBlocoPieChart } from "@/components/area-bloco-pie-chart";
+import { ComparativoVestibularesChart } from "@/components/comparativo-vestibulares-chart";
 import { LeituraCoachCard } from "@/components/leitura-coach-card";
 import { Card } from "@/components/ui";
 import { MateriaJornadaCharts } from "@/components/materia-jornada-charts";
-import { EvolutionChart } from "@/components/evolution-chart";
 
 export function CoachPanoramaJornada({
   analytics,
@@ -21,12 +23,9 @@ export function CoachPanoramaJornada({
   if (analytics.totalRegistros === 0) return null;
 
   const mensagem = buildMensagemPanoramaJornada(analytics, evolucao);
-  const piores = [...analytics.materiasMedia]
-    .sort((a, b) => a.pctAcerto - b.pctAcerto)
-    .slice(0, 3);
-  const melhores = [...analytics.materiasMedia]
-    .sort((a, b) => b.pctAcerto - a.pctAcerto)
-    .slice(0, 3);
+  const comDados = materiasComDadosReais(analytics.materiasMedia, 3);
+  const piores = [...comDados].sort((a, b) => a.pctAcerto - b.pctAcerto).slice(0, 3);
+  const melhores = [...comDados].sort((a, b) => b.pctAcerto - a.pctAcerto).slice(0, 3);
 
   return (
     <section className="space-y-4">
@@ -47,15 +46,17 @@ export function CoachPanoramaJornada({
         </Card>
         <Card className="p-4">
           <p className="text-xs text-slate-500">Sequência no app</p>
-          <p className="text-2xl font-bold text-slate-900">{streakInfo.streak} dia{streakInfo.streak !== 1 ? "s" : ""}</p>
+          <p className="text-2xl font-bold text-slate-900">
+            {streakInfo.streak} dia{streakInfo.streak !== 1 ? "s" : ""}
+          </p>
           <p className="mt-0.5 text-[10px] leading-snug text-slate-500">
             {textoStreakDashboard(streakInfo)}
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-slate-500">Matérias na base</p>
-          <p className="text-2xl font-bold text-slate-900">{analytics.materiasMedia.length}</p>
-          <p className="mt-0.5 text-[10px] text-slate-500">média de todas aplicações</p>
+          <p className="text-xs text-slate-500">Grandes áreas</p>
+          <p className="text-2xl font-bold text-slate-900">{analytics.areasBloco.length}</p>
+          <p className="mt-0.5 text-[10px] text-slate-500">com questões na jornada</p>
         </Card>
       </div>
 
@@ -64,6 +65,7 @@ export function CoachPanoramaJornada({
           {piores.length > 0 && (
             <Card className="p-4">
               <p className="text-xs font-semibold uppercase text-rose-800">Priorizar</p>
+              <p className="mb-2 text-[10px] text-slate-500">Mín. 3 questões na jornada</p>
               <ul className="mt-2 space-y-2">
                 {piores.map((m) => (
                   <li key={m.materiaId}>
@@ -85,6 +87,7 @@ export function CoachPanoramaJornada({
           {melhores.length > 0 && (
             <Card className="p-4">
               <p className="text-xs font-semibold uppercase text-emerald-800">Consolidar</p>
+              <p className="mb-2 text-[10px] text-slate-500">Mín. 3 questões na jornada</p>
               <ul className="mt-2 space-y-2">
                 {melhores.map((m) => (
                   <li key={m.materiaId}>
@@ -108,25 +111,32 @@ export function CoachPanoramaJornada({
 
       <div className="grid gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-2 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Progressão geral</h3>
-          <p className="mb-3 text-xs text-slate-500">Percentual por data de aplicação</p>
-          <EvolutionChart
-            data={evolucao}
-            emptyMessage="Registre mais atividades para ver a curva."
-          />
+          <h3 className="text-sm font-semibold text-slate-900">Acerto por grande área</h3>
+          <p className="mb-3 text-xs text-slate-500">
+            Línguas, Humanas, Naturais e Exatas — soma de todos os seus registros.
+          </p>
+          <AreaBlocoPieChart areas={analytics.areasBloco} />
         </Card>
         <Card className="lg:col-span-3 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Matérias na jornada</h3>
-          <p className="mb-2 text-xs text-slate-500">
-            Média ponderada e evolução por registro — o mesmo critério do plano semanal.
+          <h3 className="text-sm font-semibold text-slate-900">Entre vestibulares oficiais</h3>
+          <p className="mb-3 text-xs text-slate-500">
+            Compara penúltimo e último vestibular; só matérias que caíram nas duas provas.
           </p>
-          <MateriaJornadaCharts
-            materiasMedia={analytics.materiasMedia}
-            seriesPorProva={analytics.seriesPorProva}
-            materiaIdsOrdenados={analytics.materiaIdsOrdenados}
-          />
+          <ComparativoVestibularesChart comparativo={analytics.comparativoVestibulares} />
         </Card>
       </div>
+
+      <Card className="p-4">
+        <h3 className="text-sm font-semibold text-slate-900">Matérias na jornada</h3>
+        <p className="mb-2 text-xs text-slate-500">
+          Média ponderada e evolução por registro — sem contar matéria ausente como 0%.
+        </p>
+        <MateriaJornadaCharts
+          materiasMedia={analytics.materiasMedia}
+          seriesPorProva={analytics.seriesPorProva}
+          materiaIdsOrdenados={analytics.materiaIdsOrdenados}
+        />
+      </Card>
     </section>
   );
 }

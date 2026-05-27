@@ -3,6 +3,7 @@ import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { buildDiagnosisForProva } from "@/lib/jornada-diagnostico";
 import { abreviarNomeProva } from "@/lib/prova-label";
 import type { JornadaDashboardAnalytics } from "@/lib/jornada-analytics";
+import { materiasComDadosReais } from "@/lib/jornada-analytics";
 
 export interface LeituraCoachProva {
   tituloProva: string;
@@ -64,7 +65,8 @@ export function buildMensagemPanoramaJornada(
   evolucao: Array<{ taxaAcerto: number }>
 ): string {
   const pct = analytics.pctGlobalPonderado;
-  const ordenadas = [...analytics.materiasMedia].sort((a, b) => a.pctAcerto - b.pctAcerto);
+  const comDados = materiasComDadosReais(analytics.materiasMedia, 3);
+  const ordenadas = [...comDados].sort((a, b) => a.pctAcerto - b.pctAcerto);
 
   const fracos = ordenadas.filter((m) => m.pctAcerto < 72).slice(0, 4).map((m) => m.label);
   const fortes = ordenadas
