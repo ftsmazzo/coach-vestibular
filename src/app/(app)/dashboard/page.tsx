@@ -11,8 +11,7 @@ import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
 import { DashboardHero } from "@/components/dashboard-hero";
 import { DashboardRegistrosGrid } from "@/components/dashboard-registros-grid";
 import { CoachPanoramaJornada } from "@/components/coach-panorama-jornada";
-import { JornadaResumoCard } from "@/components/jornada-resumo-card";
-import { RankingCard } from "@/components/ranking-card";
+import { ComunidadeDashboardBanner } from "@/components/comunidade-dashboard-banner";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 import { textoStreakDashboard } from "@/lib/streak";
@@ -51,21 +50,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-teal-700">Olá, {session.name.split(" ")[0]}</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-            Seu painel
-          </h1>
-          <p className="mt-1 max-w-xl text-sm text-slate-600">
-            Visão da <strong>jornada inteira</strong> — oficiais, simulados e listas. O plano da
-            semana usa todos os seus registros, não só o último.
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-medium text-teal-700">Olá, {session.name.split(" ")[0]}</p>
         <Link href="/provas">
           <Button>+ Registrar prova</Button>
         </Link>
       </div>
+
+      {filtro === "todos" && <ComunidadeDashboardBanner userId={session.userId} />}
 
       <MensagemDiaCard />
 
@@ -84,13 +76,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             {analytics.totalRegistros} registros · média de todas as aplicações
           </p>
         </Card>
-      )}
-
-      {filtro === "todos" && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <JornadaResumoCard userId={session.userId} />
-          <RankingCard userId={session.userId} />
-        </div>
       )}
 
       {analytics.registrosRecentes.length > 0 && (
