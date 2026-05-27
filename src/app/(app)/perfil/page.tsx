@@ -4,6 +4,8 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildResumoJornada } from "@/lib/jornada";
 import { ConquistasGrid } from "@/components/conquistas-grid";
+import { XpComoGanhar } from "@/components/xp-como-ganhar";
+import { XpRecentes } from "@/components/xp-recentes";
 import { PerfilMetaForm } from "@/components/perfil-meta-form";
 import { Card, Badge } from "@/components/ui";
 
@@ -72,6 +74,8 @@ export default async function PerfilPage() {
         </Card>
       )}
 
+      <XpComoGanhar />
+      <XpRecentes userId={session.userId} />
       <ConquistasGrid userId={session.userId} />
     </div>
   );

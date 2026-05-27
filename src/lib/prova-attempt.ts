@@ -12,6 +12,7 @@ import {
   mergeHistoricalAttempts,
   mesclarPlanoComJornada,
 } from "./jornada-plano";
+import { concederXpMelhoriaMaterias } from "./xp";
 import { modoUsoPadraoParaProva } from "./modo-uso";
 import { provaEhOficial, rotulosDiagnostico } from "./prova-tipo";
 import type { DiagnosisResult } from "./diagnosis";
@@ -315,6 +316,12 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     data: { recoveryMode: diagnosis.recoveryMode },
   });
 
+  const xpMelhorias = await concederXpMelhoriaMaterias(
+    input.userId,
+    exam.id,
+    diagnosis.materiaScores
+  );
+
   return {
     exam,
     diagnosis,
@@ -322,6 +329,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     analiseCompleta,
     avisos,
     substituiu: Boolean(input.substituirExamId),
+    xpMelhorias,
   };
 }
 
@@ -493,11 +501,18 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
 
   await aplicarPlanoEQuests(userId, diagnosis, provaEhOficial(prova.tipo));
 
+  const xpMelhorias = await concederXpMelhoriaMaterias(
+    userId,
+    exam.id,
+    diagnosis.materiaScores
+  );
+
   return {
     examId: exam.id,
     diagnosis,
     planoCoachStatus: diagnosis.planoCoachStatus ?? "ia",
     planoCoachAviso: diagnosis.planoCoachAviso,
+    xpMelhorias,
   };
 }
 

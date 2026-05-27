@@ -27,12 +27,19 @@
 - Último registro + histórico (mesma prova + jornada global).
 - Com 2+ registros: bloco *Panorama da sua jornada* (inclui meta/banca se configurada).
 
-## Colaboração
+## Colaboração e XP
 
-- Sugestões de classificação → +25 XP se aceita.
-- `/comunidade` — ranking; `/perfil` — meta e **conquistas** (medalhas calculadas).
+| Ação | XP |
+|------|-----|
+| Melhoria ≥10 p.p. em matéria (vs registro anterior da mesma prova) | +10 |
+| Todas as quests práticas da semana concluídas | +50 |
+| Sugestão de classificação aceita | +25 |
 
-## Roadmap
+- **Ranking:** apelidos `Estudante L.ab.cd` (sem nome completo).
+- `/comunidade`, `/perfil` — como ganhar XP e histórico recente.
+
+## Roadmap (ainda não feito)
 
 - API externa de incidência de temas em vestibulares.
-- Moeda interna além de XP (loja de recompensas).
+- Loja / moeda além de XP.
+- Plano 100% gerado só pela jornada agregada (sem depender só do último registro).

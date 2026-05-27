@@ -40,21 +40,14 @@ export async function RankingCard({ userId }: { userId: string }) {
             >
               <span className="text-slate-800">
                 <span className="mr-2 text-slate-400 w-5 inline-block">{e.posicao}.</span>
-                {e.nome}
+                {e.apelido}
                 {e.ehVoce && (
                   <span className="ml-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
                     você
                   </span>
                 )}
               </span>
-              <span className="text-violet-800">
-                {e.xp} XP
-                {e.sugestoesAceitas > 0 && (
-                  <span className="ml-1 text-xs text-slate-500">
-                    · {e.sugestoesAceitas} sugestão{e.sugestoesAceitas !== 1 ? "ões" : ""}
-                  </span>
-                )}
-              </span>
+              <span className="text-violet-800">{e.xp} XP</span>
             </li>
           ))}
         </ol>

@@ -111,6 +111,22 @@ model User {
   studyPlans          StudyPlan[]
   quests              Quest[]
   emotionalLogs       EmotionalLog[]
+  xpEvents            UserXpEvent[]
+}
+
+/// Registro de XP concedido (evita duplicar bônus pela mesma ação)
+model UserXpEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  tipo       String
+  referencia String
+  pontos     Int
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tipo, referencia])
+  @@index([userId, createdAt])
 }
 
 model InviteCode {

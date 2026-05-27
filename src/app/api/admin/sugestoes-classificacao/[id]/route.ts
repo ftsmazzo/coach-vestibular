@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
-import { XP_SUGESTAO_ACEITA } from "@/lib/modo-uso";
+import { concederXp, XP_VALORES } from "@/lib/xp";
 import { prisma } from "@/lib/prisma";
 import {
   normalizarLabelAssunto,
@@ -50,8 +50,6 @@ export async function PATCH(
       return NextResponse.json({ ok: true, status: "REJEITADA" });
     }
 
-    const xp = XP_SUGESTAO_ACEITA;
-
     await prisma.$transaction(async (tx) => {
       if (
         body.aplicarNaQuestao !== false &&
@@ -82,17 +80,19 @@ export async function PATCH(
         where: { id },
         data: {
           status: "ACEITA",
-          xpConcedido: xp,
+          xpConcedido: XP_VALORES.SUGESTAO_ACEITA,
           respostaAdmin: body.respostaAdmin?.trim() || "Classificação ajustada. Obrigado pela colaboração!",
           reviewedAt: new Date(),
         },
       });
-
-      await tx.user.update({
-        where: { id: sugestao.userId },
-        data: { xp: { increment: xp } },
-      });
     });
+
+    const { ganhou: xp } = await concederXp(
+      sugestao.userId,
+      "SUGESTAO_ACEITA",
+      id,
+      XP_VALORES.SUGESTAO_ACEITA
+    );
 
     return NextResponse.json({
       ok: true,

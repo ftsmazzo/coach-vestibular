@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getQuestsDoPlanoAtual } from "@/lib/plano-atual";
 import { pickRewardMessage } from "@/lib/messages";
+import { tentarXpQuestsSemana } from "@/lib/xp";
 
 export async function GET() {
   const session = await getSession();
@@ -61,5 +62,15 @@ export async function PATCH(request: Request) {
       rewardMsg: body.status === "done" ? pickRewardMessage("questComplete") : undefined,
     },
   });
-  return NextResponse.json(quest);
+
+  let xpSemana: { ganhou: number; mensagem?: string } = { ganhou: 0 };
+  if (body.status === "done") {
+    xpSemana = await tentarXpQuestsSemana(session.userId);
+  }
+
+  return NextResponse.json({
+    ...quest,
+    xpSemanaGanho: xpSemana.ganhou,
+    xpSemanaMensagem: xpSemana.mensagem,
+  });
 }

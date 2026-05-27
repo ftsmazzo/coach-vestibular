@@ -11,17 +11,20 @@ export interface Conquista {
 }
 
 export async function calcularConquistas(userId: string): Promise<Conquista[]> {
-  const [user, totalExams, oficiais, sugestoesAceitas] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { xp: true },
-    }),
-    prisma.exam.count({ where: { userId } }),
-    prisma.exam.count({ where: { userId, modoUso: "OFICIAL" } }),
-    prisma.sugestaoClassificacao.count({
-      where: { userId, status: "ACEITA" },
-    }),
-  ]);
+  const [user, totalExams, oficiais, sugestoesAceitas, questsSemanaXp, melhoriasXp] =
+    await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { xp: true },
+      }),
+      prisma.exam.count({ where: { userId } }),
+      prisma.exam.count({ where: { userId, modoUso: "OFICIAL" } }),
+      prisma.sugestaoClassificacao.count({
+        where: { userId, status: "ACEITA" },
+      }),
+      prisma.userXpEvent.count({ where: { userId, tipo: "QUESTS_SEMANA" } }),
+      prisma.userXpEvent.count({ where: { userId, tipo: "MELHORIA_MATERIA" } }),
+    ]);
 
   const xp = user?.xp ?? 0;
 
@@ -58,6 +61,20 @@ export async function calcularConquistas(userId: string): Promise<Conquista[]> {
       descricao: "Teve uma sugestão de classificação aceita pela equipe.",
       emoji: "🤝",
       check: () => sugestoesAceitas >= 1,
+    },
+    {
+      id: "quests_semana",
+      titulo: "Semana fechada",
+      descricao: "Ganhou XP por concluir todas as quests do plano.",
+      emoji: "✅",
+      check: () => questsSemanaXp >= 1,
+    },
+    {
+      id: "evoluiu_materia",
+      titulo: "Evoluindo",
+      descricao: "Ganhou XP por melhorar em alguma matéria entre registros.",
+      emoji: "📈",
+      check: () => melhoriasXp >= 1,
     },
     {
       id: "xp_25",

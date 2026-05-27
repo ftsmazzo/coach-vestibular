@@ -48,6 +48,7 @@ export default function QuestsPage() {
   const [data, setData] = useState<QuestsResponse | null>(null);
   const [mood, setMood] = useState(3);
   const [loading, setLoading] = useState(true);
+  const [xpToast, setXpToast] = useState("");
 
   async function load() {
     const res = await fetch("/api/quests");
@@ -61,11 +62,16 @@ export default function QuestsPage() {
   }, []);
 
   async function completeQuest(id: string) {
-    await fetch("/api/quests", {
+    setXpToast("");
+    const res = await fetch("/api/quests", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status: "done", moodAfter: mood }),
     });
+    const json = await res.json();
+    if (json.xpSemanaGanho > 0 && json.xpSemanaMensagem) {
+      setXpToast(json.xpSemanaMensagem);
+    }
     load();
   }
 
@@ -154,6 +160,12 @@ export default function QuestsPage() {
           ))}
         </div>
       </Card>
+
+      {xpToast && (
+        <p className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-medium text-violet-900">
+          {xpToast}
+        </p>
+      )}
 
       {loading ? (
         <p className="text-slate-500">Carregando...</p>

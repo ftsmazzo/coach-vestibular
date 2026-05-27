@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getRankingSnapshot } from "@/lib/ranking";
-import { XP_SUGESTAO_ACEITA } from "@/lib/modo-uso";
 import { ConquistasGrid } from "@/components/conquistas-grid";
+import { XpComoGanhar } from "@/components/xp-como-ganhar";
 import { Card, Badge } from "@/components/ui";
 
 export default async function ComunidadePage() {
@@ -36,10 +36,12 @@ export default async function ComunidadePage() {
           )}
         </p>
         <p className="mt-2 text-xs text-violet-800">
-          Cada sugestão aceita pelo admin vale <strong>{XP_SUGESTAO_ACEITA} XP</strong>. Em breve:
-          medalhas e recompensas extras.
+          No ranking abaixo, cada pessoa aparece só com um <strong>apelido</strong> (ex.: Estudante
+          M.ma.sa) — ninguém vê seu nome completo.
         </p>
       </Card>
+
+      <XpComoGanhar />
 
       <Card>
         <h2 className="mb-4 font-semibold text-slate-900">Ranking</h2>
@@ -66,17 +68,9 @@ export default async function ComunidadePage() {
                   </span>
                   <div>
                     <p className="font-medium text-slate-900">
-                      {e.nome}
-                      {e.ehVoce && (
-                        <Badge tone="success">Você</Badge>
-                      )}
+                      {e.apelido}
+                      {e.ehVoce && <Badge tone="success">Você</Badge>}
                     </p>
-                    {e.sugestoesAceitas > 0 && (
-                      <p className="text-xs text-slate-500">
-                        {e.sugestoesAceitas} sugestão{e.sugestoesAceitas !== 1 ? "ões" : ""}{" "}
-                        aceita{e.sugestoesAceitas !== 1 ? "s" : ""}
-                      </p>
-                    )}
                   </div>
                 </div>
                 <span className="text-lg font-semibold text-violet-800">{e.xp} XP</span>
