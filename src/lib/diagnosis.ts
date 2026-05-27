@@ -48,6 +48,9 @@ export interface DiagnosisResult {
   mensagem: string;
   tipoErroCounts: Record<string, number>;
   aiStudyPlanItems?: StudyPlanItem[];
+  /** ia = GPT ok; fallback_local = formato novo sem API; legado = generateStudyPlan */
+  planoCoachStatus?: "ia" | "fallback_local" | "legado";
+  planoCoachAviso?: string;
 }
 
 export interface AttemptInput {
@@ -402,11 +405,13 @@ export async function aplicarPlanoCoachIA(
   attempts: AttemptInput[],
   options?: { checkInScore?: number | null; examLabel?: string }
 ): Promise<DiagnosisResult> {
-  const { gerarPlanoComCoachIA, planoCoachParaStudyItems } = await import(
-    "./plano-coach-ia"
-  );
+  const {
+    gerarPlanoComCoachIA,
+    planoCoachParaStudyItems,
+    planoCoachFallbackLocal,
+  } = await import("./plano-coach-ia");
   const grouped = aggregateCurrentErrors(preprocessAttemptsWithOverrides(attempts));
-  const parsed = await gerarPlanoComCoachIA({
+  const { parsed, erroIa } = await gerarPlanoComCoachIA({
     diagnosis,
     groupedErrors: grouped,
     overallAcerto: diagnosis.overallAcerto,
@@ -415,13 +420,23 @@ export async function aplicarPlanoCoachIA(
     examLabel: options?.examLabel,
   });
 
-  if (!parsed) return diagnosis;
+  if (parsed) {
+    return {
+      ...diagnosis,
+      mensagem: parsed.mensagemResumo || diagnosis.mensagem,
+      focos: parsed.focos?.length ? parsed.focos : diagnosis.focos,
+      aiStudyPlanItems: planoCoachParaStudyItems(parsed, diagnosis),
+      planoCoachStatus: "ia",
+    };
+  }
 
+  const avisoBase = erroIa ?? "IA indisponível";
+  const items = planoCoachFallbackLocal(diagnosis, grouped);
   return {
     ...diagnosis,
-    mensagem: parsed.mensagemResumo || diagnosis.mensagem,
-    focos: parsed.focos?.length ? parsed.focos : diagnosis.focos,
-    aiStudyPlanItems: planoCoachParaStudyItems(parsed, diagnosis),
+    aiStudyPlanItems: items,
+    planoCoachStatus: "fallback_local",
+    planoCoachAviso: `${avisoBase}. Plano montado com seus dados da prova — formato novo ativo.`,
   };
 }
 

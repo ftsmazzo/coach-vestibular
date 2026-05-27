@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { recalcularDiagnosticoExam } from "@/lib/prova-attempt";
@@ -13,7 +14,19 @@ export async function POST(
 
   try {
     const result = await recalcularDiagnosticoExam(id, session.userId);
-    return NextResponse.json(result);
+    revalidatePath("/plano");
+    revalidatePath("/quests");
+    return NextResponse.json({
+      ok: true,
+      examId: result.examId,
+      planoCoachStatus: result.planoCoachStatus,
+      planoCoachAviso: result.planoCoachAviso,
+      mensagem:
+        result.planoCoachStatus === "ia"
+          ? "Diagnóstico e plano atualizados com sucesso."
+          : result.planoCoachAviso ??
+            "Plano atualizado no formato novo.",
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro";
     if (msg === "UNAUTHORIZED") {

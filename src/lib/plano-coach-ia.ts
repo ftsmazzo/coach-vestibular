@@ -1,5 +1,9 @@
 import type { DiagnosisResult, GroupedError } from "./diagnosis";
-import { limitesTokensCompletacao } from "./openai-modelos";
+import {
+  limitesTokensCompletacao,
+  modeloPipelineFallback,
+  modeloPipelinePrincipal,
+} from "./openai-modelos";
 import type { StudyPlanItem } from "./study-plan";
 import { getTipoErroLabel, taxonomy } from "./taxonomy";
 
@@ -146,6 +150,94 @@ Responda APENAS JSON válido:
   }]
 }`;
 
+function modelosCoachTentativa(): string[] {
+  const principal = modeloCoachPlano();
+  const fallbacks = [
+    process.env.OPENAI_MODEL_COACH?.trim(),
+    principal,
+    modeloPipelineFallback(),
+    modeloPipelinePrincipal(),
+    "gpt-4o",
+  ].filter(Boolean) as string[];
+  return [...new Set(fallbacks)];
+}
+
+async function chamarCoachOpenAI(
+  model: string,
+  system: string,
+  userContent: string,
+  apiKey: string
+): Promise<{ parsed: PlanoCoachIAResponse | null; erro?: string }> {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.35,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: userContent },
+      ],
+      ...limitesTokensCompletacao(model, 12000),
+    }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    return {
+      parsed: null,
+      erro: `OpenAI ${res.status} (${model}): ${txt.slice(0, 120)}`,
+    };
+  }
+
+  const data = await res.json();
+  const raw = data.choices?.[0]?.message?.content;
+  if (!raw) return { parsed: null, erro: `Resposta vazia (${model})` };
+
+  let clean = raw.trim();
+  if (clean.startsWith("```")) {
+    clean = clean.replace(/^```json?\s*/i, "").replace(/```\s*$/, "");
+  }
+
+  try {
+    const parsed = JSON.parse(clean) as PlanoCoachIAResponse & {
+      studyPlanItems?: unknown;
+    };
+    if (!parsed.diagnosticoNarrativo && parsed.studyPlanItems) {
+      return {
+        parsed: null,
+        erro: "Modelo retornou formato antigo (studyPlanItems)",
+      };
+    }
+    if (!parsed.diagnosticoNarrativo || !Array.isArray(parsed.quests)) {
+      return { parsed: null, erro: "JSON sem diagnosticoNarrativo ou quests" };
+    }
+    parsed.diagnosticoNarrativo = sanitizarParaAluno(parsed.diagnosticoNarrativo);
+    parsed.orientacaoSemana = parsed.orientacaoSemana
+      ? sanitizarParaAluno(parsed.orientacaoSemana)
+      : undefined;
+    parsed.mensagemResumo = sanitizarParaAluno(
+      parsed.mensagemResumo || parsed.diagnosticoNarrativo.slice(0, 280)
+    );
+    parsed.analisePorMateria = (parsed.analisePorMateria ?? []).map((m) => ({
+      ...m,
+      analise: sanitizarParaAluno(m.analise),
+    }));
+    parsed.quests = parsed.quests.map((q) => ({
+      ...q,
+      titulo: sanitizarParaAluno(q.titulo),
+      descricao: sanitizarParaAluno(q.descricao),
+    }));
+    return { parsed };
+  } catch {
+    return { parsed: null, erro: "JSON inválido da IA" };
+  }
+}
+
 export async function gerarPlanoComCoachIA(input: {
   diagnosis: DiagnosisResult;
   groupedErrors: GroupedError[];
@@ -153,9 +245,11 @@ export async function gerarPlanoComCoachIA(input: {
   recoveryMode: boolean;
   checkInScore?: number | null;
   examLabel?: string;
-}): Promise<PlanoCoachIAResponse | null> {
+}): Promise<{ parsed: PlanoCoachIAResponse | null; erroIa?: string }> {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    return { parsed: null, erroIa: "OPENAI_API_KEY não configurada no servidor" };
+  }
 
   const maxQuests = input.recoveryMode ? 5 : 8;
   const system = SYSTEM_PROMPT.replace("{maxQuests}", String(maxQuests));
@@ -173,61 +267,186 @@ ${montarCausasMetacognitivas(input.groupedErrors)}
 
 Gere o JSON agora.`;
 
-  const model = modeloCoachPlano();
-
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.35,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: userContent },
-        ],
-        ...limitesTokensCompletacao(model, 12000),
-      }),
-    });
-
-    if (!res.ok) {
-      console.error("Coach plano IA:", res.status, await res.text().then((t) => t.slice(0, 300)));
-      return null;
+  const erros: string[] = [];
+  for (const model of modelosCoachTentativa()) {
+    const { parsed, erro } = await chamarCoachOpenAI(model, system, userContent, apiKey);
+    if (parsed) return { parsed };
+    if (erro) {
+      console.warn(`Coach plano (${model}):`, erro);
+      erros.push(erro);
     }
-
-    const data = await res.json();
-    const raw = data.choices?.[0]?.message?.content;
-    if (!raw) return null;
-
-    let clean = raw.trim();
-    if (clean.startsWith("```")) {
-      clean = clean.replace(/^```json?\s*/i, "").replace(/```\s*$/, "");
-    }
-    const parsed = JSON.parse(clean) as PlanoCoachIAResponse;
-    if (!parsed.diagnosticoNarrativo || !Array.isArray(parsed.quests)) return null;
-    parsed.diagnosticoNarrativo = sanitizarParaAluno(parsed.diagnosticoNarrativo);
-    parsed.orientacaoSemana = parsed.orientacaoSemana
-      ? sanitizarParaAluno(parsed.orientacaoSemana)
-      : undefined;
-    parsed.mensagemResumo = sanitizarParaAluno(parsed.mensagemResumo);
-    parsed.analisePorMateria = (parsed.analisePorMateria ?? []).map((m) => ({
-      ...m,
-      analise: sanitizarParaAluno(m.analise),
-    }));
-    parsed.quests = parsed.quests.map((q) => ({
-      ...q,
-      titulo: sanitizarParaAluno(q.titulo),
-      descricao: sanitizarParaAluno(q.descricao),
-    }));
-    return parsed;
-  } catch (e) {
-    console.error("Erro ao gerar plano com Coach IA:", e);
-    return null;
   }
+
+  return {
+    parsed: null,
+    erroIa: erros[0] ?? "Falha ao gerar plano com IA",
+  };
+}
+
+function atividadePorCausa(
+  materia: string,
+  nums: number[],
+  causa?: string,
+  anotacao?: string
+): { titulo: string; descricao: string; duracaoMin: number; estrategia: "lacuna" | "reversa" | "velocidade" } {
+  const ref = nums.length ? `questões ${nums.slice(0, 6).join(", ")}` : "questões que você errou";
+  const nota = anotacao ? ` Você anotou: «${anotacao.slice(0, 120)}».` : "";
+  const c = causa ?? "";
+
+  if (c === "CALCULO_BOBEIRA" || c === "INTERPRETACAO_ENUNCIADO" || c === "FALTA_TEMPO") {
+    return {
+      titulo: `${materia} — bloco cronometrado`,
+      descricao:
+        `Nas ${ref}, o padrão foi ${getTipoErroLabel(c) ?? "atenção no enunciado ou na conta"}.${nota} ` +
+        `Resolva 5 a 8 questões em 12 minutos: sublinhe o comando do enunciado e confira cada passo antes de marcar a alternativa.`,
+      duracaoMin: 15,
+      estrategia: "velocidade",
+    };
+  }
+  if (c === "DUVIDA_CRUCIAL") {
+    return {
+      titulo: `${materia} — destrinchar a dúvida`,
+      descricao:
+        `Nas ${ref}, você ficou entre duas alternativas.${nota} ` +
+        `Pegue 3 questões parecidas (incluindo uma que errou), resolva com gabarito comentado e marque o ponto exato em que a lógica bifurcou.`,
+      duracaoMin: 50,
+      estrategia: "reversa",
+    };
+  }
+  return {
+    titulo: `${materia} — fechar base`,
+    descricao:
+      `Nas ${ref}, faltou consolidar o conteúdo (${getTipoErroLabel(c) ?? "lacuna de estudo"}).${nota} ` +
+      `Faça um fichamento curto do que caiu e resolva 5 questões novas só desse recorte, sem dispersar para o resto da matéria.`,
+    duracaoMin: 55,
+    estrategia: "lacuna",
+  };
+}
+
+/** Formato novo sem API — garante diagnóstico + análise por matéria + quests. */
+export function planoCoachFallbackLocal(
+  diagnosis: DiagnosisResult,
+  grouped: GroupedError[]
+): StudyPlanItem[] {
+  const resumo = diagnosis.resumoProva;
+
+  const paragrafosDiag: string[] = [];
+  if (resumo) {
+    paragrafosDiag.push(
+      `Nesta prova você acertou ${resumo.acertos} de ${resumo.total} questões (${resumo.pctAcerto}% de acerto). ` +
+        `Isso não define seu vestibular — é um retrato do que precisa de atenção agora.`
+    );
+    if (diagnosis.recoveryMode) {
+      paragrafosDiag.push(
+        "O desempenho ou o check-in indicam uma semana mais leve: menos volume, mais clareza em cada erro. " +
+          "Priorize entender o porquê de cada questão errada antes de aumentar a quantidade de exercícios."
+      );
+    } else {
+      paragrafosDiag.push(
+        "O que mais importa é o padrão dos erros: onde foi falta de conteúdo, onde foi leitura do enunciado, " +
+          "onde foi dúvida entre alternativas ou pressa. Suas anotações em cada questão guiam o foco abaixo."
+      );
+    }
+    const causas = Object.entries(diagnosis.tipoErroCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([k, n]) => `${getTipoErroLabel(k) ?? k} (${n}×)`);
+    if (causas.length) {
+      paragrafosDiag.push(`Pelos seus registros, os tipos de erro mais frequentes foram: ${causas.join("; ")}.`);
+    }
+  } else {
+    paragrafosDiag.push(diagnosis.mensagem);
+  }
+
+  const analises: PlanoCoachIAResponse["analisePorMateria"] = [];
+  const materias = resumo?.todasMaterias ?? diagnosis.materiaScores.map((m) => ({
+    materia: m.materiaLabel,
+    erros: m.erros,
+    acertos: m.total - m.erros,
+    total: m.total,
+    numerosErrados: [] as number[],
+  }));
+
+  for (const m of materias) {
+    const taxa = m.total > 0 ? Math.round((m.acertos / m.total) * 100) : 0;
+    let texto: string;
+    if (m.erros === 0) {
+      texto = `Você manteve bom desempenho em ${m.materia} (${taxa}% de acerto na prova). Vale um bloco curto de manutenção para não perder ritmo.`;
+    } else if (taxa < 45) {
+      texto = `Em ${m.materia} houve ${m.erros} erro(s) em ${m.total} questões (${taxa}% de acerto). A prova mostrou lacunas que pedem revisão estruturada esta semana — não só mais questões soltas.`;
+    } else {
+      texto = `Em ${m.materia} o resultado foi misto (${taxa}% de acerto, ${m.erros} erro(s)). Há pontos sólidos e trechos que ainda vazam; o equilíbrio é consolidar sem abandonar o que já funciona.`;
+    }
+    const gruposMat = grouped.filter(
+      (g) => g.materia.toLowerCase() === m.materia.toLowerCase()
+    );
+    if (gruposMat.length) {
+      const causas = [...new Set(gruposMat.flatMap((g) => g.causas))]
+        .map((c) => getTipoErroLabel(c) ?? c)
+        .join(", ");
+      if (causas) texto += ` Nos erros, predominaram: ${causas}.`;
+    }
+    analises.push({
+      materia: m.materia,
+      analise: texto,
+      prioridade: m.erros >= 3 ? "alta" : m.erros > 0 ? "media" : "manter",
+    });
+  }
+
+  const quests: PlanoCoachIAResponse["quests"] = [];
+  const maxQ = diagnosis.recoveryMode ? 5 : 8;
+  const porMateria = new Map<string, GroupedError[]>();
+  for (const g of grouped) {
+    const list = porMateria.get(g.materia) ?? [];
+    list.push(g);
+    porMateria.set(g.materia, list);
+  }
+
+  for (const [materia, grupos] of porMateria) {
+    if (quests.length >= maxQ) break;
+    const nums = [...new Set(grupos.flatMap((g) => g.questoesNumeros))].sort((a, b) => a - b);
+    const causas = grupos.flatMap((g) => g.causas);
+    const causaDom =
+      causas.sort(
+        (a, b) =>
+          causas.filter((x) => x === b).length - causas.filter((x) => x === a).length
+      )[0] ?? "CONCEITO_TEORICO";
+    const anot = grupos.flatMap((g) => g.anotacoes)[0]?.replace(/^Q\d+:\s*"?|"$/g, "");
+    const at = atividadePorCausa(materia, nums, causaDom, anot);
+    quests.push({
+      titulo: at.titulo,
+      descricao: at.descricao,
+      duracaoMin: at.duracaoMin,
+      numerosQuestoes: nums,
+      estrategiaInterna: at.estrategia,
+    });
+  }
+
+  if (quests.length === 0 && resumo) {
+    for (const a of resumo.assuntosPrioritarios.slice(0, maxQ)) {
+      const at = atividadePorCausa(a.materia, a.numerosErrados, "CONCEITO_TEORICO");
+      quests.push({
+        titulo: at.titulo,
+        descricao: at.descricao,
+        duracaoMin: at.duracaoMin,
+        numerosQuestoes: a.numerosErrados,
+        estrategiaInterna: at.estrategia,
+      });
+    }
+  }
+
+  return planoCoachParaStudyItems(
+    {
+      mensagemResumo: diagnosis.mensagem,
+      diagnosticoNarrativo: paragrafosDiag.join("\n\n"),
+      orientacaoSemana:
+        "Esta semana: leia o diagnóstico e as análises por matéria; depois execute as atividades em Quests na ordem sugerida. " +
+        "Ao final, faça um mini-simulado misto das matérias da prova.",
+      analisePorMateria: analises,
+      quests,
+    },
+    diagnosis
+  );
 }
 
 export function planoCoachParaStudyItems(

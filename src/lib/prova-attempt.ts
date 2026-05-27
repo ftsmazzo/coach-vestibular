@@ -312,7 +312,13 @@ async function aplicarPlanoEQuests(
     data: { status: "skipped" },
   });
 
-  const items = diagnosis.aiStudyPlanItems || generateStudyPlan(diagnosis, { ehProvaOficial }).items;
+  const items =
+    diagnosis.aiStudyPlanItems?.length
+      ? diagnosis.aiStudyPlanItems
+      : generateStudyPlan(diagnosis, { ehProvaOficial }).items;
+  if (!diagnosis.aiStudyPlanItems?.length) {
+    diagnosis = { ...diagnosis, planoCoachStatus: "legado" };
+  }
   const recoveryMode = diagnosis.recoveryMode;
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
@@ -457,7 +463,12 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
 
   await aplicarPlanoEQuests(userId, diagnosis, provaEhOficial(prova.tipo));
 
-  return { examId: exam.id, diagnosis };
+  return {
+    examId: exam.id,
+    diagnosis,
+    planoCoachStatus: diagnosis.planoCoachStatus ?? "ia",
+    planoCoachAviso: diagnosis.planoCoachAviso,
+  };
 }
 
 export async function refreshProvaGabaritoFlag(provaId: string) {

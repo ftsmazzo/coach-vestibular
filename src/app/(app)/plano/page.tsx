@@ -53,12 +53,9 @@ export default async function PlanoPage() {
       .reduce((s, i) => s + i.duracaoMin, 0) / 60
   );
 
-  const planoLegado = items.some(
-    (i) =>
-      i.bloco === "foco_profundo" ||
-      i.bloco === "consolidacao" ||
-      i.bloco === "prioridade_materia"
-  );
+  const formatoNovo =
+    diagnostico.length > 0 || analises.length > 0;
+  const planoLegado = Boolean(plan) && !formatoNovo;
 
   return (
     <div className="space-y-8">
