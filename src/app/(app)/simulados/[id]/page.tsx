@@ -14,8 +14,6 @@ import { SugestoesRegistroResumo } from "@/components/sugestoes-registro-resumo"
 import { TabelaQuestoesRegistro } from "@/components/tabela-questoes-registro";
 import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
 import { Card, Badge, LinkButton } from "@/components/ui";
-import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
-import { RecalcularDiagnosticoButton } from "@/components/recalcular-diagnostico-button";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
 import { AnaliseErros } from "@/components/analise-erros";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
@@ -68,26 +66,15 @@ export default async function SimuladoDetailPage({
           </p>
           <p className="mt-1 text-xs text-slate-500">{descricaoModoUso(exam.modoUso)}</p>
         </div>
-        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-          {exam.provaId ? (
-            <div className="col-span-2 sm:col-span-1">
-              <RecalcularDiagnosticoButton examId={exam.id} />
-            </div>
-          ) : null}
-          {exam.provaId && (
-            <LinkButton
-              href={`/simulados/novo?provaId=${exam.provaId}`}
-              variant="secondary"
-              className="w-full text-center"
-            >
-              Refazer gabarito
-            </LinkButton>
-          )}
-          <LinkButton href={exam.provaId ? "/provas" : "/simulados"} variant="secondary" className="w-full text-center">
-            {exam.provaId ? "Atividades" : "Minhas listas"}
+        {exam.provaId && (
+          <LinkButton
+            href={`/simulados/novo?provaId=${exam.provaId}`}
+            variant="secondary"
+            className="w-full text-center sm:w-auto"
+          >
+            Corrigir gabarito
           </LinkButton>
-          <ExcluirRegistroButton examId={exam.id} nome={exam.nome} variant="secondary" />
-        </div>
+        )}
       </div>
 
       {exam.recoveryMode && (

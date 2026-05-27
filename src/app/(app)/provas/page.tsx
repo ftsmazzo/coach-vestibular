@@ -75,7 +75,7 @@ export default async function AtividadesPage() {
         <p className="text-sm font-medium text-teal-950">Como registrar</p>
         <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-teal-900">
           <li>Encontre a prova ou simulado que você fez (cards abaixo).</li>
-          <li>Toque em <strong>Registrar resultado</strong> no card.</li>
+          <li>Toque em <strong>Registrar resultado</strong> no card (só aparece se ainda não registrou).</li>
           <li>Informe a data da prova e seu gabarito ou só os erros.</li>
         </ol>
       </Card>
