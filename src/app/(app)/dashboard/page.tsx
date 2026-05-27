@@ -4,34 +4,30 @@ import { getSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/exam-service";
 import { buildJornadaDashboardAnalytics } from "@/lib/jornada-analytics";
 import { buildResumoGlobalJornada } from "@/lib/jornada";
-import { filtroRegistrosFromSearchParam } from "@/lib/prova-tipo";
+import { buildMetacognicaoGlobalJornada } from "@/lib/jornada-metacognicao";
 import { Card, Button, Badge } from "@/components/ui";
-import { FiltroRegistrosTabs } from "@/components/filtro-registros-tabs";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
 import { DashboardRegistrosGrid } from "@/components/dashboard-registros-grid";
 import { CoachPanoramaJornada } from "@/components/coach-panorama-jornada";
 import { ComunidadeDashboardBanner } from "@/components/comunidade-dashboard-banner";
 import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
+import { MetacognicaoJornadaCard } from "@/components/metacognicao-jornada-card";
 
-interface PageProps {
-  searchParams: Promise<{ filtro?: string }>;
-}
-
-export default async function DashboardPage({ searchParams }: PageProps) {
+export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role === "ADMIN") redirect("/admin");
 
-  const { filtro: filtroParam } = await searchParams;
-  const filtro = filtroRegistrosFromSearchParam(filtroParam);
-  const [data, analytics, resumoGlobal] = await Promise.all([
-    getDashboardData(session.userId, filtro),
-    buildJornadaDashboardAnalytics(session.userId, filtro),
-    buildResumoGlobalJornada(session.userId, filtro),
+  const [data, analytics, resumoGlobal, metacognicao] = await Promise.all([
+    getDashboardData(session.userId, "todos"),
+    buildJornadaDashboardAnalytics(session.userId, "todos"),
+    buildResumoGlobalJornada(session.userId, "todos"),
+    buildMetacognicaoGlobalJornada(session.userId),
   ]);
 
   const latest = data.latest;
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -41,15 +37,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      {filtro === "todos" && <ComunidadeDashboardBanner userId={session.userId} />}
+      <ComunidadeDashboardBanner userId={session.userId} />
 
       <MensagemDiaCard />
 
-      {filtro === "todos" && analytics.totalRegistros > 0 && (
+      {analytics.totalRegistros > 0 && (
         <CoachPanoramaJornada analytics={analytics} evolucao={data.evolution} />
       )}
 
-      {filtro === "todos" && <JornadaResumoCard userId={session.userId} />}
+      <JornadaResumoCard userId={session.userId} />
 
       {analytics.registrosRecentes.length > 0 ? (
         <DashboardRegistrosGrid registros={analytics.registrosRecentes} />
@@ -61,13 +57,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           </Link>
         </div>
       )}
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-          Filtrar visão
-        </p>
-        <FiltroRegistrosTabs basePath="/dashboard" filtro={filtro} counts={data.counts} />
-      </div>
 
       {latest?.recoveryMode && (
         <Card className="border-amber-200 bg-amber-50">
@@ -84,6 +73,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <ResumoDiagnosticoCard resumo={resumoGlobal} compact escopoJornada />
         </div>
       )}
+
+      {metacognicao && <MetacognicaoJornadaCard dados={metacognicao} />}
 
       {data.quests.length > 0 && (
         <Card>
