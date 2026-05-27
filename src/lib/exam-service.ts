@@ -8,7 +8,7 @@ import {
   registroPassaFiltro,
   type FiltroRegistros,
 } from "./prova-tipo";
-import { buildDiagnosis } from "./diagnosis";
+import { aplicarPlanoCoachIA, buildDiagnosis } from "./diagnosis";
 import { generateStudyPlan, planToQuests } from "./study-plan";
 
 export interface QuestionInput {
@@ -44,11 +44,16 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
     ? "ENEM_OFICIAL"
     : "SIMULADO";
 
-  const diagnosis = await buildDiagnosis(
+  let diagnosis = await buildDiagnosis(
     input.questoes,
     historicalExams.map((e) => e.questionAttempts),
     { checkInScore: input.checkInScore, examLabel: input.nome, provaTipo: inferredProvaTipo }
   );
+
+  diagnosis = await aplicarPlanoCoachIA(diagnosis, input.questoes, {
+    checkInScore: input.checkInScore,
+    examLabel: input.nome,
+  });
 
   const exam = await prisma.exam.create({
     data: {

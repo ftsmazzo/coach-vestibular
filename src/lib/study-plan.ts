@@ -3,6 +3,8 @@ import type { AssuntoPrioritario, MateriaErroResumo } from "./diagnosis-prova";
 import { getTipoErroLabel } from "./taxonomy";
 
 export type BlocoPlano =
+  | "diagnostico"
+  | "analise_materia"
   | "contexto"
   | "prioridade_materia"
   | "foco_profundo"
@@ -338,24 +340,14 @@ export function planToQuests(
   return items
     .filter((item) => item.geraQuest !== false && item.duracaoMin > 0)
     .map((item) => {
-      const tag =
-        item.bloco === "foco_profundo"
-          ? "Estudo profundo"
-          : item.bloco === "consolidacao"
-            ? "Consolidar"
-            : item.bloco === "manutencao"
-              ? "Manter"
-              : item.bloco === "integracao"
-                ? "Integrar"
-                : "Plano";
       const erros =
         item.errosNaMateria != null && item.errosNaMateria > 0
-          ? ` · ${item.errosNaMateria} erro(s) na prova`
+          ? ` (${item.errosNaMateria} erro${item.errosNaMateria > 1 ? "s" : ""} na prova)`
           : "";
       return {
         userId,
         titulo: item.titulo,
-        descricao: `[${tag}${erros}] ${item.descricao}`,
+        descricao: item.descricao + erros,
         materiaId: item.materiaId,
         temaId: item.temaId,
         duracaoMin: item.duracaoMin,

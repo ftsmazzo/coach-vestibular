@@ -383,183 +383,6 @@ export async function buildDiagnosis(
       ` Para diagnóstico por tema, registre o gabarito completo (número + letra) ou envie o caderno na Fase 2.`;
   }
 
-  // --- GOOGLE GEMINI DEEP INTEL INTEGRATION ---
-  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
-  if (apiKey) {
-    try {
-      // 1. Build the Metacognitive Context (Highly structured and aggregated by topic to prevent redundancies)
-      const groupedErrors = aggregateCurrentErrors(cleanCurrentAttempts);
-      const metacognitiveSummary = groupedErrors
-        .map((g) => {
-          const causasUnicas = Array.from(new Set(g.causas)).join(", ") || "Sem Classificação";
-          const anotacoesTexto = g.anotacoes.length > 0
-            ? g.anotacoes.map((an) => `      - ${an}`).join("\n")
-            : "      - Nenhuma anotação pessoal.";
-          return `- Tema: ${g.materia} / ${g.tema}
-    * Questões afetadas: ${g.questoesNumeros.join(", ")} (Total: ${g.errosCount} erros)
-    * Causas dos erros: ${causasUnicas}
-    * Anotações metacognitivas coletadas:
-${anotacoesTexto}`;
-        })
-        .join("\n\n");
-
-      // 2. Build Vulnerability context
-      const vulnerabilitySummary = temaScores
-        .map(
-          (t) =>
-            `- ${t.materiaLabel} — ${t.temaLabel}: Vulnerabilidade Ponderada ${t.vulnerabilidade?.toFixed(
-              2
-            )} (Erros: ${t.erros}/${t.total}, Tipo de Prova: ${options?.provaTipo || "SIMULADO"})`
-        )
-        .join("\n");
-
-      // 3. System Prompt for Gemini
-      const systemPrompt = `Você é o Coach Vestibular, um mentor de alta performance cirúrgico, analítico e implacável, especialista em preparar vestibulandos de Medicina de altíssimo nível.
-Sua missão é analisar o diagnóstico de erros agrupados por tema e gerar:
-1. Uma narrativa empática, altamente personalizada e motivadora de até 3 frases (campo "mensagem"). Adapte a intensidade e o tom para ser acolhedor se o aluno estiver no Modo Recuperação (checkInScore baixo ou desempenho geral baixo).
-2. Uma lista de focos prioritários de estudos (campo "focos").
-3. Um plano de estudos prático estruturado em blocos de Quests de estudo ativo (campo "studyPlanItems").
-
-Siga rigorosamente as seguintes REGRAS DE FERRO:
-
-1. EVITAR REDUNDÂNCIAS (LIMITE DE QUESTS POR TEMA):
-Você deve ser conciso e focado. Se o aluno errou múltiplas questões de um mesmo assunto, gere apenas UMA (ou no máximo duas) Quest integrada abordando a dor desse assunto na semana para não sobrecarregar ou gerar tarefas repetitivas.
-
-2. PRIORIDADE ABSOLUTA DA METACOGNIÇÃO (OVERRIDE DO ALUNO):
-Você DEVE ler a anotação metacognitiva/observação do aluno para cada questão ANTES de analisar qualquer classificação padrão de matéria ou assunto do banco de dados. 
-Se na anotação/observação o aluno apontar explicitamente que a classificação cadastrada no banco está errada (por exemplo: "essa questão na verdade é de geografia, não de biologia" ou "era sobre pronomes relativos, não interpretação" ou "tempo verbal"), você DEVE ignorar completamente os metadados do banco e usar a matéria e o tema corrigidos pelo aluno para gerar a Quest correspondente e os focos de estudo.
-
-3. HIPER-ESPECIFICIDADE NAS TAREFAS (PROIBIDO TERMOS MACRO OU GENÉRICOS):
-É terminantemente proibido gerar títulos macros, vagos ou genéricos como "Estudar Gramática", "Construir Mapa Mental de Óptica", "Fisiologia Humana", "Revisar Genética", "Fazer exercícios de Trigonometria", "Gramática Essencial", "Óptica Geométrica".
-Os títulos e descrições das Quests DEVEM ser extremamente específicos, focados nos micro-temas exatos do erro e citando diretamente a dor descrita pelo aluno.
-- Exemplo Inaceitável: "Revise Gramática e construa mapa mental."
-- Exemplo Correto: "Foco em Pronomes Relativos: cujo e onde"
-- Exemplo Correto 2: "Óptica: Espelhos Côncavos e Convexos"
-
-4. FRAMEWORK PEDAGÓGICO RÍGIDO (PROIBIDO INVENTAR DINÂMICAS LIVRES):
-Você não pode propor dinâmicas genéricas livres (como "faça um mapa mental genérico", "estude a teoria", "leia o capítulo"). Você DEVE classificar e estruturar cada Quest gerada escolhendo rigorosamente e EXCLUSIVAMENTE entre as 3 estruturas pedagógicas de alta performance a seguir:
-
-  A) MODELO LACUNA DE BASE (Uso obrigatório para causa dominante "CONCEITO_TEORICO" ou "CHUTE_TOTAL"):
-     - Foco: Aplicar estudo ativo direcionado EXCLUSIVAMENTE na micro-lacuna citada (ex: focar apenas no uso do pronome relativo 'cuyo' e 'onde' e as regências associadas, esquecendo o restante de gramática).
-     - Atividade: Fazer um flashcard de auto-explicação ou fichamento cirúrgico dos pontos chaves dessa lacuna e resolver 5 questões de aplicação direta desse micro-assunto.
-     
-  B) MODELO ENGENHARIA REVERSA (Uso obrigatório para causa dominante "DUVIDA_CRUCIAL"):
-     - Foco: Mapear passo a passo a resolução comentada de questões para identificar a bifurcação mental exata que fez o aluno escolher a alternativa errada.
-     - Atividade: Pegar 3 questões parecidas do assunto (incluindo a que ele errou), resolver destrinchando cada etapa do cálculo ou da lógica textual, e circular o ponto exato da pegadinha ou da dúvida cruel.
-     
-  C) MODELO BLOCO DE VELOCIDADE (Uso obrigatório para causa dominante "CALCULO_BOBEIRA", "INTERPRETACAO_ENUNCIADO" ou "FALTA_TEMPO"):
-     - Foco: Treinar agilidade e mecânica operacional sob pressão de tempo (proibido mandar estudar teoria!).
-     - Atividade: Resolver um bloco rápido de 5 a 10 questões do tema em um simulado cronometrado de 10 minutos, marcando fisicamente a caneta os verbos de comando do enunciado e conferindo o sinal a cada linha escrita (checklist de sinal).
-
-5. LEITURA ATIVA DAS ANOTAÇÕES NA DESCRIÇÃO (TEXTO DINÂMICO):
-A descrição de cada Quest DEVE obrigatoriamente iniciar com um texto dinâmico mostrando de forma clara e empática que você leu de fato a anotação pessoal que o aluno escreveu, usando exatamente o padrão: "Com base na sua anotação da QX, onde você mencionou que [resumo da anotação/dor do aluno], sua tarefa será [aplicar o Modelo A, B ou C correspondente]...".
-
-Você deve responder APENAS com um objeto JSON estruturado seguindo exatamente este formato (não adicione blocos de código markdown ao redor do JSON):
-{
-  "mensagem": "...",
-  "focos": [
-    {
-      "materiaId": "...",
-      "temaId": "...",
-      "label": "Matéria — Tema",
-      "prioridade": "alta" | "media",
-      "motivo": "...",
-      "tipoErroDominante": "..."
-    }
-  ],
-  "studyPlanItems": [
-    {
-      "ordem": 1,
-      "titulo": "...",
-      "descricao": "...",
-      "duracaoMin": 60,
-      "materiaId": "...",
-      "temaId": "...",
-      "tipoErro": "...",
-      "bloco": "foco_profundo",
-      "geraQuest": true
-    }
-  ]
-}`;
-
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const res = await fetch(geminiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: `Diagnóstico Geral:
-- Acertos: ${acertos}/${total} (${(overallAcerto * 100).toFixed(0)}%)
-- Modo Recuperação: ${recoveryMode ? "Sim" : "Não"}
-- Check-In Emocional (1 a 5): ${options?.checkInScore ?? "Não informado"}
-
-Resumo dos Erros Metacognitivos:
-${metacognitiveSummary || "Nenhum erro metacognitivo registrado."}
-
-Vulnerabilidade por Tema (Ponderada por Peso de Prova):
-${vulnerabilitySummary || "Nenhuma vulnerabilidade calculada."}
-
-Gere o diagnóstico estruturado e as Quests de estudo agora seguindo rigorosamente as Regras de Ferro.`,
-                },
-              ],
-            },
-          ],
-          systemInstruction: {
-            parts: [
-              {
-                text: systemPrompt,
-              },
-            ],
-          },
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2,
-          },
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (jsonText) {
-          // Limpador robusto de marcações de markdown de JSON
-          let cleanJson = jsonText.trim();
-          if (cleanJson.startsWith("```json")) {
-            cleanJson = cleanJson.substring(7);
-          } else if (cleanJson.startsWith("```")) {
-            cleanJson = cleanJson.substring(3);
-          }
-          if (cleanJson.endsWith("```")) {
-            cleanJson = cleanJson.substring(0, cleanJson.length - 3);
-          }
-          cleanJson = cleanJson.trim();
-
-          const parsed = JSON.parse(cleanJson);
-          return {
-            overallAcerto,
-            materiaScores,
-            temaScores,
-            focos: parsed.focos || focosFinal,
-            fortes,
-            fracos,
-            recoveryMode,
-            mensagem: parsed.mensagem || mensagem,
-            tipoErroCounts,
-            aiStudyPlanItems: parsed.studyPlanItems,
-          };
-        }
-      }
-    } catch (err) {
-      console.error("Erro na inteligência profunda do Gemini:", err);
-    }
-  }
-
   return {
     overallAcerto,
     materiaScores,
@@ -570,6 +393,35 @@ Gere o diagnóstico estruturado e as Quests de estudo agora seguindo rigorosamen
     recoveryMode,
     mensagem,
     tipoErroCounts,
+  };
+}
+
+/** Plano semanal via GPT (após diagnóstico enriquecido com resumo da prova). */
+export async function aplicarPlanoCoachIA(
+  diagnosis: DiagnosisResult,
+  attempts: AttemptInput[],
+  options?: { checkInScore?: number | null; examLabel?: string }
+): Promise<DiagnosisResult> {
+  const { gerarPlanoComCoachIA, planoCoachParaStudyItems } = await import(
+    "./plano-coach-ia"
+  );
+  const grouped = aggregateCurrentErrors(preprocessAttemptsWithOverrides(attempts));
+  const parsed = await gerarPlanoComCoachIA({
+    diagnosis,
+    groupedErrors: grouped,
+    overallAcerto: diagnosis.overallAcerto,
+    recoveryMode: diagnosis.recoveryMode,
+    checkInScore: options?.checkInScore,
+    examLabel: options?.examLabel,
+  });
+
+  if (!parsed) return diagnosis;
+
+  return {
+    ...diagnosis,
+    mensagem: parsed.mensagemResumo || diagnosis.mensagem,
+    focos: parsed.focos?.length ? parsed.focos : diagnosis.focos,
+    aiStudyPlanItems: planoCoachParaStudyItems(parsed, diagnosis),
   };
 }
 

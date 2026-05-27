@@ -1,6 +1,6 @@
 import type { ErrorType } from "@/generated/prisma/client";
 import { prisma } from "./prisma";
-import { buildDiagnosis, type AttemptInput } from "./diagnosis";
+import { aplicarPlanoCoachIA, buildDiagnosis, type AttemptInput } from "./diagnosis";
 import { enriquecerDiagnosticoComProva } from "./diagnosis-prova";
 import { generateStudyPlan, planToQuests } from "./study-plan";
 import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
@@ -226,6 +226,11 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     input.checkInScore
   );
 
+  diagnosis = await aplicarPlanoCoachIA(diagnosis, rawAttempts, {
+    checkInScore: input.checkInScore,
+    examLabel: rotulos.curto,
+  });
+
   if (!analiseCompleta && avisos.length > 0) {
     diagnosis.mensagem = `${diagnosis.mensagem} ${avisos[0]}`;
   }
@@ -418,6 +423,11 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
     questoesPedagogicas,
     exam.checkInScore
   );
+
+  diagnosis = await aplicarPlanoCoachIA(diagnosis, rawAttempts, {
+    checkInScore: exam.checkInScore,
+    examLabel: rotulos.curto,
+  });
 
   const analiseCompleta = exam.questionAttempts.every((a) => a.respostaAluno != null);
 

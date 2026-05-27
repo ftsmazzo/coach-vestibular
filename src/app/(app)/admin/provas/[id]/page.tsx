@@ -97,7 +97,7 @@ function ForcarRecalculoButton({ examId }: { examId: string }) {
         {status === "loading" && "Recalculando..."}
         {status === "success" && "✓ Sucesso!"}
         {status === "error" && "✗ Erro"}
-        {status === "idle" && "Forçar Recálculo de Plano (Gemini) 🧠"}
+        {status === "idle" && "Forçar recálculo de plano (Coach IA)"}
       </Button>
       {errorMessage && (
         <span className="text-[10px] font-medium text-rose-600 max-w-[200px] text-right truncate" title={errorMessage}>
@@ -706,7 +706,7 @@ export default function AdminProvaDetailPage() {
               <span>📊</span> Histórico de Tentativas de Alunos
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Gerenciamento das tentativas realizadas pelos alunos e atualização arbitrária de snapshots diagnósticos via Gemini.
+              Gerenciamento das tentativas realizadas pelos alunos e atualização de diagnóstico e plano (Coach IA).
             </p>
           </div>
           <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800">

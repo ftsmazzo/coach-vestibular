@@ -212,7 +212,7 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
         <div>
           {saveStatus === "saved" && (
             <p className="text-sm font-medium text-emerald-600 flex items-center gap-1.5 animate-fade-in">
-              <span>✓</span> Análise salva e Plano de Estudos atualizado com sucesso pelo Gemini! 🧠
+              <span>✓</span> Análise salva e plano da semana atualizado com sucesso!
             </p>
           )}
           {saveStatus === "saved_no_recalc" && (

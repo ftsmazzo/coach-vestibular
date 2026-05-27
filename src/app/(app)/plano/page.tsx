@@ -1,86 +1,35 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getPlanoAtual } from "@/lib/plano-atual";
-import { Card, Badge } from "@/components/ui";
+import { Card, Badge, Button } from "@/components/ui";
 import type { StudyPlanItem } from "@/lib/study-plan";
 
-function SecaoPlano({
-  titulo,
-  subtitulo,
-  items,
-}: {
-  titulo: string;
-  subtitulo?: string;
-  items: StudyPlanItem[];
-}) {
-  if (items.length === 0) return null;
+function CardAnaliseMateria({ item }: { item: StudyPlanItem }) {
+  const prioridade =
+    item.errosNaMateria != null && item.errosNaMateria >= 3
+      ? "alta"
+      : item.errosNaMateria != null && item.errosNaMateria > 0
+        ? "media"
+        : "manter";
+
   return (
-    <section className="space-y-3">
-      <div>
-        <h2 className="text-lg font-semibold text-slate-900">{titulo}</h2>
-        {subtitulo && <p className="text-sm text-slate-600">{subtitulo}</p>}
+    <Card className="border-slate-200">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <h3 className="text-lg font-semibold text-slate-900">{item.titulo}</h3>
+        {prioridade === "alta" && <Badge tone="danger">Prioridade alta</Badge>}
+        {prioridade === "media" && <Badge tone="warning">Atenção</Badge>}
+        {prioridade === "manter" && <Badge tone="success">Manter</Badge>}
+        {item.errosNaMateria != null && item.errosNaMateria > 0 && (
+          <span className="text-xs text-slate-500">
+            {item.errosNaMateria} erro{item.errosNaMateria > 1 ? "s" : ""} na prova
+          </span>
+        )}
       </div>
-      <ol className="space-y-3">
-        {items.map((item) => (
-          <li key={`${item.ordem}-${item.titulo}`}>
-            <Card
-              className={
-                item.bloco === "prioridade_materia"
-                  ? "border-rose-200 bg-rose-50/40"
-                  : item.bloco === "foco_profundo"
-                    ? "border-teal-200 bg-teal-50/20"
-                    : item.bloco === "consolidacao"
-                      ? "border-amber-100 bg-amber-50/30"
-                      : item.bloco === "integracao"
-                        ? "border-indigo-100 bg-indigo-50/30"
-                        : item.bloco === "contexto"
-                          ? "border-slate-200 bg-slate-50/80"
-                          : ""
-              }
-            >
-              <div className="flex items-start gap-3">
-                {item.duracaoMin > 0 && (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-800">
-                    {item.ordem}
-                  </span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-slate-900">{item.titulo}</h3>
-                    {item.bloco === "foco_profundo" && (
-                      <Badge tone="danger">Profundo</Badge>
-                    )}
-                    {item.bloco === "consolidacao" && (
-                      <Badge tone="warning">Consolidar</Badge>
-                    )}
-                    {item.bloco === "manutencao" && (
-                      <Badge tone="success">Manter</Badge>
-                    )}
-                    {item.bloco === "integracao" && (
-                      <Badge tone="neutral">Integrar</Badge>
-                    )}
-                    {item.errosNaMateria != null && item.errosNaMateria > 0 && (
-                      <Badge tone="danger">
-                        {item.errosNaMateria} erro{item.errosNaMateria > 1 ? "s" : ""}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="mt-1 whitespace-pre-line text-sm text-slate-600">
-                    {item.descricao}
-                  </p>
-                  {item.duracaoMin > 0 && (
-                    <p className="mt-2 text-xs font-medium text-slate-500">
-                      ~{item.duracaoMin} min
-                      {item.geraQuest !== false ? " · vira quest" : ""}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </Card>
-          </li>
-        ))}
-      </ol>
-    </section>
+      <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
+        {item.descricao}
+      </p>
+    </Card>
   );
 }
 
@@ -90,31 +39,43 @@ export default async function PlanoPage() {
 
   const { plan, items } = await getPlanoAtual(session.userId);
 
-  const panorama = items.filter((i) => i.bloco === "contexto");
-  const criticas = items.filter(
-    (i) => i.bloco === "prioridade_materia" || i.bloco === "foco_profundo"
+  const diagnostico = items.filter((i) => i.bloco === "diagnostico");
+  const contexto = items.filter(
+    (i) => i.bloco === "contexto" || i.bloco === "meta"
   );
-  const consolidacao = items.filter((i) => i.bloco === "consolidacao");
-  const manutencao = items.filter((i) => i.bloco === "manutencao");
-  const integracao = items.filter((i) => i.bloco === "integracao");
-  const meta = items.filter((i) => i.bloco === "meta");
+  const analises = items.filter((i) => i.bloco === "analise_materia");
+  const questsCount = items.filter(
+    (i) => i.geraQuest !== false && i.duracaoMin > 0
+  ).length;
+  const horasQuests = Math.round(
+    items
+      .filter((i) => i.geraQuest !== false && i.duracaoMin > 0)
+      .reduce((s, i) => s + i.duracaoMin, 0) / 60
+  );
 
-  const horasEstimadas = Math.round(
-    items.filter((i) => i.duracaoMin > 0).reduce((s, i) => s + i.duracaoMin, 0) / 60
+  const planoLegado = items.some(
+    (i) =>
+      i.bloco === "foco_profundo" ||
+      i.bloco === "consolidacao" ||
+      i.bloco === "prioridade_materia"
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Plano desta semana</h1>
         <p className="text-slate-600">
-          Plano <strong>completo</strong>: correção profunda onde mais falhou, consolidação nas
-          outras matérias da prova, manutenção do que vai bem e integração (mini-simulado +
-          caderno). Não é só lista de erros.
+          Leia o diagnóstico e a análise por matéria aqui. As atividades práticas ficam em{" "}
+          <Link href="/quests" className="font-medium text-teal-700 hover:underline">
+            Quests
+          </Link>
+          .
         </p>
-        {plan && horasEstimadas > 0 && (
+        {plan && horasQuests > 0 && (
           <p className="mt-1 text-sm text-teal-800">
-            Carga sugerida: ~{horasEstimadas}h na semana ({plan.recoveryMode ? "modo leve" : "ritmo normal"}).
+            Carga sugerida nas atividades: ~{horasQuests}h ({questsCount} tarefa
+            {questsCount !== 1 ? "s" : ""}) —{" "}
+            {plan.recoveryMode ? "ritmo leve" : "ritmo normal"}.
           </p>
         )}
       </div>
@@ -123,7 +84,7 @@ export default async function PlanoPage() {
         <Card className="border-amber-200 bg-amber-50">
           <Badge tone="warning">Modo recuperação</Badge>
           <p className="mt-2 text-sm text-amber-900">
-            Menos blocos, mas ainda com consolidação e integração — não só erros.
+            Plano mais leve — priorize qualidade e descanso, sem culpa.
           </p>
         </Card>
       )}
@@ -134,37 +95,76 @@ export default async function PlanoPage() {
             Registre um resultado em Provas públicas para gerar seu plano automaticamente.
           </p>
         </Card>
+      ) : planoLegado && analises.length === 0 ? (
+        <Card className="border-amber-200 bg-amber-50">
+          <p className="text-sm text-amber-900">
+            Este plano foi gerado no formato antigo. Use{" "}
+            <strong>Atualizar diagnóstico e plano</strong> no seu registro da prova para
+            gerar o novo formato (diagnóstico + análise por matéria + quests).
+          </p>
+        </Card>
       ) : (
-        <div className="space-y-8">
-          <SecaoPlano titulo="1. Panorama" items={panorama} />
-          <SecaoPlano
-            titulo="2. Correção profunda (onde mais falhou)"
-            subtitulo="4 passos por assunto: diagnóstico, teoria, prática, caderno."
-            items={criticas}
-          />
-          <SecaoPlano
-            titulo="3. Consolidar o restante da prova"
-            subtitulo="Matérias que apareceram na prova e ainda precisam de base — não só as 2 piores."
-            items={consolidacao}
-          />
-          <SecaoPlano
-            titulo="4. Manter o que já está forte"
-            subtitulo="Para o plano não ficar torto nem ignorar o que você já acerta."
-            items={manutencao}
-          />
-          <SecaoPlano
-            titulo="5. Integração"
-            subtitulo="Amarrar tudo com prova cronometrada e caderno de correções."
-            items={integracao}
-          />
-          <SecaoPlano titulo="6. Meta da semana" items={meta} />
-        </div>
+        <>
+          {diagnostico.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold text-slate-900">
+                Diagnóstico do desempenho
+              </h2>
+              {diagnostico.map((item) => (
+                <Card key={item.ordem} className="border-teal-100 bg-teal-50/30">
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-slate-800">
+                    {item.descricao}
+                  </p>
+                </Card>
+              ))}
+            </section>
+          )}
+
+          {contexto.map((item) => (
+            <Card key={item.ordem} className="border-slate-200 bg-slate-50/50">
+              <h3 className="font-semibold text-slate-900">{item.titulo}</h3>
+              <p className="mt-2 whitespace-pre-line text-sm text-slate-700">
+                {item.descricao}
+              </p>
+            </Card>
+          ))}
+
+          {analises.length > 0 && (
+            <section className="space-y-4">
+              <h2 className="text-lg font-semibold text-slate-900">
+                Análise por matéria
+              </h2>
+              <p className="text-sm text-slate-600">
+                Visão geral do que a prova mostrou em cada área — sem micro-lista de tarefas
+                (elas estão em Quests).
+              </p>
+              <div className="space-y-3">
+                {analises.map((item) => (
+                  <CardAnaliseMateria key={`${item.ordem}-${item.titulo}`} item={item} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {questsCount > 0 && (
+            <Card className="border-teal-200 bg-teal-50/40">
+              <h3 className="font-semibold text-teal-900">Próximo passo</h3>
+              <p className="mt-2 text-sm text-teal-900">
+                {questsCount} atividade{questsCount > 1 ? "s" : ""} prática
+                {horasQuests > 0 ? ` (~${horasQuests}h)` : ""} com base no que você errou e
+                nas suas anotações.
+              </p>
+              <Link href="/quests" className="mt-4 inline-block">
+                <Button>Abrir Quests</Button>
+              </Link>
+            </Card>
+          )}
+        </>
       )}
 
       <p className="text-xs text-slate-500">
-        Em <strong>Quests</strong> aparecem os blocos com estudo ativo (profundo, consolidar,
-        manter, integrar). Cabeçalhos e meta não viram quest. Atualize o plano no detalhe do seu
-        registro se ainda vir tarefas rasas ou antigas.
+        Plano gerado com Coach IA (GPT). Atualize após classificar erros na prova para
+        incorporar suas anotações metacognitivas.
       </p>
     </div>
   );
