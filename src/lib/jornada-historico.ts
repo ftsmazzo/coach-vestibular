@@ -1,4 +1,4 @@
-import type { ModoUsoRegistro } from "@/generated/prisma/client";
+import type { ModoUsoRegistro, ProvaTipo } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { labelModoUso, pesoModoUso } from "@/lib/modo-uso";
@@ -22,7 +22,7 @@ export interface HistoricoProvaCatalogo {
     nome: string;
     banca: string;
     ano: number | null;
-    tipo: string;
+    tipo: ProvaTipo;
     totalQuestoes: number;
   };
   tentativas: TentativaProvaResumo[];
