@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Button, Card } from "@/components/ui";
-import { opcoesAreaBlocoAdmin } from "@/lib/areas-bloco";
 import { taxonomy } from "@/lib/taxonomy";
 
 type Props = {
@@ -18,14 +17,11 @@ export function SugerirClassificacao({ examId, numero, materiaAtual, assuntoAtua
   const [texto, setTexto] = useState("");
   const [materiaSugerida, setMateriaSugerida] = useState("");
   const [assuntoSugerido, setAssuntoSugerido] = useState("");
-  const [areaBloco, setAreaBloco] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [erro, setErro] = useState("");
 
   const materias = taxonomy.materias.map((m) => m.label);
-  const temas =
-    taxonomy.materias.find((m) => m.label === materiaSugerida)?.temas.map((t) => t.label) ?? [];
 
   async function enviar() {
     setLoading(true);
@@ -38,8 +34,7 @@ export function SugerirClassificacao({ examId, numero, materiaAtual, assuntoAtua
         numero,
         texto,
         materiaSugerida: materiaSugerida || undefined,
-        assuntoSugerido: assuntoSugerido || undefined,
-        areaBlocoSugerida: areaBloco || undefined,
+        assuntoSugerido: assuntoSugerido.trim() || undefined,
       }),
     });
     const data = await res.json();
@@ -50,6 +45,8 @@ export function SugerirClassificacao({ examId, numero, materiaAtual, assuntoAtua
     }
     setMsg(data.mensagem ?? "Sugestão enviada!");
     setTexto("");
+    setAssuntoSugerido("");
+    setMateriaSugerida("");
     setAberto(false);
     onEnviado?.();
   }
@@ -88,10 +85,7 @@ export function SugerirClassificacao({ examId, numero, materiaAtual, assuntoAtua
             <select
               className="mt-0.5 w-full rounded-lg border px-2 py-1 text-sm"
               value={materiaSugerida}
-              onChange={(e) => {
-                setMateriaSugerida(e.target.value);
-                setAssuntoSugerido("");
-              }}
+              onChange={(e) => setMateriaSugerida(e.target.value)}
             >
               <option value="">—</option>
               {materias.map((m) => (
@@ -102,39 +96,19 @@ export function SugerirClassificacao({ examId, numero, materiaAtual, assuntoAtua
             </select>
           </label>
           <label className="text-xs text-slate-600">
-            Assunto sugerido
-            <select
+            Assunto correto
+            <input
+              type="text"
               className="mt-0.5 w-full rounded-lg border px-2 py-1 text-sm"
+              placeholder="Ex.: Funções do 2º grau, Genética mendeliana..."
               value={assuntoSugerido}
               onChange={(e) => setAssuntoSugerido(e.target.value)}
-              disabled={!materiaSugerida}
-            >
-              <option value="">—</option>
-              {temas.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+            />
           </label>
         </div>
-        <label className="block text-xs text-slate-600">
-          Área (opcional)
-          <select
-            className="mt-0.5 w-full rounded-lg border px-2 py-1 text-sm"
-            value={areaBloco}
-            onChange={(e) => setAreaBloco(e.target.value)}
-          >
-            <option value="">—</option>
-            {opcoesAreaBlocoAdmin().map((o) => (
-              <option key={o.id} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
         <p className="text-[10px] text-violet-700">
-          Se a equipe aceitar, você ganha XP na sua conta (ranking em breve).
+          A área do caderno (Línguas, Humanas…) é ajustada pela equipe com base na IA. Se a equipe
+          aceitar sua sugestão, você ganha XP.
         </p>
         {erro && <p className="text-xs text-rose-600">{erro}</p>}
         {msg && <p className="text-xs text-teal-700">{msg}</p>}

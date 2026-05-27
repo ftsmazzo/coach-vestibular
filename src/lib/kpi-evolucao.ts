@@ -124,7 +124,7 @@ export function ultimoKpi(serie: KpiExecucao[]): KpiExecucao | null {
 export function formatarDelta(delta: number | null): string {
   if (delta == null) return "—";
   const s = delta > 0 ? "+" : "";
-  return `${s}${delta} p.p.`;
+  return `${s}${delta}%`;
 }
 
 export function labelPercentil(p: number | null): string {

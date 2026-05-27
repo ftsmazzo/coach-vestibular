@@ -38,7 +38,7 @@ export function ComparativoVestibularesChart({
         <p>
           Geral: {anterior.pctGeral}% → {atual.pctGeral}% (
           {deltaGeral >= 0 ? "+" : ""}
-          {deltaGeral} p.p.)
+          {deltaGeral}%)
         </p>
         <p className="text-slate-500">
           Não há matérias em comum com questões nas duas provas para comparar (ex.: provas com
@@ -65,7 +65,7 @@ export function ComparativoVestibularesChart({
         {atual.dataLabel}, {atual.pctGeral}%) ·{" "}
         <span className={deltaGeral >= 0 ? "text-emerald-700" : "text-rose-700"}>
           {deltaGeral >= 0 ? "+" : ""}
-          {deltaGeral} p.p. no geral
+          {deltaGeral}% no geral
         </span>
       </div>
 
@@ -99,7 +99,7 @@ export function ComparativoVestibularesChart({
               <ul className="mt-1 space-y-0.5 text-emerald-800">
                 {comparativo.melhorias.slice(0, 5).map((d) => (
                   <li key={d.materiaId}>
-                    {getMateriaLabel(d.materiaId)} +{d.delta} p.p.
+                    {getMateriaLabel(d.materiaId)} +{d.delta}%
                   </li>
                 ))}
               </ul>
@@ -111,7 +111,7 @@ export function ComparativoVestibularesChart({
               <ul className="mt-1 space-y-0.5 text-rose-800">
                 {comparativo.quedas.slice(0, 5).map((d) => (
                   <li key={d.materiaId}>
-                    {getMateriaLabel(d.materiaId)} {d.delta} p.p.
+                    {getMateriaLabel(d.materiaId)} {d.delta}%
                   </li>
                 ))}
               </ul>

@@ -78,7 +78,8 @@ export function KpiResumoTres({
             </p>
             <p className="mt-1 text-sm text-slate-700">
               ~{kpi.inclinacaoSerie > 0 ? "+" : ""}
-              {kpi.inclinacaoSerie} p.p. por execução ({kpi.totalAteAqui} no histórico)
+              {kpi.inclinacaoSerie > 0 ? "+" : ""}
+              {kpi.inclinacaoSerie}% por execução ({kpi.totalAteAqui} no histórico)
             </p>
           </>
         ) : (

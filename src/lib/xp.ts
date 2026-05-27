@@ -92,7 +92,7 @@ export async function concederXpMelhoriaMaterias(
     if (ganhou > 0) {
       const nome = getMateriaLabel(atual.materiaId);
       mensagens.push(
-        mensagem ?? `+${ganhou} XP — você melhorou em ${nome} (+${Math.round(delta * 100)} p.p.)`
+        mensagem ?? `+${ganhou} XP — você melhorou em ${nome} (+${Math.round(delta * 100)}%)`
       );
     }
   }
