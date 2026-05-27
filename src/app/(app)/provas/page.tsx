@@ -80,6 +80,17 @@ export default async function AtividadesPage() {
       )}
 
       <CatalogoProvasGrid provas={provas} />
+
+      <p className="text-center text-sm text-slate-600">
+        Lista de exercícios em casa?{" "}
+        <Link href="/listas/nova" className="font-medium text-teal-700 underline">
+          Registrar lista pessoal
+        </Link>
+        {" · "}
+        <Link href="/listas/solicitar" className="font-medium text-teal-700 underline">
+          Solicitar simulado no catálogo
+        </Link>
+      </p>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import type { ErrorType } from "@/generated/prisma/client";
+import type { ErrorType, ModoUsoRegistro, ProvaTipo } from "@/generated/prisma/client";
 import { prisma } from "./prisma";
 import { formatDataAplicacao, parseDataAplicacao } from "./data-prova";
 import { pctAcertoRegistro } from "./exam-stats";
@@ -30,6 +30,9 @@ export interface CreateExamInput {
   nota?: number;
   checkInScore?: number;
   questoes: QuestionInput[];
+  /** Listas pessoais e treinos — nunca OFICIAL por padrão */
+  modoUso?: ModoUsoRegistro;
+  provaTipoDiagnostico?: ProvaTipo;
 }
 
 export async function createExamWithDiagnosis(input: CreateExamInput) {
@@ -41,14 +44,20 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
   });
 
   const nameUpper = input.nome.toUpperCase();
-  const inferredProvaTipo = nameUpper.includes("ENEM") || nameUpper.includes("VESTIBULAR")
-    ? "ENEM_OFICIAL"
-    : "SIMULADO";
+  const inferredProvaTipo =
+    input.provaTipoDiagnostico ??
+    (nameUpper.includes("ENEM") || nameUpper.includes("VESTIBULAR") ? "ENEM_OFICIAL" : "SIMULADO");
+  const modoUso = input.modoUso ?? "OFICIAL";
 
   let diagnosis = await buildDiagnosis(
     input.questoes,
     historicalExams.map((e) => e.questionAttempts),
-    { checkInScore: input.checkInScore, examLabel: input.nome, provaTipo: inferredProvaTipo }
+    {
+      checkInScore: input.checkInScore,
+      examLabel: input.nome,
+      provaTipo: inferredProvaTipo,
+      modoUso,
+    }
   );
 
   diagnosis = await aplicarPlanoCoachIA(diagnosis, input.questoes, {
@@ -66,6 +75,7 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
       nota: input.nota,
       checkInScore: input.checkInScore,
       recoveryMode: diagnosis.recoveryMode,
+      modoUso,
       questionAttempts: {
         create: input.questoes.map((q) => ({
           numero: q.numero,

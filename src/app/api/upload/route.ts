@@ -33,7 +33,7 @@ export async function POST(request: Request) {
           "Classificação de questões sujeita a revisão humana",
           "Dados usados apenas para apoio ao estudo do aluno",
         ],
-        suggestedAction: "/simulados/novo",
+        suggestedAction: "/listas/solicitar",
       }),
     },
   });

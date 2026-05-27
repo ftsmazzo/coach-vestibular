@@ -182,9 +182,15 @@ export default function NovoSimuladoPage() {
         </Link>
         <h1 className="mt-2 text-xl font-bold sm:text-2xl">Registrar resultado</h1>
         <p className="mt-1 text-sm text-slate-600 sm:text-base">
-          Seu gabarito é comparado com o oficial do admin. Use a data em que você{" "}
-          <strong>fez a prova</strong>, não o dia em que está cadastrando aqui — o gráfico de
-          evolução usa essa data.
+          Provas e simulados do catálogo. Seu gabarito é comparado com o oficial cadastrado pela
+          equipe. Use a data em que você <strong>fez a prova</strong>.
+        </p>
+        <p className="mt-2 text-xs text-slate-500">
+          Lista de exercícios em casa?{" "}
+          <Link href="/listas/nova" className="text-teal-700 underline">
+            Registrar lista pessoal
+          </Link>
+          .
         </p>
       </div>
 

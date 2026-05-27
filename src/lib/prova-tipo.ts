@@ -55,8 +55,10 @@ export function tipoAtividadeFromProvaTipo(tipo: ProvaTipo): TipoAtividadeVisual
 }
 
 export function tipoAtividadeVisual(exam: {
+  provaId?: string | null;
   prova?: { tipo: ProvaTipo } | null;
 }): TipoAtividadeVisual {
+  if (exam.provaId == null && !exam.prova) return "lista";
   const t = exam.prova?.tipo;
   if (!t) return "simulado";
   return tipoAtividadeFromProvaTipo(t);

@@ -73,11 +73,7 @@ export default async function SimuladoDetailPage({
             <div className="col-span-2 sm:col-span-1">
               <RecalcularDiagnosticoButton examId={exam.id} />
             </div>
-          ) : (
-            <LinkButton href="/provas" variant="primary" className="col-span-2 w-full text-center sm:col-span-1 sm:w-auto">
-              Vincular ao catálogo
-            </LinkButton>
-          )}
+          ) : null}
           {exam.provaId && (
             <LinkButton
               href={`/simulados/novo?provaId=${exam.provaId}`}
@@ -87,8 +83,8 @@ export default async function SimuladoDetailPage({
               Refazer gabarito
             </LinkButton>
           )}
-          <LinkButton href="/simulados" variant="secondary" className="w-full text-center">
-            Resultados
+          <LinkButton href={exam.provaId ? "/provas" : "/simulados"} variant="secondary" className="w-full text-center">
+            {exam.provaId ? "Atividades" : "Minhas listas"}
           </LinkButton>
           <ExcluirRegistroButton examId={exam.id} nome={exam.nome} variant="secondary" />
         </div>
