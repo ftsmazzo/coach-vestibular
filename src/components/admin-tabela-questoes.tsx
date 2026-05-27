@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@/components/ui";
+import { inferirAreaBlocoPorMateria, normalizarAreaBloco, opcoesAreaBlocoAdmin } from "@/lib/areas-bloco";
 import { taxonomy } from "@/lib/taxonomy";
 import {
   marcarObservacoesConferidas,
@@ -43,8 +44,12 @@ interface Props {
 }
 
 function formDeQuestao(q: QuestaoRow): FormEdicao {
+  const materia = q.materia;
   return {
-    areaBloco: q.areaBloco ?? "",
+    areaBloco:
+      normalizarAreaBloco(q.areaBloco, materia) ??
+      inferirAreaBlocoPorMateria(materia) ??
+      "",
     materia: q.materia,
     assunto: q.assunto,
     conhecimento: q.conhecimentoExigido ?? "",
@@ -70,6 +75,7 @@ export function AdminTabelaQuestoes({
   const [filtro, setFiltro] = useState<"todas" | "alerta">("todas");
 
   const materias = taxonomy.materias.map((m) => m.label);
+  const opcoesArea = opcoesAreaBlocoAdmin();
 
   const lista =
     filtro === "alerta"
@@ -255,25 +261,40 @@ export function AdminTabelaQuestoes({
 
             <div className="grid gap-3">
               <label className="text-xs text-slate-600">
-                Área/Bloco
-                <input
+                Área (padrão interno)
+                <select
                   className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
                   value={form.areaBloco}
                   onChange={(e) =>
                     setForm((f) => f && { ...f, areaBloco: e.target.value })
                   }
-                />
+                >
+                  <option value="">— Não definida —</option>
+                  {opcoesArea.map((o) => (
+                    <option key={o.id} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="text-xs text-slate-600">
                 Matéria
                 <select
                   className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
                   value={form.materia}
-                  onChange={(e) =>
-                    setForm((f) =>
-                      f ? { ...f, materia: e.target.value, assunto: f.assunto } : f
-                    )
-                  }
+                  onChange={(e) => {
+                    const materia = e.target.value;
+                    setForm((f) => {
+                      if (!f) return f;
+                      const canon = opcoesArea.some((o) => o.value === f.areaBloco);
+                      const sugerida = inferirAreaBlocoPorMateria(materia);
+                      return {
+                        ...f,
+                        materia,
+                        areaBloco: canon ? f.areaBloco : sugerida ?? f.areaBloco,
+                      };
+                    });
+                  }}
                 >
                   {materias.map((m) => (
                     <option key={m} value={m}>

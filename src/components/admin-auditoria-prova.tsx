@@ -45,6 +45,26 @@ export function AdminAuditoriaProva({
   const [textoReclassificar, setTextoReclassificar] = useState("");
   const [orientacaoReclassificar, setOrientacaoReclassificar] = useState("");
   const [reclassificando, setReclassificando] = useState(false);
+  const [normalizandoAreas, setNormalizandoAreas] = useState(false);
+
+  async function normalizarAreas() {
+    setNormalizandoAreas(true);
+    setMsg("");
+    try {
+      const res = await fetch(`/api/admin/provas/${provaId}/normalizar-areas`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro");
+      setMsg(data.mensagem ?? "Áreas padronizadas.");
+      onQuestoesAtualizadas?.();
+      if (resultado) await auditar();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Erro ao padronizar áreas.");
+    } finally {
+      setNormalizandoAreas(false);
+    }
+  }
 
   const auditar = useCallback(async () => {
     setAuditing(true);
@@ -140,12 +160,22 @@ export function AdminAuditoriaProva({
     <Card className="border-violet-200 bg-violet-50/40">
       <h2 className="mb-2 font-semibold text-violet-900">Auditoria</h2>
       <p className="mb-3 text-sm text-violet-900">
-        Verifica inconsistências graves (bloco×matéria, idioma, classificação errada). Corrija com{" "}
-        <strong>Editar</strong> na tabela de questões. Reclassificar com IA só se precisar.
+        Verifica inconsistências graves (bloco×matéria, idioma, classificação errada). Áreas usam
+        só 4 rótulos internos: Línguas e códigos, Ciências Humanas, Ciências Naturais, Exatas.
       </p>
-      <Button type="button" disabled={auditing} onClick={auditar}>
-        {auditing ? "Analisando..." : "Auditar classificações"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" disabled={auditing} onClick={auditar}>
+          {auditing ? "Analisando..." : "Auditar classificações"}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={normalizandoAreas || auditing}
+          onClick={normalizarAreas}
+        >
+          {normalizandoAreas ? "Padronizando..." : "Padronizar áreas (4 blocos)"}
+        </Button>
+      </div>
       {msg && <p className="mt-2 text-sm text-violet-900">{msg}</p>}
 
       {resultado && resultado.suspeitas > 0 && (

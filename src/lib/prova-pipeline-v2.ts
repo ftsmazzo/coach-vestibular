@@ -20,6 +20,7 @@ import {
   PROMPT_SISTEMA_CLASSIFICACAO,
   PROMPT_SISTEMA_ESTRUTURA,
 } from "@/lib/prova-pipeline-v2-prompts";
+import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import {
   areaBlocoPorNumero,
   validarItemClassificado,
@@ -208,13 +209,14 @@ function questaoParaRow(
   q: QuestaoClassificada,
   estrutura: EstruturaRes
 ): ProvaQuestaoRow {
-  const areaBloco =
+  const areaRaw =
     q.area_bloco?.trim() ||
     areaBlocoPorNumero(estrutura.blocos ?? [], q.numero) ||
     undefined;
   const materiaRaw = q.materia?.trim() || "A classificar";
   const materia =
     materiaRaw === "A classificar" ? materiaRaw : normalizarLabelMateria(materiaRaw);
+  const areaBloco = normalizarAreaBloco(areaRaw, materia) ?? undefined;
   const assunto =
     materia === "A classificar"
       ? "A classificar"

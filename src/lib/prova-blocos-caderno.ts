@@ -1,4 +1,5 @@
 import type { QuestaoExtraida } from "@/lib/ai-extract-prova";
+import { areaBlocoPorId } from "@/lib/areas-bloco";
 import { assuntoPadraoMateria, inferirMateriaPorEnunciado } from "@/lib/prova-heuristicas";
 import {
   detectarPassagemEspanhol,
@@ -67,7 +68,7 @@ const REGRAS_CABECALHO: Array<{
         /^matematica$/i,
       ]),
     materia: "Matemática",
-    areaBloco: "Matemática e suas tecnologias",
+    areaBloco: areaBlocoPorId("exatas").label,
   },
   {
     test: (l) =>
@@ -77,7 +78,7 @@ const REGRAS_CABECALHO: Array<{
         /^ingles$/i,
       ]),
     materia: "Inglês",
-    areaBloco: "Língua Inglesa",
+    areaBloco: areaBlocoPorId("linguagens").label,
   },
   {
     test: (l) =>
@@ -87,7 +88,7 @@ const REGRAS_CABECALHO: Array<{
         /^espanhol$/i,
       ]),
     materia: "Espanhol",
-    areaBloco: "Língua Espanhola",
+    areaBloco: areaBlocoPorId("linguagens").label,
   },
   {
     test: (l) => {
@@ -99,22 +100,22 @@ const REGRAS_CABECALHO: Array<{
       );
     },
     materia: "Português",
-    areaBloco: "Linguagens, códigos e suas tecnologias",
+    areaBloco: areaBlocoPorId("linguagens").label,
   },
   {
     test: (l) => linhaEhTituloExato(l, [/^biologia$/i]),
     materia: "Biologia",
-    areaBloco: "Ciências da Natureza",
+    areaBloco: areaBlocoPorId("natureza").label,
   },
   {
     test: (l) => linhaEhTituloExato(l, [/^fisica$/i]),
     materia: "Física",
-    areaBloco: "Ciências da Natureza",
+    areaBloco: areaBlocoPorId("natureza").label,
   },
   {
     test: (l) => linhaEhTituloExato(l, [/^quimica$/i]),
     materia: "Química",
-    areaBloco: "Ciências da Natureza",
+    areaBloco: areaBlocoPorId("natureza").label,
   },
   {
     test: (l) =>
@@ -123,27 +124,27 @@ const REGRAS_CABECALHO: Array<{
         /^ciencias\s+da\s+natureza$/i,
       ]),
     materia: "",
-    areaBloco: "Ciências da Natureza e suas tecnologias",
+    areaBloco: areaBlocoPorId("natureza").label,
   },
   {
     test: (l) => linhaEhTituloExato(l, [/^sociologia$/i]),
     materia: "Sociologia",
-    areaBloco: "Ciências Humanas",
+    areaBloco: areaBlocoPorId("humanas").label,
   },
   {
     test: (l) => linhaEhTituloExato(l, [/^filosofia$/i]),
     materia: "Filosofia",
-    areaBloco: "Ciências Humanas",
+    areaBloco: areaBlocoPorId("humanas").label,
   },
   {
     test: (l) => linhaEhTituloExato(l, [/^historia$/i]),
     materia: "História",
-    areaBloco: "Ciências Humanas",
+    areaBloco: areaBlocoPorId("humanas").label,
   },
   {
     test: (l) => linhaEhTituloExato(l, [/^geografia$/i]),
     materia: "Geografia",
-    areaBloco: "Ciências Humanas",
+    areaBloco: areaBlocoPorId("humanas").label,
   },
   {
     test: (l) =>
@@ -152,7 +153,7 @@ const REGRAS_CABECALHO: Array<{
         /^ciencias\s+humanas$/i,
       ]),
     materia: "",
-    areaBloco: "Ciências Humanas e suas tecnologias",
+    areaBloco: areaBlocoPorId("humanas").label,
   },
 ];
 

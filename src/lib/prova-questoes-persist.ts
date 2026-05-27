@@ -7,6 +7,7 @@ import {
   normalizarLabelAssunto,
   normalizarLabelMateria,
 } from "@/lib/taxonomia-validacao";
+import { normalizarAreaBloco } from "@/lib/areas-bloco";
 
 function truncarEnunciado(t?: string | null): string | null {
   if (!t?.trim()) return null;
@@ -17,21 +18,21 @@ function truncarEnunciado(t?: string | null): string | null {
 }
 
 function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
-  const base = rows.map((r) => ({
-    numero: r.numero,
-    areaBloco: r.areaBloco?.trim() || undefined,
-    materia: normalizarLabelMateria(r.materia),
-    assunto: normalizarLabelAssunto(
-      normalizarLabelMateria(r.materia),
-      r.assunto
-    ),
+  const base = rows.map((r) => {
+    const materia = normalizarLabelMateria(r.materia);
+    return {
+      numero: r.numero,
+      areaBloco: normalizarAreaBloco(r.areaBloco, materia) ?? undefined,
+      materia,
+    assunto: normalizarLabelAssunto(materia, r.assunto),
     conhecimentoExigido: r.conhecimentoExigido?.trim() || undefined,
     nivelDificuldade: r.nivelDificuldade?.trim() || undefined,
     observacoes: r.observacoes?.trim() || undefined,
     enunciado: r.enunciado?.trim() || undefined,
     gabarito:
       r.gabarito?.trim().toUpperCase().replace(/[^A-E]/g, "").slice(0, 1) || undefined,
-  }));
+    };
+  });
 
   const alinhadas = alinharLoteTaxonomia(
     base.map((r) => ({
@@ -50,7 +51,8 @@ function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
     ...base[i],
     materia: q.materia,
     assunto: q.assunto,
-    areaBloco: q.areaBloco ?? undefined,
+    areaBloco:
+      normalizarAreaBloco(q.areaBloco ?? base[i].areaBloco, q.materia) ?? undefined,
     conhecimentoExigido: q.conhecimentoExigido ?? undefined,
   }));
 }

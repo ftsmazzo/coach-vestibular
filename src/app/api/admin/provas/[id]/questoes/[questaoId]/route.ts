@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
+import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import { prisma } from "@/lib/prisma";
 import {
   normalizarLabelAssunto,
@@ -41,10 +42,15 @@ export async function PATCH(
     ? normalizarLabelAssunto(materia, body.assunto)
     : existente.assunto;
 
+  const areaBloco =
+    body.areaBloco !== undefined
+      ? normalizarAreaBloco(body.areaBloco, materia)
+      : existente.areaBloco;
+
   const atualizada = await prisma.provaQuestao.update({
     where: { id: questaoId },
     data: {
-      ...(body.areaBloco !== undefined ? { areaBloco: body.areaBloco } : {}),
+      ...(body.areaBloco !== undefined ? { areaBloco } : {}),
       materia,
       assunto,
       ...(body.conhecimentoExigido !== undefined

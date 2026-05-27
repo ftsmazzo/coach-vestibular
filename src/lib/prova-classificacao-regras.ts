@@ -1,5 +1,10 @@
 /** Regras de desambiguação e validação pós-IA (pacote GPT + taxonomia do projeto). */
 
+import {
+  materiaCompativelComAreaCanonica,
+  normalizarAreaBloco,
+} from "@/lib/areas-bloco";
+
 export const MATERIAS_LINGUAGENS = ["Português", "Literatura", "Inglês", "Espanhol"] as const;
 export const MATERIAS_HUMANAS = ["História", "Geografia", "Filosofia", "Sociologia"] as const;
 export const MATERIAS_NATUREZA = ["Biologia", "Física", "Química"] as const;
@@ -22,28 +27,8 @@ export function temGatilhoGeografico(texto: string): boolean {
 }
 
 export function materiaCompativelComBloco(areaBloco: string, materia: string): boolean {
-  const a = areaBloco.trim().toLowerCase();
-  const m = materia.trim();
-  if (!a || m === "A classificar" || !m) return true;
-
-  if (
-    a.includes("linguagem") ||
-    a.includes("códigos") ||
-    a.includes("codigos") ||
-    a.includes("linguagens")
-  ) {
-    return (MATERIAS_LINGUAGENS as readonly string[]).includes(m);
-  }
-  if (a.includes("humanas")) {
-    return (MATERIAS_HUMANAS as readonly string[]).includes(m);
-  }
-  if (a.includes("natureza")) {
-    return (MATERIAS_NATUREZA as readonly string[]).includes(m);
-  }
-  if (a.includes("matemática") || a.includes("matematica")) {
-    return m === "Matemática";
-  }
-  return true;
+  const canon = normalizarAreaBloco(areaBloco, materia) ?? areaBloco;
+  return materiaCompativelComAreaCanonica(canon, materia);
 }
 
 export type ItemClassificado = {
@@ -92,18 +77,19 @@ export function validarItemClassificado(
     return { ok: false, motivo: "Biologia sem gatilho biológico (parece Física)" };
   }
 
-  if (mat === "Biologia" && area.toLowerCase().includes("humanas")) {
+  if (mat === "Biologia" && area && normalizarAreaBloco(area, mat) === "Ciências Humanas") {
     return { ok: false, motivo: "Biologia em bloco de Ciências Humanas" };
   }
 
-  if (mat === "Biologia" && area.toLowerCase().includes("linguagem")) {
-    return { ok: false, motivo: "Biologia em bloco de Linguagens" };
+  if (mat === "Biologia" && normalizarAreaBloco(area, mat) === "Línguas e códigos") {
+    return { ok: false, motivo: "Biologia em bloco de Línguas e códigos" };
   }
 
   if (
     mat === "Biologia" &&
     !temGatilhoBiologico(blob) &&
-    (area.toLowerCase().includes("humanas") || area.toLowerCase().includes("linguagem"))
+    (normalizarAreaBloco(area, mat) === "Ciências Humanas" ||
+      normalizarAreaBloco(area, mat) === "Línguas e códigos")
   ) {
     return {
       ok: false,
@@ -111,7 +97,11 @@ export function validarItemClassificado(
     };
   }
 
-  if (mat === "Geografia" && area.toLowerCase().includes("linguagem") && !temGatilhoGeografico(blob)) {
+  if (
+    mat === "Geografia" &&
+    normalizarAreaBloco(area, mat) === "Línguas e códigos" &&
+    !temGatilhoGeografico(blob)
+  ) {
     return {
       ok: false,
       motivo: "Geografia em Linguagens sem gatilho cartográfico/espacial",
@@ -136,7 +126,7 @@ Regras de ouro:
 export const FEW_SHOTS_CLASSIFICACAO = [
   {
     numero: 1,
-    area_bloco: "Linguagens, Códigos e suas Tecnologias",
+    area_bloco: "Línguas e códigos",
     materia: "Português",
     assunto: "Interpretação de Texto",
     conhecimento: "Inferir o sentido de um argumento em texto jornalístico.",
@@ -144,7 +134,7 @@ export const FEW_SHOTS_CLASSIFICACAO = [
   },
   {
     numero: 9,
-    area_bloco: "Linguagens, Códigos e suas Tecnologias",
+    area_bloco: "Línguas e códigos",
     materia: "Português",
     assunto: "Interpretação de Texto",
     conhecimento: "Interpretar efeitos de sentido em crônica sobre território e pertencimento.",
@@ -152,7 +142,7 @@ export const FEW_SHOTS_CLASSIFICACAO = [
   },
   {
     numero: 5,
-    area_bloco: "Ciências Humanas e suas Tecnologias",
+    area_bloco: "Ciências Humanas",
     materia: "Filosofia",
     assunto: "Ética",
     conhecimento: "Aplicar conceito filosófico de justiça a uma situação social.",
@@ -160,7 +150,7 @@ export const FEW_SHOTS_CLASSIFICACAO = [
   },
   {
     numero: 6,
-    area_bloco: "Ciências Humanas e suas Tecnologias",
+    area_bloco: "Ciências Humanas",
     materia: "Sociologia",
     assunto: "Sociedade e cultura",
     conhecimento: "Analisar desigualdade de acesso a direitos em contexto social.",
@@ -168,7 +158,7 @@ export const FEW_SHOTS_CLASSIFICACAO = [
   },
   {
     numero: 7,
-    area_bloco: "Ciências da Natureza e suas Tecnologias",
+    area_bloco: "Ciências Naturais",
     materia: "Biologia",
     assunto: "Ecologia",
     conhecimento: "Interpretar relações tróficas e fluxo de energia em ecossistema.",
@@ -182,7 +172,7 @@ export function areaBlocoPorNumero(
 ): string {
   for (const b of blocos) {
     if (numero >= b.questao_inicio && numero <= b.questao_fim) {
-      return b.titulo;
+      return normalizarAreaBloco(b.titulo) ?? b.titulo;
     }
   }
   return "";

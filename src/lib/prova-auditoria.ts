@@ -6,6 +6,11 @@ import {
   textoIndicaPortugues,
 } from "./prova-materia-ajuste";
 import {
+  areaBlocoEhCanonica,
+  inferirAreaBlocoPorMateria,
+  normalizarAreaBloco,
+} from "./areas-bloco";
+import {
   materiaCompativelComBloco,
   temGatilhoBiologico,
   temGatilhoGeografico,
@@ -118,6 +123,15 @@ function motivosRegrasEstruturais(
     out.push("Classificação incompleta (A classificar).");
   }
 
+  if (q.areaBloco?.trim() && !areaBlocoEhCanonica(q.areaBloco)) {
+    const sugerida = normalizarAreaBloco(q.areaBloco, mat) ?? inferirAreaBlocoPorMateria(mat);
+    out.push(
+      sugerida
+        ? `Área «${q.areaBloco.slice(0, 40)}» não é padrão interno — use «${sugerida}».`
+        : `Área «${q.areaBloco.slice(0, 40)}» não é padrão interno (Línguas e códigos, Humanas, Naturais ou Exatas).`
+    );
+  }
+
   if (q.areaBloco?.trim() && mat && mat !== "A classificar") {
     if (!materiaCompativelComBloco(q.areaBloco, mat)) {
       out.push(
@@ -146,10 +160,10 @@ function motivosRegrasEstruturais(
 
     if (
       mat === "Geografia" &&
-      q.areaBloco?.toLowerCase().includes("linguagem") &&
+      normalizarAreaBloco(q.areaBloco, mat) === "Línguas e códigos" &&
       !temGatilhoGeografico(blob)
     ) {
-      out.push("Geografia em bloco de Linguagens sem conteúdo cartográfico/espacial explícito.");
+      out.push("Geografia em bloco de Línguas e códigos sem conteúdo cartográfico/espacial explícito.");
     }
 
     if (

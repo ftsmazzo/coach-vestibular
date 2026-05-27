@@ -2,6 +2,7 @@ import {
   FEW_SHOTS_CLASSIFICACAO,
   REGRAS_OURO_CLASSIFICACAO,
 } from "@/lib/prova-classificacao-regras";
+import { listaAreasBlocoParaPrompt } from "@/lib/areas-bloco";
 
 /**
  * Prompts do pipeline V2 — classificação com desambiguação (pacote GPT + taxonomia).
@@ -34,10 +35,12 @@ Classificar cada questão usando os campos do schema, incluindo resumo_enunciado
 Regras obrigatórias:
 - Não misture matéria com assunto.
 - materia e assunto devem vir apenas da taxonomia fornecida pelo usuário.
+- area_bloco DEVE ser EXATAMENTE um destes 4 rótulos internos (ignore títulos longos do PDF):
+${listaAreasBlocoParaPrompt()}
 - Use area_bloco como prioridade 1; resumo_enunciado e conteúdo visível como prioridade 2.
-- Se area_bloco for Linguagens, não classifique como Geografia, Biologia, Física, Química, História, Filosofia ou Sociologia.
-- Se area_bloco for Ciências Humanas, não classifique como Biologia, Física ou Química (Humanas != Biologia).
-- Linguagens != Geografia, salvo mapa, cartografia, clima, relevo, urbanização ou dado geográfico explícito.
+- Se area_bloco for «Línguas e códigos», não classifique como Geografia, Biologia, Física, Química, História, Filosofia ou Sociologia.
+- Se area_bloco for «Ciências Humanas», não classifique como Biologia, Física ou Química (Humanas != Biologia).
+- Línguas e códigos != Geografia, salvo mapa, cartografia, clima, relevo, urbanização ou dado geográfico explícito.
 - Texto sobre território, região, paisagem, população ou ambiente pode ser Português se a tarefa for interpretação textual.
 - Texto sobre sociedade, política, cidadania, desigualdade, gênero, cultura ou trabalho não é Biologia.
 - Só classifique Biologia com mecanismo biológico explícito: célula, genética, fisiologia, ecologia, evolução, organismo.
