@@ -12,7 +12,7 @@ export function CoachPanoramaJornada({
   counts,
 }: {
   analytics: JornadaDashboardAnalytics;
-  evolucao: Array<{ data: string; taxaAcerto: number; nome?: string }>;
+  evolucao: Array<{ nome: string; data: string; taxaAcerto: number }>;
   streak: number;
   counts: { provas: number; simulados: number; todos: number };
 }) {
