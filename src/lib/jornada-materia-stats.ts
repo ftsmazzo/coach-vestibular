@@ -12,7 +12,9 @@ type AttemptLike = {
 export function materiaIdDeAttempt(q: AttemptLike): string | null {
   if (q.materiaId) return q.materiaId;
   if (!q.provaQuestao) return null;
-  return mapMateriaAssuntoToTaxonomy(q.provaQuestao.materia, q.provaQuestao.assunto).materiaId;
+  return (
+    mapMateriaAssuntoToTaxonomy(q.provaQuestao.materia, q.provaQuestao.assunto).materiaId ?? null
+  );
 }
 
 export function areaBlocoIdDeAttempt(q: AttemptLike): AreaBlocoId | null {
