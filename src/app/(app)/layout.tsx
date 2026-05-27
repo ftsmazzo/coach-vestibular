@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-slate-50">
       <Nav userName={session.name} role={session.role} />
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main className="app-main mx-auto max-w-5xl px-3 py-5 sm:px-4 sm:py-8">{children}</main>
     </div>
   );
 }

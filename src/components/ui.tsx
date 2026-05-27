@@ -14,7 +14,7 @@ export function buttonClassName(
   variant: ButtonVariant = "primary",
   className = ""
 ): string {
-  return `inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${buttonVariants[variant]} ${className}`;
+  return `inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed sm:min-h-0 sm:py-2 ${buttonVariants[variant]} ${className}`;
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -62,7 +62,7 @@ export function LinkButton({
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+      className="w-full rounded-xl border border-slate-200 px-3 py-3 text-base focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 sm:py-2 sm:text-sm"
       {...props}
     />
   );
@@ -75,7 +75,7 @@ export function Label({ children }: { children: ReactNode }) {
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
-      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none"
+      className="w-full rounded-xl border border-slate-200 px-3 py-3 text-base focus:border-teal-500 focus:outline-none sm:py-2 sm:text-sm"
       {...props}
     />
   );

@@ -29,11 +29,11 @@ export default async function DashboardPage() {
   const latest = data.latest;
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-sm font-medium text-teal-700">Olá, {session.name.split(" ")[0]}</p>
-        <Link href="/provas">
-          <Button>+ Registrar prova</Button>
+        <Link href="/provas" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">+ Registrar prova</Button>
         </Link>
       </div>
 

@@ -57,7 +57,7 @@ export function ResumoDiagnosticoCard({
         )}
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl bg-emerald-50 px-4 py-4 ring-1 ring-emerald-100">
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
             Acertos

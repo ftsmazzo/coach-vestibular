@@ -95,8 +95,8 @@ export function MetacognicaoJornadaCard({ dados }: { dados: MetacognicaoJornada 
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={108}
-                    tick={{ fontSize: 10 }}
+                    width={72}
+                    tick={{ fontSize: 9 }}
                     stroke="#64748b"
                   />
                   <Tooltip
@@ -122,7 +122,7 @@ export function MetacognicaoJornadaCard({ dados }: { dados: MetacognicaoJornada 
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 border-t border-violet-100/80 bg-white/50 px-4 py-3 sm:px-5">
+      <div className="grid grid-cols-1 gap-3 border-t border-violet-100/80 bg-white/50 px-4 py-3 min-[380px]:grid-cols-3 min-[380px]:gap-2 sm:px-5">
         <div className="text-center">
           <p className="text-lg font-bold text-violet-900">{dados.pctErrosClassificados}%</p>
           <p className="text-[10px] leading-tight text-slate-600">
