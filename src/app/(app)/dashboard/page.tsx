@@ -70,12 +70,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <MensagemDiaCard />
 
       {filtro === "todos" && analytics.totalRegistros > 0 && (
-        <CoachPanoramaJornada
-          analytics={analytics}
-          evolucao={data.evolution}
-          streakInfo={data.streakInfo}
-          counts={data.counts}
-        />
+        <CoachPanoramaJornada analytics={analytics} evolucao={data.evolution} />
       )}
 
       {filtro === "todos" && analytics.totalRegistros > 0 && (

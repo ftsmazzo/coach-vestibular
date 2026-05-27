@@ -11,7 +11,7 @@ import { GerarMicroPlanoButton } from "@/components/gerar-micro-plano-button";
 import { LeituraCoachCard } from "@/components/leitura-coach-card";
 import { ComparativoVestibularesChart } from "@/components/comparativo-vestibulares-chart";
 import { EvolutionChart } from "@/components/evolution-chart";
-import { KpiEvolucaoStrip } from "@/components/kpi-evolucao-strip";
+import { KpiResumoTres } from "@/components/kpi-resumo-tres";
 import { Card, Badge, LinkButton } from "@/components/ui";
 
 export default async function ProvaLentePage({
@@ -34,13 +34,21 @@ export default async function ProvaLentePage({
     prova,
     tentativas,
     evolucao,
-    melhorPct,
-    ultimaPct,
-    tendencia,
     kpiUltima,
     comparativoTentativas,
   } = historico;
   const tituloProva = abreviarNomeProva(prova.nome);
+
+  const areaDestaqueLente =
+    diagnosis && diagnosis.materiaScores.length > 0
+      ? (() => {
+          const m = [...diagnosis.materiaScores].sort((a, b) => b.taxaAcerto - a.taxaAcerto)[0]!;
+          return {
+            label: m.materiaLabel ?? getMateriaLabel(m.materiaId),
+            pct: Math.round(m.taxaAcerto * 100),
+          };
+        })()
+      : null;
 
   return (
     <div className="space-y-6">
@@ -67,25 +75,13 @@ export default async function ProvaLentePage({
         />
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <p className="text-xs text-slate-500">Tentativas suas</p>
-          <p className="text-2xl font-bold">{tentativas.length}</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-slate-500">Melhor %</p>
-          <p className="text-2xl font-bold text-emerald-700">{melhorPct ?? "—"}%</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-slate-500">Última %</p>
-          <p className="text-2xl font-bold">{ultimaPct ?? "—"}%</p>
-          {tendencia && (
-            <Badge tone={tendencia === "subindo" ? "success" : tendencia === "caindo" ? "warning" : "neutral"}>
-              {tendencia === "subindo" ? "Em alta" : tendencia === "caindo" ? "Atenção" : "Estável"}
-            </Badge>
-          )}
-        </Card>
-      </div>
+      {tentativas.length > 0 && (
+        <KpiResumoTres
+          kpi={kpiUltima}
+          areaDestaque={areaDestaqueLente}
+          contexto="tentativas nesta prova"
+        />
+      )}
 
       {tentativas.length >= 2 && (
         <Card className="p-4">
@@ -95,11 +91,6 @@ export default async function ProvaLentePage({
             anteriores.
           </p>
           <EvolutionChart data={evolucao} />
-          {kpiUltima && (
-            <div className="mt-4 border-t border-slate-100 pt-4">
-              <KpiEvolucaoStrip kpi={kpiUltima} contexto="última tentativa nesta prova" />
-            </div>
-          )}
         </Card>
       )}
 

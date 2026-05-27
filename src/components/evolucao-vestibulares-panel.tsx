@@ -3,7 +3,6 @@
 import type { EvolucaoVestibularesKpi } from "@/lib/jornada-analytics";
 import { formatarDelta } from "@/lib/kpi-evolucao";
 import { EvolutionChart } from "@/components/evolution-chart";
-import { KpiEvolucaoStrip } from "@/components/kpi-evolucao-strip";
 import { Card } from "@/components/ui";
 
 export function EvolucaoVestibularesPanel({
@@ -29,8 +28,6 @@ export function EvolucaoVestibularesPanel({
           />
         </div>
       )}
-
-      <KpiEvolucaoStrip kpi={evolucao.ultima} contexto="último vestibular oficial" />
 
       {evolucao.serie.length >= 2 && (
         <div className="mt-4 overflow-x-auto">

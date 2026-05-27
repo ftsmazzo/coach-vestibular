@@ -1,9 +1,8 @@
 import type { JornadaDashboardAnalytics } from "@/lib/jornada-analytics";
 import { materiasComDadosReais } from "@/lib/jornada-analytics";
 import { buildMensagemPanoramaJornada } from "@/lib/leitura-coach";
-import type { StreakRegistros } from "@/lib/streak";
-import { textoStreakDashboard } from "@/lib/streak";
 import { AreaBlocoPieChart } from "@/components/area-bloco-pie-chart";
+import { KpiResumoTres } from "@/components/kpi-resumo-tres";
 import { ComparativoVestibularesChart } from "@/components/comparativo-vestibulares-chart";
 import { EvolucaoVestibularesPanel } from "@/components/evolucao-vestibulares-panel";
 import { LeituraCoachCard } from "@/components/leitura-coach-card";
@@ -13,13 +12,9 @@ import { MateriaJornadaCharts } from "@/components/materia-jornada-charts";
 export function CoachPanoramaJornada({
   analytics,
   evolucao,
-  streakInfo,
-  counts,
 }: {
   analytics: JornadaDashboardAnalytics;
   evolucao: Array<{ nome: string; data: string; taxaAcerto: number }>;
-  streakInfo: StreakRegistros;
-  counts: { provas: number; simulados: number; todos: number };
 }) {
   if (analytics.totalRegistros === 0) return null;
 
@@ -27,39 +22,20 @@ export function CoachPanoramaJornada({
   const comDados = materiasComDadosReais(analytics.materiasMedia, 3);
   const piores = [...comDados].sort((a, b) => a.pctAcerto - b.pctAcerto).slice(0, 3);
   const melhores = [...comDados].sort((a, b) => b.pctAcerto - a.pctAcerto).slice(0, 3);
+  const areaTop =
+    analytics.areasBloco.length > 0
+      ? [...analytics.areasBloco].sort((a, b) => b.pctAcerto - a.pctAcerto)[0]!
+      : null;
 
   return (
     <section className="space-y-4">
       <LeituraCoachCard titulo="Panorama da sua jornada" mensagem={mensagem} />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-teal-100 bg-teal-50/40 p-4">
-          <p className="text-xs text-slate-500">Acerto ponderado</p>
-          <p className="text-2xl font-bold text-teal-900">{analytics.pctGlobalPonderado}%</p>
-          <p className="mt-0.5 text-[10px] text-slate-500">toda a jornada</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-slate-500">Registros</p>
-          <p className="text-2xl font-bold text-slate-900">{analytics.totalRegistros}</p>
-          <p className="mt-0.5 text-[10px] text-slate-500">
-            {counts.provas} vestibular · {counts.simulados} simulado
-          </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-slate-500">Sequência no app</p>
-          <p className="text-2xl font-bold text-slate-900">
-            {streakInfo.streak} dia{streakInfo.streak !== 1 ? "s" : ""}
-          </p>
-          <p className="mt-0.5 text-[10px] leading-snug text-slate-500">
-            {textoStreakDashboard(streakInfo)}
-          </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-slate-500">Grandes áreas</p>
-          <p className="text-2xl font-bold text-slate-900">{analytics.areasBloco.length}</p>
-          <p className="mt-0.5 text-[10px] text-slate-500">com questões na jornada</p>
-        </Card>
-      </div>
+      <KpiResumoTres
+        kpi={analytics.evolucaoVestibulares?.ultima ?? null}
+        areaDestaque={areaTop ? { label: areaTop.label, pct: areaTop.pctAcerto } : null}
+        contexto="vestibulares oficiais"
+      />
 
       {(piores.length > 0 || melhores.length > 0) && (
         <div className="grid gap-4 md:grid-cols-2">
