@@ -51,10 +51,10 @@ export default function NovaListaPage() {
         <Link href="/simulados" className="text-sm text-teal-700 hover:underline">
           ← Minhas listas
         </Link>
-        <h1 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">Nova lista de exercícios</h1>
+        <h1 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">Lista rápida (só erros)</h1>
         <p className="mt-1 text-sm text-slate-600 sm:text-base">
-          Registre uma lista que você fez em casa ou no cursinho. Conta como treino na sua jornada —
-          peso menor que provas oficiais do catálogo.
+          Atalho sem PDF e sem cadastro de questões: você diz quantas questões tinha e quais errou.
+          A matéria é <strong>estimada</strong> pelo número (não é revisada questão a questão).
         </p>
       </div>
 
@@ -139,15 +139,16 @@ export default function NovaListaPage() {
         </Button>
       </form>
 
-      <Card className="border-slate-200 bg-slate-50">
-        <p className="text-sm text-slate-600">
-          <strong>Simulado de cursinho ou prova oficial?</strong> Use{" "}
-          <Link href="/provas" className="text-teal-700 underline">
-            Atividades
+      <Card className="border-teal-200 bg-teal-50/50">
+        <p className="text-sm text-teal-950">
+          <strong>Quer matéria e assunto certinhos por questão?</strong> Isso exige a prova no
+          catálogo (equipe cadastra a partir do PDF). Use{" "}
+          <Link href="/provas" className="font-medium underline">
+            Atividades → Registrar resultado
           </Link>{" "}
-          — o gabarito já está no catálogo. Se o simulado ainda não existe,{" "}
-          <Link href="/listas/solicitar" className="text-teal-700 underline">
-            solicite a inclusão
+          ou{" "}
+          <Link href="/listas/solicitar" className="font-medium underline">
+            envie o PDF para publicação
           </Link>
           .
         </p>

@@ -28,42 +28,52 @@ export default async function MinhasListasPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Minhas listas</h1>
           <p className="mt-1 text-sm text-slate-600 sm:text-base">
-            Listas de exercícios que você registra aqui entram como treino — peso menor na jornada.
-            Simulados e provas oficiais ficam em{" "}
+            <strong>Prova ou simulado do catálogo?</strong> Use{" "}
             <Link href="/provas" className="font-medium text-teal-700 underline">
               Atividades
-            </Link>
-            .
+            </Link>{" "}
+            — lá cada questão já tem matéria e assunto cadastrados pela equipe.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
           <Link href="/provas" className="w-full sm:w-auto">
-            <Button variant="secondary" className="w-full sm:w-auto">
-              Atividades
-            </Button>
+            <Button className="w-full sm:w-auto">Registrar resultado</Button>
           </Link>
           <Link href="/listas/nova" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto">+ Nova lista</Button>
+            <Button variant="secondary" className="w-full sm:w-auto">
+              Lista rápida (só erros)
+            </Button>
           </Link>
         </div>
       </div>
 
-      <Card className="border-amber-100 bg-amber-50/60">
-        <p className="text-sm text-amber-950">
-          <strong>Simulado que não está no catálogo?</strong> Envie o PDF para a equipe publicar em
-          Atividades.
+      <Card className="border-slate-200 bg-slate-50">
+        <h2 className="text-sm font-semibold text-slate-800">O que é “lista rápida”?</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          É um atalho quando você <strong>não tem</strong> a prova no catálogo: você informa só
+          quantas questões errou e o app estima a matéria pelo número da questão.{" "}
+          <strong>Não dá para anexar PDF nem cadastrar enunciados aqui.</strong>
+        </p>
+        <p className="mt-2 text-sm text-slate-600">
+          Para diagnóstico completo (matéria, assunto, quests certinhas), a prova precisa estar em
+          Atividades — feita pela equipe a partir do material que você envia.
         </p>
         <LinkButton href="/listas/solicitar" variant="secondary" className="mt-3">
-          Solicitar simulado
+          Enviar PDF e pedir publicação em Atividades
         </LinkButton>
       </Card>
 
       {listas.length === 0 ? (
         <Card>
           <p className="text-slate-600">Você ainda não registrou nenhuma lista pessoal.</p>
-          <Link href="/listas/nova" className="mt-4 inline-block">
-            <Button>Registrar primeira lista</Button>
-          </Link>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <Link href="/provas">
+              <Button>Ir para Atividades</Button>
+            </Link>
+            <Link href="/listas/nova">
+              <Button variant="secondary">Lista rápida (só erros)</Button>
+            </Link>
+          </div>
         </Card>
       ) : (
         <div className="space-y-4">

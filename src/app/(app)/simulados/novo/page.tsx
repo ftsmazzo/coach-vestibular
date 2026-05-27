@@ -55,6 +55,13 @@ export default function NovoSimuladoPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!provaIdInicial) {
+      router.replace("/provas");
+      return;
+    }
+  }, [provaIdInicial, router]);
+
+  useEffect(() => {
     fetch("/api/provas")
       .then((r) => r.json())
       .then((lista) => {

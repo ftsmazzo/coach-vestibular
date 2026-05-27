@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { CatalogoProvasGrid, type ProvaCatalogoItem } from "@/components/catalogo-provas-grid";
+import { Card, LinkButton } from "@/components/ui";
 
 export default async function AtividadesPage() {
   const session = await getSession();
@@ -65,10 +66,19 @@ export default async function AtividadesPage() {
       <div>
         <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Atividades</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 sm:text-base">
-          Escolha a prova ou simulado que você fez e registre seu resultado. Suas falhas viram foco
-          no plano e nas quests.
+          Aqui você <strong>registra o resultado</strong> de provas e simulados que já estão no
+          catálogo — com gabarito oficial e classificação por questão (matéria e assunto).
         </p>
       </div>
+
+      <Card className="border-teal-200 bg-teal-50/50 p-4">
+        <p className="text-sm font-medium text-teal-950">Como registrar</p>
+        <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-teal-900">
+          <li>Encontre a prova ou simulado que você fez (cards abaixo).</li>
+          <li>Toque em <strong>Registrar resultado</strong> no card.</li>
+          <li>Informe a data da prova e seu gabarito ou só os erros.</li>
+        </ol>
+      </Card>
 
       {metaLabel && (
         <p className="text-sm text-teal-900">
@@ -81,16 +91,15 @@ export default async function AtividadesPage() {
 
       <CatalogoProvasGrid provas={provas} />
 
-      <p className="text-center text-sm text-slate-600">
-        Lista de exercícios em casa?{" "}
-        <Link href="/listas/nova" className="font-medium text-teal-700 underline">
-          Registrar lista pessoal
-        </Link>
-        {" · "}
-        <Link href="/listas/solicitar" className="font-medium text-teal-700 underline">
-          Solicitar simulado no catálogo
-        </Link>
-      </p>
+      <Card className="border-dashed border-slate-200 bg-slate-50/80">
+        <p className="text-sm text-slate-600">
+          Não achou seu simulado? Envie o PDF — a equipe cadastra as questões com matéria e assunto e
+          publica aqui.
+        </p>
+        <LinkButton href="/listas/solicitar" variant="secondary" className="mt-3">
+          Solicitar publicação no catálogo
+        </LinkButton>
+      </Card>
     </div>
   );
 }

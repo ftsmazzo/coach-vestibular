@@ -33,7 +33,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-sm font-medium text-teal-700">Olá, {session.name.split(" ")[0]}</p>
         <Link href="/provas" className="w-full sm:w-auto">
-          <Button className="w-full sm:w-auto">+ Registrar atividade</Button>
+          <Button className="w-full sm:w-auto">Registrar resultado</Button>
         </Link>
       </div>
 
@@ -53,7 +53,7 @@ export default async function DashboardPage() {
         <div className="rounded-xl border border-dashed border-teal-200 bg-teal-50/40 p-6 text-center">
           <p className="text-sm text-slate-700">Nenhum registro ainda.</p>
           <Link href="/provas" className="mt-3 inline-block">
-            <Button>Registrar primeira atividade</Button>
+            <Button>Registrar resultado em Atividades</Button>
           </Link>
         </div>
       )}
