@@ -15,6 +15,7 @@ import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { RankingCard } from "@/components/ranking-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
+import { textoStreakDashboard } from "@/lib/streak";
 
 interface PageProps {
   searchParams: Promise<{ filtro?: string }>;
@@ -72,7 +73,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <CoachPanoramaJornada
           analytics={analytics}
           evolucao={data.evolution}
-          streak={data.streak}
+          streakInfo={data.streakInfo}
           counts={data.counts}
         />
       )}
@@ -127,9 +128,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           </Card>
           <Card className="flex items-center justify-between gap-3 p-4">
             <div>
-              <p className="text-sm text-slate-500">Streak de estudo</p>
-              <p className="text-lg font-semibold text-slate-800">{data.streak} dias</p>
-              <p className="text-xs text-slate-500">com registro de resultado</p>
+              <p className="text-sm text-slate-500">Sequência no app</p>
+              <p className="text-lg font-semibold text-slate-800">
+                {data.streakInfo.streak} dia{data.streakInfo.streak !== 1 ? "s" : ""}
+              </p>
+              <p className="text-xs text-slate-500 leading-snug">
+                {textoStreakDashboard(data.streakInfo)}
+              </p>
             </div>
           </Card>
         </div>

@@ -1,5 +1,7 @@
 import type { JornadaDashboardAnalytics } from "@/lib/jornada-analytics";
 import { buildMensagemPanoramaJornada } from "@/lib/leitura-coach";
+import type { StreakRegistros } from "@/lib/streak";
+import { textoStreakDashboard } from "@/lib/streak";
 import { LeituraCoachCard } from "@/components/leitura-coach-card";
 import { Card } from "@/components/ui";
 import { MateriaJornadaCharts } from "@/components/materia-jornada-charts";
@@ -8,12 +10,12 @@ import { EvolutionChart } from "@/components/evolution-chart";
 export function CoachPanoramaJornada({
   analytics,
   evolucao,
-  streak,
+  streakInfo,
   counts,
 }: {
   analytics: JornadaDashboardAnalytics;
   evolucao: Array<{ nome: string; data: string; taxaAcerto: number }>;
-  streak: number;
+  streakInfo: StreakRegistros;
   counts: { provas: number; simulados: number; todos: number };
 }) {
   if (analytics.totalRegistros === 0) return null;
@@ -44,9 +46,11 @@ export function CoachPanoramaJornada({
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-slate-500">Streak</p>
-          <p className="text-2xl font-bold text-slate-900">{streak} dias</p>
-          <p className="mt-0.5 text-[10px] text-slate-500">com resultado lançado</p>
+          <p className="text-xs text-slate-500">Sequência no app</p>
+          <p className="text-2xl font-bold text-slate-900">{streakInfo.streak} dia{streakInfo.streak !== 1 ? "s" : ""}</p>
+          <p className="mt-0.5 text-[10px] leading-snug text-slate-500">
+            {textoStreakDashboard(streakInfo)}
+          </p>
         </Card>
         <Card className="p-4">
           <p className="text-xs text-slate-500">Matérias na base</p>

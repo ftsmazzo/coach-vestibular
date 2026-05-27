@@ -10,6 +10,7 @@ import {
 } from "./prova-tipo";
 import { aplicarPlanoCoachIA, buildDiagnosis } from "./diagnosis";
 import { generateStudyPlan, planToQuests } from "./study-plan";
+import { calcularStreakRegistros } from "./streak";
 
 export interface QuestionInput {
   numero: number;
@@ -189,15 +190,7 @@ export async function getDashboardData(userId: string, filtro: FiltroRegistros =
     }
   }
 
-  let streak = 0;
-  const sortedDates = [...new Set(exams.map((e) => e.data.toDateString()))];
-  const today = new Date();
-  for (let i = 0; i < sortedDates.length; i++) {
-    const expected = new Date(today);
-    expected.setDate(expected.getDate() - i);
-    if (sortedDates.includes(expected.toDateString())) streak++;
-    else if (i > 0) break;
-  }
+  const streakInfo = calcularStreakRegistros(exams.map((e) => e.createdAt));
 
   return {
     exams,
@@ -211,6 +204,7 @@ export async function getDashboardData(userId: string, filtro: FiltroRegistros =
     quests,
     evolution,
     materiaEvolution,
-    streak,
+    streak: streakInfo.streak,
+    streakInfo,
   };
 }

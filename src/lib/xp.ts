@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { calcularStreakRegistros } from "@/lib/streak";
 import { getMateriaLabel } from "@/lib/taxonomy";
 import { LABEL_TIPO_XP, XP_VALORES, type TipoXpEvento } from "@/lib/xp-valores";
 
@@ -172,18 +173,9 @@ export async function concederXpRegistro(
 
   const exams = await prisma.exam.findMany({
     where: { userId },
-    select: { data: true },
-    orderBy: { data: "desc" },
+    select: { createdAt: true },
   });
-  const dias = [...new Set(exams.map((e) => e.data.toDateString()))];
-  const today = new Date();
-  let streak = 0;
-  for (let i = 0; i < 30; i++) {
-    const expected = new Date(today);
-    expected.setDate(expected.getDate() - i);
-    if (dias.includes(expected.toDateString())) streak++;
-    else if (i > 0) break;
-  }
+  const { streak } = calcularStreakRegistros(exams.map((e) => e.createdAt));
 
   if (streak >= 7) {
     const r = await concederXp(userId, "STREAK_7", `s${streak}`, XP_VALORES.STREAK_7);

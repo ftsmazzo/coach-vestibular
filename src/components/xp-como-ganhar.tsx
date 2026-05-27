@@ -22,8 +22,8 @@ export function XpComoGanhar() {
           <strong>+{XP_VALORES.PRIMEIRO_REGISTRO_SEMANA} XP</strong> — primeiro registro da semana.
         </li>
         <li>
-          <strong>+{XP_VALORES.STREAK_3} / +{XP_VALORES.STREAK_7} XP</strong> — streak de dias com
-          registro.
+          <strong>+{XP_VALORES.STREAK_3} / +{XP_VALORES.STREAK_7} XP</strong> — 3 ou 7 dias seguidos
+          lançando resultado no app (conta o dia do cadastro, não a data da prova).
         </li>
       </ul>
       <p className="mt-3 text-xs text-slate-500">
