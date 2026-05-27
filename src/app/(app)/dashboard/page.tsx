@@ -12,6 +12,7 @@ import { DashboardHero } from "@/components/dashboard-hero";
 import { DashboardRegistrosGrid } from "@/components/dashboard-registros-grid";
 import { CoachPanoramaJornada } from "@/components/coach-panorama-jornada";
 import { ComunidadeDashboardBanner } from "@/components/comunidade-dashboard-banner";
+import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 import { textoStreakDashboard } from "@/lib/streak";
@@ -65,18 +66,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <CoachPanoramaJornada analytics={analytics} evolucao={data.evolution} />
       )}
 
-      {filtro === "todos" && analytics.totalRegistros > 0 && (
-        <Card className="border-teal-200 bg-gradient-to-r from-teal-50 to-white">
-          <p className="text-xs font-semibold uppercase text-teal-800">Jornada completa</p>
-          <p className="mt-1 text-3xl font-bold text-slate-900">
-            {analytics.pctGlobalPonderado}%{" "}
-            <span className="text-lg font-normal text-slate-600">acerto ponderado</span>
-          </p>
-          <p className="mt-1 text-sm text-slate-600">
-            {analytics.totalRegistros} registros · média de todas as aplicações
-          </p>
-        </Card>
-      )}
+      {filtro === "todos" && <JornadaResumoCard userId={session.userId} />}
 
       {analytics.registrosRecentes.length > 0 && (
         <DashboardRegistrosGrid registros={analytics.registrosRecentes} />
