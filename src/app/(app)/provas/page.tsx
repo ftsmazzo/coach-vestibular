@@ -27,7 +27,7 @@ function TabLink({
   return (
     <Link
       href={href}
-      className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+      className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition sm:min-h-0 ${
         active
           ? "bg-teal-600 text-white shadow-sm"
           : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
@@ -153,7 +153,7 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
       )}
 
       <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-        <div className="flex flex-wrap gap-2">
+        <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           <TabLink href="/provas?aba=oficiais" active={aba === "oficiais"}>
             Provas oficiais ({totalOficiais})
           </TabLink>

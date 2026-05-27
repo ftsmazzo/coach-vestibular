@@ -109,10 +109,10 @@ export default function QuestsPage() {
         className={
           destaque
             ? "border-teal-200 bg-teal-50/30 ring-1 ring-teal-100"
-            : "flex flex-wrap items-center justify-between gap-3"
+            : "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
         }
       >
-        <div className="flex flex-wrap items-start justify-between gap-3 w-full">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               {q.ordemPlano != null && (
@@ -131,7 +131,9 @@ export default function QuestsPage() {
             {q.descricao && <p className="mt-2 text-sm text-slate-600">{q.descricao}</p>}
             <p className="mt-1 text-xs text-slate-500">~{q.duracaoMin} min</p>
           </div>
-          <Button onClick={() => completeQuest(q.id)}>Concluir</Button>
+          <Button onClick={() => completeQuest(q.id)} className="w-full shrink-0 sm:w-auto">
+            Concluir
+          </Button>
         </div>
       </Card>
     );
@@ -166,13 +168,13 @@ export default function QuestsPage() {
 
       <Card>
         <p className="text-sm font-medium">Como você está agora? (ao concluir uma quest)</p>
-        <div className="mt-2 flex gap-2">
+        <div className="mt-2 flex flex-wrap gap-2">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
               type="button"
               onClick={() => setMood(n)}
-              className={`h-9 w-9 rounded-full text-sm ${
+              className={`flex h-11 w-11 items-center justify-center rounded-full text-base font-medium ${
                 mood === n ? "bg-teal-600 text-white" : "bg-slate-100"
               }`}
             >

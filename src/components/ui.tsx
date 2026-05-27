@@ -75,10 +75,26 @@ export function Label({ children }: { children: ReactNode }) {
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
-      className="w-full rounded-xl border border-slate-200 px-3 py-3 text-base focus:border-teal-500 focus:outline-none sm:py-2 sm:text-sm"
+      className="w-full rounded-xl border border-slate-200 px-3 py-3 text-base focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 sm:py-2 sm:text-sm"
       {...props}
     />
   );
+}
+
+export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      className="w-full rounded-xl border border-slate-200 px-3 py-3 font-mono text-base focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 sm:py-2 sm:text-sm"
+      {...props}
+    />
+  );
+}
+
+/** Botão segmentado / chip (modos de registro, check-in, etc.) */
+export function touchChipClass(active: boolean) {
+  return `min-h-11 shrink-0 rounded-xl px-4 py-2.5 text-sm font-medium transition sm:min-h-0 sm:py-1.5 ${
+    active ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+  }`;
 }
 
 export function Badge({

@@ -53,22 +53,21 @@ export default async function SimuladosPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Últimos resultados</h1>
-          <p className="mt-1 text-slate-600">
+          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Últimos resultados</h1>
+          <p className="mt-1 text-sm text-slate-600 sm:text-base">
             Provas oficiais e simulados em um só lugar — use o filtro para ver só um tipo.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/provas">
-            <Button variant="secondary">Provas públicas</Button>
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+          <Link href="/provas" className="w-full sm:w-auto">
+            <Button variant="secondary" className="w-full sm:w-auto">
+              Provas públicas
+            </Button>
           </Link>
-          <Link href="/simulados/upload">
-            <Button variant="secondary">Upload (Fase 2)</Button>
-          </Link>
-          <Link href="/simulados/novo">
-            <Button>Registrar resultado</Button>
+          <Link href="/simulados/novo" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto">Registrar resultado</Button>
           </Link>
         </div>
       </div>
@@ -116,8 +115,8 @@ export default async function SimuladosPage({ searchParams }: PageProps) {
             const badgeTone = cat === "prova_oficial" ? "success" : "neutral";
             return (
               <li key={exam.id}>
-                <Card className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
+                <Card className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-semibold">{exam.nome}</h2>
                       <Badge tone={badgeTone}>{labelCategoriaRegistro(cat)}</Badge>
@@ -135,10 +134,12 @@ export default async function SimuladosPage({ searchParams }: PageProps) {
                       </Link>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                     {exam.recoveryMode && <Badge tone="warning">Recuperação</Badge>}
-                    <Link href={`/simulados/${exam.id}`}>
-                      <Button variant="ghost">Detalhes</Button>
+                    <Link href={`/simulados/${exam.id}`} className="flex-1 sm:flex-none">
+                      <Button variant="ghost" className="w-full sm:w-auto">
+                        Detalhes
+                      </Button>
                     </Link>
                     <ExcluirRegistroButton examId={exam.id} nome={exam.nome} />
                   </div>

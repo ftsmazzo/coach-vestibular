@@ -68,29 +68,29 @@ export default async function SimuladoDetailPage({
           </p>
           <p className="mt-1 text-xs text-slate-500">{descricaoModoUso(exam.modoUso)}</p>
         </div>
-        <div className="flex flex-wrap items-start gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
           {exam.provaId ? (
-            <RecalcularDiagnosticoButton examId={exam.id} />
+            <div className="col-span-2 sm:col-span-1">
+              <RecalcularDiagnosticoButton examId={exam.id} />
+            </div>
           ) : (
-            <LinkButton href="/provas" variant="primary">
-              Vincular ao catálogo de provas
+            <LinkButton href="/provas" variant="primary" className="col-span-2 w-full text-center sm:col-span-1 sm:w-auto">
+              Vincular ao catálogo
             </LinkButton>
           )}
-          <ExcluirRegistroButton examId={exam.id} nome={exam.nome} variant="secondary" />
           {exam.provaId && (
             <LinkButton
               href={`/simulados/novo?provaId=${exam.provaId}`}
               variant="secondary"
+              className="w-full text-center"
             >
               Refazer gabarito
             </LinkButton>
           )}
-          <LinkButton href="/simulados" variant="secondary">
-            Últimos resultados
+          <LinkButton href="/simulados" variant="secondary" className="w-full text-center">
+            Resultados
           </LinkButton>
-          <LinkButton href="/dashboard" variant="ghost">
-            Dashboard
-          </LinkButton>
+          <ExcluirRegistroButton examId={exam.id} nome={exam.nome} variant="secondary" />
         </div>
       </div>
 

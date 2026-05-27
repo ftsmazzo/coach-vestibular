@@ -80,7 +80,7 @@ export function MateriaJornadaCharts({
         <p className="mb-3 text-xs text-slate-500">
           Oficiais pesam mais; só matérias com questões registradas.
         </p>
-        <div className="h-64 w-full">
+        <div className="h-52 w-full sm:h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={barData} layout="vertical" margin={{ left: 8, right: 16 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -101,7 +101,7 @@ export function MateriaJornadaCharts({
           <p className="mb-3 text-xs text-slate-500">
             Linha só onde a matéria teve questões naquele registro — sem inventar 0%.
           </p>
-          <div className="h-72 w-full">
+          <div className="h-60 w-full sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={lineData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />

@@ -46,3 +46,31 @@ body {
     touch-action: manipulation;
   }
 }
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Barra fixa de ação acima da bottom nav (aluno) */
+@media (max-width: 767px) {
+  .sticky-action-mobile {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px));
+    z-index: 25;
+    border-top: 1px solid rgb(226 232 240);
+    background: rgb(255 255 255 / 0.97);
+    backdrop-filter: blur(8px);
+    padding: 0.75rem 0.75rem max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .has-sticky-action-mobile {
+    padding-bottom: 5.5rem;
+  }
+}

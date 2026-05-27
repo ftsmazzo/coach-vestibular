@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ModoUsoSelector } from "@/components/modo-uso-selector";
-import { Button, Card, Input, Label } from "@/components/ui";
+import { Button, Card, Input, Label, Select, Textarea, touchChipClass } from "@/components/ui";
 import type { ModoUsoRegistro, ProvaTipo } from "@/generated/prisma/client";
 import { parseListaErros } from "@/lib/gabarito";
 import { modoUsoPadraoParaProva } from "@/lib/modo-uso";
@@ -201,8 +201,8 @@ export default function NovoSimuladoPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
             <Label>Qual prova você fez?</Label>
-            <select
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+            <Select
+              className="mt-1"
               value={provaId}
               onChange={(e) => setProvaId(e.target.value)}
             >
@@ -215,7 +215,7 @@ export default function NovoSimuladoPage() {
                   {p.gabaritoCompleto ? "" : " (gabarito parcial)"}
                 </option>
               ))}
-            </select>
+            </Select>
             {prova && (
               <p className="mt-2 text-xs text-slate-500">
                 {prova.banca} · {prova.questoesCount} de {prova.totalQuestoes} questões
@@ -254,11 +254,11 @@ export default function NovoSimuladoPage() {
                 ))}
               </ul>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 <button
                   type="button"
                   onClick={() => setModoRegistro("substituir")}
-                  className={`rounded-lg px-3 py-1.5 text-sm ${
+                  className={`min-h-11 flex-1 rounded-xl px-3 py-2.5 text-sm font-medium sm:min-h-0 sm:flex-none sm:rounded-lg sm:py-1.5 ${
                     modoRegistro === "substituir"
                       ? "bg-amber-700 text-white"
                       : "bg-white text-slate-700 ring-1 ring-amber-200"
@@ -273,21 +273,21 @@ export default function NovoSimuladoPage() {
                     setSubstituirExamId("");
                     setData("");
                   }}
-                  className={`rounded-lg px-3 py-1.5 text-sm ${
+                  className={`min-h-11 flex-1 rounded-xl px-3 py-2.5 text-sm font-medium sm:min-h-0 sm:flex-none sm:rounded-lg sm:py-1.5 ${
                     modoRegistro === "nova"
                       ? "bg-teal-600 text-white"
                       : "bg-white text-slate-700 ring-1 ring-slate-200"
                   }`}
                 >
-                  Nova tentativa (outra data)
+                  Nova tentativa
                 </button>
               </div>
 
               {modoRegistro === "substituir" && tentativas.length > 1 && (
                 <div className="mt-3">
                   <Label>Qual registro substituir?</Label>
-                  <select
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  <Select
+                    className="mt-1"
                     value={substituirExamId}
                     onChange={(e) => setSubstituirExamId(e.target.value)}
                   >
@@ -296,7 +296,7 @@ export default function NovoSimuladoPage() {
                         {t.dataLabel} — {t.pctAcerto}%
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               )}
 
@@ -347,7 +347,7 @@ export default function NovoSimuladoPage() {
                     key={n}
                     type="button"
                     onClick={() => setCheckIn(n)}
-                    className={`h-9 w-9 rounded-full text-sm ${
+                    className={`flex h-11 w-11 items-center justify-center rounded-full text-base font-medium ${
                       checkIn === n ? "bg-teal-600 text-white" : "bg-slate-100"
                     }`}
                   >
@@ -357,7 +357,7 @@ export default function NovoSimuladoPage() {
                 <button
                   type="button"
                   onClick={() => setCheckIn(null)}
-                  className={`rounded-lg px-3 py-1.5 text-sm ${
+                  className={`min-h-11 rounded-xl px-4 py-2 text-sm ${
                     checkIn === null ? "bg-slate-200 font-medium" : "text-slate-500"
                   }`}
                 >
@@ -368,31 +368,25 @@ export default function NovoSimuladoPage() {
           </Card>
 
           <Card>
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
               <button
                 type="button"
                 onClick={() => setModo("gabarito")}
-                className={`rounded-lg px-3 py-1.5 text-sm ${
-                  modo === "gabarito" ? "bg-teal-600 text-white" : "bg-slate-100"
-                }`}
+                className={touchChipClass(modo === "gabarito")}
               >
-                Meu gabarito (recomendado)
+                Meu gabarito
               </button>
               <button
                 type="button"
                 onClick={() => setModo("sequencia")}
-                className={`rounded-lg px-3 py-1.5 text-sm ${
-                  modo === "sequencia" ? "bg-teal-600 text-white" : "bg-slate-100"
-                }`}
+                className={touchChipClass(modo === "sequencia")}
               >
                 Sequência A–E
               </button>
               <button
                 type="button"
                 onClick={() => setModo("erros")}
-                className={`rounded-lg px-3 py-1.5 text-sm ${
-                  modo === "erros" ? "bg-teal-600 text-white" : "bg-slate-100"
-                }`}
+                className={touchChipClass(modo === "erros")}
               >
                 Só os erros
               </button>
@@ -401,8 +395,8 @@ export default function NovoSimuladoPage() {
             {modo === "gabarito" ? (
               <div>
                 <Label>Seu gabarito — uma linha por questão</Label>
-                <textarea
-                  className="mt-1 w-full rounded-xl border p-3 font-mono text-sm"
+                <Textarea
+                  className="mt-1"
                   rows={8}
                   placeholder={"1,C\n2,A\n3,B\n4,D"}
                   value={gabaritoAluno}
@@ -425,8 +419,8 @@ export default function NovoSimuladoPage() {
                 <Label>
                   Suas respostas em sequência ({prova?.totalQuestoes ?? 60} questões, ordem 1…N)
                 </Label>
-                <textarea
-                  className="mt-1 w-full rounded-xl border p-3 font-mono text-sm"
+                <Textarea
+                  className="mt-1"
                   rows={4}
                   placeholder="CABDE..."
                   value={respostas}
@@ -440,8 +434,8 @@ export default function NovoSimuladoPage() {
             ) : (
               <div>
                 <Label>Questões erradas (análise parcial)</Label>
-                <textarea
-                  className="mt-1 w-full rounded-xl border p-3 text-sm"
+                <Textarea
+                  className="mt-1 font-sans"
                   rows={3}
                   placeholder="3, 8, 12-15, 40"
                   value={listaErros}
@@ -456,7 +450,7 @@ export default function NovoSimuladoPage() {
           </Card>
 
           {error && <p className="text-sm text-rose-600">{error}</p>}
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
             {loading
               ? "Analisando..."
               : modoRegistro === "substituir" && jaRegistrou

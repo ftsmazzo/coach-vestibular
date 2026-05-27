@@ -133,7 +133,7 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="has-sticky-action-mobile space-y-6">
       <div className="border-b border-slate-100 pb-4">
         <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
           <span>🧠</span> Análise Metacognitiva de Erros
@@ -143,7 +143,7 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {erradas.map((q) => {
           const materia = q.provaQuestao?.materia || q.materiaId || "Materia Geral";
           const assunto = q.provaQuestao?.assunto || q.temaId || "Assunto Geral";
@@ -179,7 +179,7 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
                     <select
                       value={formData[q.id]?.tipoErro}
                       onChange={(e) => handleChangeError(q.id, e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-800 transition focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 sm:py-2 sm:text-sm"
                     >
                       {ERROR_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -198,7 +198,7 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
                       value={formData[q.id]?.observacao}
                       onChange={(e) => handleChangeObservation(q.id, e.target.value)}
                       rows={3}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 resize-none"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-800 transition placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 resize-none sm:py-2 sm:text-sm"
                     />
                   </div>
                 </div>
@@ -208,8 +208,8 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-5">
-        <div>
+      <div className="sticky-action-mobile md:static md:border-t md:border-slate-100 md:pt-5">
+        <div className="mb-3 md:mb-0">
           {saveStatus === "saved" && (
             <p className="text-sm font-medium text-emerald-600 flex items-center gap-1.5 animate-fade-in">
               <span>✓</span> Análise salva e plano da semana atualizado com sucesso!
@@ -237,9 +237,9 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
         <Button
           onClick={handleSave}
           disabled={saveStatus === "saving"}
-          className="px-6 py-2.5 shadow-sm font-bold flex items-center gap-2"
+          className="w-full px-4 py-3 text-sm font-bold shadow-sm md:w-auto md:px-6 md:py-2.5"
         >
-          {saveStatus === "saving" ? "Atualizando..." : "Salvar Análise e Atualizar Meu Plano de Estudos"} 🧠
+          {saveStatus === "saving" ? "Atualizando..." : "Salvar análise e plano"} 🧠
         </Button>
       </div>
     </div>

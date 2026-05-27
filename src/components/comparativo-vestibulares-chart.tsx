@@ -69,7 +69,7 @@ export function ComparativoVestibularesChart({
         </span>
       </div>
 
-      <div className="h-[260px] w-full">
+      <div className="h-[200px] w-full sm:h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ left: 4, right: 8, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />

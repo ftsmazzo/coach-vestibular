@@ -30,7 +30,7 @@ function CheckInTimeline({ checkIns }: { checkIns: MetacognicaoJornada["checkIns
   }));
 
   return (
-    <div className="h-[160px] w-full">
+    <div className="h-[140px] w-full sm:h-[160px]">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
           <XAxis dataKey="data" tick={{ fontSize: 10 }} stroke="#94a3b8" />
@@ -84,7 +84,7 @@ export function MetacognicaoJornadaCard({ dados }: { dados: MetacognicaoJornada 
               Classifique erros na análise de cada prova para ver o gráfico.
             </p>
           ) : (
-            <div className="mt-2 h-[180px] w-full">
+            <div className="mt-2 h-[160px] w-full sm:h-[180px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={chartCausas}
