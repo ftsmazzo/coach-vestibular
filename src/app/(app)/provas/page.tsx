@@ -231,14 +231,23 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
                           </p>
                         )}
                       </div>
-                      <div className="flex flex-col gap-2 sm:flex-row">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                        {p.minhasTentativas >= 1 && (
+                          <LinkButton
+                            href={`/provas/${p.id}/historico`}
+                            variant="secondary"
+                            className="w-full flex-1 text-center"
+                          >
+                            Histórico ({p.minhasTentativas})
+                          </LinkButton>
+                        )}
                         {p.ultimaTentativa && (
                           <LinkButton
                             href={`/simulados/${p.ultimaTentativa.id}`}
                             variant="secondary"
                             className="w-full flex-1 text-center"
                           >
-                            Ver meu resultado
+                            Ver último resultado
                           </LinkButton>
                         )}
                         <LinkButton
@@ -260,15 +269,10 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
       )}
 
       <Card className="bg-slate-50">
-        <h2 className="text-sm font-semibold text-slate-700">Próximas etapas (produto)</h2>
+        <h2 className="text-sm font-semibold text-slate-700">Em breve</h2>
         <ul className="mt-2 list-inside list-disc text-sm text-slate-600">
           <li>Meta de faculdade com peso por banca/vestibular</li>
-          <li>Histórico comparando tentativas da mesma prova</li>
-          <li>Gabarito do aluno por questão (implementado em Registrar resultado)</li>
-          <li>
-            Incidência de temas em vestibulares (API externa) — comparar com erros do aluno
-          </li>
-          <li>Painel de focos: oficiais → simulados como termômetro</li>
+          <li>Incidência de temas em vestibulares (API externa)</li>
         </ul>
       </Card>
     </div>

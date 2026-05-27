@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getPlanoAtual } from "@/lib/plano-atual";
+import { buildResumoJornada } from "@/lib/jornada";
 import { prisma } from "@/lib/prisma";
 import { RecalcularDiagnosticoButton } from "@/components/recalcular-diagnostico-button";
 import { Card, Badge, LinkButton } from "@/components/ui";
@@ -39,14 +40,17 @@ export default async function PlanoPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [{ plan, items }, ultimoExam] = await Promise.all([
+  const [{ plan, items }, ultimoExam, jornada] = await Promise.all([
     getPlanoAtual(session.userId),
     prisma.exam.findFirst({
       where: { userId: session.userId, provaId: { not: null } },
       orderBy: { data: "desc" },
       select: { id: true, nome: true },
     }),
+    buildResumoJornada(session.userId),
   ]);
+
+  const temContextoJornada = items.some((i) => i.titulo === "Panorama da sua jornada");
 
   const diagnostico = items.filter((i) => i.bloco === "diagnostico");
   const contexto = items.filter(
@@ -76,7 +80,20 @@ export default async function PlanoPage() {
             Quests
           </Link>
           .
+          {jornada.totalRegistros >= 2 && (
+            <>
+              {" "}
+              O plano considera sua jornada ({jornada.totalRegistros} registros, acerto ponderado{" "}
+              {jornada.pctAcertoPonderado}%).
+            </>
+          )}
         </p>
+        {temContextoJornada && (
+          <p className="mt-2 text-sm text-teal-800">
+            Inclui bloco <strong>Panorama da sua jornada</strong> — gere de novo o plano após um
+            registro oficial para atualizar.
+          </p>
+        )}
         {plan && horasQuests > 0 && (
           <p className="mt-1 text-sm text-teal-800">
             Carga sugerida nas atividades: ~{horasQuests}h ({questsCount} tarefa

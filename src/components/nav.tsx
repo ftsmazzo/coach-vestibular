@@ -11,6 +11,7 @@ const studentLinks = [
   { href: "/simulados", label: "Resultados" },
   { href: "/plano", label: "Plano" },
   { href: "/quests", label: "Quests" },
+  { href: "/comunidade", label: "Comunidade" },
 ];
 
 const adminLinks = [

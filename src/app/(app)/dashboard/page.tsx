@@ -11,6 +11,7 @@ import { FiltroRegistrosTabs } from "@/components/filtro-registros-tabs";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
 import { DashboardHero } from "@/components/dashboard-hero";
 import { JornadaResumoCard } from "@/components/jornada-resumo-card";
+import { RankingCard } from "@/components/ranking-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 
@@ -70,7 +71,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
       <MensagemDiaCard />
 
-      {filtro === "todos" && <JornadaResumoCard userId={session.userId} />}
+      {filtro === "todos" && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <JornadaResumoCard userId={session.userId} />
+          <RankingCard userId={session.userId} />
+        </div>
+      )}
 
       <DashboardHero exam={examHero} pct={pctLatest} counts={data.counts} />
 

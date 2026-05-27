@@ -7,6 +7,11 @@ import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-ca
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
 import { parseDataAplicacao } from "./data-prova";
 import type { ModoUsoRegistro } from "@/generated/prisma/client";
+import {
+  historicalAttemptsDaJornada,
+  mergeHistoricalAttempts,
+  mesclarPlanoComJornada,
+} from "./jornada-plano";
 import { modoUsoPadraoParaProva } from "./modo-uso";
 import { provaEhOficial, rotulosDiagnostico } from "./prova-tipo";
 import type { DiagnosisResult } from "./diagnosis";
@@ -181,7 +186,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     },
   });
 
-  const historicalAttempts: AttemptInput[][] = historicalExams.map((e) =>
+  const historicalMesmaProva: AttemptInput[][] = historicalExams.map((e) =>
     e.questionAttempts.map((a) => {
       const mapped =
         a.provaQuestao &&
@@ -194,6 +199,11 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
         tipoErro: a.tipoErro,
       };
     })
+  );
+  const historicalJornada = await historicalAttemptsDaJornada(input.userId);
+  const historicalAttempts = mergeHistoricalAttempts(
+    historicalMesmaProva,
+    historicalJornada
   );
 
   const questoesPedagogicas = rawAttempts.map((a) => {
@@ -325,13 +335,14 @@ async function aplicarPlanoEQuests(
     data: { status: "skipped" },
   });
 
-  const items =
+  let items =
     diagnosis.aiStudyPlanItems?.length
       ? diagnosis.aiStudyPlanItems
       : generateStudyPlan(diagnosis, { ehProvaOficial }).items;
   if (!diagnosis.aiStudyPlanItems?.length) {
     diagnosis = { ...diagnosis, planoCoachStatus: "legado" };
   }
+  items = await mesclarPlanoComJornada(items, userId);
   const recoveryMode = diagnosis.recoveryMode;
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
@@ -386,7 +397,7 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
     include: { questionAttempts: { include: { provaQuestao: true } } },
   });
 
-  const historicalAttempts: AttemptInput[][] = historicalExams.map((e) =>
+  const historicalMesmaProva: AttemptInput[][] = historicalExams.map((e) =>
     e.questionAttempts.map((a) => {
       const mat = a.materiaCorrigida || a.provaQuestao?.materia;
       const ass = a.assuntoCorrigido || a.provaQuestao?.assunto;
@@ -400,6 +411,11 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
         observacao: a.observacao,
       };
     })
+  );
+  const historicalJornada = await historicalAttemptsDaJornada(userId, examId);
+  const historicalAttempts = mergeHistoricalAttempts(
+    historicalMesmaProva,
+    historicalJornada
   );
 
   const rawAttempts: AttemptInput[] = exam.questionAttempts.map((a) => {

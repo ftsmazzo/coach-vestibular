@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { pctAcertoRegistro } from "@/lib/exam-stats";
+import { labelModoUso } from "@/lib/modo-uso";
 import {
   categoriaDoRegistro,
   filtroRegistrosFromSearchParam,
@@ -120,10 +121,19 @@ export default async function SimuladosPage({ searchParams }: PageProps) {
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-semibold">{exam.nome}</h2>
                       <Badge tone={badgeTone}>{labelCategoriaRegistro(cat)}</Badge>
+                      <Badge tone="neutral">{labelModoUso(exam.modoUso)}</Badge>
                     </div>
                     <p className="text-sm text-slate-500">
                       Aplicada em {formatDataAplicacao(exam.data)} · {exam.banca} · {pct}% acertos
                     </p>
+                    {exam.provaId && (
+                      <Link
+                        href={`/provas/${exam.provaId}/historico`}
+                        className="text-xs text-teal-700 hover:underline"
+                      >
+                        Histórico desta prova no catálogo →
+                      </Link>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {exam.recoveryMode && <Badge tone="warning">Recuperação</Badge>}
