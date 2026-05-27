@@ -10,8 +10,68 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { TooltipProps } from "recharts";
 import type { ComparativoVestibulares } from "@/lib/jornada-analytics";
 import { getMateriaLabel } from "@/lib/taxonomy";
+
+const KEY_PENULTIMO = "Penúltimo";
+const KEY_ULTIMO = "Último";
+
+type TooltipPayload = NonNullable<TooltipProps<number, string>["payload"]>[number];
+
+function TooltipComparativo({
+  active,
+  payload,
+  label,
+  dataPenultimo,
+  dataUltimo,
+}: TooltipProps<number, string> & {
+  dataPenultimo: string;
+  dataUltimo: string;
+}) {
+  if (!active || !payload?.length) return null;
+
+  const rotuloSerie = (entry: TooltipPayload) =>
+    entry.dataKey === KEY_ULTIMO ? `Último · ${dataUltimo}` : `Penúltimo · ${dataPenultimo}`;
+
+  return (
+    <div className="pointer-events-none w-[min(200px,calc(100vw-2.5rem))] rounded-lg border border-slate-200 bg-white/95 px-2.5 py-2 text-[11px] leading-snug shadow-lg backdrop-blur-sm">
+      <p className="truncate font-semibold text-slate-900">{label}</p>
+      <ul className="mt-1.5 space-y-1">
+        {payload.map((entry) => (
+          <li key={String(entry.dataKey)} className="flex items-center gap-2">
+            <span
+              className="h-2 w-2 shrink-0 rounded-sm"
+              style={{ backgroundColor: entry.color }}
+              aria-hidden
+            />
+            <span className="min-w-0 flex-1 truncate text-slate-600">{rotuloSerie(entry)}</span>
+            <span className="shrink-0 font-semibold tabular-nums text-slate-900">
+              {entry.value}%
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Mantém o tooltip dentro da largura do gráfico (evita estourar no mobile). */
+function posicaoTooltipDentro(
+  coord: { x?: number; y?: number },
+  _pos: unknown,
+  _item: unknown,
+  _offset: unknown,
+  viewBox?: { x?: number; y?: number; width?: number; height?: number }
+) {
+  if (coord?.x == null || viewBox?.width == null) return coord;
+  const largura = 200;
+  const margem = 6;
+  const xMin = (viewBox.x ?? 0) + margem;
+  const xMax = (viewBox.x ?? 0) + viewBox.width - largura - margem;
+  const x = Math.min(Math.max(coord.x - largura / 2, xMin), Math.max(xMin, xMax));
+  return { x, y: coord.y };
+}
 
 export function ComparativoVestibularesChart({
   comparativo,
@@ -48,12 +108,10 @@ export function ComparativoVestibularesChart({
     );
   }
 
-  const keyAnt = "Penúltimo";
-  const keyAtu = "Último";
   const chartData = deltas.map((d) => ({
     nome: d.label.length > 14 ? `${d.label.slice(0, 13)}…` : d.label,
-    [keyAnt]: d.pctAnterior,
-    [keyAtu]: d.pctAtual,
+    [KEY_PENULTIMO]: d.pctAnterior,
+    [KEY_ULTIMO]: d.pctAtual,
     delta: d.delta,
   }));
 
@@ -69,19 +127,39 @@ export function ComparativoVestibularesChart({
         </span>
       </div>
 
-      <div className="h-[200px] w-full sm:h-[260px]">
+      <div className="h-[200px] w-full max-w-full overflow-hidden sm:h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ left: 4, right: 8, bottom: 4 }}>
+          <BarChart data={chartData} margin={{ left: 4, right: 12, bottom: 4, top: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="nome" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" height={56} />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} width={28} />
             <Tooltip
-              formatter={(v, name) => [`${v}%`, name]}
-              labelFormatter={(label) => label}
+              allowEscapeViewBox={{ x: false, y: true }}
+              position={posicaoTooltipDentro}
+              offset={8}
+              cursor={{ fill: "rgba(15, 118, 110, 0.08)" }}
+              content={
+                <TooltipComparativo
+                  dataPenultimo={anterior.dataLabel}
+                  dataUltimo={atual.dataLabel}
+                />
+              }
             />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey={keyAnt} fill="#94a3b8" radius={[4, 4, 0, 0]} name={`${keyAnt} (${anterior.dataLabel})`} />
-            <Bar dataKey={keyAtu} fill="#0d9488" radius={[4, 4, 0, 0]} name={`${keyAtu} (${atual.dataLabel})`} />
+            <Legend
+              wrapperStyle={{ fontSize: 10, lineHeight: 1.2, paddingTop: 4 }}
+              formatter={(value) => {
+                if (value === KEY_PENULTIMO) return `${KEY_PENULTIMO} (${anterior.dataLabel})`;
+                if (value === KEY_ULTIMO) return `${KEY_ULTIMO} (${atual.dataLabel})`;
+                return value;
+              }}
+            />
+            <Bar
+              dataKey={KEY_PENULTIMO}
+              fill="#94a3b8"
+              radius={[4, 4, 0, 0]}
+              name={KEY_PENULTIMO}
+            />
+            <Bar dataKey={KEY_ULTIMO} fill="#0d9488" radius={[4, 4, 0, 0]} name={KEY_ULTIMO} />
           </BarChart>
         </ResponsiveContainer>
       </div>
