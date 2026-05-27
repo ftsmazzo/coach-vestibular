@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ResumoProvaDiagnostico, MateriaErroResumo } from "@/lib/diagnosis-prova";
 import { Card, Badge } from "@/components/ui";
 
-function BarraMateria({ m }: { m: MateriaErroResumo }) {
+function BarraMateria({ m, jornada }: { m: MateriaErroResumo; jornada?: boolean }) {
   const pctErro = m.total > 0 ? Math.round((m.erros / m.total) * 100) : 0;
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-3">
@@ -19,9 +19,10 @@ function BarraMateria({ m }: { m: MateriaErroResumo }) {
         />
       </div>
       <p className="mt-2 text-xs text-slate-500">
-        {m.acertos} acertos de {m.total} · questões erradas: nº{" "}
-        {m.numerosErrados.slice(0, 12).join(", ")}
-        {m.numerosErrados.length > 12 ? ` +${m.numerosErrados.length - 12}` : ""}
+        {m.acertos} acertos de {m.total}
+        {jornada
+          ? " · agregado na sua jornada"
+          : ` · questões erradas: nº ${m.numerosErrados.slice(0, 12).join(", ")}${m.numerosErrados.length > 12 ? ` +${m.numerosErrados.length - 12}` : ""}`}
       </p>
     </div>
   );
@@ -31,11 +32,14 @@ export function ResumoDiagnosticoCard({
   resumo,
   checkIn,
   compact = false,
+  escopoJornada = false,
 }: {
   resumo: ResumoProvaDiagnostico;
   checkIn?: number | null;
   /** No dashboard: menos assuntos, link para o plano */
   compact?: boolean;
+  /** Dados agregados de todos os registros (não uma prova só) */
+  escopoJornada?: boolean;
 }) {
   const assuntos = compact ? resumo.assuntosPrioritarios.slice(0, 3) : resumo.assuntosPrioritarios;
   const restantes = resumo.assuntosPrioritarios.length - assuntos.length;
@@ -43,7 +47,9 @@ export function ResumoDiagnosticoCard({
   return (
     <Card className="border-slate-200/80 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-semibold text-slate-900">O que a prova mostrou</h2>
+        <h2 className="font-semibold text-slate-900">
+          {escopoJornada ? "O que sua jornada mostrou" : "O que a prova mostrou"}
+        </h2>
         {compact && (
           <Link href="/plano" className="text-sm font-medium text-teal-700 hover:underline">
             Ver plano completo →
@@ -88,7 +94,7 @@ export function ResumoDiagnosticoCard({
           </h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {resumo.materiasComMaisErros.map((m) => (
-              <BarraMateria key={m.materia} m={m} />
+              <BarraMateria key={m.materia} m={m} jornada={escopoJornada} />
             ))}
           </div>
         </div>
@@ -113,8 +119,9 @@ export function ResumoDiagnosticoCard({
                     {a.materia} — {a.assunto}
                   </p>
                   <p className="mt-1 text-xs text-slate-600">
-                    Questões erradas: nº {a.numerosErrados.slice(0, 8).join(", ")}
-                    {a.numerosErrados.length > 8 ? "…" : ""}
+                    {escopoJornada
+                      ? `${a.erros} erro${a.erros > 1 ? "s" : ""} na jornada`
+                      : `Questões erradas: nº ${a.numerosErrados.slice(0, 8).join(", ")}${a.numerosErrados.length > 8 ? "…" : ""}`}
                     {a.nivelDificuldade && (
                       <span className="ml-2">
                         <Badge tone={a.erros >= 2 ? "danger" : "warning"}>

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/exam-service";
 import { buildJornadaDashboardAnalytics } from "@/lib/jornada-analytics";
-import { pctAcertoRegistro } from "@/lib/exam-stats";
+import { buildResumoGlobalJornada } from "@/lib/jornada";
 import { filtroRegistrosFromSearchParam } from "@/lib/prova-tipo";
 import { Card, Button, Badge } from "@/components/ui";
 import { FiltroRegistrosTabs } from "@/components/filtro-registros-tabs";
@@ -13,8 +13,6 @@ import { CoachPanoramaJornada } from "@/components/coach-panorama-jornada";
 import { ComunidadeDashboardBanner } from "@/components/comunidade-dashboard-banner";
 import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
-import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
-import { textoStreakDashboard } from "@/lib/streak";
 
 interface PageProps {
   searchParams: Promise<{ filtro?: string }>;
@@ -27,14 +25,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const { filtro: filtroParam } = await searchParams;
   const filtro = filtroRegistrosFromSearchParam(filtroParam);
-  const [data, analytics] = await Promise.all([
+  const [data, analytics, resumoGlobal] = await Promise.all([
     getDashboardData(session.userId, filtro),
     buildJornadaDashboardAnalytics(session.userId, filtro),
+    buildResumoGlobalJornada(session.userId, filtro),
   ]);
 
   const latest = data.latest;
-  const snapshot = latest?.diagnosticSnapshot;
-  const scores = snapshot ? JSON.parse(snapshot.scoresJson) : null;
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -72,35 +69,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <FiltroRegistrosTabs basePath="/dashboard" filtro={filtro} counts={data.counts} />
       </div>
 
-      {filtro === "todos" && data.counts.todos > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Card className="flex items-center justify-between gap-3 p-4">
-            <div>
-              <p className="text-sm text-slate-500">Último simulado</p>
-              <p className="text-lg font-semibold text-slate-800">
-                {data.latestSimulado
-                  ? `${pctAcertoRegistro(data.latestSimulado.questionAttempts)}%`
-                  : "—"}
-              </p>
-              <p className="text-xs text-slate-500 truncate max-w-[200px]">
-                {data.latestSimulado?.nome ?? "Nenhum ainda"}
-              </p>
-            </div>
-          </Card>
-          <Card className="flex items-center justify-between gap-3 p-4">
-            <div>
-              <p className="text-sm text-slate-500">Sequência no app</p>
-              <p className="text-lg font-semibold text-slate-800">
-                {data.streakInfo.streak} dia{data.streakInfo.streak !== 1 ? "s" : ""}
-              </p>
-              <p className="text-xs text-slate-500 leading-snug">
-                {textoStreakDashboard(data.streakInfo)}
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
-
       {latest?.recoveryMode && (
         <Card className="border-amber-200 bg-amber-50">
           <Badge tone="warning">Modo recuperação</Badge>
@@ -110,14 +78,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </Card>
       )}
 
-      {scores?.resumoProva && latest && (
+      {resumoGlobal && (
         <div>
-          <p className="mb-2 text-xs text-slate-500">Resumo do último registro</p>
-          <ResumoDiagnosticoCard
-            resumo={scores.resumoProva as ResumoProvaDiagnostico}
-            checkIn={latest.checkInScore}
-            compact
-          />
+          <p className="mb-2 text-xs text-slate-500">Resumo global da jornada</p>
+          <ResumoDiagnosticoCard resumo={resumoGlobal} compact escopoJornada />
         </div>
       )}
 

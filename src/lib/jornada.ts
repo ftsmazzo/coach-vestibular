@@ -1,6 +1,11 @@
 import type { ModoUsoRegistro } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  buildResumoProva,
+  type ResumoProvaDiagnostico,
+} from "@/lib/diagnosis-prova";
 import { labelModoUso, OPCOES_MODO_USO, pesoModoUso } from "@/lib/modo-uso";
+import { registroPassaFiltro, type FiltroRegistros } from "@/lib/prova-tipo";
 import {
   bancasPrioritariasDaMeta,
   pesoBancaParaMeta,
@@ -142,4 +147,39 @@ export async function buildResumoJornada(userId: string): Promise<ResumoJornada>
     metaAlvo,
     bancasPrioritarias,
   };
+}
+
+/** Agrega todas as questões registradas (filtro opcional) para o card de resumo do dashboard. */
+export async function buildResumoGlobalJornada(
+  userId: string,
+  filtro: FiltroRegistros = "todos"
+): Promise<ResumoProvaDiagnostico | null> {
+  const exams = await prisma.exam.findMany({
+    where: { userId },
+    orderBy: { data: "desc" },
+    include: {
+      questionAttempts: { include: { provaQuestao: true } },
+      prova: { select: { tipo: true } },
+    },
+  });
+
+  const filtrados = exams.filter((e) => registroPassaFiltro(e, filtro));
+  if (filtrados.length === 0) return null;
+
+  const questoes = filtrados.flatMap((exam) =>
+    exam.questionAttempts.map((a) => {
+      const pq = a.provaQuestao;
+      return {
+        numero: a.numero,
+        correto: a.correto,
+        materia: pq?.materia?.trim() || getMateriaLabel(a.materiaId ?? "geral"),
+        assunto: pq?.assunto?.trim() || "Geral",
+        conhecimentoExigido: pq?.conhecimentoExigido,
+        nivelDificuldade: pq?.nivelDificuldade,
+      };
+    })
+  );
+
+  if (questoes.length === 0) return null;
+  return buildResumoProva(questoes);
 }
