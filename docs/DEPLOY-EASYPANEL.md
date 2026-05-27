@@ -29,9 +29,10 @@ postgresql://coach:SUA_SENHA@coach-db:5432/coach_vestibular
 
 1. **Create Service** → **App**
 2. Fonte: repositório `https://github.com/ftsmazzo/coach-vestibular`
-3. Método de build: **Dockerfile** (raiz do repo)
+3. Método de build: **Dockerfile** (raiz do repo) — **não** use Nixpacks/Buildpack genérico
 4. Porta do container: **3000**
 5. Domínio: configure HTTPS no proxy do EasyPanel
+6. **Comando de start:** deixe **vazio** (padrão do Dockerfile). Se estiver `npm run start` ou `next start` manual, ok — o `prestart` do `package.json` aplica migrations antes do Next subir. **Não** use comando que pule o npm (ex.: `node .next/standalone/server.js` sem migrate).
 
 ## 3. Variáveis de ambiente (cole no app)
 
@@ -69,7 +70,9 @@ O script `scripts/docker-entrypoint.sh` executa automaticamente:
 2. Seed (se `RUN_SEED=true`)
 3. `npm run start` — sobe o Next.js
 
-Não é necessário rodar migrations manualmente após configurar o env.
+Não é necessário rodar migrations manualmente na VPS após configurar o env — cada **redeploy com rebuild** aplica migrations no startup (entrypoint + `prestart`).
+
+Se você rodou `migrate deploy` uma vez na mão e não deu erro, o banco já está atualizado; o próximo deploy só confirma o que já foi aplicado.
 
 ## 5. Testar localmente (Docker Compose)
 
@@ -85,6 +88,7 @@ Acesse http://localhost:3000
 |------|---------|
 | `Can't reach database` | Confira host interno do Postgres na `DATABASE_URL` |
 | `P1001` / timeout | App e Postgres devem estar na mesma rede EasyPanel |
+| Migrations não rodam sozinhas | Build via **Dockerfile**; comando de start vazio ou `npm run start`; faça **rebuild** após push (não só restart) |
 | Migrations falham | Verifique se o banco `coach_vestibular` existe |
 | Seed não roda | Defina `RUN_SEED=true` e redeploy |
 | Build falha no Prisma | Rebuild após push; `prisma generate` roda no Dockerfile |

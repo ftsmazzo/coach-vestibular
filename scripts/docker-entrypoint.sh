@@ -5,8 +5,12 @@ echo "==> Coach Vestibular — deploy"
 echo "==> Aguardando banco..."
 sleep 2
 
+# migrate também roda via npm prestart (se o painel ignorar ENTRYPOINT e chamar só npm start)
 echo "==> Aplicando migrations (prisma migrate deploy)..."
-npx prisma migrate deploy
+npx prisma migrate deploy || {
+  echo "==> ERRO: migrate deploy falhou. Verifique DATABASE_URL e logs do Postgres."
+  exit 1
+}
 
 if [ "$RUN_SEED" = "true" ]; then
   echo "==> Executando seed (RUN_SEED=true)..."
