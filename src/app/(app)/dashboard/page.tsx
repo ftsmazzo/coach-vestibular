@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/exam-service";
 import { buildJornadaDashboardAnalytics } from "@/lib/jornada-analytics";
+import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { filtroRegistrosFromSearchParam } from "@/lib/prova-tipo";
 import { Card, Button, Badge } from "@/components/ui";
 import { FiltroRegistrosTabs } from "@/components/filtro-registros-tabs";
