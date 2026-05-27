@@ -12,7 +12,8 @@ import {
   mergeHistoricalAttempts,
   mesclarPlanoComJornada,
 } from "./jornada-plano";
-import { concederXpMelhoriaMaterias } from "./xp";
+import { buildPlanoGlobalFromJornada } from "./jornada-diagnostico";
+import { concederXpMelhoriaMaterias, concederXpRegistro } from "./xp";
 import { modoUsoPadraoParaProva } from "./modo-uso";
 import { provaEhOficial, rotulosDiagnostico } from "./prova-tipo";
 import type { DiagnosisResult } from "./diagnosis";
@@ -309,7 +310,20 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     include: { diagnosticSnapshot: true },
   });
 
-  await aplicarPlanoEQuests(input.userId, diagnosis, provaEhOficial(prova.tipo));
+  const rawForPlano = rawAttempts.map(({ numero, correto, materiaId, temaId, tipoErro }) => ({
+    numero,
+    correto,
+    materiaId,
+    temaId,
+    tipoErro: tipoErro as ErrorType | null | undefined,
+  }));
+
+  await aplicarPlanoEQuests(
+    input.userId,
+    diagnosis,
+    provaEhOficial(prova.tipo),
+    rawForPlano
+  );
 
   await prisma.exam.update({
     where: { id: exam.id },
@@ -321,6 +335,9 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     exam.id,
     diagnosis.materiaScores
   );
+  const xpRegistro = await concederXpRegistro(input.userId, exam.id, exam.data);
+
+  const xpMensagens = [...xpMelhorias, ...xpRegistro.mensagens];
 
   return {
     exam,
@@ -329,35 +346,44 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     analiseCompleta,
     avisos,
     substituiu: Boolean(input.substituirExamId),
-    xpMelhorias,
+    xpMelhorias: xpMensagens,
   };
 }
 
 async function aplicarPlanoEQuests(
   userId: string,
   diagnosis: DiagnosisResult,
-  ehProvaOficial: boolean
+  ehProvaOficial: boolean,
+  rawAttemptsUltimo: AttemptInput[] = []
 ) {
   await prisma.quest.updateMany({
     where: { userId, status: "pending" },
     data: { status: "skipped" },
   });
 
+  let planDiagnosis = await buildPlanoGlobalFromJornada(
+    userId,
+    diagnosis,
+    rawAttemptsUltimo
+  );
+
   let items =
-    diagnosis.aiStudyPlanItems?.length
-      ? diagnosis.aiStudyPlanItems
-      : generateStudyPlan(diagnosis, { ehProvaOficial }).items;
-  if (!diagnosis.aiStudyPlanItems?.length) {
-    diagnosis = { ...diagnosis, planoCoachStatus: "legado" };
+    planDiagnosis.aiStudyPlanItems?.length
+      ? planDiagnosis.aiStudyPlanItems
+      : generateStudyPlan(planDiagnosis, { ehProvaOficial }).items;
+  if (!planDiagnosis.aiStudyPlanItems?.length) {
+    planDiagnosis = { ...planDiagnosis, planoCoachStatus: "legado" };
   }
   items = await mesclarPlanoComJornada(items, userId);
-  const recoveryMode = diagnosis.recoveryMode;
+  const recoveryMode = planDiagnosis.recoveryMode;
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
 
   await prisma.studyPlan.create({
     data: {
       userId,
+      escopo: "GLOBAL",
+      provaId: null,
       weekStart,
       itemsJson: JSON.stringify(items),
       recoveryMode,
@@ -499,20 +525,21 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
     data: { recoveryMode: diagnosis.recoveryMode },
   });
 
-  await aplicarPlanoEQuests(userId, diagnosis, provaEhOficial(prova.tipo));
+  await aplicarPlanoEQuests(userId, diagnosis, provaEhOficial(prova.tipo), rawAttempts);
 
   const xpMelhorias = await concederXpMelhoriaMaterias(
     userId,
     exam.id,
     diagnosis.materiaScores
   );
+  const xpRegistro = await concederXpRegistro(userId, exam.id, exam.data);
 
   return {
     examId: exam.id,
     diagnosis,
     planoCoachStatus: diagnosis.planoCoachStatus ?? "ia",
     planoCoachAviso: diagnosis.planoCoachAviso,
-    xpMelhorias,
+    xpMelhorias: [...xpMelhorias, ...xpRegistro.mensagens],
   };
 }
 

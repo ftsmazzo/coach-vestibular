@@ -13,7 +13,7 @@ export interface PlanoAtualData {
 
 export async function getPlanoAtual(userId: string): Promise<PlanoAtualData> {
   const plan = await prisma.studyPlan.findFirst({
-    where: { userId },
+    where: { userId, escopo: "GLOBAL" },
     orderBy: { createdAt: "desc" },
   });
 

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { XP_SUGESTAO_ACEITA } from "@/lib/modo-uso";
+import { XP_SUGESTAO_ACEITA } from "@/lib/xp-valores";
 
 export interface Conquista {
   id: string;

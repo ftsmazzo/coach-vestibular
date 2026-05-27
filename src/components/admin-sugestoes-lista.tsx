@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button, Card, Badge } from "@/components/ui";
-import { XP_SUGESTAO_ACEITA } from "@/lib/modo-uso";
+import { XP_SUGESTAO_ACEITA } from "@/lib/xp-valores";
 
 type Sugestao = {
   id: string;

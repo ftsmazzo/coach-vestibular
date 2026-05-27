@@ -67,7 +67,8 @@ model Prova {
   updatedAt       DateTime  @updatedAt
 
   questoes ProvaQuestao[]
-  tentativas Exam[]
+  tentativas  Exam[]
+  studyPlans  StudyPlan[]
 }
 
 /// Uma questão da prova — classificação pedagógica (metadados da prova ficam em Prova)
@@ -231,12 +232,16 @@ model DiagnosticSnapshot {
 model StudyPlan {
   id           String   @id @default(cuid())
   userId       String
+  provaId      String?
+  /** GLOBAL = plano da semana; PROVA = micro-plano de uma prova do catálogo */
+  escopo       String   @default("GLOBAL")
   weekStart    DateTime
   itemsJson    String
   recoveryMode Boolean  @default(false)
   createdAt    DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prova Prova? @relation(fields: [provaId], references: [id], onDelete: SetNull)
 }
 
 model Quest {

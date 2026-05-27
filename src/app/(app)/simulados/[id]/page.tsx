@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
+import { XpToastFromUrl } from "@/components/xp-toast-from-url";
 import { getSession } from "@/lib/auth";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { prisma } from "@/lib/prisma";
@@ -48,6 +50,9 @@ export default async function SimuladoDetailPage({
 
   return (
     <div className="space-y-6">
+      <Suspense fallback={null}>
+        <XpToastFromUrl />
+      </Suspense>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getRankingSnapshot } from "@/lib/ranking";
-import { XP_SUGESTAO_ACEITA } from "@/lib/modo-uso";
+import { XP_SUGESTAO_ACEITA } from "@/lib/xp-valores";
 import { Card, Badge } from "@/components/ui";
 
 export async function RankingCard({ userId }: { userId: string }) {

@@ -2,14 +2,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/exam-service";
+import { buildJornadaDashboardAnalytics } from "@/lib/jornada-analytics";
 import { pctAcertoRegistro } from "@/lib/exam-stats";
-import { getMateriaLabel } from "@/lib/taxonomy";
 import { filtroRegistrosFromSearchParam } from "@/lib/prova-tipo";
 import { Card, Button, Badge } from "@/components/ui";
 import { EvolutionChart } from "@/components/evolution-chart";
 import { FiltroRegistrosTabs } from "@/components/filtro-registros-tabs";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
 import { DashboardHero } from "@/components/dashboard-hero";
+import { DashboardRegistrosGrid } from "@/components/dashboard-registros-grid";
+import { MateriaJornadaCharts } from "@/components/materia-jornada-charts";
 import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { RankingCard } from "@/components/ranking-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
@@ -26,7 +28,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const { filtro: filtroParam } = await searchParams;
   const filtro = filtroRegistrosFromSearchParam(filtroParam);
-  const data = await getDashboardData(session.userId, filtro);
+  const [data, analytics] = await Promise.all([
+    getDashboardData(session.userId, filtro),
+    buildJornadaDashboardAnalytics(session.userId, filtro),
+  ]);
+
   const latest = data.latest;
   const snapshot = latest?.diagnosticSnapshot;
   const scores = snapshot ? JSON.parse(snapshot.scoresJson) : null;
@@ -60,8 +66,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             Seu painel
           </h1>
           <p className="mt-1 max-w-xl text-sm text-slate-600">
-            Visão rápida do último resultado. O plano e as quests são o próximo passo depois do
-            diagnóstico.
+            Visão da <strong>jornada inteira</strong> — oficiais, simulados e listas. O plano da
+            semana usa todos os seus registros, não só o último.
           </p>
         </div>
         <Link href="/provas">
@@ -71,11 +77,28 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
       <MensagemDiaCard />
 
+      {filtro === "todos" && analytics.totalRegistros > 0 && (
+        <Card className="border-teal-200 bg-gradient-to-r from-teal-50 to-white">
+          <p className="text-xs font-semibold uppercase text-teal-800">Jornada completa</p>
+          <p className="mt-1 text-3xl font-bold text-slate-900">
+            {analytics.pctGlobalPonderado}%{" "}
+            <span className="text-lg font-normal text-slate-600">acerto ponderado</span>
+          </p>
+          <p className="mt-1 text-sm text-slate-600">
+            {analytics.totalRegistros} registros · média de todas as aplicações
+          </p>
+        </Card>
+      )}
+
       {filtro === "todos" && (
         <div className="grid gap-4 lg:grid-cols-2">
           <JornadaResumoCard userId={session.userId} />
           <RankingCard userId={session.userId} />
         </div>
+      )}
+
+      {analytics.registrosRecentes.length > 0 && (
+        <DashboardRegistrosGrid registros={analytics.registrosRecentes} />
       )}
 
       <DashboardHero exam={examHero} pct={pctLatest} counts={data.counts} />
@@ -101,13 +124,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 {data.latestSimulado?.nome ?? "Nenhum ainda"}
               </p>
             </div>
-            {data.counts.simulados === 0 && (
-              <Link href="/provas?aba=simulados">
-                <Button variant="ghost" className="text-xs">
-                  Ver simulados
-                </Button>
-              </Link>
-            )}
           </Card>
           <Card className="flex items-center justify-between gap-3 p-4">
             <div>
@@ -129,17 +145,20 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       )}
 
       {scores?.resumoProva && (
-        <ResumoDiagnosticoCard
-          resumo={scores.resumoProva as ResumoProvaDiagnostico}
-          checkIn={latest?.checkInScore}
-          compact
-        />
+        <div>
+          <p className="mb-2 text-xs text-slate-500">Último registro em detalhe</p>
+          <ResumoDiagnosticoCard
+            resumo={scores.resumoProva as ResumoProvaDiagnostico}
+            checkIn={latest?.checkInScore}
+            compact
+          />
+        </div>
       )}
 
       {snapshot?.mensagem && (
         <Card className="border-l-4 border-l-teal-500 bg-gradient-to-r from-teal-50/80 to-white">
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
-            Leitura do coach
+            Leitura do coach (último registro)
           </p>
           <p className="mt-2 text-slate-700 leading-relaxed">{snapshot.mensagem}</p>
           {!scores?.resumoProva && focos.length > 0 && (
@@ -164,36 +183,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           />
         </Card>
         <Card className="lg:col-span-2">
-          <h2 className="mb-4 font-semibold text-slate-900">Por matéria</h2>
-          <ul className="space-y-3">
-            {scores?.materiaScores?.length ? (
-              scores.materiaScores.map(
-                (m: { materiaId: string; taxaAcerto: number; materiaLabel?: string }) => {
-                  const pct = Math.round(m.taxaAcerto * 100);
-                  return (
-                    <li key={m.materiaId}>
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium text-slate-800">
-                          {m.materiaLabel ?? getMateriaLabel(m.materiaId)}
-                        </span>
-                        <span className={pct >= 70 ? "text-emerald-700" : "text-slate-600"}>
-                          {pct}%
-                        </span>
-                      </div>
-                      <div className="mt-1 h-1.5 rounded-full bg-slate-100">
-                        <div
-                          className={`h-full rounded-full ${pct >= 70 ? "bg-emerald-500" : "bg-teal-500"}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </li>
-                  );
-                }
-              )
-            ) : (
-              <li className="text-sm text-slate-500">Sem dados neste filtro.</li>
-            )}
-          </ul>
+          <MateriaJornadaCharts
+            materiasMedia={analytics.materiasMedia}
+            seriesPorProva={analytics.seriesPorProva}
+            materiaIdsOrdenados={analytics.materiaIdsOrdenados}
+          />
         </Card>
       </div>
 
@@ -202,7 +196,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="font-semibold text-slate-900">Próximas quests</h2>
-              <p className="text-sm text-slate-500">Tarefas do plano desta semana</p>
+              <p className="text-sm text-slate-500">Plano global da semana (jornada agregada)</p>
             </div>
             <Link href="/quests">
               <Button variant="secondary">Abrir quests</Button>

@@ -1,20 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getMateriaLabel } from "@/lib/taxonomy";
+import { LABEL_TIPO_XP, XP_VALORES, type TipoXpEvento } from "@/lib/xp-valores";
 
-/** Valores de XP por ação (feedback alunos) */
-export const XP_VALORES = {
-  SUGESTAO_ACEITA: 25,
-  MELHORIA_MATERIA: 10,
-  QUESTS_SEMANA: 50,
-} as const;
-
-export type TipoXpEvento = keyof typeof XP_VALORES | "SUGESTAO_ACEITA";
-
-export const LABEL_TIPO_XP: Record<string, string> = {
-  SUGESTAO_ACEITA: "Sugestão aceita pela equipe",
-  MELHORIA_MATERIA: "Melhoria em matéria",
-  QUESTS_SEMANA: "Quests da semana concluídas",
-};
+export { LABEL_TIPO_XP, XP_VALORES, type TipoXpEvento };
 
 /** Concede XP uma vez por (tipo + referência); retorna pontos ganhos ou 0. */
 export async function concederXp(
@@ -114,7 +102,7 @@ export async function concederXpMelhoriaMaterias(
 /** Se todas as quests práticas do plano atual estão done/skipped, +50 XP (uma vez por plano). */
 export async function tentarXpQuestsSemana(userId: string): Promise<{ ganhou: number; mensagem?: string }> {
   const plan = await prisma.studyPlan.findFirst({
-    where: { userId },
+    where: { userId, escopo: "GLOBAL" },
     orderBy: { createdAt: "desc" },
   });
   if (!plan) return { ganhou: 0 };
@@ -142,6 +130,70 @@ export async function tentarXpQuestsSemana(userId: string): Promise<{ ganhou: nu
   if (!todasOk) return { ganhou: 0 };
 
   return concederXp(userId, "QUESTS_SEMANA", plan.id, XP_VALORES.QUESTS_SEMANA);
+}
+
+function weekKey(d: Date): string {
+  const x = new Date(d);
+  const day = x.getDay();
+  x.setDate(x.getDate() - day + (day === 0 ? -6 : 1));
+  x.setHours(0, 0, 0, 0);
+  return x.toISOString().slice(0, 10);
+}
+
+/** XP por primeiro registro na semana + marcos de streak. */
+export async function concederXpRegistro(
+  userId: string,
+  examId: string,
+  dataAplicacao: Date
+): Promise<{ mensagens: string[] }> {
+  const mensagens: string[] = [];
+  const wk = weekKey(dataAplicacao);
+
+  const countSemana = await prisma.exam.count({
+    where: {
+      userId,
+      id: { not: examId },
+      data: {
+        gte: new Date(wk),
+        lt: new Date(new Date(wk).getTime() + 7 * 86400000),
+      },
+    },
+  });
+
+  if (countSemana === 0) {
+    const r = await concederXp(
+      userId,
+      "PRIMEIRO_REGISTRO_SEMANA",
+      wk,
+      XP_VALORES.PRIMEIRO_REGISTRO_SEMANA
+    );
+    if (r.ganhou > 0 && r.mensagem) mensagens.push(r.mensagem);
+  }
+
+  const exams = await prisma.exam.findMany({
+    where: { userId },
+    select: { data: true },
+    orderBy: { data: "desc" },
+  });
+  const dias = [...new Set(exams.map((e) => e.data.toDateString()))];
+  const today = new Date();
+  let streak = 0;
+  for (let i = 0; i < 30; i++) {
+    const expected = new Date(today);
+    expected.setDate(expected.getDate() - i);
+    if (dias.includes(expected.toDateString())) streak++;
+    else if (i > 0) break;
+  }
+
+  if (streak >= 7) {
+    const r = await concederXp(userId, "STREAK_7", `s${streak}`, XP_VALORES.STREAK_7);
+    if (r.ganhou > 0 && r.mensagem) mensagens.push(r.mensagem);
+  } else if (streak >= 3) {
+    const r = await concederXp(userId, "STREAK_3", `s${streak}`, XP_VALORES.STREAK_3);
+    if (r.ganhou > 0 && r.mensagem) mensagens.push(r.mensagem);
+  }
+
+  return { mensagens };
 }
 
 export async function ultimosEventosXp(userId: string, limit = 8) {

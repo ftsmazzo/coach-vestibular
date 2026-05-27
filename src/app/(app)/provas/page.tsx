@@ -235,13 +235,22 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
                       </div>
                       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                         {p.minhasTentativas >= 1 && (
-                          <LinkButton
-                            href={`/provas/${p.id}/historico`}
-                            variant="secondary"
-                            className="w-full flex-1 text-center"
-                          >
-                            Histórico ({p.minhasTentativas})
-                          </LinkButton>
+                          <>
+                            <LinkButton
+                              href={`/provas/${p.id}/lente`}
+                              variant="secondary"
+                              className="w-full flex-1 text-center"
+                            >
+                              Lente da prova
+                            </LinkButton>
+                            <LinkButton
+                              href={`/provas/${p.id}/historico`}
+                              variant="ghost"
+                              className="w-full flex-1 text-center"
+                            >
+                              Histórico ({p.minhasTentativas})
+                            </LinkButton>
+                          </>
                         )}
                         {p.ultimaTentativa && (
                           <LinkButton

@@ -7,11 +7,6 @@ export const PESO_MODO_USO: Record<ModoUsoRegistro, number> = {
   REVISAO_PROVA_ANTIGA: 1,
 };
 
-import { XP_VALORES } from "@/lib/xp";
-
-export { XP_VALORES };
-export const XP_SUGESTAO_ACEITA = XP_VALORES.SUGESTAO_ACEITA;
-
 export function pesoModoUso(modo: ModoUsoRegistro): number {
   return PESO_MODO_USO[modo] ?? 1.5;
 }

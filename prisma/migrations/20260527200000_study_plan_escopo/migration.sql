@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "StudyPlan" ADD COLUMN "provaId" TEXT;
+ALTER TABLE "StudyPlan" ADD COLUMN "escopo" TEXT NOT NULL DEFAULT 'GLOBAL';
+
+-- AddForeignKey
+ALTER TABLE "StudyPlan" ADD CONSTRAINT "StudyPlan_provaId_fkey" FOREIGN KEY ("provaId") REFERENCES "Prova"("id") ON DELETE SET NULL ON UPDATE CASCADE;

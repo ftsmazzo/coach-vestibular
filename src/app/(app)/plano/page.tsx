@@ -83,8 +83,9 @@ export default async function PlanoPage() {
           {jornada.totalRegistros >= 2 && (
             <>
               {" "}
-              O plano considera sua jornada ({jornada.totalRegistros} registros, acerto ponderado{" "}
-              {jornada.pctAcertoPonderado}%).
+              O plano global foi montado com <strong>toda a sua jornada</strong> ({jornada.totalRegistros}{" "}
+              registros, {jornada.pctAcertoPonderado}% acerto ponderado) — oficiais, simulados e
+              listas.
             </>
           )}
         </p>

@@ -32,9 +32,14 @@ export default async function ProvaHistoricoPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/provas" className="text-sm text-teal-700 hover:underline">
-          ← Provas públicas
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/provas" className="text-sm text-teal-700 hover:underline">
+            ← Provas públicas
+          </Link>
+          <Link href={`/provas/${provaId}/lente`} className="text-sm font-medium text-violet-700 hover:underline">
+            Abrir lente da prova →
+          </Link>
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold text-slate-900">{prova.nome}</h1>
           <Badge tone="neutral">{labelTipoProva(prova.tipo)}</Badge>

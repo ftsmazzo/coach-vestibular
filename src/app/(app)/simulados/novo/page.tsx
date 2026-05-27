@@ -166,7 +166,11 @@ export default function NovoSimuladoPage() {
       setError(dataRes.error ?? "Erro ao salvar");
       return;
     }
-    router.push(`/simulados/${dataRes.exam.id}`);
+    const xpParam =
+      Array.isArray(dataRes.xpMelhorias) && dataRes.xpMelhorias.length > 0
+        ? `?xp=${encodeURIComponent(dataRes.xpMelhorias.join("|"))}`
+        : "";
+    router.push(`/simulados/${dataRes.exam.id}${xpParam}`);
   }
 
   return (

@@ -1,4 +1,4 @@
-import { XP_VALORES } from "@/lib/xp";
+import { XP_VALORES } from "@/lib/xp-valores";
 import { Card } from "@/components/ui";
 
 export function XpComoGanhar() {
@@ -17,6 +17,13 @@ export function XpComoGanhar() {
         <li>
           <strong>+{XP_VALORES.SUGESTAO_ACEITA} XP</strong> — sugestão de classificação aceita pela
           equipe.
+        </li>
+        <li>
+          <strong>+{XP_VALORES.PRIMEIRO_REGISTRO_SEMANA} XP</strong> — primeiro registro da semana.
+        </li>
+        <li>
+          <strong>+{XP_VALORES.STREAK_3} / +{XP_VALORES.STREAK_7} XP</strong> — streak de dias com
+          registro.
         </li>
       </ul>
       <p className="mt-3 text-xs text-slate-500">
