@@ -9,7 +9,7 @@ import {
   labelTipoProva,
 } from "@/lib/prova-tipo";
 import { formatDataAplicacao } from "@/lib/data-prova";
-import { Card, Button, Badge } from "@/components/ui";
+import { Card, Badge, LinkButton } from "@/components/ui";
 
 interface PageProps {
   searchParams: Promise<{ aba?: string }>;
@@ -233,19 +233,22 @@ export default async function ProvasPublicasPage({ searchParams }: PageProps) {
                       </div>
                       <div className="flex flex-col gap-2 sm:flex-row">
                         {p.ultimaTentativa && (
-                          <Link href={`/simulados/${p.ultimaTentativa.id}`} className="flex-1">
-                            <Button variant="secondary" className="w-full">
-                              Ver meu resultado
-                            </Button>
-                          </Link>
+                          <LinkButton
+                            href={`/simulados/${p.ultimaTentativa.id}`}
+                            variant="secondary"
+                            className="w-full flex-1 text-center"
+                          >
+                            Ver meu resultado
+                          </LinkButton>
                         )}
-                        <Link href={`/simulados/novo?provaId=${p.id}`} className="flex-1">
-                          <Button className="w-full">
-                            {p.minhasTentativas > 0
-                              ? "Atualizar resultado"
-                              : "Registrar meu resultado"}
-                          </Button>
-                        </Link>
+                        <LinkButton
+                          href={`/simulados/novo?provaId=${p.id}`}
+                          className="w-full flex-1 text-center"
+                        >
+                          {p.minhasTentativas > 0
+                            ? "Refazer / atualizar gabarito"
+                            : "Registrar meu resultado"}
+                        </LinkButton>
                       </div>
                     </Card>
                   </li>

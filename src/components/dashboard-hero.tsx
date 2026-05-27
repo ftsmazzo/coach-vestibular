@@ -1,8 +1,7 @@
-import Link from "next/link";
 import type { ProvaTipo } from "@/generated/prisma/client";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { labelCategoriaRegistro, categoriaDoRegistro } from "@/lib/prova-tipo";
-import { Button } from "@/components/ui";
+import { LinkButton } from "@/components/ui";
 import { PctDonut } from "@/components/pct-donut";
 
 export type ExamHero = {
@@ -31,9 +30,9 @@ export function DashboardHero({
           Escolha uma prova pública, informe seu gabarito e receba diagnóstico, plano da semana e
           quests.
         </p>
-        <Link href="/provas" className="mt-6 inline-block">
-          <Button>Ver provas públicas</Button>
-        </Link>
+        <LinkButton href="/provas" className="mt-6">
+          Ver provas públicas
+        </LinkButton>
       </div>
     );
   }
@@ -61,21 +60,26 @@ export function DashboardHero({
           </div>
         </div>
         <div className="flex flex-col gap-2 sm:min-w-[200px]">
-          <Link href={`/simulados/${exam.id}`}>
-            <Button className="w-full !bg-white !text-teal-800 hover:!bg-teal-50">
-              Ver diagnóstico completo
-            </Button>
-          </Link>
-          <Link href="/plano">
-            <Button variant="secondary" className="w-full !border-white/40 !bg-white/10 !text-white">
-              Plano da semana
-            </Button>
-          </Link>
-          <Link href="/quests">
-            <Button variant="ghost" className="w-full !text-teal-100 hover:!bg-white/10">
-              Minhas quests
-            </Button>
-          </Link>
+          <LinkButton
+            href={`/simulados/${exam.id}`}
+            className="w-full !bg-white !text-teal-800 hover:!bg-teal-50"
+          >
+            Ver diagnóstico completo
+          </LinkButton>
+          <LinkButton
+            href="/plano"
+            variant="secondary"
+            className="w-full !border !border-white/40 !bg-white/10 !text-white hover:!bg-white/20"
+          >
+            Plano da semana
+          </LinkButton>
+          <LinkButton
+            href="/quests"
+            variant="ghost"
+            className="w-full !text-teal-100 hover:!bg-white/10"
+          >
+            Minhas quests
+          </LinkButton>
         </div>
       </div>
     </div>

@@ -1,4 +1,21 @@
+import Link from "next/link";
 import { ReactNode } from "react";
+
+const buttonVariants = {
+  primary: "bg-teal-600 text-white hover:bg-teal-700",
+  secondary: "bg-slate-100 text-slate-800 hover:bg-slate-200",
+  ghost: "bg-transparent text-teal-700 hover:bg-teal-50",
+  danger: "bg-rose-100 text-rose-700 hover:bg-rose-200",
+} as const;
+
+export type ButtonVariant = keyof typeof buttonVariants;
+
+export function buttonClassName(
+  variant: ButtonVariant = "primary",
+  className = ""
+): string {
+  return `inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${buttonVariants[variant]} ${className}`;
+}
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
@@ -14,21 +31,31 @@ export function Button({
   className = "",
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: ButtonVariant;
 }) {
-  const variants = {
-    primary: "bg-teal-600 text-white hover:bg-teal-700",
-    secondary: "bg-slate-100 text-slate-800 hover:bg-slate-200",
-    ghost: "bg-transparent text-teal-700 hover:bg-teal-50",
-    danger: "bg-rose-100 text-rose-700 hover:bg-rose-200",
-  };
   return (
-    <button
-      className={`rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-50 ${variants[variant]} ${className}`}
-      {...props}
-    >
+    <button className={buttonClassName(variant, className)} {...props}>
       {children}
     </button>
+  );
+}
+
+/** Link estilizado como botão (evita <a><button> inválido que quebra cliques). */
+export function LinkButton({
+  href,
+  children,
+  variant = "primary",
+  className = "",
+}: {
+  href: string;
+  children: ReactNode;
+  variant?: ButtonVariant;
+  className?: string;
+}) {
+  return (
+    <Link href={href} className={buttonClassName(variant, className)}>
+      {children}
+    </Link>
   );
 }
 

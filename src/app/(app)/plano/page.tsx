@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getPlanoAtual } from "@/lib/plano-atual";
-import { Card, Badge, Button } from "@/components/ui";
+import { prisma } from "@/lib/prisma";
+import { RecalcularDiagnosticoButton } from "@/components/recalcular-diagnostico-button";
+import { Card, Badge, LinkButton } from "@/components/ui";
 import type { StudyPlanItem } from "@/lib/study-plan";
 
 function CardAnaliseMateria({ item }: { item: StudyPlanItem }) {
@@ -37,7 +39,14 @@ export default async function PlanoPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const { plan, items } = await getPlanoAtual(session.userId);
+  const [{ plan, items }, ultimoExam] = await Promise.all([
+    getPlanoAtual(session.userId),
+    prisma.exam.findFirst({
+      where: { userId: session.userId, provaId: { not: null } },
+      orderBy: { data: "desc" },
+      select: { id: true, nome: true },
+    }),
+  ]);
 
   const diagnostico = items.filter((i) => i.bloco === "diagnostico");
   const contexto = items.filter(
@@ -95,10 +104,21 @@ export default async function PlanoPage() {
       ) : planoLegado && analises.length === 0 ? (
         <Card className="border-amber-200 bg-amber-50">
           <p className="text-sm text-amber-900">
-            Este plano foi gerado no formato antigo. Use{" "}
-            <strong>Atualizar diagnóstico e plano</strong> no seu registro da prova para
-            gerar o novo formato (diagnóstico + análise por matéria + quests).
+            Este plano foi gerado no formato antigo. Clique abaixo para gerar o novo formato
+            (diagnóstico + análise por matéria + quests).
           </p>
+          {ultimoExam ? (
+            <div className="mt-4">
+              <RecalcularDiagnosticoButton examId={ultimoExam.id} />
+              <p className="mt-2 text-xs text-amber-800">
+                Com base em: <strong>{ultimoExam.nome}</strong>
+              </p>
+            </div>
+          ) : (
+            <LinkButton href="/provas" variant="primary" className="mt-4">
+              Registrar prova no catálogo
+            </LinkButton>
+          )}
         </Card>
       ) : (
         <>
@@ -151,18 +171,26 @@ export default async function PlanoPage() {
                 {horasQuests > 0 ? ` (~${horasQuests}h)` : ""} com base no que você errou e
                 nas suas anotações.
               </p>
-              <Link href="/quests" className="mt-4 inline-block">
-                <Button>Abrir Quests</Button>
-              </Link>
+              <LinkButton href="/quests" className="mt-4">
+                Abrir Quests
+              </LinkButton>
             </Card>
           )}
         </>
       )}
 
-      <p className="text-xs text-slate-500">
-        Plano gerado com Coach IA (GPT). Atualize após classificar erros na prova para
-        incorporar suas anotações metacognitivas.
-      </p>
+      {ultimoExam && !planoLegado && (
+        <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
+          <RecalcularDiagnosticoButton
+            examId={ultimoExam.id}
+            variant="secondary"
+            label="Atualizar diagnóstico e plano"
+          />
+          <p className="text-xs text-slate-500">
+            Use após classificar erros na prova para incorporar suas anotações.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

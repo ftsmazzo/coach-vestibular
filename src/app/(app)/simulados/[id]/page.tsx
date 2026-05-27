@@ -8,7 +8,7 @@ import {
   labelCategoriaRegistro,
 } from "@/lib/prova-tipo";
 import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
-import { Card, Button, Badge } from "@/components/ui";
+import { Card, Badge, LinkButton } from "@/components/ui";
 import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
 import { RecalcularDiagnosticoButton } from "@/components/recalcular-diagnostico-button";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
@@ -59,14 +59,28 @@ export default async function SimuladoDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap items-start gap-2">
-          {exam.provaId && <RecalcularDiagnosticoButton examId={exam.id} />}
+          {exam.provaId ? (
+            <RecalcularDiagnosticoButton examId={exam.id} />
+          ) : (
+            <LinkButton href="/provas" variant="primary">
+              Vincular ao catálogo de provas
+            </LinkButton>
+          )}
           <ExcluirRegistroButton examId={exam.id} nome={exam.nome} variant="secondary" />
-          <Link href="/simulados">
-            <Button variant="secondary">Últimos resultados</Button>
-          </Link>
-          <Link href="/dashboard">
-            <Button variant="ghost">Dashboard</Button>
-          </Link>
+          {exam.provaId && (
+            <LinkButton
+              href={`/simulados/novo?provaId=${exam.provaId}`}
+              variant="secondary"
+            >
+              Refazer gabarito
+            </LinkButton>
+          )}
+          <LinkButton href="/simulados" variant="secondary">
+            Últimos resultados
+          </LinkButton>
+          <LinkButton href="/dashboard" variant="ghost">
+            Dashboard
+          </LinkButton>
         </div>
       </div>
 
@@ -88,7 +102,7 @@ export default async function SimuladoDetailPage({
             {exam.provaId ? (
               <>
                 {" "}
-                Use <strong>Atualizar diagnóstico e plano</strong> se já informou o gabarito
+                Use <strong>Refazer diagnóstico e plano</strong> se já informou o gabarito
                 completo, ou <strong>Substituir registro</strong> em Registrar resultado com todas
                 as linhas <code className="text-xs">número,letra</code>.
               </>
@@ -179,9 +193,7 @@ export default async function SimuladoDetailPage({
 
       <AnaliseErros examId={exam.id} attempts={exam.questionAttempts} />
 
-      <Link href="/plano">
-        <Button>Ver plano da semana</Button>
-      </Link>
+      <LinkButton href="/plano">Ver plano da semana</LinkButton>
     </div>
   );
 }
