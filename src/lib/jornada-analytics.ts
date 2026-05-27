@@ -12,7 +12,12 @@ import {
 import { pesoBancaParaMeta, textoMetaAluno } from "@/lib/meta-vestibular";
 import { pesoModoUso } from "@/lib/modo-uso";
 import { abreviarNomeProva } from "@/lib/prova-label";
-import { categoriaDoRegistro, type CategoriaRegistro } from "@/lib/prova-tipo";
+import {
+  categoriaDoRegistro,
+  tipoAtividadeVisual,
+  type CategoriaRegistro,
+  type TipoAtividadeVisual,
+} from "@/lib/prova-tipo";
 import { type KpiExecucao, type PontoExecucao, serieKpiExecucoes, ultimoKpi } from "@/lib/kpi-evolucao";
 import { getMateriaLabel } from "@/lib/taxonomy";
 
@@ -72,6 +77,7 @@ export interface RegistroDashboardCard {
   pct: number;
   modoUso: ModoUsoRegistro;
   categoria: CategoriaRegistro;
+  tipoAtividade: TipoAtividadeVisual;
   provaId: string | null;
 }
 
@@ -301,6 +307,7 @@ export async function buildJornadaDashboardAnalytics(
     pct: pctAcertoRegistro(e.questionAttempts),
     modoUso: e.modoUso,
     categoria: categoriaDoRegistro(e),
+    tipoAtividade: tipoAtividadeVisual(e),
     provaId: e.provaId,
   }));
 

@@ -60,3 +60,36 @@ export async function getQuestsDoPlanoAtual(userId: string) {
 
   return { quests: filtradas, plan, items };
 }
+
+/** Quests do micro-plano de uma prova (escopo PROVA). */
+export async function getQuestsDaProva(userId: string, provaId: string) {
+  const prova = await prisma.prova.findUnique({
+    where: { id: provaId },
+    select: { nome: true },
+  });
+  const plan = await prisma.studyPlan.findFirst({
+    where: { userId, provaId, escopo: "PROVA" },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const prefix = prova ? `[${prova.nome.slice(0, 20)}]` : "";
+  const items: StudyPlanItem[] = plan ? JSON.parse(plan.itemsJson) : [];
+  const titulosPlano = new Set(
+    items
+      .filter((i) => i.geraQuest !== false && i.duracaoMin > 0)
+      .map((i) => (prefix ? `${prefix} ${i.titulo}` : i.titulo))
+  );
+
+  const todas = await prisma.quest.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const quests = todas.filter((q) => {
+    if (titulosPlano.has(q.titulo)) return true;
+    if (prefix && q.titulo.startsWith(prefix)) return true;
+    return false;
+  });
+
+  return { quests, plan, prova, items };
+}

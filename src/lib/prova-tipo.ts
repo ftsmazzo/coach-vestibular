@@ -45,6 +45,60 @@ export function filtroRegistrosFromSearchParam(v: string | undefined): FiltroReg
 
 export type CategoriaRegistro = "prova_oficial" | "simulado";
 
+/** Cores e rótulos no dashboard (vestibular / simulado / lista). */
+export type TipoAtividadeVisual = "vestibular" | "simulado" | "lista";
+
+export function tipoAtividadeVisual(exam: {
+  prova?: { tipo: ProvaTipo } | null;
+}): TipoAtividadeVisual {
+  const t = exam.prova?.tipo;
+  if (!t) return "simulado";
+  if (provaEhOficial(t)) return "vestibular";
+  if (t === "LISTA_FIXACAO") return "lista";
+  return "simulado";
+}
+
+export const TEMA_ATIVIDADE: Record<
+  TipoAtividadeVisual,
+  {
+    label: string;
+    cardClass: string;
+    badgeClass: string;
+    btnPrimary: string;
+    btnOutline: string;
+    btnGhost: string;
+    pctMuted: string;
+  }
+> = {
+  vestibular: {
+    label: "Vestibular",
+    cardClass: "bg-gradient-to-br from-teal-600 to-teal-800",
+    badgeClass: "bg-white/20 text-white",
+    btnPrimary: "!bg-white !text-teal-900 hover:!bg-teal-50",
+    btnOutline: "!border !border-white/35 !bg-white/10 !text-white hover:!bg-white/15",
+    btnGhost: "!text-white/90 hover:!bg-white/10",
+    pctMuted: "text-teal-100",
+  },
+  simulado: {
+    label: "Simulado",
+    cardClass: "bg-gradient-to-br from-indigo-600 to-indigo-900",
+    badgeClass: "bg-white/20 text-white",
+    btnPrimary: "!bg-white !text-indigo-900 hover:!bg-indigo-50",
+    btnOutline: "!border !border-white/35 !bg-white/10 !text-white hover:!bg-white/15",
+    btnGhost: "!text-white/90 hover:!bg-white/10",
+    pctMuted: "text-indigo-100",
+  },
+  lista: {
+    label: "Lista",
+    cardClass: "bg-gradient-to-br from-amber-600 to-orange-700",
+    badgeClass: "bg-white/20 text-white",
+    btnPrimary: "!bg-white !text-amber-950 hover:!bg-amber-50",
+    btnOutline: "!border !border-white/35 !bg-white/10 !text-white hover:!bg-white/15",
+    btnGhost: "!text-white/90 hover:!bg-white/10",
+    pctMuted: "text-amber-100",
+  },
+};
+
 /** Classifica um Exam pelo tipo da Prova vinculada (UFU, ENEM = oficial; cursinho = simulado). */
 export function categoriaDoRegistro(exam: {
   provaId: string | null;
@@ -72,6 +126,10 @@ export function labelCategoriaRegistro(cat: CategoriaRegistro): string {
 /** Marcador nos cards do dashboard (mais curto que labelCategoriaRegistro). */
 export function labelMarcadorAtividade(cat: CategoriaRegistro): string {
   return cat === "prova_oficial" ? "Vestibular" : "Simulado";
+}
+
+export function labelTipoAtividade(tipo: TipoAtividadeVisual): string {
+  return TEMA_ATIVIDADE[tipo].label;
 }
 
 /** Textos do diagnóstico genérico (antes do resumo concreto da prova). */

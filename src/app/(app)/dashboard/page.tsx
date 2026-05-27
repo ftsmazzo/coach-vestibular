@@ -3,12 +3,10 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/exam-service";
 import { buildJornadaDashboardAnalytics } from "@/lib/jornada-analytics";
-import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { filtroRegistrosFromSearchParam } from "@/lib/prova-tipo";
 import { Card, Button, Badge } from "@/components/ui";
 import { FiltroRegistrosTabs } from "@/components/filtro-registros-tabs";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
-import { DashboardHero } from "@/components/dashboard-hero";
 import { DashboardRegistrosGrid } from "@/components/dashboard-registros-grid";
 import { CoachPanoramaJornada } from "@/components/coach-panorama-jornada";
 import { ComunidadeDashboardBanner } from "@/components/comunidade-dashboard-banner";
@@ -36,19 +34,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const latest = data.latest;
   const snapshot = latest?.diagnosticSnapshot;
   const scores = snapshot ? JSON.parse(snapshot.scoresJson) : null;
-  const pctLatest = latest ? pctAcertoRegistro(latest.questionAttempts) : 0;
-
-  const examHero = latest
-    ? {
-        id: latest.id,
-        nome: latest.nome,
-        data: latest.data,
-        provaId: latest.provaId,
-        prova: latest.prova,
-        questionAttempts: latest.questionAttempts,
-      }
-    : undefined;
-
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -68,11 +53,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
       {filtro === "todos" && <JornadaResumoCard userId={session.userId} />}
 
-      {analytics.registrosRecentes.length > 0 && (
+      {analytics.registrosRecentes.length > 0 ? (
         <DashboardRegistrosGrid registros={analytics.registrosRecentes} />
+      ) : (
+        <div className="rounded-xl border border-dashed border-teal-200 bg-teal-50/40 p-6 text-center">
+          <p className="text-sm text-slate-700">Nenhum registro ainda.</p>
+          <Link href="/provas" className="mt-3 inline-block">
+            <Button>Registrar primeira prova</Button>
+          </Link>
+        </div>
       )}
-
-      <DashboardHero exam={examHero} pct={pctLatest} counts={data.counts} />
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">

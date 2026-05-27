@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Card, Button, Badge } from "@/components/ui";
 
 interface QuestMeta {
@@ -42,24 +43,30 @@ interface QuestsResponse {
   quests: Quest[];
   planoAtualizadoEm: string | null;
   recoveryMode: boolean;
+  provaId?: string | null;
+  provaNome?: string | null;
 }
 
 export default function QuestsPage() {
+  const searchParams = useSearchParams();
+  const provaId = searchParams.get("provaId");
   const [data, setData] = useState<QuestsResponse | null>(null);
   const [mood, setMood] = useState(3);
   const [loading, setLoading] = useState(true);
   const [xpToast, setXpToast] = useState("");
 
-  async function load() {
-    const res = await fetch("/api/quests");
+  const load = useCallback(async () => {
+    setLoading(true);
+    const qs = provaId ? `?provaId=${encodeURIComponent(provaId)}` : "";
+    const res = await fetch(`/api/quests${qs}`);
     const json = await res.json();
     setData(json);
     setLoading(false);
-  }
+  }, [provaId]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   async function completeQuest(id: string) {
     setXpToast("");
@@ -133,11 +140,25 @@ export default function QuestsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Quests</h1>
+        <h1 className="text-2xl font-bold text-slate-900">
+          {data?.provaNome ? "Quests desta prova" : "Quests"}
+        </h1>
         <p className="text-slate-600">
-          Plano completo: blocos profundos, consolidação, manutenção e integração — na ordem do
-          plano semanal.
+          {data?.provaNome
+            ? `Micro-plano de ${data.provaNome} — tarefas só desta prova.`
+            : "Plano completo: blocos profundos, consolidação, manutenção e integração — na ordem do plano semanal."}
         </p>
+        {provaId && (
+          <p className="mt-2 text-sm">
+            <Link href={`/provas/${provaId}/lente`} className="text-teal-700 hover:underline">
+              ← Voltar à lente da prova
+            </Link>
+            {" · "}
+            <Link href="/quests" className="text-slate-600 hover:underline">
+              Ver plano global
+            </Link>
+          </p>
+        )}
         {data?.recoveryMode && (
           <p className="mt-1 text-sm text-amber-800">Modo recuperação: menos quests, metas menores.</p>
         )}
@@ -189,21 +210,47 @@ export default function QuestsPage() {
           )}
 
           <section>
-            <h2 className="mb-1 font-semibold">Tarefas da semana</h2>
+            <h2 className="mb-1 font-semibold">
+              {provaId ? "Tarefas do micro-plano" : "Tarefas da semana"}
+            </h2>
             <p className="mb-3 text-sm text-slate-500">
-              Ordem do plano: profundo → consolidar → manter → integrar. Ver{" "}
-              <Link href="/plano" className="text-teal-700 hover:underline">
-                Plano
-              </Link>
-              .
+              {provaId ? (
+                <>
+                  Gere o micro-plano na{" "}
+                  <Link href={`/provas/${provaId}/lente`} className="text-teal-700 hover:underline">
+                    lente da prova
+                  </Link>{" "}
+                  se ainda não houver tarefas.
+                </>
+              ) : (
+                <>
+                  Ordem do plano: profundo → consolidar → manter → integrar. Ver{" "}
+                  <Link href="/plano" className="text-teal-700 hover:underline">
+                    Plano
+                  </Link>
+                  .
+                </>
+              )}
             </p>
             {pendingPlano.length === 0 ? (
               <p className="text-sm text-slate-500">
-                Nenhuma quest do plano atual.{" "}
-                <Link href="/simulados" className="text-teal-700 underline">
-                  Atualize o diagnóstico
-                </Link>{" "}
-                no seu último registro.
+                Nenhuma quest{provaId ? " desta prova" : " do plano atual"}.
+                {provaId ? (
+                  <>
+                    {" "}
+                    <Link href={`/provas/${provaId}/lente`} className="text-teal-700 underline">
+                      Abrir lente da prova
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    {" "}
+                    <Link href="/simulados" className="text-teal-700 underline">
+                      Atualize o diagnóstico
+                    </Link>{" "}
+                    no seu último registro.
+                  </>
+                )}
               </p>
             ) : (
               <ul className="space-y-3">
