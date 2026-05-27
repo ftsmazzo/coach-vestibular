@@ -3,10 +3,11 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildResumoJornada } from "@/lib/jornada";
+import { nomePublicoRanking } from "@/lib/apelido-ranking";
 import { ConquistasGrid } from "@/components/conquistas-grid";
+import { PerfilEditarForm } from "@/components/perfil-editar-form";
 import { XpComoGanhar } from "@/components/xp-como-ganhar";
 import { XpRecentes } from "@/components/xp-recentes";
-import { PerfilMetaForm } from "@/components/perfil-meta-form";
 import { Card, Badge } from "@/components/ui";
 
 export default async function PerfilPage() {
@@ -20,6 +21,8 @@ export default async function PerfilPage() {
       select: {
         name: true,
         email: true,
+        telefone: true,
+        nomeExibicaoRanking: true,
         vestibularAlvo: true,
         metaProva: true,
         xp: true,
@@ -30,6 +33,8 @@ export default async function PerfilPage() {
 
   if (!user) redirect("/login");
 
+  const nomeNoRanking = nomePublicoRanking(user);
+
   return (
     <div className="space-y-6">
       <div>
@@ -37,26 +42,35 @@ export default async function PerfilPage() {
           ← Dashboard
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">Seu perfil</h1>
-        <p className="mt-1 text-slate-600">{user.name}</p>
+        <p className="mt-1 text-slate-600">
+          Edite seus dados, escolha como aparece no ranking e ajuste sua meta.
+        </p>
       </div>
 
       <Card className="border-violet-200 bg-violet-50/40">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-3xl font-bold text-violet-900">{user.xp} XP</span>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className="text-3xl font-bold text-violet-900">{user.xp} XP</span>
+            <p className="mt-1 text-sm text-slate-600">
+              No ranking você aparece como: <strong>{nomeNoRanking}</strong>
+            </p>
+          </div>
           <Link href="/comunidade" className="text-sm font-medium text-violet-700 hover:underline">
             Ver ranking →
           </Link>
         </div>
-        <p className="mt-2 text-sm text-slate-600">{user.email}</p>
       </Card>
 
-      <div>
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Meta de vestibular</h2>
-        <PerfilMetaForm
-          vestibularAlvoInicial={user.vestibularAlvo ?? "Medicina"}
-          metaProvaInicial={user.metaProva ?? ""}
-        />
-      </div>
+      <PerfilEditarForm
+        inicial={{
+          name: user.name,
+          email: user.email,
+          telefone: user.telefone,
+          nomeExibicaoRanking: user.nomeExibicaoRanking,
+          vestibularAlvo: user.vestibularAlvo ?? "Medicina",
+          metaProva: user.metaProva ?? "",
+        }}
+      />
 
       {jornada.bancasPrioritarias.length > 0 && (
         <Card className="border-teal-100 bg-teal-50/30">

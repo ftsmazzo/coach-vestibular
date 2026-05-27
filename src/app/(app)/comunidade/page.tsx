@@ -36,8 +36,8 @@ export default async function ComunidadePage() {
           )}
         </p>
         <p className="mt-2 text-xs text-violet-800">
-          No ranking abaixo, cada pessoa aparece só com um <strong>apelido</strong> (ex.: Estudante
-          M.ma.sa) — ninguém vê seu nome completo.
+          Cada pessoa escolhe o <strong>nome no ranking</strong> em Perfil (ou usa apelido automático)
+          — ninguém vê nome completo nem cursinho.
         </p>
       </Card>
 

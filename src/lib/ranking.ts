@@ -1,4 +1,4 @@
-import { apelidoRanking } from "@/lib/apelido-ranking";
+import { nomePublicoRanking } from "@/lib/apelido-ranking";
 import { prisma } from "@/lib/prisma";
 
 export interface RankingEntry {
@@ -27,6 +27,7 @@ export async function getRankingSnapshot(
     select: {
       id: true,
       name: true,
+      nomeExibicaoRanking: true,
       xp: true,
     },
     orderBy: [{ xp: "desc" }, { name: "asc" }],
@@ -35,7 +36,7 @@ export async function getRankingSnapshot(
   const ordenados = students
     .map((s) => ({
       userId: s.id,
-      apelido: apelidoRanking(s.name),
+      apelido: nomePublicoRanking(s),
       xp: s.xp,
     }))
     .sort((a, b) => b.xp - a.xp || a.apelido.localeCompare(b.apelido));

@@ -20,8 +20,11 @@ export function XpComoGanhar() {
         </li>
       </ul>
       <p className="mt-3 text-xs text-slate-500">
-        No ranking, os nomes aparecem como apelidos (ex.: Estudante M.ma.sa) para ninguém saber quem
-        é quem no cursinho.
+        No ranking, use um <strong>nome de exibição</strong> em{" "}
+        <a href="/perfil" className="text-teal-700 underline">
+          Perfil
+        </a>{" "}
+        (apelido livre) — ou deixe em branco para um apelido automático discreto.
       </p>
     </Card>
   );

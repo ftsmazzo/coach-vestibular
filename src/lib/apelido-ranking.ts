@@ -1,8 +1,5 @@
-/**
- * Apelido público no ranking — não expõe nome completo (evita identificar colegas do mesmo cursinho).
- * Formato: Estudante L.ab.cd (letra do nome + 2 primeiras do nome + 2 do sobrenome).
- */
-export function apelidoRanking(name: string): string {
+/** Apelido automático quando o aluno não escolhe nome no ranking. */
+export function apelidoRankingAutomatico(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "Estudante ?";
 
@@ -17,3 +14,31 @@ export function apelidoRanking(name: string): string {
   }
   return `Estudante ${letra}.${n2}.${s2}`;
 }
+
+const NOME_RANKING_REGEX = /^[\p{L}\p{N}][\p{L}\p{N}\s._-]{1,23}$/u;
+
+export function parseNomeExibicaoRanking(
+  raw: string
+): { value: string | null; error?: string } {
+  const t = raw.trim();
+  if (!t) return { value: null };
+  if (!NOME_RANKING_REGEX.test(t)) {
+    return {
+      value: null,
+      error: "Use 2–24 caracteres (letras, números, espaço, ponto, hífen).",
+    };
+  }
+  return { value: t };
+}
+
+export function nomePublicoRanking(user: {
+  name: string;
+  nomeExibicaoRanking?: string | null;
+}): string {
+  const custom = user.nomeExibicaoRanking?.trim();
+  if (custom && custom.length >= 2) return custom;
+  return apelidoRankingAutomatico(user.name);
+}
+
+/** @deprecated use apelidoRankingAutomatico */
+export const apelidoRanking = apelidoRankingAutomatico;

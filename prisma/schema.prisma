@@ -99,9 +99,13 @@ model User {
   passwordHash    String
   name            String
   role            UserRole @default(STUDENT)
-  vestibularAlvo  String?  @default("Medicina")
-  metaProva       String?
-  xp              Int      @default(0)
+  vestibularAlvo       String?  @default("Medicina")
+  metaProva            String?
+  /** Contato (futuro: notificações WhatsApp) */
+  telefone             String?
+  /** Nome no ranking — escolhido pelo aluno; se vazio, gera apelido automático */
+  nomeExibicaoRanking  String?
+  xp                   Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
