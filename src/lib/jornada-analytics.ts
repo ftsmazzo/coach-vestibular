@@ -13,6 +13,7 @@ import { pesoBancaParaMeta, textoMetaAluno } from "@/lib/meta-vestibular";
 import { pesoModoUso } from "@/lib/modo-uso";
 import { abreviarNomeProva } from "@/lib/prova-label";
 import { categoriaDoRegistro, type CategoriaRegistro } from "@/lib/prova-tipo";
+import { type KpiExecucao, type PontoExecucao, serieKpiExecucoes, ultimoKpi } from "@/lib/kpi-evolucao";
 import { getMateriaLabel } from "@/lib/taxonomy";
 
 export interface MateriaMediaJornada {
@@ -74,6 +75,12 @@ export interface RegistroDashboardCard {
   provaId: string | null;
 }
 
+export interface EvolucaoVestibularesKpi {
+  serie: KpiExecucao[];
+  ultima: KpiExecucao | null;
+  chart: Array<{ nome: string; data: string; taxaAcerto: number }>;
+}
+
 export interface JornadaDashboardAnalytics {
   pctGlobalPonderado: number;
   totalRegistros: number;
@@ -81,6 +88,7 @@ export interface JornadaDashboardAnalytics {
   areasBloco: AreaBlocoMediaJornada[];
   seriesPorProva: MateriaSerieProva[];
   comparativoVestibulares: ComparativoVestibulares | null;
+  evolucaoVestibulares: EvolucaoVestibularesKpi | null;
   registrosRecentes: RegistroDashboardCard[];
   materiaIdsOrdenados: string[];
 }
@@ -93,7 +101,7 @@ function pesoExam(
   return pesoModoUso(exam.modoUso) * pesoBancaParaMeta(exam.banca, metaProva, vestibularAlvo);
 }
 
-function buildComparativoVestibulares(
+export function buildComparativoDuasExecucoes(
   oficiais: Array<{
     id: string;
     nome: string;
@@ -264,7 +272,27 @@ export async function buildJornadaDashboardAnalytics(
     .filter((e) => categoriaDoRegistro(e) === "prova_oficial")
     .sort((a, b) => a.data.getTime() - b.data.getTime());
 
-  const comparativoVestibulares = buildComparativoVestibulares(oficiais);
+  const comparativoVestibulares = buildComparativoDuasExecucoes(oficiais);
+
+  let evolucaoVestibulares: EvolucaoVestibularesKpi | null = null;
+  if (oficiais.length >= 1) {
+    const pontos: PontoExecucao[] = oficiais.map((e) => ({
+      id: e.id,
+      label: abreviarNomeProva(e.nome),
+      dataLabel: formatDataAplicacao(e.data),
+      pct: pctAcertoRegistro(e.questionAttempts),
+    }));
+    const serie = serieKpiExecucoes(pontos);
+    evolucaoVestibulares = {
+      serie,
+      ultima: ultimoKpi(serie),
+      chart: pontos.map((p) => ({
+        nome: p.label,
+        data: p.dataLabel,
+        taxaAcerto: p.pct,
+      })),
+    };
+  }
 
   const registrosRecentes: RegistroDashboardCard[] = filtrados.slice(0, 8).map((e) => ({
     id: e.id,
@@ -283,6 +311,7 @@ export async function buildJornadaDashboardAnalytics(
     areasBloco,
     seriesPorProva,
     comparativoVestibulares,
+    evolucaoVestibulares,
     registrosRecentes,
     materiaIdsOrdenados,
   };

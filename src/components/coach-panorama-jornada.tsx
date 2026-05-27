@@ -5,6 +5,7 @@ import type { StreakRegistros } from "@/lib/streak";
 import { textoStreakDashboard } from "@/lib/streak";
 import { AreaBlocoPieChart } from "@/components/area-bloco-pie-chart";
 import { ComparativoVestibularesChart } from "@/components/comparativo-vestibulares-chart";
+import { EvolucaoVestibularesPanel } from "@/components/evolucao-vestibulares-panel";
 import { LeituraCoachCard } from "@/components/leitura-coach-card";
 import { Card } from "@/components/ui";
 import { MateriaJornadaCharts } from "@/components/materia-jornada-charts";
@@ -107,6 +108,10 @@ export function CoachPanoramaJornada({
             </Card>
           )}
         </div>
+      )}
+
+      {analytics.evolucaoVestibulares && analytics.evolucaoVestibulares.chart.length >= 1 && (
+        <EvolucaoVestibularesPanel evolucao={analytics.evolucaoVestibulares} />
       )}
 
       <div className="grid gap-6 lg:grid-cols-5">

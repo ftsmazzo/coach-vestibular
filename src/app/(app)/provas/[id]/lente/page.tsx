@@ -9,7 +9,9 @@ import { labelTipoProva } from "@/lib/prova-tipo";
 import { getMateriaLabel } from "@/lib/taxonomy";
 import { GerarMicroPlanoButton } from "@/components/gerar-micro-plano-button";
 import { LeituraCoachCard } from "@/components/leitura-coach-card";
+import { ComparativoVestibularesChart } from "@/components/comparativo-vestibulares-chart";
 import { EvolutionChart } from "@/components/evolution-chart";
+import { KpiEvolucaoStrip } from "@/components/kpi-evolucao-strip";
 import { Card, Badge, LinkButton } from "@/components/ui";
 
 export default async function ProvaLentePage({
@@ -28,7 +30,16 @@ export default async function ProvaLentePage({
   ]);
   if (!historico) notFound();
 
-  const { prova, tentativas, evolucao, melhorPct, ultimaPct, tendencia } = historico;
+  const {
+    prova,
+    tentativas,
+    evolucao,
+    melhorPct,
+    ultimaPct,
+    tendencia,
+    kpiUltima,
+    comparativoTentativas,
+  } = historico;
   const tituloProva = abreviarNomeProva(prova.nome);
 
   return (
@@ -77,9 +88,28 @@ export default async function ProvaLentePage({
       </div>
 
       {tentativas.length >= 2 && (
-        <Card>
-          <h2 className="mb-4 font-semibold">Evolução nesta prova</h2>
+        <Card className="p-4">
+          <h2 className="font-semibold text-slate-900">Sua evolução neste vestibular</h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Cada tentativa na mesma prova do catálogo — KPIs comparam a última com todas as
+            anteriores.
+          </p>
           <EvolutionChart data={evolucao} />
+          {kpiUltima && (
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <KpiEvolucaoStrip kpi={kpiUltima} contexto="última tentativa nesta prova" />
+            </div>
+          )}
+        </Card>
+      )}
+
+      {comparativoTentativas && tentativas.length >= 2 && (
+        <Card className="p-4">
+          <h2 className="mb-1 font-semibold text-slate-900">Matérias: penúltima × última tentativa</h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Só matérias com questões nas duas aplicações — sem penalizar matéria que não caiu.
+          </p>
+          <ComparativoVestibularesChart comparativo={comparativoTentativas} />
         </Card>
       )}
 

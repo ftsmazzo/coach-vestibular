@@ -1,8 +1,13 @@
 import type { ModoUsoRegistro, ProvaTipo } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { formatDataAplicacao } from "@/lib/data-prova";
-import { labelModoUso, pesoModoUso } from "@/lib/modo-uso";
 import { pctAcertoRegistro } from "@/lib/exam-stats";
+import {
+  buildComparativoDuasExecucoes,
+  type ComparativoVestibulares,
+} from "@/lib/jornada-analytics";
+import { type KpiExecucao, type PontoExecucao, serieKpiExecucoes, ultimoKpi } from "@/lib/kpi-evolucao";
+import { labelModoUso, pesoModoUso } from "@/lib/modo-uso";
 
 export interface TentativaProvaResumo {
   examId: string;
@@ -30,6 +35,9 @@ export interface HistoricoProvaCatalogo {
   melhorPct: number | null;
   ultimaPct: number | null;
   tendencia: "subindo" | "estavel" | "caindo" | null;
+  kpiSerie: KpiExecucao[];
+  kpiUltima: KpiExecucao | null;
+  comparativoTentativas: ComparativoVestibulares | null;
 }
 
 export async function buildHistoricoProva(
@@ -52,7 +60,7 @@ export async function buildHistoricoProva(
   const exams = await prisma.exam.findMany({
     where: { userId, provaId },
     orderBy: { data: "asc" },
-    include: { questionAttempts: true },
+    include: { questionAttempts: { include: { provaQuestao: true } } },
   });
 
   const tentativas: TentativaProvaResumo[] = exams.map((e) => {
@@ -90,6 +98,16 @@ export async function buildHistoricoProva(
     else tendencia = "estavel";
   }
 
+  const pontos: PontoExecucao[] = tentativas.map((t, i) => ({
+    id: exams[i]!.id,
+    label: `Tentativa ${i + 1}`,
+    dataLabel: t.dataLabel,
+    pct: t.pctAcerto,
+  }));
+  const kpiSerie = serieKpiExecucoes(pontos);
+  const kpiUltima = ultimoKpi(kpiSerie);
+  const comparativoTentativas = buildComparativoDuasExecucoes(exams);
+
   return {
     prova,
     tentativas,
@@ -97,6 +115,9 @@ export async function buildHistoricoProva(
     melhorPct,
     ultimaPct,
     tendencia,
+    kpiSerie,
+    kpiUltima,
+    comparativoTentativas,
   };
 }
 
