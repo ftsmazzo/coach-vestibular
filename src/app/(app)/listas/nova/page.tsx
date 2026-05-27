@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button, Card, Input, Label, Textarea } from "@/components/ui";
-import { MAX_QUESTOES_LISTA } from "@/lib/lista-exercicios";
+import { MAX_QUESTOES_LISTA } from "@/lib/lista-exercicios-constants";
 import { parseListaErros } from "@/lib/gabarito";
 
 export default function NovaListaPage() {

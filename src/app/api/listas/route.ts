@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
-import {
-  MAX_QUESTOES_LISTA,
-  mensagemErroLista,
-  registrarListaExercicios,
-} from "@/lib/lista-exercicios";
+import { MAX_QUESTOES_LISTA, mensagemErroLista } from "@/lib/lista-exercicios-constants";
+import { registrarListaExercicios } from "@/lib/lista-exercicios";
 
 const createSchema = z.object({
   nome: z.string().min(1).max(120),

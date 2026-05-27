@@ -1,14 +1,18 @@
 import type { ModoUsoRegistro } from "@/generated/prisma/client";
-import { aplicarMapaEnem, parseListaErros, questoesFromErros } from "@/lib/gabarito";
+import { aplicarMapaEnem, questoesFromListaErros } from "@/lib/gabarito";
 import { createExamWithDiagnosis, type QuestionInput } from "@/lib/exam-service";
+import {
+  MAX_LISTAS_POR_SEMANA,
+  MAX_QUESTOES_LISTA,
+} from "@/lib/lista-exercicios-constants";
 import { prisma } from "@/lib/prisma";
 
-export const MAX_QUESTOES_LISTA = 50;
-export const MAX_LISTAS_POR_SEMANA = 15;
-
-export function ehListaPessoal(exam: { provaId: string | null }): boolean {
-  return exam.provaId == null;
-}
+export {
+  MAX_QUESTOES_LISTA,
+  MAX_LISTAS_POR_SEMANA,
+  mensagemErroLista,
+  ehListaPessoal,
+} from "@/lib/lista-exercicios-constants";
 
 function getWeekStart(date: Date): Date {
   const d = new Date(date);
@@ -34,7 +38,7 @@ export function buildQuestoesLista(
   totalQuestoes: number,
   apenasErros: number[]
 ): QuestionInput[] {
-  const base = questoesFromErros(totalQuestoes, apenasErros);
+  const base = questoesFromListaErros(totalQuestoes, apenasErros);
   return aplicarMapaEnem(base, totalQuestoes);
 }
 
@@ -78,16 +82,4 @@ export async function registrarListaExercicios(input: RegistrarListaInput) {
     modoUso: "TREINO" satisfies ModoUsoRegistro,
     provaTipoDiagnostico: "LISTA_FIXACAO",
   });
-}
-
-export function mensagemErroLista(code: string): string {
-  const map: Record<string, string> = {
-    NOME_OBRIGATORIO: "Informe um nome para a lista.",
-    DATA_OBRIGATORIA: "Informe a data em que você fez os exercícios.",
-    TOTAL_QUESTOES_INVALIDO: `Use entre 1 e ${MAX_QUESTOES_LISTA} questões.`,
-    ERROS_OBRIGATORIOS: "Informe pelo menos um número de questão que você errou.",
-    ERRO_FORA_INTERVALO: "Algum número de erro está fora do total de questões.",
-    LIMITE_SEMANAL: `Limite de ${MAX_LISTAS_POR_SEMANA} listas por semana. Tente na próxima semana.`,
-  };
-  return map[code] ?? "Não foi possível salvar a lista.";
 }
