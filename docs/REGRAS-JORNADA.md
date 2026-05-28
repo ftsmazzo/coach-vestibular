@@ -4,9 +4,19 @@
 
 | Camada | Onde | O que faz |
 |--------|------|-----------|
-| **Macro — Jornada** | Dashboard → *Sua jornada* | Registros com peso por `modoUso` e banca alinhada à meta |
-| **Meso — Prova do catálogo** | `/provas/[id]/historico` | Tentativas, evolução, melhor % |
+| **Macro — Jornada** | Dashboard (copiloto) | Aprendizado agregado — **sem** comparar provas/bancas diferentes |
+| **Meso — Prova do catálogo** | `/provas/[id]/historico`, `/lente` | Tentativas na mesma prova |
 | **Micro — Registro** | `/simulados/[id]` | Gabarito, diagnóstico, sugestões |
+
+## Home = copiloto (não analytics)
+
+A `/dashboard` responde: *o que fazer agora?* — missão, estado, padrão de erro, alavancas.
+
+**Não na Home:** comparativo entre vestibulares, gráficos mistos, evolução entre provas distintas.
+
+Comparações válidas: mesma prova (histórico/lente) ou futuro hub por **banca** (`Prova.banca`).
+
+Agregador: `buildJourneyInsight()` — `context: JOURNEY`.
 
 ## Modo de uso (`Exam.modoUso`)
 
