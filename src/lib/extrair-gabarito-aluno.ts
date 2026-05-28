@@ -1,5 +1,5 @@
 import {
-  responsesComPdfSchemaComValidacao,
+  responsesComPdfSchemaComFallback,
   uploadFileBuffer,
   type JsonSchemaFormat,
 } from "@/lib/openai-responses-client";
@@ -104,25 +104,6 @@ export function buildGradeRevisao(
   return grade;
 }
 
-function validarExtracao(data: ExtracaoIaPayload, totalQuestoes: number): void {
-  if (!Array.isArray(data.respostas)) {
-    throw new Error("Resposta da IA sem lista de respostas");
-  }
-  const validas = data.respostas.filter(
-    (r) =>
-      Number.isInteger(r.numero) &&
-      r.numero >= 1 &&
-      r.numero <= totalQuestoes &&
-      /^[A-E]$/.test(r.letra)
-  );
-  const minimo = Math.min(3, Math.max(1, Math.ceil(totalQuestoes * 0.08)));
-  if (validas.length < minimo) {
-    throw new Error(
-      `Poucas respostas legíveis (${validas.length}; esperado pelo menos ~${minimo}). Tente foto mais nítida ou use «Meu gabarito».`
-    );
-  }
-}
-
 function montarInstrucao(opts: {
   nomeProva: string;
   totalQuestoes: number;
@@ -160,19 +141,20 @@ export async function extrairGabaritoAlunoDeArquivo(opts: {
     banca: opts.banca,
   });
 
-  const { data } = await responsesComPdfSchemaComValidacao<ExtracaoIaPayload>({
+  const { data } = await responsesComPdfSchemaComFallback<ExtracaoIaPayload>({
     fileId,
     instrucao,
     systemPrompt:
       "Você extrai respostas de provas vestibulares a partir de fotos/PDFs. Seja conservador: só inclua questões visíveis. Letras sempre A–E maiúsculas.",
     schema: SCHEMA,
     taskName: "extrair_gabarito_aluno",
-    validate: (d) => validarExtracao(d, opts.totalQuestoes),
   });
 
-  const respostas = data.respostas
+  const respostasRaw = Array.isArray(data.respostas) ? data.respostas : [];
+  const respostas = respostasRaw
     .filter(
       (r) =>
+        Number.isInteger(r.numero) &&
         r.numero >= 1 &&
         r.numero <= opts.totalQuestoes &&
         /^[A-E]$/.test(r.letra)
@@ -183,8 +165,16 @@ export async function extrairGabaritoAlunoDeArquivo(opts: {
       confianca: r.confianca,
     }));
 
+  const avisos = Array.isArray(data.avisos) ? [...data.avisos] : [];
+  const minimoSugerido = Math.min(3, Math.max(1, Math.ceil(opts.totalQuestoes * 0.08)));
+  if (respostas.length < minimoSugerido) {
+    avisos.push(
+      `Leitura parcial (${respostas.length} resposta(s) detectada(s)). Revise manualmente as questões em branco e, se preciso, tente outra foto mais nítida.`
+    );
+  }
+
   return {
     respostas,
-    avisos: data.avisos ?? [],
+    avisos,
   };
 }

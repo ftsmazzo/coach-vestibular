@@ -86,26 +86,47 @@ export async function POST(
   try {
     const avisosGerais: string[] = [];
     const porArquivo: Awaited<ReturnType<typeof extrairGabaritoAlunoDeArquivo>>[] = [];
+    const falhas: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]!;
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const resultado = await extrairGabaritoAlunoDeArquivo({
-        buffer,
-        fileName: file.name || `gabarito-${i + 1}`,
-        mimeType: file.type,
-        nomeProva: prova.nome,
-        totalQuestoes: prova.totalQuestoes,
-        banca: prova.banca,
-      });
-      porArquivo.push(resultado);
-      if (files.length > 1) {
-        avisosGerais.push(`Arquivo ${i + 1} (${file.name}): ${resultado.respostas.length} resposta(s) lida(s).`);
+      try {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const resultado = await extrairGabaritoAlunoDeArquivo({
+          buffer,
+          fileName: file.name || `gabarito-${i + 1}`,
+          mimeType: file.type,
+          nomeProva: prova.nome,
+          totalQuestoes: prova.totalQuestoes,
+          banca: prova.banca,
+        });
+        porArquivo.push(resultado);
+        if (files.length > 1) {
+          avisosGerais.push(
+            `Arquivo ${i + 1} (${file.name}): ${resultado.respostas.length} resposta(s) lida(s).`
+          );
+        }
+        avisosGerais.push(...resultado.avisos);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "falha de leitura";
+        falhas.push(`Arquivo ${i + 1} (${file.name}): ${msg}`);
       }
-      avisosGerais.push(...resultado.avisos);
     }
 
     const respostas = mesclarRespostasExtraidas(porArquivo.map((r) => r.respostas));
+    if (falhas.length > 0) {
+      avisosGerais.push(...falhas.map((f) => `Aviso: ${f}`));
+    }
+    if (respostas.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Não consegui ler respostas na imagem/PDF enviado. Tente foto mais nítida, com boa luz e enquadramento completo.",
+          detalhes: falhas,
+        },
+        { status: 422 }
+      );
+    }
 
     return NextResponse.json({
       ok: true,
