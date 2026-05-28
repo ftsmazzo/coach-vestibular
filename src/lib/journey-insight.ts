@@ -12,7 +12,7 @@ import { buildResumoJornada } from "@/lib/jornada";
 import { getPlanoAtual } from "@/lib/plano-atual";
 import {
   garantirQuestsAlavanca,
-  getQuestsAlavancaPendentes,
+  getOQueFazerAgora,
 } from "@/lib/quests-alavanca";
 import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { prisma } from "@/lib/prisma";
@@ -311,10 +311,10 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   };
 
   await garantirQuestsAlavanca(userId, insightSemQuests);
-  const questsAlavanca = await getQuestsAlavancaPendentes(userId);
+  const oQueFazer = await getOQueFazerAgora(userId);
 
   if (insightSemQuests.missao) {
-    insightSemQuests.missao.questsPendentes = questsAlavanca.slice(0, 3).map((q) => ({
+    insightSemQuests.missao.questsPendentes = oQueFazer.map((q) => ({
       id: q.id,
       titulo: q.titulo,
     }));

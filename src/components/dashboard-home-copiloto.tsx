@@ -72,25 +72,18 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
             Passo prático da semana — vale mais que reler tudo de uma matéria.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <LinkButton href="/quests#alavancas">Abrir quests da jornada</LinkButton>
+            <LinkButton href="/quests#agora">O que fazer agora</LinkButton>
             <LinkButton href="/plano" variant="secondary">
               Ver plano completo
             </LinkButton>
           </div>
           {missao.questsPendentes.length > 0 && (
-            <ul className="mt-4 space-y-1.5 border-t border-teal-100 pt-3">
-              <p className="text-[10px] font-semibold uppercase text-teal-800/90">
-                Suas quests de prioridade (toda a jornada)
-              </p>
-              {missao.questsPendentes.map((q, i) => (
-                <li key={q.id} className="flex items-center gap-2 text-sm text-slate-700">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
-                    {i + 1}
-                  </span>
-                  <span className="line-clamp-1">{q.titulo}</span>
-                </li>
-              ))}
-            </ul>
+            <p className="mt-4 border-t border-teal-100 pt-3 text-sm text-slate-600">
+              {missao.questsPendentes.length === 1
+                ? "1 passo prático"
+                : `${missao.questsPendentes.length} passos práticos`}{" "}
+              na lista — o diagnóstico fica aqui; o como fazer está em passo a passo em Quests.
+            </p>
           )}
         </Card>
       )}
@@ -146,8 +139,8 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
             </div>
           )}
 
-          <LinkButton href="/quests#alavancas" variant="secondary" className="mt-4">
-            Ver quests desta prioridade
+          <LinkButton href="/quests#agora" variant="secondary" className="mt-4">
+            Ver passos na lista de tarefas
           </LinkButton>
         </Card>
       )}

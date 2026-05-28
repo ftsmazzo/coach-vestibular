@@ -2,7 +2,6 @@ import type { ErrorType } from "@/generated/prisma/client";
 import { prisma } from "./prisma";
 import { aplicarPlanoCoachIA, buildDiagnosis, type AttemptInput } from "./diagnosis";
 import { enriquecerDiagnosticoComProva } from "./diagnosis-prova";
-import { planToQuests } from "./study-plan";
 import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
 import { parseDataAplicacao } from "./data-prova";
@@ -375,7 +374,8 @@ async function aplicarPlanoEQuests(
     },
   });
 
-  await prisma.quest.createMany({ data: planToQuests(items, userId) });
+  const { buildJourneyInsight } = await import("@/lib/journey-insight");
+  await buildJourneyInsight(userId);
 }
 
 /** Recria plano global e quests a partir da jornada atual (ex.: após excluir registro inválido). */

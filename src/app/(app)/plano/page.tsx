@@ -126,16 +126,16 @@ export default async function PlanoPage() {
                 </>
               )}
               — não é revisão só da última prova. As tarefas práticas estão em{" "}
-              <Link href="/quests" className="font-medium text-teal-700 hover:underline">
-                Quests
+              <Link href="/quests#agora" className="font-medium text-teal-700 hover:underline">
+                O que fazer agora
               </Link>
               .
             </>
           ) : (
             <>
               Leia o diagnóstico aqui. As atividades práticas ficam em{" "}
-              <Link href="/quests" className="font-medium text-teal-700 hover:underline">
-                Quests
+              <Link href="/quests#agora" className="font-medium text-teal-700 hover:underline">
+                O que fazer agora
               </Link>
               .
             </>
@@ -216,8 +216,12 @@ export default async function PlanoPage() {
                 Prioridades da semana
               </h2>
               <p className="text-sm text-slate-600">
-                Padrões que mais se repetem na jornada — siga na ordem. O mesmo foco aparece na
-                Home.
+                O <strong>porquê</strong> e o contexto ficam aqui. Os <strong>passos práticos</strong>{" "}
+                (o que fazer, na ordem) estão em{" "}
+                <Link href="/quests#agora" className="font-medium text-teal-700 hover:underline">
+                  Quests → O que fazer agora
+                </Link>
+                — igual na Home.
               </p>
               <div className="space-y-3">
                 {prioridades.map((item) => (
@@ -252,19 +256,16 @@ export default async function PlanoPage() {
             </section>
           )}
 
-          {questsCount > 0 && (
-            <Card className="border-teal-200 bg-teal-50/40">
-              <h3 className="font-semibold text-teal-900">Próximo passo</h3>
-              <p className="mt-2 text-sm text-teal-900">
-                {questsCount} atividade{questsCount > 1 ? "s" : ""} em Quests
-                {horasQuests > 0 ? ` (~${horasQuests}h)` : ""}. Comece pela prioridade 1 ou pelas
-                alavancas do copiloto na Home.
-              </p>
-              <LinkButton href="/quests" className="mt-4 w-full sm:w-auto">
-                Abrir Quests
-              </LinkButton>
-            </Card>
-          )}
+          <Card className="border-teal-200 bg-teal-50/40">
+            <h3 className="font-semibold text-teal-900">Próximo passo</h3>
+            <p className="mt-2 text-sm text-teal-900">
+              Abra a lista com passo a passo — comece pelo item 1 e marque Concluir ao terminar cada
+              bloco.
+            </p>
+            <LinkButton href="/quests#agora" className="mt-4 w-full sm:w-auto">
+              O que fazer agora
+            </LinkButton>
+          </Card>
         </>
       )}
     </div>

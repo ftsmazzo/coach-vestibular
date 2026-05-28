@@ -36,7 +36,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     descricao:
       `Este plano usa **todos os ${registrosLabel}** (oficiais, simulados e listas com pesos diferentes) — ` +
       `não é revisão só da última prova. Acerto ponderado: ${resumo.pctAcertoPonderado}%. ` +
-      `Siga os blocos na ordem; cada um diz exatamente o que fazer.`,
+      `Leia os blocos abaixo; o passo a passo da semana está em Quests → O que fazer agora (sem repetir o mesmo texto da Home).`,
     duracaoMin: 0,
     bloco: "contexto",
     geraQuest: false,
@@ -75,7 +75,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     duracaoMin: recoveryMode ? 35 : 45,
     bloco: "foco_profundo",
     materiaDestaque: materia,
-    geraQuest: true,
+    geraQuest: false,
     errosContexto: "jornada",
   });
 
@@ -85,7 +85,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     const mat2 = secundario.materias[0]?.nome ?? "outra matéria";
     items.push({
       ordem: ordem++,
-      titulo: `Prioridade 2 — ${def2.tituloHumano}`,
+      titulo: `Também vale atenção — ${def2.tituloHumano}`,
       descricao: formatarPassos(
         PASSOS_POR_CLUSTER[secundario.clusterId].slice(0, 4),
         `segundo padrão na jornada (${mat2}).`,
@@ -94,7 +94,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
       duracaoMin: 35,
       bloco: "consolidacao",
       materiaDestaque: mat2,
-      geraQuest: true,
+      geraQuest: false,
       errosContexto: "jornada",
     });
   }
@@ -117,7 +117,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
       duracaoMin: 25,
       bloco: "manutencao",
       materiaDestaque: m.label,
-      geraQuest: true,
+      geraQuest: false,
       errosContexto: "jornada",
     });
   }

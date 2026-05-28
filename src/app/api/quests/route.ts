@@ -4,9 +4,10 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getQuestsDaProva, getQuestsDoPlanoAtual } from "@/lib/plano-atual";
 import {
-  getQuestsAlavancaPendentes,
-  isQuestAlavanca,
+  getOQueFazerAgora,
+  isQuestCopiloto,
   limparDescricaoQuest,
+  tituloQuestExibicao,
 } from "@/lib/quests-alavanca";
 import type { StudyPlanItem } from "@/lib/study-plan";
 import { pickRewardMessage } from "@/lib/messages";
@@ -38,7 +39,28 @@ export async function GET(request: Request) {
     items = global.items;
   }
 
-  const questsAlavanca = provaId ? [] : await getQuestsAlavancaPendentes(session.userId);
+  const oQueFazerAgora = provaId ? [] : await getOQueFazerAgora(session.userId);
+
+  const copilotoConcluidas = provaId
+    ? []
+    : (
+        await prisma.quest.findMany({
+          where: { userId: session.userId, status: "done" },
+          orderBy: { completedAt: "desc" },
+          take: 20,
+        })
+      )
+        .filter(isQuestCopiloto)
+        .map((q) => ({
+          id: q.id,
+          titulo: tituloQuestExibicao(q.titulo),
+          descricao: limparDescricaoQuest(q.descricao),
+          duracaoMin: q.duracaoMin,
+          status: "done" as const,
+          rewardMsg: q.rewardMsg,
+          ordemPlano: null,
+          meta: { bloco: "copiloto" as const },
+        }));
 
   const ordemPorTitulo = new Map<string, number>();
   const metaPorTitulo = new Map<
@@ -71,20 +93,29 @@ export async function GET(request: Request) {
     return metaPorTitulo.get(titulo) ?? metaPorTitulo.get(titulo.replace(/^(\[[^\]]+\]\s*)/, "")) ?? null;
   }
 
-  return NextResponse.json({
-    quests: quests
-      .filter((q) => !isQuestAlavanca(q.titulo))
-      .map((q) => ({
-        ...q,
-        descricao: limparDescricaoQuest(q.descricao),
-        ordemPlano: ordemPorTitulo.get(q.titulo) ?? metaForQuest(q.titulo)?.ordem ?? null,
-        meta: metaPorTitulo.get(q.titulo) ?? metaForQuest(q.titulo),
-      })),
-    questsAlavanca: questsAlavanca.map((q) => ({
+  const questsPlano = quests
+    .filter((q) => !isQuestCopiloto(q))
+    .map((q) => ({
       ...q,
-      ordemPlano: null,
-      meta: { bloco: "alavanca" as const },
+      descricao: limparDescricaoQuest(q.descricao),
+      ordemPlano: ordemPorTitulo.get(q.titulo) ?? metaForQuest(q.titulo)?.ordem ?? null,
+      meta: metaPorTitulo.get(q.titulo) ?? metaForQuest(q.titulo),
+    }));
+
+  return NextResponse.json({
+    quests: questsPlano,
+    oQueFazerAgora: oQueFazerAgora.map((q) => ({
+      id: q.id,
+      titulo: q.titulo,
+      descricao: q.descricao,
+      duracaoMin: q.duracaoMin,
+      status: "pending",
+      rewardMsg: null,
+      ordemPlano: q.ordem,
+      meta: { bloco: "copiloto" as const, rotulo: q.rotulo },
     })),
+    copilotoConcluidas,
+    questsAlavanca: [],
     planoAtualizadoEm: plan?.createdAt ?? null,
     recoveryMode: plan?.recoveryMode ?? false,
     provaId: provaId ?? null,

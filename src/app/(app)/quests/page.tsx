@@ -6,28 +6,11 @@ import { useSearchParams } from "next/navigation";
 import { Card, Button, Badge } from "@/components/ui";
 
 interface QuestMeta {
-  ordem: number;
+  ordem?: number;
   bloco?: string;
+  rotulo?: string;
   materiaDestaque?: string;
   errosNaMateria?: number;
-  geraQuest?: boolean;
-}
-
-function labelBloco(bloco?: string): { text: string; tone: "danger" | "warning" | "success" | "neutral" } | null {
-  switch (bloco) {
-    case "foco_profundo":
-      return { text: "Estudo profundo", tone: "danger" };
-    case "consolidacao":
-      return { text: "Consolidar", tone: "warning" };
-    case "manutencao":
-      return { text: "Manter", tone: "success" };
-    case "integracao":
-      return { text: "Integrar", tone: "neutral" };
-    case "alavanca":
-      return { text: "Alavanca", tone: "success" };
-    default:
-      return null;
-  }
 }
 
 interface Quest {
@@ -43,7 +26,8 @@ interface Quest {
 
 interface QuestsResponse {
   quests: Quest[];
-  questsAlavanca?: Quest[];
+  oQueFazerAgora?: Quest[];
+  copilotoConcluidas?: Quest[];
   planoAtualizadoEm: string | null;
   recoveryMode: boolean;
   provaId?: string | null;
@@ -98,16 +82,24 @@ export default function QuestsPage() {
     load();
   }
 
-  const quests = data?.quests ?? [];
-  const alavancas = data?.questsAlavanca ?? [];
-  const pending = quests.filter((q) => q.status === "pending");
-  const pendingPlano = pending.filter((q) => q.ordemPlano != null);
-  const pendingAntigas = pending.filter((q) => q.ordemPlano == null);
-  const done = quests.filter((q) => q.status === "done");
+  const oQueFazer = data?.oQueFazerAgora ?? [];
+  const outras = data?.quests ?? [];
+  const pendingOutras = outras.filter((q) => q.status === "pending");
+  const done = [
+    ...(data?.copilotoConcluidas ?? []),
+    ...outras.filter((q) => q.status === "done"),
+  ];
 
-  function QuestCard({ q, destaque }: { q: Quest; destaque?: boolean }) {
-    const erros = q.meta?.errosNaMateria;
-    const blocoLabel = labelBloco(q.meta?.bloco);
+  function QuestCard({
+    q,
+    destaque,
+    numero,
+  }: {
+    q: Quest;
+    destaque?: boolean;
+    numero?: number;
+  }) {
+    const rotulo = q.meta?.rotulo;
     return (
       <Card
         className={
@@ -119,18 +111,13 @@ export default function QuestsPage() {
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              {q.ordemPlano != null && (
+              {numero != null && (
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
-                  {q.ordemPlano}
+                  {numero}
                 </span>
               )}
               <h3 className="font-semibold text-slate-900">{q.titulo}</h3>
-              {blocoLabel && <Badge tone={blocoLabel.tone}>{blocoLabel.text}</Badge>}
-              {erros != null && erros > 0 && (
-                <Badge tone="danger">
-                  {erros} erro{erros > 1 ? "s" : ""} na jornada
-                </Badge>
-              )}
+              {rotulo && <Badge tone="success">{rotulo}</Badge>}
             </div>
             {q.descricao && (
               <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">
@@ -156,7 +143,7 @@ export default function QuestsPage() {
         <p className="text-slate-600">
           {data?.provaNome
             ? `Micro-plano de ${data.provaNome} — tarefas só desta prova.`
-            : "Plano completo: blocos profundos, consolidação, manutenção e integração — na ordem do plano semanal."}
+            : "Comece por O que fazer agora — passos da sua jornada inteira. O plano em /plano explica o porquê."}
         </p>
         {provaId && (
           <p className="mt-2 text-sm">
@@ -165,17 +152,17 @@ export default function QuestsPage() {
             </Link>
             {" · "}
             <Link href="/quests" className="text-slate-600 hover:underline">
-              Ver plano global
+              Ver jornada
             </Link>
           </p>
         )}
         {data?.recoveryMode && (
-          <p className="mt-1 text-sm text-amber-800">Modo recuperação: menos quests, metas menores.</p>
+          <p className="mt-1 text-sm text-amber-800">Modo recuperação: menos tarefas, metas menores.</p>
         )}
       </div>
 
       <Card>
-        <p className="text-sm font-medium">Como você está agora? (ao concluir uma quest)</p>
+        <p className="text-sm font-medium">Como você está agora? (ao concluir uma tarefa)</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
@@ -202,115 +189,87 @@ export default function QuestsPage() {
         <p className="text-slate-500">Carregando...</p>
       ) : (
         <>
-          {pendingAntigas.length > 0 && (
+          {pendingOutras.length > 0 && !provaId && (
             <Card className="border-amber-200 bg-amber-50/60">
               <p className="text-sm text-amber-950">
-                Há <strong>{pendingAntigas.length}</strong> tarefa(s) de planos antigos (não batem
-                com o plano atual).
+                Há <strong>{pendingOutras.length}</strong> tarefa(s) de planos antigos (duplicam o
+                copiloto).
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button type="button" variant="secondary" onClick={pularAntigas}>
                   Arquivar tarefas antigas
                 </Button>
-                <Link href="/plano" className="text-sm text-teal-700 hover:underline self-center">
-                  Ver plano atual →
+                <Link href="/plano" className="self-center text-sm text-teal-700 hover:underline">
+                  Ver plano →
                 </Link>
               </div>
             </Card>
           )}
 
-          {alavancas.length > 0 && !provaId && (
-            <section id="alavancas">
-              <h2 className="mb-1 font-semibold text-teal-900">O que fazer agora (copiloto)</h2>
+          {!provaId && (
+            <section id="agora">
+              <h2 className="mb-1 text-lg font-semibold text-teal-900">O que fazer agora</h2>
               <p className="mb-3 text-sm text-slate-500">
-                Passo a passo da sua prioridade da jornada. Siga na ordem; ao terminar, marque
-                Concluir. Não substitui o plano semanal.
+                Sua lista da semana — uma tarefa de cada vez, na ordem. Baseada em todos os
+                registros da jornada, não só na última prova.
               </p>
-              <ul className="space-y-3">
-                {alavancas.map((q) => (
-                  <li key={q.id}>
-                    <QuestCard q={q} destaque />
-                  </li>
-                ))}
-              </ul>
+              {oQueFazer.length === 0 ? (
+                <Card className="border-dashed border-slate-200">
+                  <p className="text-sm text-slate-600">
+                    Nenhuma tarefa ainda. Abra a{" "}
+                    <Link href="/dashboard" className="text-teal-700 underline">
+                      Home
+                    </Link>{" "}
+                    ou atualize o plano em{" "}
+                    <Link href="/plano" className="text-teal-700 underline">
+                      Plano
+                    </Link>
+                    .
+                  </p>
+                </Card>
+              ) : (
+                <ul className="space-y-3">
+                  {oQueFazer.map((q, i) => (
+                    <li key={q.id}>
+                      <QuestCard q={q} destaque={i === 0} numero={i + 1} />
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           )}
 
-          <section>
-            <h2 className="mb-1 font-semibold">
-              {provaId ? "Tarefas do micro-plano" : "Tarefas da semana"}
-            </h2>
-            <p className="mb-3 text-sm text-slate-500">
-              {provaId ? (
-                <>
-                  Gere o micro-plano na{" "}
-                  <Link href={`/provas/${provaId}/lente`} className="text-teal-700 hover:underline">
-                    lente da prova
-                  </Link>{" "}
-                  se ainda não houver tarefas.
-                </>
-              ) : (
-                <>
-                  Ordem do plano: profundo → consolidar → manter → integrar. Ver{" "}
-                  <Link href="/plano" className="text-teal-700 hover:underline">
-                    Plano
-                  </Link>
-                  .
-                </>
-              )}
-            </p>
-            {pendingPlano.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                Nenhuma quest{provaId ? " desta prova" : " do plano atual"}.
-                {provaId ? (
-                  <>
-                    {" "}
-                    <Link href={`/provas/${provaId}/lente`} className="text-teal-700 underline">
-                      Abrir lente da prova
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    {" "}
-                    <Link href="/simulados" className="text-teal-700 underline">
-                      Atualize o diagnóstico
-                    </Link>{" "}
-                    no seu último registro.
-                  </>
-                )}
-              </p>
-            ) : (
+          {provaId && pendingOutras.length > 0 && (
+            <section>
+              <h2 className="mb-3 font-semibold">Tarefas desta prova</h2>
               <ul className="space-y-3">
-                {pendingPlano.map((q, i) => (
+                {pendingOutras.map((q, i) => (
                   <li key={q.id}>
                     <QuestCard q={q} destaque={i === 0} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {done.length > 0 && (
-            <section>
-              <h2 className="mb-3 font-semibold">Concluídas</h2>
-              <ul className="space-y-3">
-                {done.map((q) => (
-                  <li key={q.id}>
-                    <Card className="bg-emerald-50/50">
-                      <div className="flex items-center gap-2">
-                        <Badge tone="success">Feita</Badge>
-                        <span className="font-medium">{q.titulo}</span>
-                      </div>
-                      {q.rewardMsg && (
-                        <p className="mt-2 text-sm text-emerald-800">{q.rewardMsg}</p>
-                      )}
-                    </Card>
                   </li>
                 ))}
               </ul>
             </section>
           )}
         </>
+      )}
+
+      {done.length > 0 && (
+        <section>
+          <h2 className="mb-3 font-semibold">Concluídas</h2>
+          <ul className="space-y-3">
+            {done.map((q) => (
+              <li key={q.id}>
+                <Card className="bg-emerald-50/50">
+                  <div className="flex items-center gap-2">
+                    <Badge tone="success">Feita</Badge>
+                    <span className="font-medium">{q.titulo}</span>
+                  </div>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );
