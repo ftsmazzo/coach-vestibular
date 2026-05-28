@@ -11,9 +11,12 @@ interface Attempt {
   observacao: string | null;
   materiaId: string | null;
   temaId: string | null;
+  respostaAluno?: string | null;
   provaQuestao?: {
     materia: string;
     assunto: string;
+    gabarito?: string | null;
+    conhecimentoExigido?: string | null;
   } | null;
 }
 
@@ -168,7 +171,20 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
 
                 <div className="mb-4">
                   <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{assunto}</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">Metadados da questão</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-md bg-rose-100 px-2 py-0.5 font-medium text-rose-700">
+                      Você marcou {q.respostaAluno ?? "—"}
+                    </span>
+                    <span className="rounded-md bg-emerald-100 px-2 py-0.5 font-medium text-emerald-700">
+                      Gabarito {q.provaQuestao?.gabarito ?? "—"}
+                    </span>
+                  </div>
+                  {q.provaQuestao?.conhecimentoExigido && (
+                    <p className="mt-2 text-xs leading-snug text-slate-500 line-clamp-3">
+                      <span className="font-medium text-slate-600">Conhecimento exigido: </span>
+                      {q.provaQuestao.conhecimentoExigido}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-3">

@@ -11,11 +11,10 @@ import {
   labelCategoriaRegistro,
 } from "@/lib/prova-tipo";
 import { SugestoesRegistroResumo } from "@/components/sugestoes-registro-resumo";
-import { TabelaQuestoesRegistro } from "@/components/tabela-questoes-registro";
-import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
 import { Card, Badge, LinkButton } from "@/components/ui";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
-import { AnaliseErros } from "@/components/analise-erros";
+import { ExamGraficos } from "@/components/exam-graficos";
+import { montarExamGraficos } from "@/lib/exam-graficos";
 import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 
@@ -46,6 +45,8 @@ export default async function SimuladoDetailPage({
   const total = exam.questionAttempts.length;
   const acertos = exam.questionAttempts.filter((q) => q.correto).length;
   const cat = categoriaDoRegistro(exam);
+  const graficos = montarExamGraficos(exam.questionAttempts);
+  const errosCount = exam.questionAttempts.filter((q) => !q.correto).length;
 
   return (
     <div className="space-y-6">
@@ -141,43 +142,32 @@ export default async function SimuladoDetailPage({
 
       <SugestoesRegistroResumo examId={exam.id} />
 
-      <Card>
-        <h2 className="mb-1 font-semibold">Questões — seu gabarito × oficial</h2>
-        <p className="mb-4 text-xs text-slate-500">
-          Achou matéria ou assunto errado? Use <strong>Classificação errada?</strong> em cada linha —
-          a equipe revisa e você pode ganhar XP.
-        </p>
-        <TabelaQuestoesRegistro
-          examId={exam.id}
-          linhas={[...exam.questionAttempts]
-            .sort((a, b) => a.numero - b.numero)
-            .map((q) => ({
-              numero: q.numero,
-              respostaAluno: q.respostaAluno,
-              gabarito: q.provaQuestao?.gabarito ?? null,
-              materia: q.provaQuestao
-                ? q.provaQuestao.materia
-                : getMateriaLabel(q.materiaId),
-              assunto: q.provaQuestao
-                ? q.provaQuestao.assunto
-                : getTemaLabel(q.materiaId, q.temaId),
-              conhecimento: q.provaQuestao?.conhecimentoExigido ?? null,
-              nivelDificuldade: q.provaQuestao?.nivelDificuldade ?? null,
-              correto: q.correto,
-              podeSugerir: Boolean(q.provaQuestaoId && q.provaQuestao),
-            }))}
-        />
-        {exam.questionAttempts.every((q) => !q.respostaAluno) && (
-          <p className="mt-3 text-xs text-amber-700">
-            Este registro não incluiu seu gabarito (modo «só erros»). Na próxima vez, use «Meu
-            gabarito» para ver acertos e erros questão a questão.
+      {total > 0 && (
+        <section className="space-y-1">
+          <h2 className="text-lg font-semibold text-slate-900">Os números desta prova</h2>
+          <p className="text-xs text-slate-500">
+            Matérias, causas de erro e conhecimentos — só desta tentativa.
           </p>
-        )}
+          <div className="pt-2">
+            <ExamGraficos data={graficos} />
+          </div>
+        </section>
+      )}
+
+      <Card className="border-teal-200 bg-teal-50/40">
+        <h2 className="font-semibold text-teal-950">Questões e classificação de erros</h2>
+        <p className="mt-2 text-sm text-teal-900">
+          Veja questão a questão (sua resposta × gabarito, conhecimento exigido) e classifique
+          {errosCount > 0 ? ` os ${errosCount} erro(s)` : " seus erros"} para afinar o plano.
+        </p>
+        <LinkButton href={`/simulados/${exam.id}/questoes`} className="mt-4 w-full sm:w-auto">
+          Abrir questões e erros
+        </LinkButton>
       </Card>
 
-      <AnaliseErros examId={exam.id} attempts={exam.questionAttempts} />
-
-      <LinkButton href="/plano">Ver plano da semana</LinkButton>
+      <LinkButton href="/plano" variant="secondary">
+        Ver plano da semana
+      </LinkButton>
     </div>
   );
 }
