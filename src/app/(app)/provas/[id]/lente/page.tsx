@@ -2,18 +2,15 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { buildHistoricoProva } from "@/lib/jornada-historico";
-import { buildDiagnosisForProva } from "@/lib/jornada-diagnostico";
 import { getMicroPlanoProva } from "@/lib/micro-plano-prova";
 import { getLeituraCoachProva } from "@/lib/leitura-coach";
 import { abreviarNomeProva } from "@/lib/prova-label";
 import { labelTipoProva } from "@/lib/prova-tipo";
-import { getMateriaLabel } from "@/lib/taxonomy";
 import { GerarMicroPlanoButton } from "@/components/gerar-micro-plano-button";
 import { ProvaDiagnosticoIA } from "@/components/prova-diagnostico-ia";
 import { LeituraCoachCard } from "@/components/leitura-coach-card";
 import { ComparativoVestibularesChart } from "@/components/comparativo-vestibulares-chart";
 import { EvolutionChart } from "@/components/evolution-chart";
-import { KpiResumoTres } from "@/components/kpi-resumo-tres";
 import { PageBackLink } from "@/components/page-back-link";
 import { ProvaSubNav } from "@/components/prova-sub-nav";
 import { Card, Badge, LinkButton } from "@/components/ui";
@@ -27,9 +24,8 @@ export default async function ProvaLentePage({
   if (!session) redirect("/login");
 
   const { id: provaId } = await params;
-  const [historico, diagnosis, leitura, microPlano] = await Promise.all([
+  const [historico, leitura, microPlano] = await Promise.all([
     buildHistoricoProva(session.userId, provaId),
-    buildDiagnosisForProva(session.userId, provaId),
     getLeituraCoachProva(session.userId, provaId),
     getMicroPlanoProva(session.userId, provaId),
   ]);
@@ -40,25 +36,8 @@ export default async function ProvaLentePage({
     (i) => i.bloco !== "contexto" && i.titulo
   );
 
-  const {
-    prova,
-    tentativas,
-    evolucao,
-    kpiUltima,
-    comparativoTentativas,
-  } = historico;
+  const { prova, tentativas, evolucao, comparativoTentativas } = historico;
   const tituloProva = abreviarNomeProva(prova.nome);
-
-  const areaDestaqueLente =
-    diagnosis && diagnosis.materiaScores.length > 0
-      ? (() => {
-          const m = [...diagnosis.materiaScores].sort((a, b) => b.taxaAcerto - a.taxaAcerto)[0]!;
-          return {
-            label: m.materiaLabel ?? getMateriaLabel(m.materiaId),
-            pct: Math.round(m.taxaAcerto * 100),
-          };
-        })()
-      : null;
 
   return (
     <div className="space-y-6">
@@ -88,14 +67,6 @@ export default async function ProvaLentePage({
         )
       )}
 
-      {tentativas.length > 0 && (
-        <KpiResumoTres
-          kpi={kpiUltima}
-          areaDestaque={areaDestaqueLente}
-          contexto="tentativas nesta prova"
-        />
-      )}
-
       {tentativas.length >= 2 && (
         <Card className="p-4">
           <h2 className="font-semibold text-slate-900">Sua evolução neste vestibular</h2>
@@ -114,30 +85,6 @@ export default async function ProvaLentePage({
             Só matérias com questões nas duas aplicações — sem penalizar matéria que não caiu.
           </p>
           <ComparativoVestibularesChart comparativo={comparativoTentativas} />
-        </Card>
-      )}
-
-      {diagnosis && diagnosis.materiaScores.length > 0 && (
-        <Card>
-          <h2 className="mb-4 font-semibold">Desempenho agregado (todas as tentativas)</h2>
-          <ul className="space-y-2">
-            {diagnosis.materiaScores
-              .sort((a, b) => a.taxaAcerto - b.taxaAcerto)
-              .map((m) => (
-                <li key={m.materiaId}>
-                  <div className="flex justify-between text-sm">
-                    <span>{m.materiaLabel ?? getMateriaLabel(m.materiaId)}</span>
-                    <span>{Math.round(m.taxaAcerto * 100)}%</span>
-                  </div>
-                  <div className="mt-1 h-1.5 rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-teal-500"
-                      style={{ width: `${Math.round(m.taxaAcerto * 100)}%` }}
-                    />
-                  </div>
-                </li>
-              ))}
-          </ul>
         </Card>
       )}
 
@@ -214,7 +161,7 @@ export default async function ProvaLentePage({
                 href={`/simulados/${t.examId}`}
                 className="inline-flex min-h-11 items-center font-medium text-teal-700 hover:underline sm:min-h-0"
               >
-                Análise da prova →
+                Números desta tentativa →
               </Link>
             </li>
           ))}

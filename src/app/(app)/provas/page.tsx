@@ -67,8 +67,8 @@ export default async function AtividadesPage() {
         <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Atividades</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 sm:text-base">
           Catálogo de provas e simulados com questões classificadas (matéria e assunto). Abra{" "}
-          <strong>Análise</strong> para ver seu diagnóstico ou <strong>Dados</strong> para sua lente
-          e histórico.
+          <strong>Análise</strong> para o diagnóstico e micro-plano (sua lente) ou{" "}
+          <strong>Dados</strong> para os números da última tentativa.
         </p>
       </div>
 

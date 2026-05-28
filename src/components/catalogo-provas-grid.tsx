@@ -70,8 +70,8 @@ export function CatalogoProvasGrid({ provas }: { provas: ProvaCatalogoItem[] }) 
             subtitulo={subtitulo}
             tipoAtividade={tipo}
             pct={p.ultimaTentativa.pctAcerto}
-            analiseHref={`/simulados/${examId}`}
-            dadosHref={lenteHref}
+            analiseHref={lenteHref}
+            dadosHref={`/simulados/${examId}`}
             terceiroHref={`/quests?provaId=${p.id}`}
             terceiroLabel="Quests"
           />
