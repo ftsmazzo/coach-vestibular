@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Button } from "@/components/ui";
 import type { AnamnesePublicView } from "@/lib/anamnese-types";
@@ -10,6 +11,7 @@ export function AnamneseChat({ initial }: { initial: AnamnesePublicView }) {
   const [view, setView] = useState(initial);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [error, setError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -19,7 +21,7 @@ export function AnamneseChat({ initial }: { initial: AnamnesePublicView }) {
 
   useEffect(() => {
     scrollDown();
-  }, [view.messages, scrollDown]);
+  }, [view.messages, loading, finalizing, scrollDown]);
 
   async function ensureStarted() {
     if (view.status !== "NOT_STARTED") return;
@@ -38,7 +40,7 @@ export function AnamneseChat({ initial }: { initial: AnamnesePublicView }) {
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     const msg = input.trim();
-    if (!msg || loading) return;
+    if (!msg || loading || finalizing) return;
     setError("");
     setInput("");
     setLoading(true);
@@ -57,45 +59,40 @@ export function AnamneseChat({ initial }: { initial: AnamnesePublicView }) {
       return;
     }
 
-    setView(json);
     if (json.status === "COMPLETED" || json.completed) {
-      setTimeout(() => router.push("/dashboard"), 2500);
-      router.refresh();
+      setFinalizing(true);
+      setView(json);
+      setFinalizing(false);
+      return;
     }
+
+    setView(json);
   }
 
-  if (view.status === "COMPLETED") {
-    return (
-      <Card className="border-teal-200 bg-teal-50/40 p-6">
-        <p className="text-[10px] font-semibold uppercase text-teal-800">Perfil salvo</p>
-        <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-800">
-          {view.summary}
-        </p>
-        <Button className="mt-4" onClick={() => router.push("/dashboard")}>
-          Ir para a Home
-        </Button>
-      </Card>
-    );
-  }
+  const emAndamento = view.status === "IN_PROGRESS" || view.status === "NOT_STARTED";
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
-        <span>{view.stageLabel ?? "Entrevista"}</span>
-        <span>{view.progressPct}%</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-        <div
-          className="h-full rounded-full bg-violet-600 transition-all"
-          style={{ width: `${view.progressPct}%` }}
-        />
-      </div>
+      {emAndamento && (
+        <>
+          <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+            <span>{view.stageLabel ?? "Conversa inicial"}</span>
+            <span>{view.progressPct}%</span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-violet-600 transition-all"
+              style={{ width: `${view.progressPct}%` }}
+            />
+          </div>
+        </>
+      )}
 
-      <Card className="flex max-h-[min(52vh,420px)] flex-col overflow-hidden p-0">
+      <Card className="flex max-h-[min(58vh,480px)] flex-col overflow-hidden p-0">
         <div className="flex-1 space-y-3 overflow-y-auto p-4">
           {view.messages.map((m, i) => (
             <div
-              key={`${i}-${m.role}`}
+              key={`${i}-${m.role}-${m.content.slice(0, 24)}`}
               className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
@@ -110,7 +107,10 @@ export function AnamneseChat({ initial }: { initial: AnamnesePublicView }) {
             </div>
           ))}
           {loading && (
-            <p className="text-xs text-slate-400">Copiloto pensando na próxima pergunta…</p>
+            <p className="text-xs text-violet-600">Copiloto refletindo sobre o que você disse…</p>
+          )}
+          {finalizing && (
+            <p className="text-xs text-teal-700">Montando sua síntese — um instante…</p>
           )}
           <div ref={bottomRef} />
         </div>
@@ -118,27 +118,47 @@ export function AnamneseChat({ initial }: { initial: AnamnesePublicView }) {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {view.canContinue ? (
+      {view.status === "COMPLETED" ? (
+        <Card className="border-teal-200 bg-teal-50/40 p-4">
+          <p className="text-[10px] font-semibold uppercase text-teal-800">Perfil salvo</p>
+          {view.summary && (
+            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-800">
+              {view.summary}
+            </p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button onClick={() => router.push("/dashboard")}>Ir para a Home</Button>
+            <Link
+              href="/quests#agora"
+              className="self-center text-sm text-teal-700 underline hover:text-teal-900"
+            >
+              Ver o que fazer agora
+            </Link>
+          </div>
+        </Card>
+      ) : (
         <form onSubmit={enviar} className="flex flex-col gap-2 sm:flex-row">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Responda com suas palavras — quanto mais concreto, melhor o copiloto te conhece."
+            placeholder="Responda no seu jeito — pode contar mais de um ponto de uma vez."
             rows={3}
             className="min-h-[80px] flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
-            disabled={loading}
+            disabled={loading || finalizing}
           />
-          <Button type="submit" disabled={loading || !input.trim()} className="shrink-0 sm:self-end">
+          <Button
+            type="submit"
+            disabled={loading || finalizing || !input.trim()}
+            className="shrink-0 sm:self-end"
+          >
             Enviar
           </Button>
         </form>
-      ) : (
-        <p className="text-sm text-slate-600">Finalizando seu perfil…</p>
       )}
 
       <p className="text-center text-xs text-slate-500">
-        Conversa guiada — não é chat aberto. Seus dados viram um perfil estruturado, não um histórico
-        gigante.
+        Conversa guiada — não é chat aberto. O que você contar vira um perfil para o copiloto, não
+        um histórico gigante.
       </p>
     </div>
   );

@@ -37,6 +37,8 @@ export type AnamneseMessage = {
 export type AnamneseSession = {
   messages: AnamneseMessage[];
   totalTurns: number;
+  /** Respostas na etapa atual (reinicia ao mudar de etapa) */
+  stageTurns: number;
 };
 
 export type StructuredAnamneseProfile = {

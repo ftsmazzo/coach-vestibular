@@ -15,50 +15,59 @@ import {
   type StructuredAnamneseProfile,
 } from "@/lib/anamnese-types";
 
-const MAX_TURNS = 12;
-const MAX_SESSION_MESSAGES = 24;
+/** Limite alto — encerramento é por etapas, não por contador seco */
+const MAX_TURNS = 22;
+const MIN_TURNS_ANTES_DE_ENCERRAR = 9;
+const MAX_SESSION_MESSAGES = 28;
+const MAX_APROFUNDAMENTOS_POR_ETAPA = 2;
 
 const SEED_PERGUNTA: Record<AnamneseStageId, string> = {
   trajetoria:
-    "Para eu te conhecer de verdade: você está no ensino médio, em cursinho ou estudando por conta? É seu primeiro ano tentando o vestibular ou já passou por outras tentativas?",
+    "Me conta um pouco da sua história com o vestibular: você está no médio, no cursinho ou estudando por conta? Há quanto tempo nessa preparação?",
   rotina:
-    "Na prática, como é sua rotina? Quantas horas costuma estudar por dia e o que mais atrapalha manter constância?",
+    "E no dia a dia — quanto tempo consegue estudar além das aulas, e o que mais atrapalha manter o ritmo?",
   autopercepcao:
-    "Quais matérias você sente que carrega melhor — e qual sempre parece te prender, mesmo quando você estuda?",
+    "Quais matérias você sente que vai melhor — e quais mais te travam, mesmo quando você estuda?",
   comportamento_prova:
-    "Em provas longas ou simulados: você começa bem e cai depois, falta tempo, dá branco ou muda resposta por insegurança?",
+    "Quando faz simulado ou prova longa: você aguenta bem o começo, falta tempo, dá branco ou fica mudando resposta?",
   metacognicao:
-    "Quando você erra uma questão, costuma entender o motivo depois — ou parece tudo aleatório? Você revisa seus erros com algum método?",
+    "Depois que erra uma questão, você costuma entender por quê — ou parece tudo misturado? Você revisa seus erros com algum método?",
   emocional:
-    "O que mais pesa emocionalmente na sua preparação agora — medo de não dar tempo, comparação com outros, ou outra coisa?",
+    "O que mais pesa emocionalmente na preparação agora — pressa, comparação, medo de não dar conta, ou outra coisa?",
   sintese:
-    "Antes de eu fechar seu perfil: existe algo importante sobre como você aprende que ainda não falamos?",
+    "Pra fechar: tem algo importante sobre como você aprende que ainda não entrou na conversa?",
 };
 
-const SYSTEM_PROMPT = `Você é o Copiloto de preparação para vestibular (tom humano, direto, acolhedor).
-Sua ÚNICA função agora: conduzir a ANAMNESE INICIAL do estudante.
+function buildSystemPrompt(primeiroNome: string, vestibularAlvo: string | null): string {
+  return `Você é o Copiloto de preparação para vestibular — conversa com ${primeiroNome}${vestibularAlvo ? `, que mira ${vestibularAlvo}` : ""}.
 
-REGRAS OBRIGATÓRIAS:
-- Uma pergunta por vez (no campo assistantMessage).
-- NÃO dê aula, NÃO responda dúvidas de conteúdo, NÃO monte plano de estudos ainda.
-- Se a resposta for vaga ("sim", "matemática"), aprofunde com UMA pergunta concreta (advanceStage=false).
-- Não seja terapeuta; não prometa aprovação; não culpe o aluno.
-- Máximo 2 aprofundamentos por etapa antes de avançar.
-- Quando a etapa tiver informação suficiente, advanceStage=true.
-- Quando todas as etapas estiverem cobertas OU totalTurns>=11, shouldComplete=true e faça pergunta de fechamento curta OU mensagem de transição para síntese.
-- Etapas em ordem: trajetoria → rotina → autopercepcao → comportamento_prova → metacognicao → emocional → sintese.
-- Português do Brasil, frases curtas.`;
+Sua função AGORA: anamnese inicial — conhecer a pessoa, NÃO dar aula nem montar plano.
+
+TOM (obrigatório):
+- Humano, natural, brasileiro; como um mentor atento, não formulário nem SDR.
+- SEMPRE comece reconhecendo algo concreto que ${primeiroNome} acabou de dizer (1 frase curta e específica).
+- Use o primeiro nome de vez em quando, sem exagero.
+- PROIBIDO: "Certo.", "Perfeito.", "Entendi." sozinhos; listas de confirmação; repetir pergunta já respondida.
+- Se a resposta já trouxe várias informações, NÃO peça de novo — avance ou aprofunde só o que faltou.
+- Uma pergunta nova por mensagem (pode vir depois do reconhecimento).
+- Não seja terapeuta; não prometa aprovação.
+
+ETAPAS (ordem): trajetoria → rotina → autopercepcao → comportamento_prova → metacognicao → emocional → sintese.
+- advanceStage=true só quando a etapa atual tiver informação suficiente (máx. ${MAX_APROFUNDAMENTOS_POR_ETAPA} aprofundamentos se resposta vaga).
+- shouldComplete=true APENAS na etapa emocional ou sintese E quando já houver contexto rico nas etapas anteriores; nunca no meio da trajetória ou rotina.`;
+}
 
 function parseSession(raw: string | null): AnamneseSession {
-  if (!raw) return { messages: [], totalTurns: 0 };
+  if (!raw) return { messages: [], totalTurns: 0, stageTurns: 0 };
   try {
     const s = JSON.parse(raw) as AnamneseSession;
     return {
       messages: Array.isArray(s.messages) ? s.messages.slice(-MAX_SESSION_MESSAGES) : [],
       totalTurns: typeof s.totalTurns === "number" ? s.totalTurns : 0,
+      stageTurns: typeof s.stageTurns === "number" ? s.stageTurns : 0,
     };
   } catch {
-    return { messages: [], totalTurns: 0 };
+    return { messages: [], totalTurns: 0, stageTurns: 0 };
   }
 }
 
@@ -83,9 +92,33 @@ function nextStage(stage: AnamneseStageId): AnamneseStageId | null {
 }
 
 function progressPct(stage: AnamneseStageId, totalTurns: number): number {
-  const base = (stageIndex(stage) / ANAMNESE_STAGES.length) * 85;
-  const turnBonus = Math.min(totalTurns, MAX_TURNS) / MAX_TURNS * 15;
-  return Math.min(99, Math.round(base + turnBonus));
+  const stageWeight = ((stageIndex(stage) + 1) / ANAMNESE_STAGES.length) * 80;
+  const turnWeight = Math.min(totalTurns / MIN_TURNS_ANTES_DE_ENCERRAR, 1) * 20;
+  return Math.min(98, Math.round(stageWeight + turnWeight));
+}
+
+function primeiroNome(name: string): string {
+  const n = name.trim().split(/\s+/)[0];
+  return n || "você";
+}
+
+function respostasDoAluno(session: AnamneseSession): string {
+  return session.messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content)
+    .join("\n• ");
+}
+
+function podeEncerrarAnamnese(session: AnamneseSession, stage: AnamneseStageId): boolean {
+  if (session.totalTurns < MIN_TURNS_ANTES_DE_ENCERRAR) return false;
+  if (stageIndex(stage) < stageIndex("emocional")) return false;
+  return true;
+}
+
+function respostaPareceVaga(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  if (t.length < 12) return true;
+  return /^(sim|não|nao|ok|talvez|sei lá|seila|um pouco|mais ou menos)\.?$/i.test(t);
 }
 
 export function toPublicView(row: {
@@ -105,7 +138,7 @@ export function toPublicView(row: {
     progressPct: completed ? 100 : progressPct(stage, session.totalTurns),
     summary: row.summary,
     messages: session.messages,
-    canContinue: !completed && session.totalTurns < MAX_TURNS,
+    canContinue: !completed,
   };
 }
 
@@ -190,8 +223,20 @@ function montarFocoInicialDescricao(
 ): string | null {
   if (summary) return summary.slice(0, 280);
   const blocker = profile?.academicSelfPerception?.mainDeclaredBlocker;
-  if (blocker) return `Você sinalizou que o que mais prende é: ${blocker}. O copiloto vai usar isso até seus registros de prova confirmarem ou ajustarem o foco.`;
+  if (blocker) {
+    return `Você sinalizou que o que mais prende é: ${blocker}. O copiloto vai usar isso até seus registros de prova confirmarem ou ajustarem o foco.`;
+  }
   return "Registre suas primeiras atividades quando puder — até lá, siga o passo prático da semana em Quests.";
+}
+
+function mensagemAbertura(nome: string, vestibularAlvo: string | null): string {
+  const alvo = vestibularAlvo ? ` rumo a ${vestibularAlvo}` : "";
+  return (
+    `Oi, ${nome}! Que bom te ter aqui — sou seu copiloto de preparação${alvo}.\n\n` +
+    `Antes de olhar só nota e gráfico, quero te ouvir por alguns minutos: sua história, rotina e como você se sente em prova. ` +
+    `Não é bate-papo aberto — são perguntas certeiras, no seu ritmo.\n\n` +
+    SEED_PERGUNTA.trajetoria
+  );
 }
 
 export async function startAnamnese(userId: string): Promise<AnamnesePublicView> {
@@ -200,15 +245,19 @@ export async function startAnamnese(userId: string): Promise<AnamnesePublicView>
     return toPublicView(existing);
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true, vestibularAlvo: true },
+  });
+  const nome = primeiroNome(user?.name ?? "");
+
   const firstMsg: AnamneseMessage = {
     role: "assistant",
-    content:
-      "Oi — sou seu copiloto de preparação. Antes de olhar só números, quero te conhecer em poucos minutos. " +
-      SEED_PERGUNTA.trajetoria,
+    content: mensagemAbertura(nome, user?.vestibularAlvo ?? null),
     at: new Date().toISOString(),
   };
 
-  const session: AnamneseSession = { messages: [firstMsg], totalTurns: 0 };
+  const session: AnamneseSession = { messages: [firstMsg], totalTurns: 0, stageTurns: 0 };
 
   const row = await prisma.studentAnamnesis.upsert({
     where: { userId },
@@ -252,27 +301,62 @@ const TURN_SCHEMA = {
   },
 } as const;
 
+function validarTurno(
+  turn: TurnAI,
+  stage: AnamneseStageId,
+  session: AnamneseSession,
+  userText: string
+): TurnAI {
+  let { assistantMessage, advanceStage, shouldComplete } = turn;
+
+  if (shouldComplete && !podeEncerrarAnamnese(session, stage)) {
+    shouldComplete = false;
+  }
+
+  if (shouldComplete && stage !== "emocional" && stage !== "sintese") {
+    shouldComplete = false;
+    advanceStage = true;
+  }
+
+  const vaga = respostaPareceVaga(userText);
+  if (vaga && session.stageTurns < MAX_APROFUNDAMENTOS_POR_ETAPA) {
+    advanceStage = false;
+    shouldComplete = false;
+  }
+
+  if (advanceStage && session.stageTurns === 0 && vaga) {
+    advanceStage = false;
+  }
+
+  assistantMessage = assistantMessage.trim();
+  if (assistantMessage.length < 20) {
+    assistantMessage =
+      fallbackTurn(stage, userText, session, "").assistantMessage;
+  }
+
+  return { assistantMessage, advanceStage, shouldComplete };
+}
+
 function fallbackTurn(
   stage: AnamneseStageId,
   userText: string,
-  session: AnamneseSession
+  session: AnamneseSession,
+  primeiroNome: string
 ): TurnAI {
-  const curta = userText.trim().length < 25;
-  const turnsInStage = session.messages.filter((m) => m.role === "user").length;
+  const vaga = respostaPareceVaga(userText);
+  const nome = primeiroNome || "você";
 
-  if (curta && turnsInStage < 2) {
+  if (vaga && session.stageTurns < MAX_APROFUNDAMENTOS_POR_ETAPA) {
     return {
-      assistantMessage:
-        "Entendi em parte — pode me contar um pouco mais, com um exemplo concreto da sua rotina ou da dificuldade?",
+      assistantMessage: `${nome}, quero te entender direito — pode me dar um exemplo concreto do que você quis dizer?`,
       advanceStage: false,
       shouldComplete: false,
     };
   }
 
-  if (session.totalTurns >= MAX_TURNS - 1) {
+  if (session.totalTurns >= MAX_TURNS - 1 && podeEncerrarAnamnese(session, stage)) {
     return {
-      assistantMessage:
-        "Obrigado — já tenho o essencial. Vou montar sua síntese e usar isso para personalizar diagnóstico, plano e tarefas.",
+      assistantMessage: `${nome}, já captei o essencial da sua jornada. Vou fechar seu perfil e usar isso pra personalizar tudo por aqui.`,
       advanceStage: true,
       shouldComplete: true,
     };
@@ -281,15 +365,19 @@ function fallbackTurn(
   const prox = nextStage(stage);
   if (!prox) {
     return {
-      assistantMessage:
-        "Perfeito. Vou fechar seu perfil com o que você compartilhou.",
+      assistantMessage: `${nome}, obrigado por abrir isso comigo — vou montar sua síntese agora.`,
       advanceStage: true,
       shouldComplete: true,
     };
   }
 
+  const eco = userText.length > 15 ? userText.slice(0, 80).replace(/\n/g, " ") : "";
+  const intro = eco
+    ? `Faz sentido — ${eco}${eco.length >= 80 ? "…" : ""}. `
+    : `Obrigado por compartilhar, ${nome}. `;
+
   return {
-    assistantMessage: SEED_PERGUNTA[prox],
+    assistantMessage: intro + SEED_PERGUNTA[prox],
     advanceStage: true,
     shouldComplete: false,
   };
@@ -298,34 +386,45 @@ function fallbackTurn(
 async function processarTurnoIA(
   stage: AnamneseStageId,
   session: AnamneseSession,
-  userText: string
+  userText: string,
+  ctx: { primeiroNome: string; vestibularAlvo: string | null }
 ): Promise<TurnAI> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) return fallbackTurn(stage, userText, session);
+  if (!apiKey) return fallbackTurn(stage, userText, session, ctx.primeiroNome);
 
   const historico = session.messages
-    .slice(-10)
-    .map((m) => `${m.role === "assistant" ? "Copiloto" : "Aluno"}: ${m.content}`)
+    .slice(-14)
+    .map((m) => `${m.role === "assistant" ? "Copiloto" : ctx.primeiroNome}: ${m.content}`)
     .join("\n");
 
-  const instrucao = `Etapa atual: ${stage} (${ANAMNESE_STAGE_LABELS[stage]}).
-Total de respostas do aluno até agora: ${session.totalTurns}.
-Última resposta do aluno: """${userText}"""
+  const fatos = respostasDoAluno(session);
 
-Histórico recente:
+  const instrucao = `Etapa atual: ${stage} (${ANAMNESE_STAGE_LABELS[stage]}).
+Respostas do aluno até agora (${session.totalTurns}): 
+• ${fatos || "(nenhuma ainda)"}
+
+Última mensagem do aluno:
+"""${userText}"""
+
+Histórico:
 ${historico}
 
-Gere a próxima pergunta ou confirmação. Se shouldComplete=true, assistantMessage deve ser curta e indicar que vai fechar o perfil (sem síntese longa ainda).`;
+Regras deste turno:
+- Reconheça algo ESPECÍFICO da última resposta antes de perguntar.
+- NÃO repita perguntas sobre fatos já listados acima (ex.: se já disse cursinho/3º ano/Famerp, não pergunte de novo).
+- advanceStage=${session.stageTurns >= 1 || !respostaPareceVaga(userText) ? "pode ser true se etapa ok" : "false se ainda falta detalhe"}.
+- shouldComplete=${podeEncerrarAnamnese(session, stage) ? "só true se etapa emocional/sintese e conversa rica" : "false"}.`;
 
   try {
-    return await responsesComSchema<TurnAI>({
+    const raw = await responsesComSchema<TurnAI>({
       instrucao,
-      systemPrompt: SYSTEM_PROMPT,
+      systemPrompt: buildSystemPrompt(ctx.primeiroNome, ctx.vestibularAlvo),
       schema: TURN_SCHEMA,
       content: [],
     });
+    return validarTurno(raw, stage, session, userText);
   } catch {
-    return fallbackTurn(stage, userText, session);
+    return fallbackTurn(stage, userText, session, ctx.primeiroNome);
   }
 }
 
@@ -365,11 +464,13 @@ async function extrairPerfilFinal(
     },
   } as const;
 
+  const nome = primeiroNome(user?.name ?? "");
+
   try {
     const ai = await responsesComSchema<{ summary: string; declaredPatterns: string[] }>({
-      instrucao: `Resuma esta anamnese em 2-4 frases humanas (comece com "Entendi sua jornada.") e liste 2-5 padrões declarados pelo aluno (frases curtas).
-Aluno: ${user?.name ?? "estudante"}. Curso: ${user?.vestibularAlvo ?? "não informado"}.
-Respostas do aluno:\n${transcript}`,
+      instrucao: `Resuma esta anamnese em 2-4 frases calorosas para ${nome} (comece com "Entendi sua jornada, ${nome}."). Tom humano, sem jargão.
+Curso: ${user?.vestibularAlvo ?? "não informado"}.
+O que o aluno disse:\n${transcript}`,
       systemPrompt: "Só JSON. Não invente fatos não ditos.",
       schema: SUMMARY_SCHEMA,
       content: [],
@@ -400,23 +501,29 @@ function extrairPerfilHeuristico(
 
   const fatiga =
     /longa|cansa|fadiga|cai no final|perco clareza|últim/i.test(texto);
-  const mat =
-    /matemática|mat\b|geometria|física/i.test(texto)
-      ? ["Matemática"]
-      : [];
-  const ansiedade = /ansiedade|branco|medo|pressão|tempo/i.test(texto);
+  const mat = /matemática|matematica|mat\b|geometria/i.test(texto)
+    ? ["Matemática"]
+    : [];
+  const ing = /inglês|ingles/i.test(texto);
+  const fracos = [...mat, ...(ing ? ["Inglês"] : [])];
+  const ansiedade = /ansiedade|branco|medo|pressão|confiança|confianca/i.test(texto);
+
+  const nome = primeiroNome(user?.name ?? "");
 
   return {
     summary:
-      `Entendi sua jornada, ${user?.name?.split(" ")[0] ?? ""}. ` +
+      `Entendi sua jornada, ${nome}. ` +
       `Vou usar o que você contou para personalizar diagnósticos e tarefas` +
       (user?.vestibularAlvo ? ` rumo a ${user.vestibularAlvo}.` : "."),
     structuredProfile: {
-      trajectory: { targetCourse: user?.vestibularAlvo ?? undefined },
+      trajectory: {
+        targetCourse: user?.vestibularAlvo ?? undefined,
+        hasTakenPrepCourse: /cursinho/i.test(texto),
+      },
       routine: {},
       academicSelfPerception: {
-        perceivedWeakSubjects: mat,
-        mainDeclaredBlocker: mat[0] ? `dificuldade em ${mat[0]}` : undefined,
+        perceivedWeakSubjects: fracos,
+        mainDeclaredBlocker: fracos[0] ? `dificuldade em ${fracos.join(" e ")}` : undefined,
       },
       examBehavior: {
         fatigueInLongExams: fatiga,
@@ -429,12 +536,13 @@ function extrairPerfilHeuristico(
       },
       emotionalContext: {
         fearOfNotEnoughTime: /tempo|dar conta/i.test(texto),
+        confidenceLevel: /pouca confiança|sem confiança/i.test(texto) ? "BAIXA" : "MEDIA",
         preferredTone: "ACOLHEDOR",
       },
       declaredPatterns: fatiga
         ? ["perde clareza em provas longas"]
-        : mat.length
-          ? [`trava em ${mat[0]}`]
+        : fracos.length
+          ? [`trava em ${fracos.join(" e ")}`]
           : ["ainda construindo autoconhecimento sobre erros"],
     },
   };
@@ -446,6 +554,15 @@ export async function processAnamneseMessage(
 ): Promise<{ view: AnamnesePublicView; completed: boolean }> {
   const text = userMessage.trim();
   if (!text) throw new Error("MENSAGEM_VAZIA");
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true, vestibularAlvo: true },
+  });
+  const ctx = {
+    primeiroNome: primeiroNome(user?.name ?? ""),
+    vestibularAlvo: user?.vestibularAlvo ?? null,
+  };
 
   let row = await prisma.studentAnamnesis.findUnique({ where: { userId } });
   if (!row || row.status !== "IN_PROGRESS") {
@@ -468,12 +585,13 @@ export async function processAnamneseMessage(
     at: new Date().toISOString(),
   });
   session.totalTurns += 1;
+  session.stageTurns += 1;
 
   const stage = row.currentStage as AnamneseStageId;
-  const turn = await processarTurnoIA(stage, session, text);
+  const turn = await processarTurnoIA(stage, session, text, ctx);
 
   let newStage = stage;
-  if (turn.shouldComplete) {
+  if (turn.shouldComplete && podeEncerrarAnamnese(session, stage)) {
     session.messages.push({
       role: "assistant",
       content: turn.assistantMessage,
@@ -489,7 +607,10 @@ export async function processAnamneseMessage(
 
   if (turn.advanceStage) {
     const prox = nextStage(stage);
-    if (prox) newStage = prox;
+    if (prox) {
+      newStage = prox;
+      session.stageTurns = 0;
+    }
   }
 
   session.messages.push({
