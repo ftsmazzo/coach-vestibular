@@ -3,10 +3,16 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { GabaritoRevisaoGrid } from "@/components/gabarito-revisao-grid";
 import { ModoUsoSelector } from "@/components/modo-uso-selector";
 import { ProvaSubNav } from "@/components/prova-sub-nav";
 import { Button, Card, Input, Label, Select, Textarea, touchChipClass } from "@/components/ui";
 import type { ModoUsoRegistro, ProvaTipo } from "@/generated/prisma/client";
+import {
+  buildGradeRevisao,
+  respostasParaGabaritoLote,
+  type LinhaRevisaoGabarito,
+} from "@/lib/extrair-gabarito-aluno";
 import { parseListaErros } from "@/lib/gabarito";
 import { modoUsoPadraoParaProva } from "@/lib/modo-uso";
 import { formatProvaLabel } from "@/lib/prova-label";
@@ -49,8 +55,13 @@ export default function NovoSimuladoPage() {
   const [gabaritoAluno, setGabaritoAluno] = useState("");
   const [respostas, setRespostas] = useState("");
   const [listaErros, setListaErros] = useState("");
-  const [modo, setModo] = useState<"gabarito" | "sequencia" | "erros">("gabarito");
+  const [modo, setModo] = useState<"foto" | "gabarito" | "sequencia" | "erros">("foto");
   const [modoUso, setModoUso] = useState<ModoUsoRegistro>("OFICIAL");
+  const [arquivosFoto, setArquivosFoto] = useState<File[]>([]);
+  const [extraindo, setExtraindo] = useState(false);
+  const [gradeRevisao, setGradeRevisao] = useState<LinhaRevisaoGabarito[] | null>(null);
+  const [avisosExtracao, setAvisosExtracao] = useState<string[]>([]);
+  const [lidasIa, setLidasIa] = useState<number | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -110,6 +121,44 @@ export default function NovoSimuladoPage() {
     }
   }, [provaId, prova?.tipo]);
 
+  useEffect(() => {
+    setGradeRevisao(null);
+    setAvisosExtracao([]);
+    setLidasIa(undefined);
+    setArquivosFoto([]);
+  }, [modo, provaId]);
+
+  async function lerGabaritoDaFoto() {
+    if (!provaId || !prova) {
+      setError("Selecione uma prova.");
+      return;
+    }
+    if (arquivosFoto.length === 0) {
+      setError("Anexe um PDF ou foto do seu gabarito.");
+      return;
+    }
+    setExtraindo(true);
+    setError("");
+    const fd = new FormData();
+    for (const f of arquivosFoto) fd.append("file", f);
+
+    const res = await fetch(`/api/provas/${provaId}/extrair-gabarito-aluno`, {
+      method: "POST",
+      body: fd,
+    });
+    const data = await res.json();
+    setExtraindo(false);
+
+    if (!res.ok) {
+      setError(data.error ?? "Não foi possível ler o gabarito");
+      return;
+    }
+
+    setGradeRevisao(buildGradeRevisao(prova.totalQuestoes, data.respostas ?? []));
+    setAvisosExtracao(Array.isArray(data.avisos) ? data.avisos : []);
+    setLidasIa(typeof data.lidas === "number" ? data.lidas : undefined);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!provaId) {
@@ -138,7 +187,23 @@ export default function NovoSimuladoPage() {
       body.substituirExamId = substituirExamId;
     }
 
-    if (modo === "gabarito") {
+    if (modo === "foto") {
+      if (!gradeRevisao?.length) {
+        setError("Primeiro envie a foto e toque em «Ler gabarito da foto» para revisar.");
+        setLoading(false);
+        return;
+      }
+      const preenchidas = gradeRevisao.filter((l) => l.letra);
+      const minimo = Math.min(3, Math.max(1, Math.ceil(prova!.totalQuestoes * 0.08)));
+      if (preenchidas.length < minimo) {
+        setError(
+          `Marque pelo menos ${minimo} questão(ões) antes de gerar o diagnóstico (ou use outro modo).`
+        );
+        setLoading(false);
+        return;
+      }
+      body.gabaritoAluno = respostasParaGabaritoLote(preenchidas);
+    } else if (modo === "gabarito") {
       if (gabaritoAluno.trim().split(/\n/).filter(Boolean).length < 1) {
         setError("Informe ao menos uma linha no formato número,letra (ex.: 1,C).");
         setLoading(false);
@@ -381,6 +446,13 @@ export default function NovoSimuladoPage() {
             <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
               <button
                 type="button"
+                onClick={() => setModo("foto")}
+                className={touchChipClass(modo === "foto")}
+              >
+                Foto / PDF
+              </button>
+              <button
+                type="button"
                 onClick={() => setModo("gabarito")}
                 className={touchChipClass(modo === "gabarito")}
               >
@@ -402,7 +474,56 @@ export default function NovoSimuladoPage() {
               </button>
             </div>
 
-            {modo === "gabarito" ? (
+            {modo === "foto" ? (
+              <div className="space-y-4">
+                <div>
+                  <Label>PDF ou foto do seu gabarito</Label>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Folha questão-resposta, caderno com alternativas marcadas ou lista do cursinho.
+                    Até 4 arquivos (páginas). A IA sugere as respostas — você revisa antes de salvar.
+                  </p>
+                  <Input
+                    type="file"
+                    accept=".pdf,image/jpeg,image/png,image/webp"
+                    multiple
+                    className="mt-2"
+                    onChange={(e) => {
+                      setArquivosFoto(Array.from(e.target.files ?? []));
+                      setGradeRevisao(null);
+                    }}
+                  />
+                  {arquivosFoto.length > 0 && (
+                    <p className="mt-1 text-xs text-slate-600">
+                      {arquivosFoto.length} arquivo(s):{" "}
+                      {arquivosFoto.map((f) => f.name).join(", ")}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={extraindo || arquivosFoto.length === 0 || !prova}
+                  onClick={() => lerGabaritoDaFoto()}
+                  className="w-full sm:w-auto"
+                >
+                  {extraindo ? "Lendo gabarito…" : "Ler gabarito da foto"}
+                </Button>
+                {gradeRevisao && (
+                  <GabaritoRevisaoGrid
+                    linhas={gradeRevisao}
+                    onChange={setGradeRevisao}
+                    avisos={avisosExtracao}
+                    lidas={lidasIa}
+                  />
+                )}
+                {prova && !prova.gabaritoCompleto && (
+                  <p className="text-xs text-amber-700">
+                    Gabarito oficial ainda incompleto nesta prova — o percentual pode ficar
+                    limitado até a equipe publicar o oficial.
+                  </p>
+                )}
+              </div>
+            ) : modo === "gabarito" ? (
               <div>
                 <Label>Seu gabarito — uma linha por questão</Label>
                 <Textarea
@@ -460,12 +581,18 @@ export default function NovoSimuladoPage() {
           </Card>
 
           {error && <p className="text-sm text-rose-600">{error}</p>}
-          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+          <Button
+            type="submit"
+            disabled={loading || extraindo || (modo === "foto" && !gradeRevisao)}
+            className="w-full sm:w-auto"
+          >
             {loading
               ? "Analisando..."
-              : modoRegistro === "substituir" && jaRegistrou
-                ? "Substituir e gerar diagnóstico"
-                : "Gerar diagnóstico e plano"}
+              : modo === "foto" && !gradeRevisao
+                ? "Revise o gabarito antes de continuar"
+                : modoRegistro === "substituir" && jaRegistrou
+                  ? "Substituir e gerar diagnóstico"
+                  : "Gerar diagnóstico e plano"}
           </Button>
         </form>
       )}

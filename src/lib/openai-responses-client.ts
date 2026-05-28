@@ -22,17 +22,18 @@ import {
 
 export { modeloPipelinePrincipal, modeloPipelineFallback };
 
-/** Envia PDF ao Files API (purpose user_data). */
-export async function uploadPdfBuffer(
+/** Envia arquivo ao Files API (purpose user_data) — PDF ou imagem. */
+export async function uploadFileBuffer(
   buffer: Buffer,
-  filename = "prova.pdf"
+  filename: string,
+  mimeType: string
 ): Promise<string> {
   const apiKey = getApiKey();
   const form = new FormData();
   form.append("purpose", "user_data");
   form.append(
     "file",
-    new Blob([new Uint8Array(buffer)], { type: "application/pdf" }),
+    new Blob([new Uint8Array(buffer)], { type: mimeType }),
     filename
   );
 
@@ -50,6 +51,14 @@ export async function uploadPdfBuffer(
   const data = (await res.json()) as { id?: string };
   if (!data.id) throw new Error("OpenAI Files: resposta sem file id");
   return data.id;
+}
+
+/** Envia PDF ao Files API (purpose user_data). */
+export async function uploadPdfBuffer(
+  buffer: Buffer,
+  filename = "prova.pdf"
+): Promise<string> {
+  return uploadFileBuffer(buffer, filename, "application/pdf");
 }
 
 function extrairTextoOutput(data: Record<string, unknown>): string {

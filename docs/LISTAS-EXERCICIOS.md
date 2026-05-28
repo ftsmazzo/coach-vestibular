@@ -41,7 +41,7 @@ API existente: `POST /api/exams/import` (evoluir para `modoUso: TREINO` fixo e t
 | B | Admin: fila `/admin/solicitacoes` + armazenamento PDF (feito) |
 | C | Prova privada + wizard gabarito × respostas |
 | D | CSV na UI de listas |
-| E | (Opcional) IA assistida na colagem, revisão humana |
+| E | Leitura de gabarito por foto/PDF no registro (feito — `/simulados/novo`) |
 
 ## Atividades (catálogo)
 
