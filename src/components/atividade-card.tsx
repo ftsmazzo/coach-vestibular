@@ -1,5 +1,6 @@
 import type { TipoAtividadeVisual } from "@/lib/prova-tipo";
 import { TEMA_ATIVIDADE } from "@/lib/prova-tipo";
+import type { WidgetMode } from "@/lib/widget-context";
 import { PctDonut } from "@/components/pct-donut";
 import { LinkButton } from "@/components/ui";
 
@@ -14,6 +15,7 @@ export function AtividadeCard({
   dadosHref,
   terceiroHref,
   terceiroLabel,
+  mode = "FULL",
 }: {
   titulo: string;
   subtitulo: string;
@@ -23,8 +25,10 @@ export function AtividadeCard({
   dadosHref: string;
   terceiroHref: string;
   terceiroLabel: string;
+  mode?: WidgetMode;
 }) {
   const tema = TEMA_ATIVIDADE[tipoAtividade];
+  const home = mode === "HOME";
 
   return (
     <article
@@ -43,14 +47,18 @@ export function AtividadeCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-1 border-t border-white/10 p-2">
+      <div
+        className={`grid gap-1 border-t border-white/10 p-2 ${home ? "grid-cols-2" : "grid-cols-3"}`}
+      >
         <LinkButton href={analiseHref} className={`${btnFino} ${tema.btnPrimary}`}>
-          Análise
+          {home ? "Ver resultado" : "Análise"}
         </LinkButton>
-        <LinkButton href={dadosHref} className={`${btnFino} ${tema.btnOutline}`}>
-          Dados
-        </LinkButton>
-        <LinkButton href={terceiroHref} className={`${btnFino} ${tema.btnGhost}`}>
+        {!home && (
+          <LinkButton href={dadosHref} className={`${btnFino} ${tema.btnOutline}`}>
+            Dados
+          </LinkButton>
+        )}
+        <LinkButton href={terceiroHref} className={`${btnFino} ${home ? tema.btnOutline : tema.btnGhost}`}>
           {terceiroLabel}
         </LinkButton>
       </div>

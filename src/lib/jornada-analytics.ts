@@ -163,10 +163,36 @@ export function buildComparativoDuasExecucoes(
   };
 }
 
-export async function buildJornadaDashboardAnalytics(
+export type JourneyLearningAggregate = Pick<
+  JornadaDashboardAnalytics,
+  "pctGlobalPonderado" | "totalRegistros" | "materiasMedia" | "registrosRecentes"
+>;
+
+export type JornadaAnalyticsOptions = {
+  /** Home/copiloto: sem comparativo entre oficiais nem séries por prova */
+  journeyOnly?: boolean;
+};
+
+/** Agregação JOURNEY — sem comparativos inválidos entre bancas/provas. */
+export async function aggregateJourneyLearning(
   userId: string,
   filtro: "todos" | "provas" | "simulados" = "todos"
+): Promise<JourneyLearningAggregate> {
+  const full = await buildJornadaDashboardAnalytics(userId, filtro, { journeyOnly: true });
+  return {
+    pctGlobalPonderado: full.pctGlobalPonderado,
+    totalRegistros: full.totalRegistros,
+    materiasMedia: full.materiasMedia,
+    registrosRecentes: full.registrosRecentes,
+  };
+}
+
+export async function buildJornadaDashboardAnalytics(
+  userId: string,
+  filtro: "todos" | "provas" | "simulados" = "todos",
+  options?: JornadaAnalyticsOptions
 ): Promise<JornadaDashboardAnalytics> {
+  const journeyOnly = options?.journeyOnly ?? false;
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { metaProva: true, vestibularAlvo: true },
@@ -198,7 +224,7 @@ export async function buildJornadaDashboardAnalytics(
   for (const exam of [...filtrados].reverse()) {
     const peso = pesoExam(exam, user?.metaProva, user?.vestibularAlvo);
     const materiasPct: Record<string, number | null> = {};
-    const presentes = materiasNoExame(exam.questionAttempts);
+    const presentes = journeyOnly ? [] : materiasNoExame(exam.questionAttempts);
 
     for (const q of exam.questionAttempts) {
       const mat = materiaIdDeAttempt(q);
@@ -214,29 +240,33 @@ export async function buildJornadaDashboardAnalytics(
       somaPeso += peso;
       somaPesoAcerto += (q.correto ? 1 : 0) * peso;
 
-      const areaId = areaBlocoIdDeAttempt(q);
-      if (areaId) {
-        const aa = areaAcc.get(areaId) ?? { acertos: 0, questoes: 0 };
-        aa.questoes += 1;
-        if (q.correto) aa.acertos += 1;
-        areaAcc.set(areaId, aa);
+      if (!journeyOnly) {
+        const areaId = areaBlocoIdDeAttempt(q);
+        if (areaId) {
+          const aa = areaAcc.get(areaId) ?? { acertos: 0, questoes: 0 };
+          aa.questoes += 1;
+          if (q.correto) aa.acertos += 1;
+          areaAcc.set(areaId, aa);
+        }
       }
     }
 
-    for (const mid of presentes) {
-      const stats = pctMateriaNoExame(exam.questionAttempts, mid);
-      materiasPct[mid] = stats?.pct ?? null;
-    }
+    if (!journeyOnly) {
+      for (const mid of presentes) {
+        const stats = pctMateriaNoExame(exam.questionAttempts, mid);
+        materiasPct[mid] = stats?.pct ?? null;
+      }
 
-    seriesPorProva.push({
-      examId: exam.id,
-      nome: exam.nome,
-      nomeCurto: abreviarNomeProva(exam.nome),
-      dataLabel: formatDataAplicacao(exam.data),
-      pctGeral: pctAcertoRegistro(exam.questionAttempts),
-      materias: materiasPct,
-      materiasPresentes: presentes,
-    });
+      seriesPorProva.push({
+        examId: exam.id,
+        nome: exam.nome,
+        nomeCurto: abreviarNomeProva(exam.nome),
+        dataLabel: formatDataAplicacao(exam.data),
+        pctGeral: pctAcertoRegistro(exam.questionAttempts),
+        materias: materiasPct,
+        materiasPresentes: presentes,
+      });
+    }
   }
 
   const materiasMedia: MateriaMediaJornada[] = [...materiaAcc.entries()]
@@ -274,30 +304,34 @@ export async function buildJornadaDashboardAnalytics(
     .sort((a, b) => b.totalQuestoes - a.totalQuestoes)
     .map((m) => m.materiaId);
 
-  const oficiais = [...filtrados]
-    .filter((e) => categoriaDoRegistro(e) === "prova_oficial")
-    .sort((a, b) => a.data.getTime() - b.data.getTime());
-
-  const comparativoVestibulares = buildComparativoDuasExecucoes(oficiais);
-
+  let comparativoVestibulares: ComparativoVestibulares | null = null;
   let evolucaoVestibulares: EvolucaoVestibularesKpi | null = null;
-  if (oficiais.length >= 1) {
-    const pontos: PontoExecucao[] = oficiais.map((e) => ({
-      id: e.id,
-      label: abreviarNomeProva(e.nome),
-      dataLabel: formatDataAplicacao(e.data),
-      pct: pctAcertoRegistro(e.questionAttempts),
-    }));
-    const serie = serieKpiExecucoes(pontos);
-    evolucaoVestibulares = {
-      serie,
-      ultima: ultimoKpi(serie),
-      chart: pontos.map((p) => ({
-        nome: p.label,
-        data: p.dataLabel,
-        taxaAcerto: p.pct,
-      })),
-    };
+
+  if (!journeyOnly) {
+    const oficiais = [...filtrados]
+      .filter((e) => categoriaDoRegistro(e) === "prova_oficial")
+      .sort((a, b) => a.data.getTime() - b.data.getTime());
+
+    comparativoVestibulares = buildComparativoDuasExecucoes(oficiais);
+
+    if (oficiais.length >= 1) {
+      const pontos: PontoExecucao[] = oficiais.map((e) => ({
+        id: e.id,
+        label: abreviarNomeProva(e.nome),
+        dataLabel: formatDataAplicacao(e.data),
+        pct: pctAcertoRegistro(e.questionAttempts),
+      }));
+      const serie = serieKpiExecucoes(pontos);
+      evolucaoVestibulares = {
+        serie,
+        ultima: ultimoKpi(serie),
+        chart: pontos.map((p) => ({
+          nome: p.label,
+          data: p.dataLabel,
+          taxaAcerto: p.pct,
+        })),
+      };
+    }
   }
 
   const registrosRecentes: RegistroDashboardCard[] = filtrados.slice(0, 8).map((e) => ({

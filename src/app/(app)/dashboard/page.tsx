@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { buildJourneyInsight } from "@/lib/journey-insight";
-import { getDashboardData } from "@/lib/exam-service";
 import { DashboardHomeCopiloto } from "@/components/dashboard-home-copiloto";
 import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
@@ -13,12 +12,7 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
   if (session.role === "ADMIN") redirect("/admin");
 
-  const [insight, data] = await Promise.all([
-    buildJourneyInsight(session.userId),
-    getDashboardData(session.userId, "todos"),
-  ]);
-
-  const latest = data.latest;
+  const insight = await buildJourneyInsight(session.userId);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -40,7 +34,7 @@ export default async function DashboardPage() {
         <Link href="/comunidade" className="font-medium text-violet-700 underline">
           Comunidade
         </Link>
-        {data.studyPlan && (
+        {insight.missao?.temPlano && (
           <>
             {" "}
             · Plano detalhado em{" "}
@@ -61,8 +55,8 @@ export default async function DashboardPage() {
             Ver números da jornada (detalhe)
           </summary>
           <div className="space-y-4 border-t border-slate-200 px-4 py-4">
-            <JornadaResumoCard userId={session.userId} />
-            {latest?.recoveryMode && (
+            <JornadaResumoCard userId={session.userId} mode="HOME" />
+            {insight.estado?.recoveryMode && (
               <p className="text-sm text-amber-800">
                 Modo recuperação ativo no último registro — plano com metas menores.
               </p>

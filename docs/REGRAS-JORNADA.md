@@ -16,7 +16,9 @@ A `/dashboard` responde: *o que fazer agora?* — missão, estado, padrão de er
 
 Comparações válidas: mesma prova (histórico/lente) ou futuro hub por **banca** (`Prova.banca`).
 
-Agregador: `buildJourneyInsight()` — `context: JOURNEY`.
+Agregadores: `aggregateJourneyLearning()` (dados) + `buildJourneyInsight()` (síntese) — `context: JOURNEY`.
+
+Widgets na Home usam `mode: "HOME"` (menos botões, sem XP no detalhe colapsado).
 
 ## Modo de uso (`Exam.modoUso`)
 
@@ -50,6 +52,8 @@ Agregador: `buildJourneyInsight()` — `context: JOURNEY`.
 
 ## Roadmap (ainda não feito)
 
+- Hub por banca (`Prova.banca`) — após validar a Home com alunos.
+- Página de analytics detalhado (reutilizar `CoachPanoramaJornada` fora da Home).
 - API externa de incidência de temas em vestibulares.
 - Loja / moeda além de XP.
 - Plano 100% gerado só pela jornada agregada (sem depender só do último registro).

@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { buildResumoJornada } from "@/lib/jornada";
+import type { WidgetMode } from "@/lib/widget-context";
 import { Card, Badge } from "@/components/ui";
 
-export async function JornadaResumoCard({ userId }: { userId: string }) {
+export async function JornadaResumoCard({
+  userId,
+  mode = "FULL",
+}: {
+  userId: string;
+  mode?: WidgetMode;
+}) {
+  const home = mode === "HOME";
   const j = await buildResumoJornada(userId);
 
   if (j.totalRegistros === 0) {
@@ -75,9 +83,9 @@ export async function JornadaResumoCard({ userId }: { userId: string }) {
         </div>
       )}
 
-      {(j.metaAlvo || j.xp > 0) && (
+      {(j.metaAlvo || (!home && j.xp > 0)) && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-teal-100 pt-3 text-[10px] text-slate-600">
-          {j.xp > 0 && (
+          {!home && j.xp > 0 && (
             <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-800">
               {j.xp} XP
             </span>

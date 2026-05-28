@@ -1,8 +1,15 @@
 import Link from "next/link";
-import type { JourneyInsight, TendenciaJornada } from "@/lib/journey-insight";
+import type { IncidenciaJornada, JourneyInsight, TendenciaJornada } from "@/lib/journey-insight";
+import { WIDGET_MODE_HOME } from "@/lib/widget-context";
 import { abreviarNomeProva } from "@/lib/prova-label";
 import { AtividadeCard } from "@/components/atividade-card";
 import { Badge, Button, Card, LinkButton } from "@/components/ui";
+
+function labelIncidencia(i: IncidenciaJornada): string {
+  if (i === "alta") return "Muito presente";
+  if (i === "media") return "Moderada";
+  return "Baixa";
+}
 
 function tomTendencia(t: TendenciaJornada) {
   switch (t) {
@@ -93,6 +100,12 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
             </div>
           </div>
           <ul className="mt-4 space-y-1.5 text-sm text-slate-700">
+            {insight.principalGargalo && (
+              <li>
+                <strong className="text-slate-900">Gargalo:</strong> {insight.principalGargalo.label}{" "}
+                ({insight.principalGargalo.pctAcerto}%)
+              </li>
+            )}
             <li>
               <strong className="text-slate-900">Consistência:</strong> {estado.consistenciaLabel}
             </li>
@@ -147,8 +160,9 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium text-slate-900">{a.label}</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs text-slate-500">{a.pctAcerto}% hoje</span>
+                    <Badge tone="neutral">{labelIncidencia(a.incidencia)}</Badge>
                     <Badge tone={a.potencial === "alto" ? "success" : "neutral"}>
                       {a.potencial === "alto" ? "Alto impacto" : "Médio"}
                     </Badge>
@@ -173,6 +187,7 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
               return (
                 <AtividadeCard
                   key={r.id}
+                  mode={WIDGET_MODE_HOME}
                   titulo={abreviarNomeProva(r.nome, 42)}
                   subtitulo={r.dataLabel}
                   tipoAtividade={r.tipoAtividade}

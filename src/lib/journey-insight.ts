@@ -3,7 +3,7 @@
  * Sem comparações entre provas/bancas diferentes (isso fica em BOARD / EXAM).
  */
 import type { RegistroDashboardCard } from "@/lib/jornada-analytics";
-import { buildJornadaDashboardAnalytics, materiasComDadosReais } from "@/lib/jornada-analytics";
+import { aggregateJourneyLearning, materiasComDadosReais } from "@/lib/jornada-analytics";
 import { buildMetacognicaoGlobalJornada } from "@/lib/jornada-metacognicao";
 import { buildResumoJornada } from "@/lib/jornada";
 import { getPlanoAtual, getQuestsDoPlanoAtual } from "@/lib/plano-atual";
@@ -12,17 +12,23 @@ import { prisma } from "@/lib/prisma";
 
 export type TendenciaJornada = "subindo" | "estavel" | "cuidado" | "inicio";
 
+export type IncidenciaJornada = "alta" | "media" | "baixa";
+
 export type AlavancaJornada = {
   materiaId: string;
   label: string;
   pctAcerto: number;
   potencial: "alto" | "medio";
+  incidencia: IncidenciaJornada;
   mensagem: string;
 };
 
 export type JourneyInsight = {
   context: "JOURNEY";
   temDados: boolean;
+  principalGargalo: { label: string; pctAcerto: number } | null;
+  principalAlavanca: AlavancaJornada | null;
+  focoSemana: string | null;
   missao: {
     focoTitulo: string;
     focoDescricao: string;
@@ -69,6 +75,18 @@ function calcularTendencia(pcts: number[]): { tendencia: TendenciaJornada; label
   return { tendencia: "estavel", label: "Ritmo estável entre os últimos registros" };
 }
 
+function incidenciaPorVolume(questoes: number): IncidenciaJornada {
+  if (questoes >= 12) return "alta";
+  if (questoes >= 5) return "media";
+  return "baixa";
+}
+
+function labelIncidencia(i: IncidenciaJornada): string {
+  if (i === "alta") return "muito presente na jornada";
+  if (i === "media") return "presença moderada";
+  return "poucas questões na jornada";
+}
+
 function calcularAlavancas(
   materias: Array<{
     materiaId: string;
@@ -82,18 +100,22 @@ function calcularAlavancas(
     .map((m) => {
       const gap = Math.max(0, 100 - m.pctAcerto);
       const pressao = m.errosPonderados + m.totalQuestoes * 0.15;
-      const score = gap * Math.log1p(pressao);
-      const potencial: "alto" | "medio" = score >= 12 ? "alto" : "medio";
+      const incidencia = incidenciaPorVolume(m.totalQuestoes);
+      const pesoIncidencia = incidencia === "alta" ? 1.2 : incidencia === "media" ? 1 : 0.65;
+      const score = gap * Math.log1p(pressao) * pesoIncidencia;
+      const potencial: "alto" | "medio" =
+        score >= 12 && incidencia !== "baixa" ? "alto" : "medio";
       return {
         materiaId: m.materiaId,
         label: m.label,
         pctAcerto: m.pctAcerto,
         potencial,
+        incidencia,
         score,
         mensagem:
           potencial === "alto"
-            ? `Corrigir ${m.label} tende a liberar mais nota do que matérias já estáveis (${m.pctAcerto}% hoje).`
-            : `Ainda vale atenção em ${m.label} (${m.pctAcerto}% na jornada).`,
+            ? `Corrigir ${m.label} tende a liberar mais nota (${m.pctAcerto}% hoje, ${labelIncidencia(incidencia)}).`
+            : `${m.label}: impacto limitado por baixo volume na jornada (${m.pctAcerto}%).`,
       };
     })
     .sort((a, b) => b.score - a.score)
@@ -108,7 +130,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       buildMetacognicaoGlobalJornada(userId),
       getPlanoAtual(userId),
       getQuestsDoPlanoAtual(userId),
-      buildJornadaDashboardAnalytics(userId, "todos"),
+      aggregateJourneyLearning(userId, "todos"),
       prisma.exam.findMany({
         where: { userId },
         orderBy: { data: "asc" },
@@ -124,6 +146,9 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     return {
       context: "JOURNEY",
       temDados: false,
+      principalGargalo: null,
+      principalAlavanca: null,
+      focoSemana: null,
       missao: null,
       estado: null,
       padraoCognitivo: null,
@@ -138,6 +163,11 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
 
   const materiasBase = materiasComDadosReais(analytics.materiasMedia, 3);
   const alavancas = calcularAlavancas(materiasBase);
+  const principalAlavanca = alavancas[0] ?? null;
+  const piorMateria = [...materiasBase].sort((a, b) => a.pctAcerto - b.pctAcerto)[0];
+  const principalGargalo = piorMateria
+    ? { label: piorMateria.label, pctAcerto: piorMateria.pctAcerto }
+    : null;
 
   const itemFoco =
     planoData.items.find((i) => i.bloco === "analise_materia") ??
@@ -178,9 +208,14 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   let consistenciaLabel = `${resumo.totalRegistros} registro(s) na jornada`;
   if (resumo.totalRegistros >= 3) consistenciaLabel = "Você está construindo histórico — bom para o plano";
 
+  const focoSemana = missao?.focoTitulo ?? principalAlavanca?.label ?? null;
+
   return {
     context: "JOURNEY",
     temDados: true,
+    principalGargalo,
+    principalAlavanca,
+    focoSemana,
     missao,
     estado: {
       tendencia,
