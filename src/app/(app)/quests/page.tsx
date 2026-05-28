@@ -133,11 +133,7 @@ export default function QuestsPage() {
               )}
             </div>
             {q.descricao && (
-              <p
-                className={`mt-2 text-sm text-slate-600 ${
-                  q.meta?.bloco === "alavanca" ? "whitespace-pre-line leading-relaxed" : ""
-                }`}
-              >
+              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">
                 {q.descricao}
               </p>
             )}

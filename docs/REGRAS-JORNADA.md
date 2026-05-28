@@ -31,7 +31,7 @@ Widgets na Home usam `mode: "HOME"` (menos botões, sem XP no detalhe colapsado)
 
 Home: `aggregateKnowledgeGaps()` + `aggregateCognitiveClusters()`. Gargalo = frase cognitiva, não “Matemática 40%”. Quests `[Alavanca]` priorizam clusters cognitivos.
 
-**Plano global:** montado com `planoSoJornada` (toda a jornada, não só o último registro). Ao excluir um `Exam`, o plano e as quests da semana são recriados. Botão *Atualizar plano pela jornada* em `/plano`.
+**Plano global:** `buildPlanoSemanalCopiloto()` — mesmo motor da Home/alavancas (padrão + passos numerados, sem “questões nº X de uma prova”). Ao registrar prova ou *Atualizar plano pela jornada* em `/plano`, recria plano e quests da semana.
 
 ## Modo de uso (`Exam.modoUso`)
 

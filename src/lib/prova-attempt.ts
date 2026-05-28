@@ -2,7 +2,7 @@ import type { ErrorType } from "@/generated/prisma/client";
 import { prisma } from "./prisma";
 import { aplicarPlanoCoachIA, buildDiagnosis, type AttemptInput } from "./diagnosis";
 import { enriquecerDiagnosticoComProva } from "./diagnosis-prova";
-import { generateStudyPlan, planToQuests } from "./study-plan";
+import { planToQuests } from "./study-plan";
 import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
 import { parseDataAplicacao } from "./data-prova";
@@ -10,9 +10,7 @@ import type { ModoUsoRegistro } from "@/generated/prisma/client";
 import {
   historicalAttemptsDaJornada,
   mergeHistoricalAttempts,
-  mesclarPlanoComJornada,
 } from "./jornada-plano";
-import { buildPlanoGlobalFromJornada } from "./jornada-diagnostico";
 import { concederXpMelhoriaMaterias, concederXpRegistro } from "./xp";
 import { modoUsoPadraoParaProva } from "./modo-uso";
 import { provaEhOficial, rotulosDiagnostico } from "./prova-tipo";
@@ -352,32 +350,17 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
 
 async function aplicarPlanoEQuests(
   userId: string,
-  diagnosis: DiagnosisResult,
-  ehProvaOficial: boolean,
-  rawAttemptsUltimo: AttemptInput[] = []
+  _diagnosis: DiagnosisResult,
+  _ehProvaOficial: boolean,
+  _rawAttemptsUltimo: AttemptInput[] = []
 ) {
   await prisma.quest.updateMany({
     where: { userId, status: "pending" },
     data: { status: "skipped" },
   });
 
-  let planDiagnosis = await buildPlanoGlobalFromJornada(
-    userId,
-    diagnosis,
-    rawAttemptsUltimo,
-    { planoSoJornada: true }
-  );
-
-  let items =
-    planDiagnosis.aiStudyPlanItems?.length
-      ? planDiagnosis.aiStudyPlanItems
-      : generateStudyPlan(planDiagnosis, { ehProvaOficial }).items;
-  if (!planDiagnosis.aiStudyPlanItems?.length) {
-    planDiagnosis = { ...planDiagnosis, planoCoachStatus: "legado" };
-  }
-  items = await mesclarPlanoComJornada(items, userId);
-  items = items.map((item) => ({ ...item, errosContexto: "jornada" as const }));
-  const recoveryMode = planDiagnosis.recoveryMode;
+  const { buildPlanoSemanalCopiloto } = await import("@/lib/plano-copiloto");
+  const { items, recoveryMode } = await buildPlanoSemanalCopiloto(userId);
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
 

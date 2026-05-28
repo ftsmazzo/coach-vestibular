@@ -248,25 +248,18 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
         }
       : null;
 
-  const itemFoco =
-    planoData.items.find((i) => i.bloco === "analise_materia") ??
-    planoData.items.find((i) => i.geraQuest !== false && i.duracaoMin > 0) ??
-    planoData.items[0];
-
   const topAlavanca = alavancas[0];
 
   const missaoDraft =
-    itemFoco || narrativa || topAlavanca
+    narrativa || topAlavanca
       ? {
           focoTitulo:
             narrativa?.titulo ??
-            itemFoco?.titulo ??
             (topAlavanca ? `Reforço: ${topAlavanca.label}` : "Missão da semana"),
           focoDescricao:
             narrativa?.proximoPasso ??
-            itemFoco?.descricao?.slice(0, 280) ??
             topAlavanca?.mensagem ??
-            "Abra suas quests de alavanca e siga o passo da semana.",
+            "Abra suas quests e siga o passo da semana.",
           impactoEstimado: narrativa?.linhaFoco ?? null,
           questsPendentes: [] as Array<{ id: string; titulo: string }>,
           temPlano: Boolean(planoData.plan),

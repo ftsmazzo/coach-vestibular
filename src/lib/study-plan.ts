@@ -345,7 +345,9 @@ export function planToQuests(
       const onde =
         item.errosContexto === "prova" ? "na prova" : "na jornada";
       const erros =
-        item.errosNaMateria != null && item.errosNaMateria > 0
+        item.numerosQuestoes?.length &&
+        item.errosNaMateria != null &&
+        item.errosNaMateria > 0
           ? ` (${item.errosNaMateria} erro${item.errosNaMateria > 1 ? "s" : ""} ${onde})`
           : "";
       return {
