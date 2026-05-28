@@ -24,6 +24,10 @@
 *.db
 *.db-journal
 
+# uploads de alunos (PDFs solicitados)
+/data/uploads/*
+!/data/uploads/.gitkeep
+
 # misc
 .DS_Store
 *.pem

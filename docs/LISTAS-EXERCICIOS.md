@@ -38,7 +38,7 @@ API existente: `POST /api/exams/import` (evoluir para `modoUso: TREINO` fixo e t
 | Fase | Entrega |
 |------|---------|
 | A | UI “em construção” + solicitar PDF (feito) |
-| B | Admin: fila `solicitacao_simulado` / lista |
+| B | Admin: fila `/admin/solicitacoes` + armazenamento PDF (feito) |
 | C | Prova privada + wizard gabarito × respostas |
 | D | CSV na UI de listas |
 | E | (Opcional) IA assistida na colagem, revisão humana |

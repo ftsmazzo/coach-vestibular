@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { statsQuestoesProva } from "@/lib/prova-stats";
+import { STATUS_SOLICITACAO_PENDENTE } from "@/lib/solicitacao-simulado";
 import { Card, Button, Badge } from "@/components/ui";
 
 export default async function AdminHomePage() {
@@ -10,7 +11,8 @@ export default async function AdminHomePage() {
   if (!session) redirect("/login");
   if (session.role !== "ADMIN") redirect("/dashboard");
 
-  const [provas, alunos, tentativas, publicadas, sugestoesPendentes] = await Promise.all([
+  const [provas, alunos, tentativas, publicadas, sugestoesPendentes, solicitacoesPendentes] =
+    await Promise.all([
     prisma.prova.findMany({
       include: { questoes: { select: { numero: true } } },
       orderBy: { updatedAt: "desc" },
@@ -19,6 +21,7 @@ export default async function AdminHomePage() {
     prisma.exam.count(),
     prisma.prova.count({ where: { publicada: true } }),
     prisma.sugestaoClassificacao.count({ where: { status: "PENDENTE" } }),
+    prisma.uploadJob.count({ where: { status: STATUS_SOLICITACAO_PENDENTE } }),
   ]);
 
   const incompletas = provas.filter((p) => {
@@ -71,6 +74,12 @@ export default async function AdminHomePage() {
             Sugestões{sugestoesPendentes > 0 ? ` (${sugestoesPendentes})` : ""}
           </Button>
         </Link>
+        <Link href="/admin/solicitacoes">
+          <Button variant={solicitacoesPendentes > 0 ? "primary" : "secondary"}>
+            PDFs solicitados
+            {solicitacoesPendentes > 0 ? ` (${solicitacoesPendentes})` : ""}
+          </Button>
+        </Link>
         <Link href="/admin/convites">
           <Button variant="ghost">Convites</Button>
         </Link>
@@ -78,6 +87,19 @@ export default async function AdminHomePage() {
           <Button variant="ghost">Ver catálogo como aluno</Button>
         </Link>
       </div>
+
+      {solicitacoesPendentes > 0 && (
+        <Card className="border-amber-200 bg-amber-50/80">
+          <h2 className="font-semibold text-amber-900">PDFs aguardando cadastro</h2>
+          <p className="mt-1 text-sm text-amber-800">
+            {solicitacoesPendentes} solicitação(ões) de alunos com material para publicar no
+            catálogo.
+          </p>
+          <Link href="/admin/solicitacoes" className="mt-3 inline-block text-sm font-medium text-teal-700 underline">
+            Ver fila →
+          </Link>
+        </Card>
+      )}
 
       {incompletas.length > 0 && (
         <Card>

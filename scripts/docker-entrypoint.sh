@@ -6,6 +6,8 @@ echo "==> Aguardando banco..."
 sleep 2
 
 # migrate também roda via npm prestart (se o painel ignorar ENTRYPOINT e chamar só npm start)
+mkdir -p data/uploads
+
 echo "==> Aplicando migrations (prisma migrate deploy)..."
 npx prisma migrate deploy || {
   echo "==> ERRO: migrate deploy falhou. Verifique DATABASE_URL e logs do Postgres."

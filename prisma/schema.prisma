@@ -117,6 +117,7 @@ model User {
   quests              Quest[]
   emotionalLogs       EmotionalLog[]
   xpEvents            UserXpEvent[]
+  uploadJobs          UploadJob[]
 }
 
 /// Registro de XP concedido (evita duplicar bônus pela mesma ação)
@@ -275,10 +276,16 @@ model EmotionalLog {
 }
 
 model UploadJob {
-  id         String   @id @default(cuid())
-  userId     String
-  fileName   String
-  status     String   @default("pending")
-  resultJson String?
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  fileName    String
+  status      String   @default("pending")
+  /** Caminho relativo em UPLOAD_STORAGE_DIR (ex.: solicitacoes/{id}/arquivo.pdf) */
+  storagePath String?
+  resultJson  String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
 }
