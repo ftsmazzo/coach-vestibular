@@ -1,4 +1,5 @@
 import {
+  responsesComImageSchemaComFallback,
   responsesComPdfSchemaComFallback,
   uploadFileBuffer,
   type JsonSchemaFormat,
@@ -134,21 +135,37 @@ export async function extrairGabaritoAlunoDeArquivo(opts: {
   totalQuestoes: number;
   banca: string;
 }): Promise<ExtracaoGabaritoAlunoResult> {
-  const fileId = await uploadFileBuffer(opts.buffer, opts.fileName, opts.mimeType);
   const instrucao = montarInstrucao({
     nomeProva: opts.nomeProva,
     totalQuestoes: opts.totalQuestoes,
     banca: opts.banca,
   });
 
-  const { data } = await responsesComPdfSchemaComFallback<ExtracaoIaPayload>({
-    fileId,
-    instrucao,
-    systemPrompt:
-      "Você extrai respostas de provas vestibulares a partir de fotos/PDFs. Seja conservador: só inclua questões visíveis. Letras sempre A–E maiúsculas.",
-    schema: SCHEMA,
-    taskName: "extrair_gabarito_aluno",
-  });
+  const systemPrompt =
+    "Você extrai respostas de provas vestibulares a partir de fotos/PDFs. Seja conservador: só inclua questões visíveis. Letras sempre A–E maiúsculas.";
+  const mime = opts.mimeType.toLowerCase();
+  let data: ExtracaoIaPayload;
+  if (mime.startsWith("image/")) {
+    const imageDataUrl = `data:${mime};base64,${opts.buffer.toString("base64")}`;
+    const resp = await responsesComImageSchemaComFallback<ExtracaoIaPayload>({
+      imageDataUrl,
+      instrucao,
+      systemPrompt,
+      schema: SCHEMA,
+      taskName: "extrair_gabarito_aluno_img",
+    });
+    data = resp.data;
+  } else {
+    const fileId = await uploadFileBuffer(opts.buffer, opts.fileName, opts.mimeType);
+    const resp = await responsesComPdfSchemaComFallback<ExtracaoIaPayload>({
+      fileId,
+      instrucao,
+      systemPrompt,
+      schema: SCHEMA,
+      taskName: "extrair_gabarito_aluno_pdf",
+    });
+    data = resp.data;
+  }
 
   const respostasRaw = Array.isArray(data.respostas) ? data.respostas : [];
   const respostas = respostasRaw

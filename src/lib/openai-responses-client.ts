@@ -22,6 +22,11 @@ import {
 
 export { modeloPipelinePrincipal, modeloPipelineFallback };
 
+type InputContentItem =
+  | { type: "input_text"; text: string }
+  | { type: "input_file"; file_id: string }
+  | { type: "input_image"; image_url: string };
+
 /** Envia arquivo ao Files API (purpose user_data) — PDF ou imagem. */
 export async function uploadFileBuffer(
   buffer: Buffer,
@@ -93,9 +98,9 @@ function extrairTextoOutput(data: Record<string, unknown>): string {
   return joined;
 }
 
-/** Chamada Responses API com PDF (file_id) e JSON Schema rígido. */
-export async function responsesComPdfSchema<T>(opts: {
-  fileId: string;
+/** Chamada Responses API com conteúdo multimodal e JSON Schema rígido. */
+export async function responsesComSchema<T>(opts: {
+  content: InputContentItem[];
   instrucao: string;
   systemPrompt?: string;
   schema: JsonSchemaFormat;
@@ -118,10 +123,7 @@ export async function responsesComPdfSchema<T>(opts: {
 
   input.push({
     role: "user",
-    content: [
-      { type: "input_text", text: opts.instrucao },
-      { type: "input_file", file_id: opts.fileId },
-    ],
+    content: [{ type: "input_text", text: opts.instrucao }, ...opts.content],
   });
 
   const body = {
@@ -156,8 +158,51 @@ export async function responsesComPdfSchema<T>(opts: {
   return JSON.parse(raw) as T;
 }
 
+/** Chamada Responses API com PDF (file_id) e JSON Schema rígido. */
+export async function responsesComPdfSchema<T>(opts: {
+  fileId: string;
+  instrucao: string;
+  systemPrompt?: string;
+  schema: JsonSchemaFormat;
+  model?: string;
+}): Promise<T> {
+  return responsesComSchema<T>({
+    content: [{ type: "input_file", file_id: opts.fileId }],
+    instrucao: opts.instrucao,
+    systemPrompt: opts.systemPrompt,
+    schema: opts.schema,
+    model: opts.model,
+  });
+}
+
+/** Chamada Responses API com imagem (data URL) e JSON Schema rígido. */
+export async function responsesComImageSchema<T>(opts: {
+  imageDataUrl: string;
+  instrucao: string;
+  systemPrompt?: string;
+  schema: JsonSchemaFormat;
+  model?: string;
+}): Promise<T> {
+  return responsesComSchema<T>({
+    content: [{ type: "input_image", image_url: opts.imageDataUrl }],
+    instrucao: opts.instrucao,
+    systemPrompt: opts.systemPrompt,
+    schema: opts.schema,
+    model: opts.model,
+  });
+}
+
 export type ResponsesPdfOpts<T> = {
   fileId: string;
+  instrucao: string;
+  systemPrompt?: string;
+  schema: JsonSchemaFormat;
+  taskName: string;
+  validate: (data: T) => void;
+};
+
+export type ResponsesImageOpts<T> = {
+  imageDataUrl: string;
   instrucao: string;
   systemPrompt?: string;
   schema: JsonSchemaFormat;
@@ -192,6 +237,33 @@ export async function responsesComPdfSchemaComValidacao<T>(
   };
 }
 
+/** Primary → validação → retry → fallback para imagem (data URL). */
+export async function responsesComImageSchemaComValidacao<T>(
+  opts: ResponsesImageOpts<T>
+): Promise<{ data: T; model: string; tier: "primary" | "fallback"; attempt: number }> {
+  const { executarComFallback } = await import("@/lib/executar-com-fallback");
+
+  const exec = await executarComFallback<T>({
+    taskName: opts.taskName,
+    run: (model) =>
+      responsesComImageSchema<T>({
+        imageDataUrl: opts.imageDataUrl,
+        instrucao: opts.instrucao,
+        systemPrompt: opts.systemPrompt,
+        schema: opts.schema,
+        model,
+      }),
+    validate: opts.validate,
+  });
+
+  return {
+    data: exec.resultado,
+    model: exec.model,
+    tier: exec.tier,
+    attempt: exec.attempt,
+  };
+}
+
 /** @deprecated Use responsesComPdfSchemaComValidacao com validate. */
 export async function responsesComPdfSchemaComFallback<T>(opts: {
   fileId: string;
@@ -203,6 +275,22 @@ export async function responsesComPdfSchemaComFallback<T>(opts: {
   const r = await responsesComPdfSchemaComValidacao<T>({
     ...opts,
     taskName: opts.taskName ?? "openai",
+    validate: () => {},
+  });
+  return { data: r.data, model: r.model };
+}
+
+/** @deprecated Use responsesComImageSchemaComValidacao com validate. */
+export async function responsesComImageSchemaComFallback<T>(opts: {
+  imageDataUrl: string;
+  instrucao: string;
+  systemPrompt?: string;
+  schema: JsonSchemaFormat;
+  taskName?: string;
+}): Promise<{ data: T; model: string }> {
+  const r = await responsesComImageSchemaComValidacao<T>({
+    ...opts,
+    taskName: opts.taskName ?? "openai-image",
     validate: () => {},
   });
   return { data: r.data, model: r.model };
