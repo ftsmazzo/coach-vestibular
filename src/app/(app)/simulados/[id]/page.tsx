@@ -16,6 +16,7 @@ import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
 import { Card, Badge, LinkButton } from "@/components/ui";
 import { ResumoDiagnosticoCard } from "@/components/resumo-diagnostico";
 import { AnaliseErros } from "@/components/analise-erros";
+import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
 import type { ResumoProvaDiagnostico } from "@/lib/diagnosis-prova";
 
 export default async function SimuladoDetailPage({
@@ -66,15 +67,23 @@ export default async function SimuladoDetailPage({
           </p>
           <p className="mt-1 text-xs text-slate-500">{descricaoModoUso(exam.modoUso)}</p>
         </div>
-        {exam.provaId && (
-          <LinkButton
-            href={`/simulados/novo?provaId=${exam.provaId}`}
-            variant="secondary"
-            className="w-full text-center sm:w-auto"
-          >
-            Corrigir gabarito
-          </LinkButton>
-        )}
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          {exam.provaId && (
+            <LinkButton
+              href={`/simulados/novo?provaId=${exam.provaId}`}
+              variant="secondary"
+              className="w-full text-center sm:w-auto"
+            >
+              Corrigir gabarito
+            </LinkButton>
+          )}
+          <ExcluirRegistroButton
+            examId={exam.id}
+            nome={exam.nome}
+            variant="danger"
+            redirectTo={exam.provaId ? `/provas/${exam.provaId}/lente` : "/provas"}
+          />
+        </div>
       </div>
 
       {exam.recoveryMode && (

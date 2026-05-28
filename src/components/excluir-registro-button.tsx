@@ -8,10 +8,12 @@ export function ExcluirRegistroButton({
   examId,
   nome,
   variant = "ghost",
+  redirectTo = "/simulados",
 }: {
   examId: string;
   nome: string;
   variant?: "ghost" | "secondary" | "danger";
+  redirectTo?: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -28,7 +30,7 @@ export function ExcluirRegistroButton({
     const res = await fetch(`/api/exams/${examId}`, { method: "DELETE" });
     setLoading(false);
     if (res.ok) {
-      router.push("/simulados");
+      router.push(redirectTo);
       router.refresh();
     } else {
       const data = await res.json();
@@ -38,7 +40,7 @@ export function ExcluirRegistroButton({
 
   return (
     <Button type="button" variant={variant} disabled={loading} onClick={excluir}>
-      {loading ? "Excluindo..." : "Excluir"}
+      {loading ? "Removendo..." : "Remover registro"}
     </Button>
   );
 }
