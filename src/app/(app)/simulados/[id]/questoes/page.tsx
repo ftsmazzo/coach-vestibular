@@ -5,6 +5,7 @@ import { formatDataAplicacao } from "@/lib/data-prova";
 import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
 import { PageBackLink } from "@/components/page-back-link";
 import { TabelaQuestoesRegistro } from "@/components/tabela-questoes-registro";
+import { SugestoesRegistroResumo } from "@/components/sugestoes-registro-resumo";
 import { AnaliseErros } from "@/components/analise-erros";
 import { Card, Badge } from "@/components/ui";
 
@@ -43,6 +44,8 @@ export default async function SimuladoQuestoesPage({
           {acertos}/{total} acertos
         </p>
       </header>
+
+      <SugestoesRegistroResumo examId={exam.id} />
 
       <AnaliseErros examId={exam.id} attempts={exam.questionAttempts} />
 
