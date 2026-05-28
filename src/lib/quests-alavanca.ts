@@ -1,4 +1,5 @@
 import type { JourneyInsight } from "@/lib/journey-insight";
+import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
 import { prisma } from "@/lib/prisma";
 
 export const PREFIXO_QUEST_ALAVANCA = "[Alavanca] ";
@@ -36,18 +37,17 @@ export async function garantirQuestsAlavanca(
 
   const clusterTop = insight.clustersPedagogicos[0];
   if (clusterTop) {
+    const def = CLUSTERS_PEDAGOGICOS[clusterTop.clusterId];
+    const mat = clusterTop.materias[0]?.nome ?? insight.principalGargalo?.materiaDeficitPrincipal;
     desejadas.push({
       chave: chaveQuest("conhecimento", `cluster-${clusterTop.clusterId}`),
-      titulo: `${PREFIXO_QUEST_ALAVANCA}${clusterTop.label}: prática guiada`,
+      titulo: `${PREFIXO_QUEST_ALAVANCA}Esta semana: ${def.label}`,
       descricao:
-        `${clusterTop.diagnosticoAbstrato} ` +
-        `Operação: ${clusterTop.operacaoCognitiva}. ` +
-        `${clusterTop.erros} erro${clusterTop.erros !== 1 ? "s" : ""} no padrão na jornada` +
-        (clusterTop.materias[0] ? ` (contexto: ${clusterTop.materias[0].nome})` : "") +
+        `${def.proximoPassoSemana} ` +
+        (mat ? `Prioridade em ${mat} (soma das provas da sua jornada, não só a última). ` : "") +
         (clusterTop.evidencias[0]
-          ? `. Evidência: ${clusterTop.evidencias[0]}.`
-          : ".") +
-        " 20 min teoria + 15 questões parecidas.",
+          ? `Lembre de questões como: ${clusterTop.evidencias[0].slice(0, 100)}.`
+          : ""),
       duracaoMin: 50,
     });
   } else {

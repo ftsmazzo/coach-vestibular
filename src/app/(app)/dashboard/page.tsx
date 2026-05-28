@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { buildJourneyInsight } from "@/lib/journey-insight";
-import { garantirQuestsAlavanca } from "@/lib/quests-alavanca";
 import { DashboardHomeCopiloto } from "@/components/dashboard-home-copiloto";
 import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
@@ -14,7 +13,6 @@ export default async function DashboardPage() {
   if (session.role === "ADMIN") redirect("/admin");
 
   const insight = await buildJourneyInsight(session.userId);
-  await garantirQuestsAlavanca(session.userId, insight);
 
   return (
     <div className="space-y-6 sm:space-y-8">

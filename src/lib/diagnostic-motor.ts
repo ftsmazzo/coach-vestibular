@@ -307,50 +307,7 @@ export function agregarClustersPedagogicos(
   return clusters.sort((a, b) => b.priorityScore - a.priorityScore);
 }
 
-export function narrativaDiagnostico(
-  principal: ClusterAgregado,
-  materiaDeficit: { label: string; pct: number } | null
-): { titulo: string; paragrafo: string } {
-  const partes: string[] = [];
-
-  if (materiaDeficit) {
-    const errosNaDeficit = principal.materias
-      .filter((m) => materiaCoincide(m.nome, materiaDeficit.label))
-      .reduce((s, m) => s + m.erros, 0);
-    if (errosNaDeficit > 0 || principal.impactoNota >= 50) {
-      partes.push(
-        `Seu maior déficit curricular hoje é ${materiaDeficit.label} (${materiaDeficit.pct}% de acerto na jornada).`
-      );
-    }
-  }
-
-  partes.push(principal.diagnosticoAbstrato);
-
-  if (principal.padraoMetacognitivo) {
-    partes.push(principal.padraoMetacognitivo);
-  }
-
-  const ctx = principal.materias
-    .slice(0, 2)
-    .map((m) => m.nome)
-    .join(" e ");
-  if (ctx) {
-    partes.push(
-      `Esse padrão aparece com mais peso em ${ctx} (${principal.erros} erro${principal.erros !== 1 ? "s" : ""} no cluster, recorrência em ${principal.recorrencia}% dos registros).`
-    );
-  }
-
-  if (principal.evidencias.length > 0) {
-    partes.push(
-      `Exemplo do que a banca cobrou (evidência, não é o eixo inteiro): «${principal.evidencias[0]}».`
-    );
-  }
-
-  return {
-    titulo: `${principal.label} — ${principal.operacaoCognitiva}`,
-    paragrafo: partes.join(" "),
-  };
-}
+export { narrativaCopiloto as narrativaDiagnostico } from "@/lib/narrativa-copiloto";
 
 export async function buildDiagnosticoMotor(userId: string): Promise<DiagnosticoMotor> {
   const [eventos, journey, totalExames] = await Promise.all([

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { JourneyInsight, TendenciaJornada } from "@/lib/journey-insight";
+import { resumoClusterHumano } from "@/lib/narrativa-copiloto";
 import { WIDGET_MODE_HOME } from "@/lib/widget-context";
 import { abreviarNomeProva } from "@/lib/prova-label";
 import { AtividadeCard } from "@/components/atividade-card";
@@ -43,7 +44,6 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
     temDiagnosticoCognitivo,
     diagnosticoIntegrado,
     alavancas,
-    lacunasConhecimento,
     atividadesRecentes,
   } = insight;
 
@@ -64,15 +64,23 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
           {missao.impactoEstimado && (
             <p className="mt-2 text-sm font-medium text-teal-800">{missao.impactoEstimado}</p>
           )}
-          <p className="mt-3 text-sm leading-relaxed text-slate-700">{missao.focoDescricao}</p>
+          <p className="mt-3 rounded-lg border border-teal-100 bg-white/80 px-3 py-2.5 text-sm font-medium leading-relaxed text-slate-800">
+            {missao.focoDescricao}
+          </p>
+          <p className="mt-2 text-xs text-slate-500">
+            Passo prático da semana — vale mais que reler tudo de uma matéria.
+          </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <LinkButton href="/quests#alavancas">Abrir quests</LinkButton>
+            <LinkButton href="/quests#alavancas">Abrir quests da jornada</LinkButton>
             <LinkButton href="/plano" variant="secondary">
               Ver plano completo
             </LinkButton>
           </div>
           {missao.questsPendentes.length > 0 && (
             <ul className="mt-4 space-y-1.5 border-t border-teal-100 pt-3">
+              <p className="text-[10px] font-semibold uppercase text-teal-800/90">
+                Suas quests de prioridade (toda a jornada)
+              </p>
               {missao.questsPendentes.map((q, i) => (
                 <li key={q.id} className="flex items-center gap-2 text-sm text-slate-700">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
@@ -86,11 +94,11 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
         </Card>
       )}
 
-      {/* B — Diagnóstico integrado (conhecimento + déficit + metacognição) */}
+      {/* B — Por que isso importa (história + metacognição) */}
       {principalGargalo && (
         <Card className="border-amber-200 bg-gradient-to-br from-amber-50/90 to-white p-4 sm:p-6">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-900">
-            O que está travando sua nota
+            Por que isso importa para sua nota
           </p>
           {diagnosticoIntegrado && (
             <h3 className="mt-1 text-base font-bold text-slate-900">{diagnosticoIntegrado.titulo}</h3>
@@ -100,44 +108,27 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
           <div className="mt-4 flex flex-wrap gap-2">
             {principalGargalo.materiaDeficitPrincipal && (
               <Badge tone="danger">
-                Déficit: {principalGargalo.materiaDeficitPrincipal}
+                Onde mais dá para subir: {principalGargalo.materiaDeficitPrincipal}
                 {principalGargalo.pctAcertoMateria != null &&
-                  ` (${principalGargalo.pctAcertoMateria}%)`}
+                  ` (${principalGargalo.pctAcertoMateria}% na jornada)`}
               </Badge>
             )}
-            <Badge tone="neutral">{principalGargalo.tipoLabel}</Badge>
-            {principalGargalo.causaMetacognitiva && principalGargalo.pctCausaMetacognitiva != null && (
+            {principalGargalo.causaMetacognitiva && (
               <Badge tone="warning">
-                Erro: {principalGargalo.causaMetacognitiva} ({principalGargalo.pctCausaMetacognitiva}%)
+                Como costuma errar: {principalGargalo.causaMetacognitiva}
               </Badge>
             )}
           </div>
 
-          {principalGargalo.exemploConhecimento && (
-            <p className="mt-3 text-xs italic text-slate-600">
-              Evidência da banca: «{principalGargalo.exemploConhecimento}»
-            </p>
-          )}
-
           {clustersPedagogicos.length > 1 && (
             <div className="mt-4 border-t border-amber-100 pt-3">
               <p className="text-[10px] font-semibold uppercase text-amber-900/80">
-                Outros padrões (prioridade estatística na jornada)
+                Também vale atenção
               </p>
               <ul className="mt-2 space-y-2">
-                {clustersPedagogicos.slice(1, 4).map((c) => (
-                  <li key={c.clusterId} className="text-xs text-slate-700">
-                    <span className="font-medium text-slate-900">{c.label}</span>
-                    <span className="text-slate-500"> · {c.operacaoCognitiva}</span>
-                    {c.materias[0] && (
-                      <span className="text-slate-500"> · {c.materias[0].nome}</span>
-                    )}
-                    {c.causaDominante && (
-                      <span className="text-violet-700">
-                        {" "}
-                        · causa: {c.causaDominante.label}
-                      </span>
-                    )}
+                {clustersPedagogicos.slice(1, 3).map((c) => (
+                  <li key={c.clusterId} className="text-xs leading-relaxed text-slate-700">
+                    {resumoClusterHumano(c)}
                   </li>
                 ))}
               </ul>
@@ -145,7 +136,7 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
           )}
 
           <LinkButton href="/quests#alavancas" variant="secondary" className="mt-4">
-            Quests para esta prioridade
+            Ver quests desta prioridade
           </LinkButton>
         </Card>
       )}
@@ -157,33 +148,6 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
         </Card>
       )}
 
-      {temDiagnosticoCognitivo && lacunasConhecimento.length > 1 && (
-        <Card className="p-4 sm:p-5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-            Outras lacunas por conhecimento exigido
-          </p>
-          <ul className="mt-2 space-y-2">
-            {lacunasConhecimento.slice(1, 4).map((l) => (
-              <li key={l.chave} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                <div className="flex flex-wrap gap-2">
-                  <Badge tone="neutral">{l.tipoCognitivoLabel}</Badge>
-                  {l.materia && <span className="text-[10px] text-slate-500">{l.materia}</span>}
-                  {l.pctAcertoMateria != null && (
-                    <span className="text-[10px] text-rose-700">{l.pctAcertoMateria}% na matéria</span>
-                  )}
-                </div>
-                <p className="mt-1 text-sm text-slate-800">{l.texto}</p>
-                {l.causaDominante && (
-                  <p className="mt-1 text-[10px] text-violet-800">
-                    Causa marcada: {l.causaDominante.label}
-                    {l.causaDominante.pct != null ? ` (${l.causaDominante.pct}%)` : ""}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
 
       {/* C — Estado (ritmo) */}
       {estado && (
@@ -238,8 +202,8 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
           </summary>
           <div className="space-y-2 border-t border-slate-200 px-4 py-3">
             <p className="text-xs text-slate-500">
-              Ordenado por impacto na nota — o diagnóstico principal vem de clusters pedagógicos
-              (não do texto bruto de uma questão).
+              Visão por matéria — o foco da semana acima usa o padrão que mais se repete nas suas
+              provas registradas.
             </p>
             {alavancas.slice(0, 4).map((a) => (
               <div

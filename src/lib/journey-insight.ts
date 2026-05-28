@@ -5,14 +5,15 @@
 import type { RegistroDashboardCard } from "@/lib/jornada-analytics";
 import { aggregateJourneyLearning, materiasComDadosReais } from "@/lib/jornada-analytics";
 import { aggregateKnowledgeGaps, type LacunaConhecimento } from "@/lib/knowledge-gaps";
-import {
-  buildDiagnosticoMotor,
-  narrativaDiagnostico,
-  type ClusterAgregado,
-} from "@/lib/diagnostic-motor";
+import { buildDiagnosticoMotor, type ClusterAgregado } from "@/lib/diagnostic-motor";
+import { narrativaCopiloto } from "@/lib/narrativa-copiloto";
 import { buildMetacognicaoGlobalJornada } from "@/lib/jornada-metacognicao";
 import { buildResumoJornada } from "@/lib/jornada";
-import { getPlanoAtual, getQuestsDoPlanoAtual } from "@/lib/plano-atual";
+import { getPlanoAtual } from "@/lib/plano-atual";
+import {
+  garantirQuestsAlavanca,
+  getQuestsAlavancaPendentes,
+} from "@/lib/quests-alavanca";
 import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { prisma } from "@/lib/prisma";
 
@@ -160,7 +161,6 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     resumo,
     metacognicao,
     planoData,
-    questsData,
     analytics,
     lacunasConhecimento,
     motor,
@@ -169,7 +169,6 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       buildResumoJornada(userId),
       buildMetacognicaoGlobalJornada(userId),
       getPlanoAtual(userId),
-      getQuestsDoPlanoAtual(userId),
       aggregateJourneyLearning(userId, "todos"),
       aggregateKnowledgeGaps(userId, 5),
       buildDiagnosticoMotor(userId),
@@ -217,7 +216,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
 
   const narrativa =
     principalCluster && temDiagnosticoCognitivo
-      ? narrativaDiagnostico(principalCluster, materiaDeficit)
+      ? narrativaCopiloto(principalCluster, materiaDeficit, motor.totalExames)
       : null;
 
   const principalGargalo: GargaloCognitivoInsight | null =
@@ -231,8 +230,8 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
             materiaDeficit?.pct ??
             null,
           erros: principalCluster.erros,
-          exemploConhecimento: principalCluster.evidencias[0] ?? null,
-          causaMetacognitiva: principalCluster.causaDominante?.label ?? null,
+          exemploConhecimento: narrativa.exemploConcreto,
+          causaMetacognitiva: narrativa.causaComoVoceErra,
           pctCausaMetacognitiva: principalCluster.causaDominante?.pct ?? null,
           materiaDeficitPrincipal: materiaDeficit?.label ?? null,
         }
@@ -253,30 +252,21 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     planoData.items[0];
 
   const topAlavanca = alavancas[0];
-  const questsPendentes = questsData.quests
-    .filter((q) => q.status === "pending")
-    .slice(0, 3)
-    .map((q) => ({ id: q.id, titulo: q.titulo }));
 
-  const missao =
-    itemFoco || questsPendentes.length > 0 || narrativa || topAlavanca
+  const missaoDraft =
+    itemFoco || narrativa || topAlavanca
       ? {
           focoTitulo:
             narrativa?.titulo ??
             itemFoco?.titulo ??
             (topAlavanca ? `Reforço: ${topAlavanca.label}` : "Missão da semana"),
           focoDescricao:
-            narrativa?.paragrafo ??
+            narrativa?.proximoPasso ??
             itemFoco?.descricao?.slice(0, 280) ??
             topAlavanca?.mensagem ??
-            "Abra suas quests e siga o plano da semana.",
-          impactoEstimado:
-            principalCluster && materiaDeficit
-              ? `Prioridade estatística: ${principalCluster.label} · déficit em ${materiaDeficit.label} (${materiaDeficit.pct}%)`
-              : principalCluster
-                ? `${principalCluster.erros} erros no padrão · recorrência ${principalCluster.recorrencia}% dos registros`
-                : null,
-          questsPendentes,
+            "Abra suas quests de alavanca e siga o passo da semana.",
+          impactoEstimado: narrativa?.linhaFoco ?? null,
+          questsPendentes: [] as Array<{ id: string; titulo: string }>,
           temPlano: Boolean(planoData.plan),
         }
       : null;
@@ -292,7 +282,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   const focoSemana =
     principalGargalo?.tipoLabel ?? missao?.focoTitulo ?? principalAlavanca?.label ?? null;
 
-  return {
+  const insightSemQuests: JourneyInsight = {
     context: "JOURNEY",
     temDados: true,
     principalGargalo,
@@ -300,7 +290,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     temDiagnosticoCognitivo,
     principalAlavanca,
     focoSemana,
-    missao,
+    missao: missaoDraft,
     estado: {
       tendencia,
       tendenciaLabel,
@@ -323,4 +313,16 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     lacunasConhecimento,
     atividadesRecentes: analytics.registrosRecentes.slice(0, 4),
   };
+
+  await garantirQuestsAlavanca(userId, insightSemQuests);
+  const questsAlavanca = await getQuestsAlavancaPendentes(userId);
+
+  if (insightSemQuests.missao) {
+    insightSemQuests.missao.questsPendentes = questsAlavanca.slice(0, 3).map((q) => ({
+      id: q.id,
+      titulo: q.titulo.replace(/^\[Alavanca\]\s*/, ""),
+    }));
+  }
+
+  return insightSemQuests;
 }
