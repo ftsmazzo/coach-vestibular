@@ -30,6 +30,26 @@ type TooltipComparativoProps = {
   dataUltimo: string;
 };
 
+/** Recharts permite dataKey como função; nosso gráfico só usa string. */
+function normalizeTooltipPayload(
+  payload: ReadonlyArray<{ dataKey?: unknown; name?: unknown; value?: unknown; color?: string }> | undefined,
+): ReadonlyArray<TooltipEntry> | undefined {
+  if (!payload?.length) return undefined;
+  return payload.map((entry) => {
+    let dataKey: string | number | undefined;
+    if (typeof entry.dataKey === "string" || typeof entry.dataKey === "number") {
+      dataKey = entry.dataKey;
+    } else if (typeof entry.name === "string" || typeof entry.name === "number") {
+      dataKey = entry.name;
+    }
+    const value =
+      typeof entry.value === "number" || typeof entry.value === "string"
+        ? entry.value
+        : undefined;
+    return { dataKey, value, color: entry.color };
+  });
+}
+
 function TooltipComparativo({
   active,
   payload,
@@ -134,7 +154,7 @@ export function ComparativoVestibularesChart({
               content={(props) => (
                 <TooltipComparativo
                   active={props.active}
-                  payload={props.payload}
+                  payload={normalizeTooltipPayload(props.payload)}
                   label={props.label}
                   dataPenultimo={anterior.dataLabel}
                   dataUltimo={atual.dataLabel}
