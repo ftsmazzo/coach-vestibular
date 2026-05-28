@@ -1,9 +1,6 @@
 import Link from "next/link";
 import type { JourneyInsight, TendenciaJornada } from "@/lib/journey-insight";
 import { resumoClusterHumano } from "@/lib/narrativa-copiloto";
-import { WIDGET_MODE_HOME } from "@/lib/widget-context";
-import { abreviarNomeProva } from "@/lib/prova-label";
-import { AtividadeCard } from "@/components/atividade-card";
 import { Badge, Card, LinkButton } from "@/components/ui";
 
 function tomTendencia(t: TendenciaJornada) {
@@ -45,7 +42,6 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
     diagnosticoIntegrado,
     copiloto,
     alavancas,
-    atividadesRecentes,
     linhaAnamnese,
   } = insight;
 
@@ -232,39 +228,6 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
         </details>
       )}
 
-      {atividadesRecentes.length > 0 && (
-        <div>
-          <h2 className="text-base font-semibold text-slate-900">Atividades recentes</h2>
-          <p className="mb-3 text-xs text-slate-500">
-            Compare evolução dentro da mesma prova — não entre provas diferentes.
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {atividadesRecentes.map((r) => {
-              const analiseHref = `/simulados/${r.id}`;
-              const dadosHref = r.provaId ? `/provas/${r.provaId}/lente` : analiseHref;
-              return (
-                <AtividadeCard
-                  key={r.id}
-                  mode={WIDGET_MODE_HOME}
-                  titulo={abreviarNomeProva(r.nome, 42)}
-                  subtitulo={r.dataLabel}
-                  tipoAtividade={r.tipoAtividade}
-                  pct={r.pct}
-                  analiseHref={analiseHref}
-                  dadosHref={dadosHref}
-                  terceiroHref={r.provaId ? `/quests?provaId=${r.provaId}` : "/quests"}
-                  terceiroLabel="Quests"
-                />
-              );
-            })}
-          </div>
-          <p className="mt-2 text-center text-[10px] text-slate-400">
-            <Link href="/provas" className="text-teal-700 hover:underline">
-              Ver todas as atividades
-            </Link>
-          </p>
-        </div>
-      )}
     </div>
   );
 }

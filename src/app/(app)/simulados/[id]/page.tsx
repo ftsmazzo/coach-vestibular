@@ -9,7 +9,6 @@ import { categoriaDoRegistro, labelCategoriaRegistro } from "@/lib/prova-tipo";
 import { Card, Badge, LinkButton } from "@/components/ui";
 import { ExamGraficos } from "@/components/exam-graficos";
 import { montarExamGraficos } from "@/lib/exam-graficos";
-import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
 
 export default async function SimuladoDetailPage({
   params,
@@ -89,24 +88,6 @@ export default async function SimuladoDetailPage({
           <p className="text-sm text-slate-600">Este registro não tem questões para analisar.</p>
         </Card>
       )}
-
-      <div className="flex flex-col gap-2 sm:flex-row">
-        {exam.provaId && (
-          <LinkButton
-            href={`/simulados/novo?provaId=${exam.provaId}`}
-            variant="secondary"
-            className="w-full text-center sm:w-auto"
-          >
-            Corrigir gabarito
-          </LinkButton>
-        )}
-        <ExcluirRegistroButton
-          examId={exam.id}
-          nome={exam.nome}
-          variant="danger"
-          redirectTo={exam.provaId ? `/provas/${exam.provaId}/lente` : "/provas"}
-        />
-      </div>
 
       <Card className="border-teal-200 bg-teal-50/40">
         <h2 className="font-semibold text-teal-950">Questões e classificação de erros</h2>

@@ -7,7 +7,8 @@ import { PageBackLink } from "@/components/page-back-link";
 import { TabelaQuestoesRegistro } from "@/components/tabela-questoes-registro";
 import { SugestoesRegistroResumo } from "@/components/sugestoes-registro-resumo";
 import { AnaliseErros } from "@/components/analise-erros";
-import { Card, Badge } from "@/components/ui";
+import { ExcluirRegistroButton } from "@/components/excluir-registro-button";
+import { Card, Badge, LinkButton } from "@/components/ui";
 
 export default async function SimuladoQuestoesPage({
   params,
@@ -48,6 +49,24 @@ export default async function SimuladoQuestoesPage({
       <SugestoesRegistroResumo examId={exam.id} />
 
       <AnaliseErros examId={exam.id} attempts={exam.questionAttempts} />
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        {exam.provaId && (
+          <LinkButton
+            href={`/simulados/novo?provaId=${exam.provaId}`}
+            variant="secondary"
+            className="w-full text-center sm:w-auto"
+          >
+            Corrigir gabarito
+          </LinkButton>
+        )}
+        <ExcluirRegistroButton
+          examId={exam.id}
+          nome={exam.nome}
+          variant="danger"
+          redirectTo={exam.provaId ? `/provas/${exam.provaId}/lente` : "/provas"}
+        />
+      </div>
 
       <Card>
         <h2 className="mb-1 font-semibold">Todas as questões — seu gabarito × oficial</h2>
