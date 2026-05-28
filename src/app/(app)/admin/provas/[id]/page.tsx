@@ -426,7 +426,7 @@ export default function AdminProvaDetailPage() {
           <textarea
             className="w-full rounded-xl border border-amber-200 bg-white p-3 text-sm"
             rows={6}
-            placeholder="Questão 12\n(enunciado...)\n\nQuestão 45\n..."
+            placeholder="Questão 12\n(enunciado completo...)\n\nQuestão 45\n..."
             value={textoFaltantes}
             onChange={(e) => setTextoFaltantes(e.target.value)}
           />

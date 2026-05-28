@@ -13,7 +13,10 @@ import {
   upsertQuestoesExtraidas,
 } from "@/lib/prova-questoes-persist";
 import {
+  estimarQuestoesNoTexto,
+  minCaracteresTextoParcial,
   minCaracteresTextoProva,
+  textoParcialPareceIncompleto,
   textoProvaPareceIncompleto,
 } from "@/lib/prova-texto-minimo";
 
@@ -213,7 +216,21 @@ export async function POST(
     );
   }
 
-  if (precisaTexto && textoProvaPareceIncompleto(texto.length, prova.totalQuestoes)) {
+  if (precisaTexto && modo === "adicionar") {
+    if (textoParcialPareceIncompleto(texto.length, texto, prova.totalQuestoes)) {
+      const minimo = minCaracteresTextoParcial(texto, prova.totalQuestoes);
+      const n = estimarQuestoesNoTexto(texto);
+      return NextResponse.json(
+        {
+          error: `Texto curto demais: ${texto.length} caracteres para ~${n} questão(ões) no trecho (mínimo ~${minimo}). Cole o enunciado completo da(s) questão(ões) faltante(s).`,
+          caracteresRecebidos: texto.length,
+          minimoEsperado: minimo,
+          fonte: fonteTexto,
+        },
+        { status: 400 }
+      );
+    }
+  } else if (precisaTexto && textoProvaPareceIncompleto(texto.length, prova.totalQuestoes)) {
     const minimo = minCaracteresTextoProva(prova.totalQuestoes);
     const dicaFonte =
       fonteTexto === "textoFonte"
@@ -245,6 +262,11 @@ export async function POST(
         ? mesclarTextoParaBlocos(textoCaderno, baseInicial)
         : textoCaderno;
 
+    const totalParaPipeline =
+      modo === "adicionar"
+        ? Math.max(estimarQuestoesNoTexto(texto), 1)
+        : prova.totalQuestoes;
+
     const resultado = await extrairQuestoesComIA(
       textoParaPipeline || texto,
       {
@@ -252,13 +274,14 @@ export async function POST(
         banca: prova.banca,
         ano: prova.ano,
         caderno: prova.caderno,
-        totalEsperado: prova.totalQuestoes,
+        totalEsperado: totalParaPipeline,
       },
       {
         etapa,
         baseInicial,
         textoCaderno: textoCadernoFinal || undefined,
         excluirBlocoEspanhol: excluirEs,
+        validarCoberturaCompleta: modo !== "adicionar",
       }
     );
 

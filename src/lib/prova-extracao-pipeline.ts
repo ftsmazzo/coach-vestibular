@@ -373,6 +373,7 @@ export async function executarPipelineExtracao(
     baseInicial?: QuestaoExtraida[];
     textoCaderno?: string;
     excluirBlocoEspanhol?: boolean;
+    validarCoberturaCompleta?: boolean;
   }
 ): Promise<{
   questoes: QuestaoExtraida[];
@@ -523,7 +524,7 @@ export async function executarPipelineExtracao(
     avisos.push(...r.avisos);
   }
 
-  if (ctx.totalEsperado && ctx.totalEsperado > 0) {
+  if (options.validarCoberturaCompleta !== false && ctx.totalEsperado && ctx.totalEsperado > 0) {
     const nums = new Set(questoes.map((q) => q.numero));
     const faltando: number[] = [];
     for (let n = 1; n <= ctx.totalEsperado; n++) {

@@ -120,6 +120,8 @@ export async function extrairQuestoesComIA(
     baseInicial?: QuestaoExtraida[];
     textoCaderno?: string;
     excluirBlocoEspanhol?: boolean;
+    /** false ao completar só questões faltantes — não avisa «faltam 1..N» da prova inteira */
+    validarCoberturaCompleta?: boolean;
   }
 ): Promise<{
   questoes: QuestaoExtraida[];
@@ -145,6 +147,7 @@ export async function extrairQuestoesComIA(
     baseInicial: options?.baseInicial,
     textoCaderno: options?.textoCaderno,
     excluirBlocoEspanhol: options?.excluirBlocoEspanhol,
+    validarCoberturaCompleta: options?.validarCoberturaCompleta,
   });
 
   return {
