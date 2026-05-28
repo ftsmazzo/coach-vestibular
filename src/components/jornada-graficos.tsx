@@ -26,6 +26,27 @@ const CORES_CLUSTER = [
   "#ec4899",
 ];
 
+const TIP_WRAPPER = { zIndex: 50, maxWidth: 220, outline: "none" } as const;
+const TIP_CONTENT = {
+  maxWidth: 220,
+  whiteSpace: "normal" as const,
+  wordBreak: "break-word" as const,
+  fontSize: 12,
+  lineHeight: 1.35,
+  padding: "8px 10px",
+  borderRadius: 10,
+  border: "1px solid #e2e8f0",
+  boxShadow: "0 6px 16px rgba(15,23,42,0.12)",
+};
+const TIP_LABEL = {
+  whiteSpace: "normal" as const,
+  fontWeight: 600,
+  color: "#0f172a",
+  marginBottom: 4,
+  display: "block",
+};
+const TIP_ITEM = { padding: 0 } as const;
+
 function truncar(s: string, n: number): string {
   return s.length > n ? `${s.slice(0, n - 1)}…` : s;
 }
@@ -109,6 +130,10 @@ export function JornadaGraficos({ data }: { data: JornadaGraficos }) {
                     ))}
                   </Pie>
                   <Tooltip
+                    wrapperStyle={TIP_WRAPPER}
+                    contentStyle={TIP_CONTENT}
+                    labelStyle={TIP_LABEL}
+                    itemStyle={TIP_ITEM}
                     formatter={(v, _n, p) => [
                       `${v} erro(s) · ${(p?.payload as { pct?: number })?.pct ?? 0}%`,
                       (p?.payload as { name?: string })?.name ?? "",
@@ -165,6 +190,10 @@ export function JornadaGraficos({ data }: { data: JornadaGraficos }) {
                   interval={0}
                 />
                 <Tooltip
+                  wrapperStyle={TIP_WRAPPER}
+                  contentStyle={TIP_CONTENT}
+                  labelStyle={TIP_LABEL}
+                  itemStyle={TIP_ITEM}
                   formatter={(v) => [`${v} erro(s)`, "Erros"]}
                   labelFormatter={(_l, p) =>
                     (p?.[0]?.payload as { completo?: string })?.completo ?? ""
@@ -194,6 +223,10 @@ export function JornadaGraficos({ data }: { data: JornadaGraficos }) {
                 <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="nome" width={120} tick={{ fontSize: 10 }} interval={0} />
                 <Tooltip
+                  wrapperStyle={TIP_WRAPPER}
+                  contentStyle={TIP_CONTENT}
+                  labelStyle={TIP_LABEL}
+                  itemStyle={TIP_ITEM}
                   formatter={(v) => [`${v} erro(s)`, "Erros"]}
                   labelFormatter={(l, p) => {
                     const verbo = (p?.[0]?.payload as { verbo?: string })?.verbo;
@@ -224,7 +257,13 @@ export function JornadaGraficos({ data }: { data: JornadaGraficos }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="dataLabel" tick={{ fontSize: 10 }} />
                 <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => [`${v}/5`, "Energia"]} />
+                <Tooltip
+                  wrapperStyle={TIP_WRAPPER}
+                  contentStyle={TIP_CONTENT}
+                  labelStyle={TIP_LABEL}
+                  itemStyle={TIP_ITEM}
+                  formatter={(v) => [`${v}/5`, "Energia"]}
+                />
                 <Line
                   type="monotone"
                   dataKey="score"
