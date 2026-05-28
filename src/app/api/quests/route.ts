@@ -39,7 +39,12 @@ export async function GET(request: Request) {
     items = global.items;
   }
 
-  const oQueFazerAgora = provaId ? [] : await getOQueFazerAgora(session.userId);
+  let oQueFazerAgora: Awaited<ReturnType<typeof getOQueFazerAgora>> = [];
+  if (!provaId) {
+    const { buildJourneyInsight } = await import("@/lib/journey-insight");
+    await buildJourneyInsight(session.userId);
+    oQueFazerAgora = await getOQueFazerAgora(session.userId);
+  }
 
   const copilotoConcluidas = provaId
     ? []

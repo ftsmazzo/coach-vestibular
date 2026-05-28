@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 /** Legado — novas quests usam marcador na descrição, sem prefixo no título */
 export const PREFIXO_QUEST_ALAVANCA = "[Alavanca] ";
 
-const VERSAO_COPY = "v4";
+const VERSAO_COPY = "v5";
 
 export type QuestCopiloto = {
   id: string;
@@ -19,8 +19,25 @@ export type QuestCopiloto = {
   rotulo: string;
 };
 
-function chaveQuest(ordem: number, tipo: "padrao" | "materia", id: string) {
-  return `copiloto:${ordem}:${tipo}:${id}:${VERSAO_COPY}`;
+/** Identidade estável da quest (sem ordem — evita duplicar ao reordenar). */
+function chaveQuest(tipo: "padrao" | "materia", id: string) {
+  return `copiloto:${tipo}:${id}:${VERSAO_COPY}`;
+}
+
+/** Agrupa chaves antigas (com ordem no meio) e novas. */
+export function chaveSemanticaQuest(chave: string | null): string | null {
+  if (!chave) return null;
+  const m = chave.match(/^copiloto:(?:(\d+):)?(padrao|materia):([^:]+)/);
+  if (m) return `${m[2]}:${m[3]}`;
+  return null;
+}
+
+function descricaoComChave(chave: string, ordem: number, corpo: string) {
+  return `<!-- ${chave} #o=${ordem} -->\n${corpo}`;
+}
+
+function chaveEstaNaVersaoAtual(chave: string | null): boolean {
+  return Boolean(chave?.endsWith(`:${VERSAO_COPY}`));
 }
 
 function normMateria(s: string): string {
@@ -60,7 +77,7 @@ function montarQuestPadrao(
       : `Também treinar: ${def.verboTreino}`;
 
   return {
-    chave: chaveQuest(ordem, "padrao", cluster.clusterId),
+    chave: chaveQuest("padrao", cluster.clusterId),
     titulo: tituloPratica,
     descricao: formatarPassos(
       passos,
@@ -92,7 +109,7 @@ function montarQuestMateria(a: AlavancaJornada, ordem: number): {
   ];
 
   return {
-    chave: chaveQuest(ordem, "materia", a.materiaId),
+    chave: chaveQuest("materia", a.materiaId),
     titulo: `${a.label}: bloco de correção`,
     descricao: formatarPassos(
       passos,
@@ -193,22 +210,63 @@ export function isQuestAlavanca(titulo: string) {
 }
 
 export function extrairChaveQuest(descricao: string): string | null {
-  const m = descricao.match(/^<!--\s*(\S+)\s*-->/);
+  const m = descricao.match(/^<!--\s*([^\s#]+)/);
   return m?.[1] ?? null;
 }
 
-function extrairOrdemChave(chave: string): number {
-  const m = chave.match(/^copiloto:(\d+):/);
-  return m ? Number(m[1]) : 99;
+export function extrairOrdemQuest(descricao: string | null, chave: string | null): number {
+  const m = (descricao ?? "").match(/#o=(\d+)/);
+  if (m) return Number(m[1]);
+  const legado = chave?.match(/^copiloto:(\d+):/);
+  return legado ? Number(legado[1]) : 99;
 }
 
 export function limparDescricaoQuest(descricao: string | null): string {
   if (!descricao) return "";
-  return descricao.replace(/^<!--\s*\S+\s*-->\n?/, "").trim();
+  return descricao.replace(/^<!--\s*[^\n]+\s*-->\n?/, "").trim();
 }
 
 export function tituloQuestExibicao(titulo: string): string {
   return titulo.replace(/^\[Alavanca\]\s*/i, "").trim();
+}
+
+/** Mantém só uma quest pendente por padrão/matéria; arquiva cópias e chaves antigas. */
+async function deduplicarQuestsCopilotoPendentes(userId: string) {
+  const pendentes = await prisma.quest.findMany({
+    where: { userId, status: "pending" },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const copiloto = pendentes.filter(isQuestCopiloto);
+  const porSemantica = new Map<string, typeof copiloto>();
+
+  for (const q of copiloto) {
+    const chave = extrairChaveQuest(q.descricao ?? "");
+    const sem =
+      chaveSemanticaQuest(chave) ??
+      `legado:${tituloQuestExibicao(q.titulo).toLowerCase().slice(0, 80)}`;
+    const list = porSemantica.get(sem) ?? [];
+    list.push(q);
+    porSemantica.set(sem, list);
+  }
+
+  for (const list of porSemantica.values()) {
+    if (list.length <= 1) continue;
+    list.sort((a, b) => {
+      const ca = extrairChaveQuest(a.descricao ?? "");
+      const cb = extrairChaveQuest(b.descricao ?? "");
+      const va = chaveEstaNaVersaoAtual(ca) ? 2 : 0;
+      const vb = chaveEstaNaVersaoAtual(cb) ? 2 : 0;
+      if (va !== vb) return vb - va;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+    for (const dup of list.slice(1)) {
+      await prisma.quest.update({
+        where: { id: dup.id },
+        data: { status: "skipped" },
+      });
+    }
+  }
 }
 
 /** Sincroniza as quests da jornada (única fonte de tarefas práticas). */
@@ -219,11 +277,15 @@ export async function garantirQuestsAlavanca(
   if (!insight.temDados) return;
 
   await arquivarQuestsPlanoDuplicadas(userId);
+  await deduplicarQuestsCopilotoPendentes(userId);
 
   const desejadas = montarListaDesejada(insight);
   if (desejadas.length === 0) return;
 
   const chavesDesejadas = new Set(desejadas.map((d) => d.chave));
+  const semanticasDesejadas = new Set(
+    desejadas.map((d) => chaveSemanticaQuest(d.chave)).filter(Boolean) as string[]
+  );
 
   const pendentesCopiloto = await prisma.quest.findMany({
     where: { userId, status: "pending" },
@@ -232,7 +294,12 @@ export async function garantirQuestsAlavanca(
   for (const q of pendentesCopiloto) {
     if (!isQuestCopiloto(q)) continue;
     const chaveAtual = extrairChaveQuest(q.descricao ?? "");
-    if (!chaveAtual || !chavesDesejadas.has(chaveAtual)) {
+    const sem = chaveSemanticaQuest(chaveAtual);
+    const obsoleta =
+      !chaveAtual ||
+      !chaveEstaNaVersaoAtual(chaveAtual) ||
+      (sem ? !semanticasDesejadas.has(sem) : !chavesDesejadas.has(chaveAtual));
+    if (obsoleta) {
       await prisma.quest.update({
         where: { id: q.id },
         data: { status: "skipped" },
@@ -245,17 +312,22 @@ export async function garantirQuestsAlavanca(
   });
 
   const porChave = new Map<string, (typeof pendentesAtualizados)[0]>();
+  const porSemantica = new Map<string, (typeof pendentesAtualizados)[0]>();
   for (const q of pendentesAtualizados) {
     if (!isQuestCopiloto(q)) continue;
     const chave = extrairChaveQuest(q.descricao ?? "");
-    if (chave) porChave.set(chave, q);
+    if (!chave || !chaveEstaNaVersaoAtual(chave)) continue;
+    porChave.set(chave, q);
+    const sem = chaveSemanticaQuest(chave);
+    if (sem) porSemantica.set(sem, q);
   }
 
   const criar: typeof desejadas = [];
 
   for (const d of desejadas) {
-    const existente = porChave.get(d.chave);
-    const descricaoCompleta = `<!-- ${d.chave} -->\n${d.descricao}`;
+    const existente =
+      porChave.get(d.chave) ?? porSemantica.get(chaveSemanticaQuest(d.chave) ?? "") ?? null;
+    const descricaoCompleta = descricaoComChave(d.chave, d.ordem, d.descricao);
 
     if (existente) {
       const descLimpa = limparDescricaoQuest(existente.descricao);
@@ -280,29 +352,37 @@ export async function garantirQuestsAlavanca(
       data: criar.map((d) => ({
         userId,
         titulo: d.titulo,
-        descricao: `<!-- ${d.chave} -->\n${d.descricao}`,
+        descricao: descricaoComChave(d.chave, d.ordem, d.descricao),
         materiaId: d.materiaId,
         duracaoMin: d.duracaoMin,
         rewardMsg: "Passo a passo feito com correção vale mais que lista sem olhar o erro.",
       })),
     });
   }
+
+  await deduplicarQuestsCopilotoPendentes(userId);
 }
 
 export async function getOQueFazerAgora(userId: string): Promise<QuestCopiloto[]> {
+  await deduplicarQuestsCopilotoPendentes(userId);
+
   const todas = await prisma.quest.findMany({
     where: { userId, status: "pending" },
   });
 
+  const vistos = new Set<string>();
   const copiloto = todas
     .filter(isQuestCopiloto)
     .map((q) => {
-      const chave = extrairChaveQuest(q.descricao ?? "") ?? "";
-      const ordem = extrairOrdemChave(chave);
+      const chave = extrairChaveQuest(q.descricao ?? "");
+      const sem =
+        chaveSemanticaQuest(chave) ??
+        `legado:${tituloQuestExibicao(q.titulo).toLowerCase()}`;
+      const ordem = extrairOrdemQuest(q.descricao, chave);
       let rotulo = "Esta semana";
-      if (chave.includes(":padrao:")) {
+      if (chave?.includes(":padrao:")) {
         rotulo = ordem === 1 ? "Prioridade da semana" : "Também vale atenção";
-      } else if (chave.includes(":materia:")) {
+      } else if (chave?.includes(":materia:")) {
         rotulo = "Reforço de matéria";
       }
       return {
@@ -312,9 +392,23 @@ export async function getOQueFazerAgora(userId: string): Promise<QuestCopiloto[]
         duracaoMin: q.duracaoMin,
         ordem,
         rotulo,
+        sem,
+        chaveAtual: chave,
       };
     })
-    .sort((a, b) => a.ordem - b.ordem);
+    .sort((a, b) => {
+      const va = chaveEstaNaVersaoAtual(a.chaveAtual) ? 0 : 1;
+      const vb = chaveEstaNaVersaoAtual(b.chaveAtual) ? 0 : 1;
+      if (va !== vb) return va - vb;
+      return a.ordem - b.ordem;
+    })
+    .filter((q) => {
+      if (vistos.has(q.sem)) return false;
+      vistos.add(q.sem);
+      return true;
+    })
+    .sort((a, b) => a.ordem - b.ordem)
+    .map(({ sem: _sem, chaveAtual: _c, ...rest }) => rest);
 
   return copiloto;
 }
