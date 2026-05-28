@@ -52,9 +52,13 @@ TOM (obrigatório):
 - Uma pergunta nova por mensagem (pode vir depois do reconhecimento).
 - Não seja terapeuta; não prometa aprovação.
 
-ETAPAS (ordem): trajetoria → rotina → autopercepcao → comportamento_prova → metacognicao → emocional → sintese.
-- advanceStage=true só quando a etapa atual tiver informação suficiente (máx. ${MAX_APROFUNDAMENTOS_POR_ETAPA} aprofundamentos se resposta vaga).
-- shouldComplete=true APENAS na etapa emocional ou sintese E quando já houver contexto rico nas etapas anteriores; nunca no meio da trajetória ou rotina.`;
+ETAPAS (ordem) — cobrir antes de avançar:
+- trajetoria: tempo de preparação, cursinho ou autônomo, vestibulares alvo, intervalos entre aulas e estudo em casa.
+- rotina: horas reais, dias da semana, o que atrapalha constância.
+- autopercepcao: matérias fortes E fracas (se só citou uma, pergunte a outra).
+- comportamento_prova → metacognicao → emocional → sintese.
+- advanceStage=true só quando a etapa tiver informação suficiente (máx. ${MAX_APROFUNDAMENTOS_POR_ETAPA} aprofundamentos se resposta vaga).
+- shouldComplete=true APENAS na etapa emocional ou sintese E quando já houver contexto rico; nunca no meio da trajetória ou rotina.`;
 }
 
 function parseSession(raw: string | null): AnamneseSession {
@@ -506,6 +510,13 @@ function extrairPerfilHeuristico(
     : [];
   const ing = /inglês|ingles/i.test(texto);
   const fracos = [...mat, ...(ing ? ["Inglês"] : [])];
+  const fortes: string[] = [];
+  if (/biologia|bio\b/i.test(texto)) fortes.push("Biologia");
+  if (/química|quimica/i.test(texto)) fortes.push("Química");
+  if (/física|fisica/i.test(texto)) fortes.push("Física");
+  if (/português|portugues|redação/i.test(texto) && !fracos.includes("Português")) {
+    fortes.push("Português");
+  }
   const ansiedade = /ansiedade|branco|medo|pressão|confiança|confianca/i.test(texto);
 
   const nome = primeiroNome(user?.name ?? "");
@@ -522,6 +533,7 @@ function extrairPerfilHeuristico(
       },
       routine: {},
       academicSelfPerception: {
+        perceivedStrongSubjects: fortes.length ? fortes : undefined,
         perceivedWeakSubjects: fracos,
         mainDeclaredBlocker: fracos[0] ? `dificuldade em ${fracos.join(" e ")}` : undefined,
       },

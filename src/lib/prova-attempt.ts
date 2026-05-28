@@ -354,11 +354,11 @@ async function aplicarPlanoEQuests(
   _rawAttemptsUltimo: AttemptInput[] = []
 ) {
   const { buildPlanoSemanalCopiloto } = await import("@/lib/plano-copiloto");
-  const { items, recoveryMode } = await buildPlanoSemanalCopiloto(userId);
+  const { items, recoveryMode, fonte } = await buildPlanoSemanalCopiloto(userId);
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
 
-  await prisma.studyPlan.create({
+  const plan = await prisma.studyPlan.create({
     data: {
       userId,
       escopo: "GLOBAL",
@@ -371,22 +371,46 @@ async function aplicarPlanoEQuests(
 
   const { buildJourneyInsight } = await import("@/lib/journey-insight");
   await buildJourneyInsight(userId);
+
+  const { getOQueFazerAgora } = await import("@/lib/quests-alavanca");
+  const quests = await getOQueFazerAgora(userId);
+
+  return {
+    planId: plan.id,
+    fonte,
+    blocosPlano: items.length,
+    questsPendentes: quests.length,
+  };
 }
+
+export type RegenerarPlanoResult = {
+  planId: string;
+  fonte: "jornada" | "anamnese" | "vazio";
+  blocosPlano: number;
+  questsPendentes: number;
+  questsRemovidas?: number;
+  planosRemovidos?: number;
+};
 
 /** Recria plano global e quests a partir da jornada atual (ex.: após excluir registro inválido). */
 export async function regenerarPlanoGlobalUsuario(
   userId: string,
   opts?: { pularLimpeza?: boolean; incluirAnamnese?: boolean }
-) {
+): Promise<RegenerarPlanoResult> {
+  let questsRemovidas = 0;
+  let planosRemovidos = 0;
   if (!opts?.pularLimpeza) {
     const { zerarDerivadosCopiloto } = await import("@/lib/zerar-copiloto-usuario");
-    await zerarDerivadosCopiloto(userId, {
+    const limpeza = await zerarDerivadosCopiloto(userId, {
       incluirAnamnese: opts?.incluirAnamnese ?? false,
     });
+    questsRemovidas = limpeza.questsRemovidas;
+    planosRemovidos = limpeza.planosRemovidos;
   }
   const { buildDiagnosisFromJornada } = await import("@/lib/jornada-diagnostico");
   const diagnosis = await buildDiagnosisFromJornada(userId);
-  await aplicarPlanoEQuests(userId, diagnosis, false, []);
+  const aplicado = await aplicarPlanoEQuests(userId, diagnosis, false, []);
+  return { ...aplicado, questsRemovidas, planosRemovidos };
 }
 
 /** Recalcula diagnóstico, plano e quests a partir do gabarito já salvo (sem redigitar). */

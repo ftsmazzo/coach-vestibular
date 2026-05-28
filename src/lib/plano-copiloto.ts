@@ -12,9 +12,77 @@ import { materiasComDadosReais } from "@/lib/jornada-analytics";
 import { aggregateJourneyLearning } from "@/lib/jornada-analytics";
 import { getAnamneseMotorContext } from "@/lib/anamnese-motor";
 
+function blocosPlanoSóAnamnese(
+  anamneseCtx: Awaited<ReturnType<typeof getAnamneseMotorContext>>,
+  ordemInicial: number
+): StudyPlanItem[] {
+  const items: StudyPlanItem[] = [];
+  let ordem = ordemInicial;
+  const weak = anamneseCtx.profile?.academicSelfPerception?.perceivedWeakSubjects ?? [];
+  const strong = anamneseCtx.profile?.academicSelfPerception?.perceivedStrongSubjects ?? [];
+
+  items.push({
+    ordem: ordem++,
+    titulo: "O que você contou na conversa inicial",
+    descricao:
+      (anamneseCtx.summary ?? anamneseCtx.focoInicialDescricao ?? "") +
+      "\n\nAinda não há provas registradas — este plano vem da sua anamnese. " +
+      "Quando registrar simulados, o copiloto cruza o que você disse com seus erros reais.",
+    duracaoMin: 0,
+    bloco: "contexto",
+    geraQuest: false,
+    errosContexto: "jornada",
+  });
+
+  if (anamneseCtx.focoInicialTitulo) {
+    items.push({
+      ordem: ordem++,
+      titulo: `Prioridade 1 — ${anamneseCtx.focoInicialTitulo}`,
+      descricao:
+        (anamneseCtx.focoInicialDescricao ?? "Foco inicial a partir da sua jornada.") +
+        (weak.length
+          ? `\n\nMatérias que você sinalizou como mais difíceis: ${weak.join(", ")}.`
+          : "") +
+        (strong.length ? `\nOnde você se sente mais forte: ${strong.join(", ")}.` : "") +
+        "\n\nPasso a passo prático → Quests → O que fazer agora.",
+      duracaoMin: 40,
+      bloco: "foco_profundo",
+      materiaDestaque: weak[0] ?? undefined,
+      geraQuest: false,
+      errosContexto: "jornada",
+    });
+  }
+
+  if (anamneseCtx.profile?.examBehavior?.fatigueInLongExams) {
+    items.push({
+      ordem: ordem++,
+      titulo: "Também vale atenção — clareza em prova longa",
+      descricao:
+        "Você comentou que perde clareza em provas longas. Quando fizer simulados, marque em qual bloco de questões a cabeça cansou — isso vira dado real para o copiloto.",
+      duracaoMin: 0,
+      bloco: "consolidacao",
+      geraQuest: false,
+      errosContexto: "jornada",
+    });
+  }
+
+  items.push({
+    ordem: ordem++,
+    titulo: "Meta da semana",
+    descricao:
+      "Completar os passos em Quests. Registrar pelo menos uma atividade no catálogo para o plano passar a usar seus erros reais.",
+    duracaoMin: 0,
+    bloco: "meta",
+    geraQuest: false,
+  });
+
+  return items;
+}
+
 export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
   items: StudyPlanItem[];
   recoveryMode: boolean;
+  fonte: "jornada" | "anamnese" | "vazio";
 }> {
   const [motor, resumo, analytics, anamneseCtx] = await Promise.all([
     buildDiagnosticoMotor(userId),
@@ -32,13 +100,20 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
       ? "1 registro na jornada"
       : `${resumo.totalRegistros} registros na jornada`;
 
+  const introAnamnese =
+    resumo.totalRegistros === 0 && anamneseCtx.completed
+      ? "Por enquanto o plano vem da **conversa inicial** (anamnese). "
+      : "";
+
   items.push({
     ordem: ordem++,
     titulo: "Sua semana na jornada",
     descricao:
-      `Este plano usa **todos os ${registrosLabel}** (oficiais, simulados e listas com pesos diferentes) — ` +
-      `não é revisão só da última prova. Acerto ponderado: ${resumo.pctAcertoPonderado}%. ` +
-      `Leia os blocos abaixo; o passo a passo da semana está em Quests → O que fazer agora (sem repetir o mesmo texto da Home).`,
+      introAnamnese +
+      (resumo.totalRegistros > 0
+        ? `Este plano usa **todos os ${registrosLabel}** — acerto ponderado: ${resumo.pctAcertoPonderado}%. `
+        : "Registre provas quando puder para cruzar com o que você já contou. ") +
+      `Passo a passo em Quests → O que fazer agora.`,
     duracaoMin: 0,
     bloco: "contexto",
     geraQuest: false,
@@ -46,16 +121,20 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
   });
 
   if (!motor.temDados || !motor.clusterPrincipal) {
+    if (anamneseCtx.completed) {
+      items.push(...blocosPlanoSóAnamnese(anamneseCtx, ordem));
+      return { items, recoveryMode, fonte: "anamnese" };
+    }
     items.push({
       ordem: ordem++,
       titulo: "Meta da semana",
       descricao:
-        "Registre mais provas do catálogo com gabarito e metacognição nos erros para o copiloto montar passos personalizados.",
+        "Faça a conversa inicial na Home (Entendendo sua jornada) e registre provas do catálogo para o copiloto montar passos personalizados.",
       duracaoMin: 10,
       bloco: "meta",
       geraQuest: false,
     });
-    return { items, recoveryMode };
+    return { items, recoveryMode, fonte: "vazio" };
   }
 
   const principal = motor.clusterPrincipal;
@@ -142,5 +221,5 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     errosContexto: "jornada",
   });
 
-  return { items, recoveryMode };
+  return { items, recoveryMode, fonte: "jornada" };
 }
