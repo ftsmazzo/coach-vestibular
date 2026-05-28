@@ -142,11 +142,22 @@ export default async function PlanoPage() {
           )}
         </p>
         {plan && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <RegenerarPlanoButton />
-            <span className="text-xs text-slate-500">
-              Recria plano e quests com todos os registros atuais.
-            </span>
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-slate-500">
+              Última geração do plano:{" "}
+              <strong className="text-slate-700">
+                {plan.createdAt.toLocaleString("pt-BR", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}
+              </strong>
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <RegenerarPlanoButton />
+              <span className="text-xs text-slate-500">
+                Apaga plano/quests antigos e recria com dados atuais (anamnese + provas).
+              </span>
+            </div>
           </div>
         )}
         {plan && horasQuests > 0 && (

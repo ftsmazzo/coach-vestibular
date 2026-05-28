@@ -105,10 +105,16 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
       ? "Por enquanto o plano vem da **conversa inicial** (anamnese). "
       : "";
 
+  const geradoEm = new Date().toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+
   items.push({
     ordem: ordem++,
     titulo: "Sua semana na jornada",
     descricao:
+      `_Atualizado pelo copiloto em ${geradoEm}._\n\n` +
       introAnamnese +
       (resumo.totalRegistros > 0
         ? `Este plano usa **todos os ${registrosLabel}** — acerto ponderado: ${resumo.pctAcertoPonderado}%. `

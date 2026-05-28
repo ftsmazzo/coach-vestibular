@@ -1,8 +1,12 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
-import { recriarCopilotoDoZero } from "@/lib/zerar-copiloto-usuario";
+import {
+  mensagemRecriarCopiloto,
+  recriarCopilotoDoZero,
+} from "@/lib/zerar-copiloto-usuario";
 
 const bodySchema = z.object({
   incluirAnamnese: z.boolean().optional(),
@@ -31,17 +35,28 @@ export async function POST(
       incluirAnamnese = bodySchema.parse(raw).incluirAnamnese ?? false;
     }
   } catch {
-    /* body vazio = só plano/quests */
+    /* body vazio */
   }
 
-  const resultado = await recriarCopilotoDoZero(userId, { incluirAnamnese });
+  try {
+    const resultado = await recriarCopilotoDoZero(userId, { incluirAnamnese });
 
-  return NextResponse.json({
-    ok: true,
-    aluno: aluno.name,
-    ...resultado,
-    mensagem:
-      `Copiloto recriado para ${aluno.name}: ${resultado.planosRemovidos} plano(s) e ${resultado.questsRemovidas} quest(s) removidos; novo plano e lista gerados a partir dos registros atuais.` +
-      (resultado.anamneseRemovida ? " Anamnese apagada — banner volta na Home." : ""),
-  });
+    revalidatePath("/dashboard", "layout");
+    revalidatePath("/plano", "layout");
+    revalidatePath("/quests", "layout");
+    revalidatePath("/anamnese", "layout");
+
+    return NextResponse.json({
+      ok: true,
+      aluno: aluno.name,
+      ...resultado,
+      mensagem: mensagemRecriarCopiloto(resultado, aluno.name),
+    });
+  } catch (e) {
+    console.error("admin zerar-copiloto:", e);
+    return NextResponse.json(
+      { error: "Falha ao recriar o copiloto. Veja os logs do servidor." },
+      { status: 500 }
+    );
+  }
 }

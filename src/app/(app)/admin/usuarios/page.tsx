@@ -115,7 +115,11 @@ export default function AdminUsuariosPage() {
       setError(data.error ?? "Erro ao zerar copiloto");
       return;
     }
-    setSucesso(data.mensagem ?? "Copiloto recriado.");
+    const detalhe =
+      data.planoGeradoEm != null
+        ? ` Gerado em ${new Date(data.planoGeradoEm).toLocaleString("pt-BR")}.`
+        : "";
+    setSucesso((data.mensagem ?? "Copiloto recriado.") + detalhe);
   }
 
   return (
