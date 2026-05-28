@@ -323,7 +323,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   if (insightSemQuests.missao) {
     insightSemQuests.missao.questsPendentes = questsAlavanca.slice(0, 3).map((q) => ({
       id: q.id,
-      titulo: q.titulo.replace(/^\[Alavanca\]\s*/, ""),
+      titulo: q.titulo,
     }));
   }
 

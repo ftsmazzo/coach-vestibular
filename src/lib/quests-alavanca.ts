@@ -1,14 +1,141 @@
 import type { JourneyInsight } from "@/lib/journey-insight";
-import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
+import type { AlavancaJornada } from "@/lib/journey-insight";
+import {
+  CLUSTERS_PEDAGOGICOS,
+  type PedagogicalClusterId,
+} from "@/lib/pedagogical-clusters";
+import type { ClusterAgregado } from "@/lib/diagnostic-motor";
 import { prisma } from "@/lib/prisma";
 
 export const PREFIXO_QUEST_ALAVANCA = "[Alavanca] ";
 
-function chaveQuest(tipo: "materia" | "conhecimento", id: string) {
-  return `${tipo}:${id}`;
+/** Incrementar ao mudar formato da quest — força atualização no banco */
+const VERSAO_COPY = "v3";
+
+function chaveQuest(tipo: "materia" | "padrao", id: string) {
+  return `${tipo}:${id}:${VERSAO_COPY}`;
 }
 
-/** Sincroniza quests extras ligadas às alavancas/lacunas da Home (não substituem o plano semanal). */
+function normMateria(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+function materiasCoincidem(a: string, b: string): boolean {
+  const na = normMateria(a);
+  const nb = normMateria(b);
+  return na.includes(nb) || nb.includes(na);
+}
+
+function formatarPassos(passos: string[], porQue: string, duracaoMin: number): string {
+  const lista = passos.map((p, i) => `${i + 1}. ${p}`).join("\n");
+  return `Por que agora: ${porQue}\n\nO que fazer (~${duracaoMin} min):\n${lista}\n\nPronto quando: você tiver feito todos os passos e corrigido o que errou.`;
+}
+
+const PASSOS_POR_CLUSTER: Record<PedagogicalClusterId, string[]> = {
+  visualizacao_espacial: [
+    "Separe um bloco sem celular (15–25 min).",
+    "Escolha 3 questões de Matemática com figura, desenho ou geometria (pode ser das que você errou).",
+    "Em cada questão: copie ou desenhe a figura no caderno e rotule ângulos e lados.",
+    "Só depois monte a conta. Se travar, marque a questão com um X para rever amanhã.",
+    "No fim, escreva 1 frase: o que mais te travou?",
+  ],
+  modelagem_matematica: [
+    "Escolha 3 questões de Matemática com texto longo ou dados no enunciado.",
+    "Antes de calcular, escreva em 1 linha: o que a questão pede? Qual modelo (equação, proporção, gráfico)?",
+    "Só então resolva. Corrija na hora.",
+    "Repita até completar 3 questões com o modelo escrito antes da conta.",
+  ],
+  calculo_procedimento: [
+    "Faça 10 questões de Matemática (tema que você já estudou).",
+    "No papel, marque cada passo da conta (não pule etapas).",
+    "Confira só o resultado final no fim de cada questão.",
+    "Anote quantas escaparam por conta — meta: reduzir na próxima sessão.",
+  ],
+  interpretacao_textual: [
+    "Pegue 2 questões com texto longo (qualquer matéria).",
+    "1ª leitura: só ideia central (2 min).",
+    "2ª leitura: sublinhe só o que responde ao comando da questão.",
+    "Responda e corrija. Repita no segundo texto.",
+  ],
+  analise_linguistica: [
+    "Escolha 1 regra de gramática que mais apareceu nos seus erros.",
+    "10 min: releia a teoria (resumo ou video curto).",
+    "Faça 10 questões só dessa regra.",
+    "Corrija e anote o erro que se repetiu.",
+  ],
+  recuperacao_conceitual: [
+    "Escolha 1 tema que você já estudou mas errou na prova.",
+    "Faça 5 cartões: pergunta de um lado, conceito do outro.",
+    "Responda os cartões sem olhar material.",
+    "Depois faça 5 questões desse tema.",
+  ],
+  comparacao_contextual: [
+    "Escolha 3 questões de Humanas que pedem comparar.",
+    "Monte um quadro: semelhança | diferença | conclusão.",
+    "Responda usando o quadro. Corrija.",
+  ],
+  inferencia_logica: [
+    "Faça 5 questões que exijam encadear raciocínio.",
+    "Ao lado de cada uma escreva: premissa → passo → conclusão.",
+    "Só marque a alternativa depois de escrever os passos.",
+  ],
+  aplicacao_conceitual: [
+    "Escolha 1 tema que você domina em um tipo de questão.",
+    "Faça 10 questões do mesmo tema em enunciados diferentes (outra banca ou outro contexto).",
+    "Corrija e veja se o erro é conteúdo ou leitura do enunciado novo.",
+  ],
+};
+
+function montarQuestPadrao(cluster: ClusterAgregado, materia: string): {
+  chave: string;
+  titulo: string;
+  descricao: string;
+  duracaoMin: number;
+} {
+  const def = CLUSTERS_PEDAGOGICOS[cluster.clusterId];
+  const passos = PASSOS_POR_CLUSTER[cluster.clusterId];
+  const porQue = `prioridade da sua jornada em ${materia} — ${def.tituloHumano.toLowerCase()}.`;
+  const duracao = 40;
+
+  return {
+    chave: chaveQuest("padrao", cluster.clusterId),
+    titulo: `${PREFIXO_QUEST_ALAVANCA}${def.tituloHumano}`,
+    descricao: formatarPassos(passos, porQue, duracao),
+    duracaoMin: duracao,
+  };
+}
+
+function montarQuestMateria(a: AlavancaJornada): {
+  chave: string;
+  titulo: string;
+  descricao: string;
+  materiaId: string;
+  duracaoMin: number;
+} {
+  const duracao = 45;
+  const passos = [
+    `Abra ${a.label} no material que você já usa (apostila, lista ou videoaula).`,
+    "Faça 15 questões dos assuntos que mais apareceram nos seus erros recentes.",
+    "Corrija na hora — não deixe para o dia seguinte.",
+    "Anote os números das que ainda travou (1 linha cada).",
+    "Nos últimos 5 min, releia só as que errou.",
+  ];
+  const porQue = `${a.label} está com ${a.pctAcerto}% de acerto na jornada; melhorar aqui costuma liberar mais nota.`;
+
+  return {
+    chave: chaveQuest("materia", a.materiaId),
+    titulo: `${PREFIXO_QUEST_ALAVANCA}${a.label}: 15 questões corrigidas`,
+    descricao: formatarPassos(passos, porQue, duracao),
+    materiaId: a.materiaId,
+    duracaoMin: duracao,
+  };
+}
+
+/** Sincroniza quests de alavanca — cria ou atualiza texto quando a prioridade muda. */
 export async function garantirQuestsAlavanca(
   userId: string,
   insight: JourneyInsight
@@ -23,51 +150,27 @@ export async function garantirQuestsAlavanca(
     duracaoMin: number;
   }> = [];
 
-  for (const a of insight.alavancas.filter((x) => x.potencial === "alto").slice(0, 1)) {
-    desejadas.push({
-      chave: chaveQuest("materia", a.materiaId),
-      titulo: `${PREFIXO_QUEST_ALAVANCA}Reforço: ${a.label}`,
-      descricao:
-        `${a.mensagem} Faça teoria + 15 questões focadas. ` +
-        `Hoje você está com ${a.pctAcerto}% de acerto ponderado nesta matéria na jornada.`,
-      materiaId: a.materiaId,
-      duracaoMin: 45,
-    });
+  const clusterTop = insight.clustersPedagogicos[0];
+  const materiaDeficit = insight.principalGargalo?.materiaDeficitPrincipal ?? null;
+
+  let materiaDoPadrao: string | null = null;
+  if (clusterTop) {
+    materiaDoPadrao =
+      clusterTop.materias[0]?.nome ?? materiaDeficit ?? "sua matéria prioritária";
+    desejadas.push(montarQuestPadrao(clusterTop, materiaDoPadrao));
   }
 
-  const clusterTop = insight.clustersPedagogicos[0];
-  if (clusterTop) {
-    const def = CLUSTERS_PEDAGOGICOS[clusterTop.clusterId];
-    const mat = clusterTop.materias[0]?.nome ?? insight.principalGargalo?.materiaDeficitPrincipal;
-    desejadas.push({
-      chave: chaveQuest("conhecimento", `cluster-${clusterTop.clusterId}`),
-      titulo: `${PREFIXO_QUEST_ALAVANCA}${def.tituloHumano}`,
-      descricao:
-        `${def.proximoPassoSemana} ` +
-        (mat ? `Prioridade em ${mat} (soma das provas da sua jornada, não só a última). ` : "") +
-        (clusterTop.evidencias[0]
-          ? `Lembre de questões como: ${clusterTop.evidencias[0].slice(0, 100)}.`
-          : ""),
-      duracaoMin: 50,
-    });
-  } else {
-    const lacunaTop = insight.lacunasConhecimento[0];
-    if (lacunaTop) {
-      desejadas.push({
-        chave: chaveQuest("conhecimento", `prio-${lacunaTop.chave}`),
-        titulo: `${PREFIXO_QUEST_ALAVANCA}${lacunaTop.tipoCognitivoLabel}: prática focada`,
-        descricao:
-          `${lacunaTop.texto} ` +
-          (lacunaTop.causaDominante
-            ? `Causa mais marcada: ${lacunaTop.causaDominante.label}. `
-            : "") +
-          (lacunaTop.materia ? `Contexto: ${lacunaTop.materia}. ` : "") +
-          "20 min teoria + 15 questões parecidas + anotar regra no caderno.",
-        duracaoMin: 50,
-      });
+  const padraoJaCobreMateria =
+    clusterTop &&
+    materiaDoPadrao &&
+    materiaDeficit &&
+    materiasCoincidem(materiaDoPadrao, materiaDeficit);
+
+  if (!padraoJaCobreMateria) {
+    for (const a of insight.alavancas.filter((x) => x.potencial === "alto").slice(0, 1)) {
+      desejadas.push(montarQuestMateria(a));
     }
   }
-
 
   if (desejadas.length === 0) return;
 
@@ -91,13 +194,46 @@ export async function garantirQuestsAlavanca(
     }
   }
 
-  const existentesChaves = new Set(
-    pendentesAlavanca
-      .map((q) => extrairChaveQuest(q.descricao ?? ""))
-      .filter((c): c is string => Boolean(c))
-  );
+  const pendentesAtualizados = await prisma.quest.findMany({
+    where: {
+      userId,
+      status: "pending",
+      titulo: { startsWith: PREFIXO_QUEST_ALAVANCA },
+    },
+  });
 
-  const criar = desejadas.filter((d) => !existentesChaves.has(d.chave));
+  const porChave = new Map<string, (typeof pendentesAtualizados)[0]>();
+  for (const q of pendentesAtualizados) {
+    const chave = extrairChaveQuest(q.descricao ?? "");
+    if (chave) porChave.set(chave, q);
+  }
+
+  const criar: typeof desejadas = [];
+
+  for (const d of desejadas) {
+    const existente = porChave.get(d.chave);
+    const descricaoCompleta = `<!-- ${d.chave} -->\n${d.descricao}`;
+
+    if (existente) {
+      const descLimpa = limparDescricaoQuest(existente.descricao);
+      if (existente.titulo !== d.titulo || descLimpa !== d.descricao) {
+        await prisma.quest.update({
+          where: { id: existente.id },
+          data: {
+            titulo: d.titulo,
+            descricao: descricaoCompleta,
+            duracaoMin: d.duracaoMin,
+            materiaId: d.materiaId ?? existente.materiaId,
+            rewardMsg:
+              "Cada passo feito com correção vale mais que fazer lista sem olhar o erro.",
+          },
+        });
+      }
+    } else {
+      criar.push(d);
+    }
+  }
+
   if (criar.length === 0) return;
 
   await prisma.quest.createMany({
@@ -107,7 +243,8 @@ export async function garantirQuestsAlavanca(
       descricao: `<!-- ${d.chave} -->\n${d.descricao}`,
       materiaId: d.materiaId,
       duracaoMin: d.duracaoMin,
-      rewardMsg: "Fechar uma lacuna real pesa mais que acertar por sorte na próxima prova.",
+      rewardMsg:
+        "Cada passo feito com correção vale mais que fazer lista sem olhar o erro.",
     })),
   });
 }
@@ -119,6 +256,10 @@ function extrairChaveQuest(descricao: string): string | null {
 
 export function isQuestAlavanca(titulo: string) {
   return titulo.startsWith(PREFIXO_QUEST_ALAVANCA);
+}
+
+export function tituloQuestExibicao(titulo: string): string {
+  return titulo.replace(/^\[Alavanca\]\s*/i, "").trim();
 }
 
 export function limparDescricaoQuest(descricao: string | null): string {
@@ -137,6 +278,7 @@ export async function getQuestsAlavancaPendentes(userId: string) {
   });
   return todas.map((q) => ({
     ...q,
+    titulo: tituloQuestExibicao(q.titulo),
     descricao: limparDescricaoQuest(q.descricao),
   }));
 }

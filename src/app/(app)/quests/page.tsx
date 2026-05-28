@@ -132,7 +132,15 @@ export default function QuestsPage() {
                 </Badge>
               )}
             </div>
-            {q.descricao && <p className="mt-2 text-sm text-slate-600">{q.descricao}</p>}
+            {q.descricao && (
+              <p
+                className={`mt-2 text-sm text-slate-600 ${
+                  q.meta?.bloco === "alavanca" ? "whitespace-pre-line leading-relaxed" : ""
+                }`}
+              >
+                {q.descricao}
+              </p>
+            )}
             <p className="mt-1 text-xs text-slate-500">~{q.duracaoMin} min</p>
           </div>
           <Button onClick={() => completeQuest(q.id)} className="w-full shrink-0 sm:w-auto">
@@ -217,10 +225,10 @@ export default function QuestsPage() {
 
           {alavancas.length > 0 && !provaId && (
             <section id="alavancas">
-              <h2 className="mb-1 font-semibold text-teal-900">Alavancas do copiloto</h2>
+              <h2 className="mb-1 font-semibold text-teal-900">O que fazer agora (copiloto)</h2>
               <p className="mb-3 text-sm text-slate-500">
-                Tarefas extras geradas a partir das prioridades da Home — não substituem o plano
-                semanal.
+                Passo a passo da sua prioridade da jornada. Siga na ordem; ao terminar, marque
+                Concluir. Não substitui o plano semanal.
               </p>
               <ul className="space-y-3">
                 {alavancas.map((q) => (
