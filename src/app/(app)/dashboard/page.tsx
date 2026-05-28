@@ -68,6 +68,12 @@ export default async function DashboardPage() {
                 Modo recuperação ativo no último registro — plano com metas menores.
               </p>
             )}
+            <Link
+              href="/analise"
+              className="inline-block text-sm font-medium text-teal-700 underline"
+            >
+              Ver gráficos da jornada →
+            </Link>
           </div>
         </details>
       )}

@@ -12,6 +12,7 @@ const studentLinks = [
   { href: "/simulados", label: "Listas" },
   { href: "/plano", label: "Plano" },
   { href: "/quests", label: "Quests" },
+  { href: "/analise", label: "Análise" },
   { href: "/comunidade", label: "Comunidade" },
   { href: "/perfil", label: "Perfil" },
 ];
@@ -34,6 +35,7 @@ const bottomNavStudent = [
 
 const moreStudentLinks = [
   { href: "/quests", label: "Quests", desc: "Tarefas da semana" },
+  { href: "/analise", label: "Análise", desc: "Gráficos da jornada" },
   { href: "/comunidade", label: "Comunidade", desc: "Ranking e XP" },
   { href: "/perfil", label: "Perfil", desc: "Meta e conquistas" },
 ];
