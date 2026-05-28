@@ -8,12 +8,16 @@ import { pesoModoUso } from "@/lib/modo-uso";
 import { pesoBancaParaMeta } from "@/lib/meta-vestibular";
 import { prisma } from "@/lib/prisma";
 import { getTipoErroLabel } from "@/lib/taxonomy";
+import { calcularComportamentoCluster } from "@/lib/comportamento-longitudinal";
+import type { ComportamentoLongitudinal } from "@/lib/comportamento-longitudinal";
 import {
   CLUSTERS_PEDAGOGICOS,
   classificarClusterPedagogico,
   padraoMetacognitivoCluster,
   type PedagogicalClusterId,
 } from "@/lib/pedagogical-clusters";
+
+export type { ComportamentoLongitudinal };
 
 export type EventoErroPedagogico = {
   examId: string;
@@ -43,6 +47,7 @@ export type ClusterAgregado = {
   padraoMetacognitivo: string | null;
   /** Evidências (micro) — não são o diagnóstico */
   evidencias: string[];
+  comportamento: ComportamentoLongitudinal;
 };
 
 export type DiagnosticoMotor = {
@@ -301,6 +306,7 @@ export function agregarClustersPedagogicos(
         causaDominante?.pct ?? null
       ),
       evidencias: agg.evidencias,
+      comportamento: calcularComportamentoCluster(eventos, clusterId, totalExames),
     });
   }
 

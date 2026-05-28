@@ -6,7 +6,7 @@ import type { RegistroDashboardCard } from "@/lib/jornada-analytics";
 import { aggregateJourneyLearning, materiasComDadosReais } from "@/lib/jornada-analytics";
 import { aggregateKnowledgeGaps, type LacunaConhecimento } from "@/lib/knowledge-gaps";
 import { buildDiagnosticoMotor, type ClusterAgregado } from "@/lib/diagnostic-motor";
-import { narrativaCopiloto } from "@/lib/narrativa-copiloto";
+import { narrativaCopiloto, type NarrativaCopiloto } from "@/lib/narrativa-copiloto";
 import { buildMetacognicaoGlobalJornada } from "@/lib/jornada-metacognicao";
 import { buildResumoJornada } from "@/lib/jornada";
 import { getPlanoAtual } from "@/lib/plano-atual";
@@ -53,7 +53,8 @@ export type JourneyInsight = {
   temDados: boolean;
   /** Eixo principal — operação cognitiva, não matéria */
   principalGargalo: GargaloCognitivoInsight | null;
-  /** Clusters com priorityScore — inferência antes da narrativa */
+  /** Texto copiloto (camadas narrativas) */
+  copiloto: NarrativaCopiloto | null;
   clustersPedagogicos: ClusterAgregado[];
   temDiagnosticoCognitivo: boolean;
   principalAlavanca: AlavancaJornada | null;
@@ -86,7 +87,7 @@ export type JourneyInsight = {
   atividadesRecentes: RegistroDashboardCard[];
 };
 
-export type { ClusterAgregado, LacunaConhecimento };
+export type { ClusterAgregado, LacunaConhecimento, NarrativaCopiloto };
 
 function calcularTendencia(pcts: number[]): { tendencia: TendenciaJornada; label: string } {
   if (pcts.length === 0) return { tendencia: "inicio", label: "Comece registrando uma atividade" };
@@ -188,6 +189,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       context: "JOURNEY",
       temDados: false,
       principalGargalo: null,
+      copiloto: null,
       clustersPedagogicos: [],
       temDiagnosticoCognitivo: false,
       principalAlavanca: null,
@@ -223,7 +225,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     principalCluster && narrativa
       ? {
           descricao: narrativa.paragrafo,
-          tipoLabel: principalCluster.label,
+          tipoLabel: narrativa.titulo,
           materiaContexto: principalCluster.materias[0]?.nome ?? null,
           pctAcertoMateria:
             principalCluster.materias[0]?.pctAcerto ??
@@ -280,12 +282,13 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   if (resumo.totalRegistros >= 3) consistenciaLabel = "Você está construindo histórico — bom para o plano";
 
   const focoSemana =
-    principalGargalo?.tipoLabel ?? missao?.focoTitulo ?? principalAlavanca?.label ?? null;
+    principalGargalo?.tipoLabel ?? missaoDraft?.focoTitulo ?? principalAlavanca?.label ?? null;
 
   const insightSemQuests: JourneyInsight = {
     context: "JOURNEY",
     temDados: true,
     principalGargalo,
+    copiloto: narrativa,
     clustersPedagogicos,
     temDiagnosticoCognitivo,
     principalAlavanca,

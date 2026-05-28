@@ -43,6 +43,7 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
     clustersPedagogicos,
     temDiagnosticoCognitivo,
     diagnosticoIntegrado,
+    copiloto,
     alavancas,
     atividadesRecentes,
   } = insight;
@@ -103,7 +104,19 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
           {diagnosticoIntegrado && (
             <h3 className="mt-1 text-base font-bold text-slate-900">{diagnosticoIntegrado.titulo}</h3>
           )}
-          <p className="mt-3 text-sm leading-relaxed text-slate-800">{principalGargalo.descricao}</p>
+          {copiloto ? (
+            <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-800">
+              <p>{copiloto.camadas.oQueAcontece}</p>
+              <p>{copiloto.camadas.comoCognitivo}</p>
+              <p className="text-slate-700">{copiloto.camadas.quandoAparece}</p>
+              <p className="rounded-md border border-amber-100/80 bg-white/60 px-3 py-2 text-slate-700">
+                {copiloto.camadas.naoSignifica}
+              </p>
+              <p className="font-medium text-amber-950">{copiloto.camadas.caminho}</p>
+            </div>
+          ) : (
+            <p className="mt-3 text-sm leading-relaxed text-slate-800">{principalGargalo.descricao}</p>
+          )}
 
           <div className="mt-4 flex flex-wrap gap-2">
             {principalGargalo.materiaDeficitPrincipal && (
@@ -114,9 +127,7 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
               </Badge>
             )}
             {principalGargalo.causaMetacognitiva && (
-              <Badge tone="warning">
-                Como costuma errar: {principalGargalo.causaMetacognitiva}
-              </Badge>
+              <Badge tone="warning">Na prática: {principalGargalo.causaMetacognitiva}</Badge>
             )}
           </div>
 

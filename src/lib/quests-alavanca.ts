@@ -41,7 +41,7 @@ export async function garantirQuestsAlavanca(
     const mat = clusterTop.materias[0]?.nome ?? insight.principalGargalo?.materiaDeficitPrincipal;
     desejadas.push({
       chave: chaveQuest("conhecimento", `cluster-${clusterTop.clusterId}`),
-      titulo: `${PREFIXO_QUEST_ALAVANCA}Esta semana: ${def.label}`,
+      titulo: `${PREFIXO_QUEST_ALAVANCA}${def.tituloHumano}`,
       descricao:
         `${def.proximoPassoSemana} ` +
         (mat ? `Prioridade em ${mat} (soma das provas da sua jornada, não só a última). ` : "") +

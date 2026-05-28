@@ -23,9 +23,18 @@ export type ClusterPedagogicoDef = {
   operacaoCognitiva: string;
   /** Diagnóstico abstrato (headline) — não é exemplo de questão */
   diagnosticoAbstrato: string;
-  /** Frase para o aluno — sem jargão de cluster/registro */
+  /** Título na Home — comportamento, não categoria */
+  tituloHumano: string;
+  /** O que está acontecendo (observável) */
+  situacaoObservavel: string;
+  /** Como isso acontece na cabeça do aluno */
+  experienciaIntegracao: string;
+  /** Reduz ansiedade */
+  naoSignifica: string;
+  /** Esperança concreta */
+  caminhoEsperanca: string;
+  /** Frase legada / resumos curtos */
   diagnosticoHumano: string;
-  /** Ação concreta da semana */
   proximoPassoSemana: string;
   verboTreino: string;
 };
@@ -37,6 +46,15 @@ export const CLUSTERS_PEDAGOGICOS: Record<PedagogicalClusterId, ClusterPedagogic
     operacaoCognitiva: "Modelagem e tradução de problema",
     diagnosticoAbstrato:
       "Dificuldade em transformar enunciados em estrutura matemática (equação, gráfico, relações).",
+    tituloHumano: "Quando o enunciado não vira conta",
+    situacaoObservavel:
+      "Nas questões em que a banca mistura texto, dados e pedido de cálculo, o caminho não se organiza sozinho.",
+    experienciaIntegracao:
+      "Você entende palavras do problema, mas trava na hora de escolher equação, gráfico ou relação — como se faltasse um passo entre ler e resolver.",
+    naoSignifica:
+      "Isso não parece “não saber Matemática”, e sim dificuldade em montar o modelo antes da conta.",
+    caminhoEsperanca:
+      "Esse tipo de trava costuma melhorar quando você treina, em cada questão, escrever o que pede e qual modelo usar antes de calcular.",
     diagnosticoHumano:
       "O enunciado faz sentido na leitura, mas na hora de virar equação, gráfico ou relação você trava.",
     proximoPassoSemana:
@@ -49,6 +67,14 @@ export const CLUSTERS_PEDAGOGICOS: Record<PedagogicalClusterId, ClusterPedagogic
     operacaoCognitiva: "Execução algorítmica",
     diagnosticoAbstrato:
       "Erros frequentes na execução de procedimentos e contas, mesmo quando o raciocínio inicial faz sentido.",
+    tituloHumano: "Quando a conta escapa no final",
+    situacaoObservavel:
+      "O raciocínio inicial costuma fazer sentido, mas a execução (conta, ordem dos passos) é onde a questão escapa.",
+    experienciaIntegracao:
+      "Você sabe por onde ir, porém perde precisão na hora de executar — especialmente no último passo ou sob pressa.",
+    naoSignifica: "Não parece buraco total de teoria; parece falta de ritual de conferência na execução.",
+    caminhoEsperanca:
+      "Melhora rápido com treino de marcar cada etapa da conta e só conferir o resultado no fim.",
     diagnosticoHumano:
       "Você costuma entender o caminho, mas a conta ou o último passo escapa — vale ritual de conferência.",
     proximoPassoSemana:
@@ -61,6 +87,15 @@ export const CLUSTERS_PEDAGOGICOS: Record<PedagogicalClusterId, ClusterPedagogic
     operacaoCognitiva: "Visualização e leitura de figuras",
     diagnosticoAbstrato:
       "Dificuldade em interpretar figuras, gráficos e relações espaciais exigidas pela questão.",
+    tituloHumano: "Quando figura e conta precisam vir juntas",
+    situacaoObservavel:
+      "Nas questões com desenho, ângulo ou geometria, a figura precisa virar plano antes da resposta.",
+    experienciaIntegracao:
+      "Você até reconhece parte do caminho, mas perde segurança quando precisa conectar imagem e fórmula ao mesmo tempo — principalmente se a questão tem várias etapas.",
+    naoSignifica:
+      "Isso não parece falta completa de base em Matemática; parece mais integração (ler o desenho + raciocinar) do que não saber o assunto.",
+    caminhoEsperanca:
+      "Esse tipo de erro costuma melhorar bastante quando você treina leitura visual passo a passo antes da conta — não só “fazer mais lista”.",
     diagnosticoHumano:
       "Quando entra figura, ângulo ou relação no desenho, a imagem não vira um plano claro para a resposta.",
     proximoPassoSemana:
@@ -73,6 +108,14 @@ export const CLUSTERS_PEDAGOGICOS: Record<PedagogicalClusterId, ClusterPedagogic
     operacaoCognitiva: "Interpretação e inferência em texto",
     diagnosticoAbstrato:
       "Perda de precisão em leitura contextual longa e em inferências a partir do texto-base.",
+    tituloHumano: "Quando o texto longo te desorganiza",
+    situacaoObservavel:
+      "Em textos extensos ou com comando indireto, a leitura precisa sustentar atenção até a resposta.",
+    experienciaIntegracao:
+      "Você perde o fio ou a inferência que a banca espera — não necessariamente por não conhecer o tema isolado.",
+    naoSignifica: "Não parece “não ler bem” de forma geral; parece perda de foco no que a questão pede.",
+    caminhoEsperanca:
+      "Costuma melhorar com duas passadas de leitura: ideia central primeiro, detalhe que responde ao comando depois.",
     diagnosticoHumano:
       "Em textos longos, você perde o fio ou a inferência que a banca espera — não necessariamente o conteúdo isolado.",
     proximoPassoSemana:
@@ -85,6 +128,13 @@ export const CLUSTERS_PEDAGOGICOS: Record<PedagogicalClusterId, ClusterPedagogic
     operacaoCognitiva: "Análise sintática e estrutural",
     diagnosticoAbstrato:
       "Baixa automatização ao recuperar estruturas gramaticais e funções sintáticas sob pressão.",
+    tituloHumano: "Quando a regra não vem na hora",
+    situacaoObservavel:
+      "Questões que exigem nomear função, estrutura ou regra gramatical sob tempo de prova.",
+    experienciaIntegracao:
+      "A regra está no caderno, mas na prova a recuperação demora — como se a teoria ficasse “travada” atrás da leitura.",
+    naoSignifica: "Não parece ignorar Português; parece automatização fraca sob pressão.",
+    caminhoEsperanca: "Micro-drills da regra específica + poucas questões focadas costumam destravar mais que reler tudo.",
     diagnosticoHumano:
       "Regras de gramática existem no caderno, mas na prova a recuperação da estrutura demora ou falha.",
     proximoPassoSemana:
@@ -97,6 +147,14 @@ export const CLUSTERS_PEDAGOGICOS: Record<PedagogicalClusterId, ClusterPedagogic
     operacaoCognitiva: "Recuperação de teoria",
     diagnosticoAbstrato:
       "Dificuldade em recuperar conceitos teóricos no momento da prova, mesmo com estudo prévio.",
+    tituloHumano: "Quando você estudou, mas na hora não vem",
+    situacaoObservavel:
+      "Questões em que o conteúdo já passou pelo caderno, mas não aparece na hora da resolução.",
+    experienciaIntegracao:
+      "Você reconhece o tema depois, mas na prova o conceito não vem com clareza — como se estivesse guardado e não acessível.",
+    naoSignifica: "Não parece “nunca ter estudado”; parece recuperação ativa fraca na hora H.",
+    caminhoEsperanca:
+      "Cartões e questões que forcem lembrar sem cola melhoram isso mais do que só reler apostila.",
     diagnosticoHumano:
       "Você já estudou o tema, mas na hora H o conceito não aparece com clareza.",
     proximoPassoSemana:
@@ -109,6 +167,13 @@ export const CLUSTERS_PEDAGOGICOS: Record<PedagogicalClusterId, ClusterPedagogic
     operacaoCognitiva: "Comparação e contextualização",
     diagnosticoAbstrato:
       "Dificuldade em comparar casos, períodos ou perspectivas e tirar conclusões válidas.",
+    tituloHumano: "Quando comparar não fecha a conclusão",
+    situacaoObservavel:
+      "Questões que pedem contrastar situações, épocas ou pontos de vista antes de concluir.",
+    experienciaIntegracao:
+      "Você vê os elementos, mas organizar semelhança, diferença e conclusão coerente ainda custa.",
+    naoSignifica: "Não parece falta de leitura; parece dificuldade em estruturar a comparação.",
+    caminhoEsperanca: "Quadros simples (semelhança / diferença / limite) em poucas questões ajudam muito.",
     diagnosticoHumano:
       "Comparar situações, épocas ou pontos de vista e fechar uma conclusão coerente ainda custa.",
     proximoPassoSemana:
@@ -121,6 +186,13 @@ export const CLUSTERS_PEDAGOGICOS: Record<PedagogicalClusterId, ClusterPedagogic
     operacaoCognitiva: "Raciocínio lógico e dedução",
     diagnosticoAbstrato:
       "Quebras no encadeamento lógico entre premissas e conclusão exigidas pela questão.",
+    tituloHumano: "Quando o raciocínio quebra no meio",
+    situacaoObservavel:
+      "Questões que exigem encadear premissas até uma conclusão sem pular etapas.",
+    experienciaIntegracao:
+      "O começo faz sentido, mas no meio você perde o fio ou pula um passo que a banca cobra.",
+    naoSignifica: "Não parece falta de inteligência lógica; parece falta de explicitar o encadeamento.",
+    caminhoEsperanca: "Escrever premissa → passo → conclusão ao lado de poucas questões costuma estabilizar.",
     diagnosticoHumano:
       "O raciocínio começa bem, mas o encadeamento até a conclusão quebra no meio.",
     proximoPassoSemana:
@@ -133,6 +205,13 @@ export const CLUSTERS_PEDAGOGICOS: Record<PedagogicalClusterId, ClusterPedagogic
     operacaoCognitiva: "Aplicação prática",
     diagnosticoAbstrato:
       "Dificuldade em aplicar conceito estudado em situação nova ou interdisciplinar.",
+    tituloHumano: "Quando o conceito muda de roupa",
+    situacaoObservavel:
+      "Questões que pegam o mesmo tema em enunciado novo, interdisciplinar ou fora do modelo que você treinou.",
+    experienciaIntegracao:
+      "Você conhece o conceito no formato que estudou, mas trava quando a situação muda.",
+    naoSignifica: "Não parece não ter estudado; parece pouca variedade de contexto no treino.",
+    caminhoEsperanca: "Variar enunciados do mesmo tema — não só repetir um tipo de questão — costuma destravar.",
     diagnosticoHumano:
       "O conceito em si você conhece, mas em contexto novo ou misturado com outra matéria escapa.",
     proximoPassoSemana:

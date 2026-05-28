@@ -1,171 +1,147 @@
 /**
- * Textos da Home — tom de copiloto (direção, conforto, ação concreta).
- * A inferência estatística fica no motor; aqui só a “tradução humana”.
+ * Tradução humana do motor — storytelling cognitivo (não laudo técnico).
  */
 import type { ErrorType } from "@/generated/prisma/client";
-import { getTipoErroLabel } from "@/lib/taxonomy";
+import { fraseContextoLongitudinal } from "@/lib/comportamento-longitudinal";
 import type { ClusterAgregado } from "@/lib/diagnostic-motor";
-import {
-  CLUSTERS_PEDAGOGICOS,
-  type PedagogicalClusterId,
-} from "@/lib/pedagogical-clusters";
+import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
+
+export type CamadasNarrativa = {
+  oQueAcontece: string;
+  comoCognitivo: string;
+  quandoAparece: string;
+  naoSignifica: string;
+  caminho: string;
+};
 
 export type NarrativaCopiloto = {
   titulo: string;
-  /** História integrada: déficit + padrão + metacognição + exemplo */
   paragrafo: string;
-  /** Uma linha de foco (substitui “prioridade estatística”) */
+  camadas: CamadasNarrativa;
   linhaFoco: string;
-  /** Ação desta semana — vai na missão */
   proximoPasso: string;
   exemploConcreto: string | null;
-  /** Como o erro se manifesta (humano), para badge */
   causaComoVoceErra: string | null;
 };
 
-const CAUSA_HUMANA: Partial<Record<ErrorType, string>> = {
-  CONCEITO_TEORICO: "o conceito não veio na hora",
-  INTERPRETACAO_ENUNCIADO: "leitura do que foi pedido",
-  CALCULO_BOBEIRA: "conta ou passo final",
-  FALTA_TEMPO: "pressa no final da prova",
+const CAUSA_BADGE: Partial<Record<ErrorType, string>> = {
+  CONCEITO_TEORICO: "conceito não veio na hora",
+  INTERPRETACAO_ENUNCIADO: "leitura do comando",
+  CALCULO_BOBEIRA: "conta no final",
+  FALTA_TEMPO: "pressa no tempo",
   CHUTE_TOTAL: "insegurança no conteúdo",
-  DUVIDA_CRUCIAL: "uma dúvida que ficou aberta",
+  DUVIDA_CRUCIAL: "dúvida aberta",
 };
 
-function pluralProvas(n: number): string {
-  if (n <= 1) return "na prova que você registrou";
-  if (n === 2) return "nas 2 provas que você registrou";
-  return `nas ${n} provas que você registrou`;
+const CAUSA_COMPORTAMENTO: Partial<Record<ErrorType, string>> = {
+  CONCEITO_TEORICO:
+    "na hora da questão o conceito não veio — você até conhece o tema, mas não conseguiu puxar na pressão",
+  INTERPRETACAO_ENUNCIADO: "o que pesou foi entender o que a questão pedia, antes de qualquer conteúdo",
+  CALCULO_BOBEIRA: "o caminho fazia sentido, mas a execução da conta ou do último passo escapou",
+  FALTA_TEMPO: "o tempo apertando entrou na história — não só o conteúdo",
+  CHUTE_TOTAL: "houve insegurança forte no conteúdo — vale fechar base antes de listas enormes",
+  DUVIDA_CRUCIAL: "ficou uma dúvida pontual sem fechar antes da prova",
+};
+
+function materiaPrincipal(
+  principal: ClusterAgregado,
+  materiaDeficit: { label: string; pct: number } | null
+): string {
+  const alvo = materiaDeficit?.label.toLowerCase().slice(0, 5) ?? "";
+  const match =
+    alvo &&
+    principal.materias.find((m) => m.nome.toLowerCase().includes(alvo))?.nome;
+  return match ?? principal.materias[0]?.nome ?? materiaDeficit?.label ?? "suas provas";
 }
 
-function simplificarExemplo(texto: string): string {
-  let t = texto
-    .replace(/^Relacionar\s+/i, "relacionar ")
-    .replace(/^Aplicar\s+/i, "aplicar ")
-    .replace(/^Modelar\s+/i, "modelar ")
-    .replace(/\.$/, "");
-  if (t.length > 120) t = `${t.slice(0, 117)}…`;
-  return t;
-}
-
-function metacognicaoNaFrase(causa: ErrorType | null, pct: number | null): string | null {
+function fraseComoErra(causa: ErrorType | null): string | null {
   if (!causa) return null;
-  const como = CAUSA_HUMANA[causa];
-  if (!como) return null;
-  const label = getTipoErroLabel(causa) ?? causa;
-  if (pct != null && pct >= 50) {
-    return `Em boa parte desses erros, o que mais pesou foi ${como} — não é só “falta de atenção”. (${label}, ~${pct}%).`;
-  }
-  return `O que mais aparece nesses erros é ${como} — vale atacar isso de propósito, não só revisar tudo de novo.`;
+  return CAUSA_COMPORTAMENTO[causa] ?? null;
 }
 
-function tituloCopiloto(clusterId: PedagogicalClusterId, materiaDeficit: string | null): string {
-  const def = CLUSTERS_PEDAGOGICOS[clusterId];
-  const mapa: Partial<Record<PedagogicalClusterId, string>> = {
-    visualizacao_espacial: "Figuras e geometria na sua reta",
-    modelagem_matematica: "Do texto do problema à conta",
-    calculo_procedimento: "Conta e procedimento com segurança",
-    interpretacao_textual: "Leitura longa sem perder o fio",
-    analise_linguistica: "Gramática sob pressão de prova",
-    recuperacao_conceitual: "Teoria na hora da questão",
-    comparacao_contextual: "Comparar e concluir com critério",
-    inferencia_logica: "Encadear o raciocínio",
-    aplicacao_conceitual: "Conceito em situação nova",
-  };
-  const base = mapa[clusterId] ?? def.label;
-  if (materiaDeficit && clusterId === "visualizacao_espacial") {
-    return `${base} (${materiaDeficit})`;
+function fraseDeficit(
+  materiaDeficit: { label: string; pct: number } | null,
+  materia: string
+): string | null {
+  if (!materiaDeficit) return null;
+  if (materiaCoincideSimples(materia, materiaDeficit.label)) {
+    return `Em ${materiaDeficit.label}, você está com ${materiaDeficit.pct}% de acerto na jornada — há espaço real para ganhar nota com treino certo.`;
   }
-  return base;
+  return `Onde mais dá para subir nota agora é ${materiaDeficit.label} (${materiaDeficit.pct}% na jornada); o padrão que descrevemos abaixo aparece forte em ${materia}.`;
+}
+
+function materiaCoincideSimples(a: string, b: string): boolean {
+  const na = a.toLowerCase();
+  const nb = b.toLowerCase();
+  return na.includes(nb) || nb.includes(na);
 }
 
 export function narrativaCopiloto(
   principal: ClusterAgregado,
   materiaDeficit: { label: string; pct: number } | null,
-  totalProvas: number
+  _totalProvas: number
 ): NarrativaCopiloto {
   const def = CLUSTERS_PEDAGOGICOS[principal.clusterId];
-  const materiaPrincipal =
-    (materiaDeficit &&
-      principal.materias.find((m) =>
-        m.nome.toLowerCase().includes(materiaDeficit.label.toLowerCase().slice(0, 5))
-      )?.nome) ??
-    principal.materias[0]?.nome ??
-    materiaDeficit?.label ??
-    "suas provas";
+  const mat = materiaPrincipal(principal, materiaDeficit);
+  const comp = principal.comportamento;
 
-  const titulo = tituloCopiloto(principal.clusterId, materiaDeficit?.label ?? null);
-
-  const linhaFoco = materiaDeficit
-    ? `Foco da semana: ${def.label.toLowerCase()} em ${materiaDeficit.label}, onde você mais precisa subir hoje (${materiaDeficit.pct}% de acerto na jornada).`
-    : `Foco da semana: ${def.label.toLowerCase()} — apareceu em ${principal.erros} questões que você errou.`;
-
-  const provasTxt = pluralProvas(totalProvas);
-  const repete =
-    principal.erros >= 3
-      ? `Isso voltou ${principal.erros} vezes ${provasTxt}, principalmente em ${materiaPrincipal}.`
-      : `Apareceu ${provasTxt} em ${materiaPrincipal}.`;
-
-  const deficitFrase =
-    materiaDeficit && materiaDeficit.label !== materiaPrincipal
-      ? `Sua matéria com mais espaço para ganhar nota agora é ${materiaDeficit.label} (${materiaDeficit.pct}% de acerto na jornada); em ${materiaPrincipal}, o padrão que mais se repete é este.`
-      : materiaDeficit
-        ? `Em ${materiaDeficit.label}, você está com ${materiaDeficit.pct}% de acerto na jornada — dá para melhorar com treino direcionado.`
-        : "";
-
-  const meta = metacognicaoNaFrase(
-    principal.causaDominante?.tipo ?? null,
-    principal.causaDominante?.pct ?? null
-  );
-
-  const exemplo =
-    principal.evidencias[0] != null
-      ? simplificarExemplo(principal.evidencias[0])
-      : null;
-
-  const exemploFrase = exemplo
-    ? `Por exemplo: questões em que você precisava ${exemplo}.`
-    : "";
-
-  const abertura =
-    "Dá para virar esse jogo — o caminho é treinar o que a questão pediu, não estudar tudo de uma vez.";
-
-  const paragrafo = [
-    abertura,
-    deficitFrase,
-    def.diagnosticoHumano,
-    repete,
-    meta,
-    exemploFrase,
+  const oQueAcontece = def.situacaoObservavel;
+  const comoCognitivo = [
+    def.experienciaIntegracao,
+    fraseComoErra(principal.causaDominante?.tipo ?? null),
   ]
     .filter(Boolean)
     .join(" ");
 
-  const proximoPasso = def.proximoPassoSemana;
+  const quandoAparece = fraseContextoLongitudinal(comp, mat);
+  const naoSignifica = def.naoSignifica;
+  const caminho = def.caminhoEsperanca;
+
+  const deficitIntro = fraseDeficit(materiaDeficit, mat);
+
+  const paragrafo = [
+    deficitIntro ??
+      (materiaDeficit
+        ? `Você não está “perdida” em tudo — o que mais pesa agora tem forma e dá para treinar.`
+        : "O que mais pesa na sua jornada tem forma e dá para treinar."),
+    oQueAcontece,
+    comoCognitivo,
+    quandoAparece,
+    naoSignifica,
+    caminho,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const linhaFoco = materiaDeficit
+    ? `Esta semana: atacar isso em ${materiaDeficit.label} — é onde a nota mais responde agora.`
+    : `Esta semana: treinar esse padrão com método, não no improviso.`;
+
+  const titulo = def.tituloHumano;
 
   const causaComoVoceErra = principal.causaDominante
-    ? getTipoErroLabel(principal.causaDominante.tipo) ?? principal.causaDominante.label
+    ? (CAUSA_BADGE[principal.causaDominante.tipo] ?? null)
     : null;
 
   return {
     titulo,
     paragrafo,
+    camadas: { oQueAcontece, comoCognitivo, quandoAparece, naoSignifica, caminho },
     linhaFoco,
-    proximoPasso,
-    exemploConcreto: exemplo,
+    proximoPasso: def.proximoPassoSemana,
+    exemploConcreto: null,
     causaComoVoceErra,
   };
 }
 
-/** Uma linha para lista “também vale atenção” */
+/** Uma linha para “também vale atenção” */
 export function resumoClusterHumano(c: ClusterAgregado): string {
   const def = CLUSTERS_PEDAGOGICOS[c.clusterId];
   const mat = c.materias[0]?.nome;
-  const causa = c.causaDominante
-    ? CAUSA_HUMANA[c.causaDominante.tipo]
-    : null;
-  let s = def.diagnosticoHumano;
+  let s = def.experienciaIntegracao;
   if (mat) s += ` (${mat})`;
-  if (causa) s += ` — costuma ser ${causa}.`;
+  if (c.comportamento.recorrencia === "forte") {
+    s += " — padrão recorrente na jornada.";
+  }
   return s;
 }
