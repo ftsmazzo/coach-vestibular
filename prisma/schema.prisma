@@ -262,6 +262,10 @@ model StudyPlan {
   escopo       String   @default("GLOBAL")
   weekStart    DateTime
   itemsJson    String
+  /** Narrativa personalizada (IA) para Home/Plano — gerada na regeneração, não no render */
+  narrativeJson String? @db.Text
+  /** Como o conteúdo foi gerado: "ia" ou "template" */
+  fonteGeracao  String? @default("template")
   recoveryMode Boolean  @default(false)
   createdAt    DateTime @default(now())
 

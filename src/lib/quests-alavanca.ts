@@ -21,20 +21,26 @@ export type QuestCopiloto = {
 };
 
 /** Identidade estável da quest (sem ordem — evita duplicar ao reordenar). */
-function chaveQuest(tipo: "padrao" | "materia" | "anamnese", id: string) {
+function chaveQuest(tipo: "padrao" | "materia" | "anamnese" | "ia", id: string) {
   return `copiloto:${tipo}:${id}:${VERSAO_COPY}`;
 }
 
 /** Agrupa chaves antigas (com ordem no meio) e novas. */
 export function chaveSemanticaQuest(chave: string | null): string | null {
   if (!chave) return null;
-  const m = chave.match(/^copiloto:(?:(\d+):)?(padrao|materia|anamnese):([^:]+)/);
+  const m = chave.match(/^copiloto:(?:(\d+):)?(padrao|materia|anamnese|ia):([^:]+)/);
   if (m) return `${m[2]}:${m[3]}`;
   return null;
 }
 
-function descricaoComChave(chave: string, ordem: number, corpo: string) {
-  return `<!-- ${chave} #o=${ordem} -->\n${corpo}`;
+function descricaoComChave(chave: string, ordem: number, corpo: string, rotulo?: string) {
+  const r = rotulo ? ` #r=${encodeURIComponent(rotulo)}` : "";
+  return `<!-- ${chave} #o=${ordem}${r} -->\n${corpo}`;
+}
+
+export function extrairRotuloQuest(descricao: string | null): string | null {
+  const m = (descricao ?? "").match(/#r=([^\s>]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
 function chaveEstaNaVersaoAtual(chave: string | null): boolean {
@@ -413,6 +419,42 @@ export async function garantirQuestsAlavanca(
   await deduplicarQuestsCopilotoPendentes(userId);
 }
 
+/**
+ * Substitui as quests do copiloto pelas geradas pela IA (regeneração).
+ * Arquiva as antigas e cria as novas com chave estável `copiloto:ia:...`.
+ */
+export async function persistirQuestsIA(
+  userId: string,
+  quests: import("@/lib/copiloto-ia-types").QuestGerada[]
+): Promise<void> {
+  const pendentes = await prisma.quest.findMany({
+    where: { userId, status: "pending" },
+  });
+  for (const q of pendentes) {
+    if (isQuestCopiloto(q)) {
+      await prisma.quest.update({ where: { id: q.id }, data: { status: "skipped" } });
+    }
+  }
+
+  if (quests.length === 0) return;
+
+  await prisma.quest.createMany({
+    data: quests.map((q) => ({
+      userId,
+      titulo: q.titulo,
+      descricao: descricaoComChave(
+        chaveQuest("ia", q.slug),
+        q.ordem,
+        q.descricao,
+        q.rotulo
+      ),
+      materiaId: q.materiaId,
+      duracaoMin: q.duracaoMin,
+      rewardMsg: "Passo a passo feito com correção vale mais que lista sem olhar o erro.",
+    })),
+  });
+}
+
 export async function getOQueFazerAgora(userId: string): Promise<QuestCopiloto[]> {
   await deduplicarQuestsCopilotoPendentes(userId);
 
@@ -429,11 +471,15 @@ export async function getOQueFazerAgora(userId: string): Promise<QuestCopiloto[]
         chaveSemanticaQuest(chave) ??
         `legado:${tituloQuestExibicao(q.titulo).toLowerCase()}`;
       const ordem = extrairOrdemQuest(q.descricao, chave);
-      let rotulo = "Esta semana";
-      if (chave?.includes(":padrao:")) {
-        rotulo = ordem === 1 ? "Prioridade da semana" : "Também vale atenção";
-      } else if (chave?.includes(":materia:")) {
-        rotulo = "Reforço de matéria";
+      let rotulo = extrairRotuloQuest(q.descricao) ?? "Esta semana";
+      if (!extrairRotuloQuest(q.descricao)) {
+        if (chave?.includes(":padrao:")) {
+          rotulo = ordem === 1 ? "Prioridade da semana" : "Também vale atenção";
+        } else if (chave?.includes(":materia:")) {
+          rotulo = "Reforço de matéria";
+        } else if (chave?.includes(":ia:")) {
+          rotulo = ordem === 1 ? "Prioridade da semana" : "Esta semana";
+        }
       }
       return {
         id: q.id,

@@ -114,7 +114,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     ordem: ordem++,
     titulo: "Sua semana na jornada",
     descricao:
-      `_Atualizado pelo copiloto em ${geradoEm}._\n\n` +
+      `Atualizado pelo copiloto em ${geradoEm}.\n\n` +
       introAnamnese +
       (resumo.totalRegistros > 0
         ? `Este plano usa **todos os ${registrosLabel}** — acerto ponderado: ${resumo.pctAcertoPonderado}%. `

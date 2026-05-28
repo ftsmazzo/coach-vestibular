@@ -19,6 +19,7 @@ import { prisma } from "@/lib/prisma";
 import { getAnamneseMotorContext } from "@/lib/anamnese-motor";
 import { linhaContrasteAnamnese } from "@/lib/anamnese-contexto";
 import type { AnamneseMotorContext } from "@/lib/anamnese-types";
+import type { CopilotoNarrativa } from "@/lib/copiloto-ia-types";
 
 export type TendenciaJornada = "subindo" | "estavel" | "cuidado" | "inicio";
 
@@ -192,6 +193,9 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       }),
     ]);
 
+  const usaIa =
+    planoData.plan?.fonteGeracao === "ia" && Boolean(planoData.plan?.narrative);
+
   if (resumo.totalRegistros === 0) {
     const missaoAnamnese =
       anamneseCtx.completed && anamneseCtx.focoInicialTitulo
@@ -206,35 +210,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
           }
         : null;
 
-    await garantirQuestsAlavanca(userId, {
-      context: "JOURNEY",
-      temDados: false,
-      principalGargalo: null,
-      copiloto: null,
-      clustersPedagogicos: [],
-      temDiagnosticoCognitivo: false,
-      principalAlavanca: null,
-      focoSemana: null,
-      missao: missaoAnamnese,
-      estado: null,
-      padraoCognitivo: null,
-      diagnosticoIntegrado: null,
-      alavancas: [],
-      lacunasConhecimento: [],
-      atividadesRecentes: [],
-      anamnese: anamneseCtx,
-      linhaAnamnese: linhaContrasteAnamnese(anamneseCtx, false),
-    } as JourneyInsight);
-
-    const oQueFazer = await getOQueFazerAgora(userId);
-    if (missaoAnamnese) {
-      missaoAnamnese.questsPendentes = oQueFazer.map((q) => ({
-        id: q.id,
-        titulo: q.titulo,
-      }));
-    }
-
-    return {
+    const base: JourneyInsight = {
       context: "JOURNEY",
       temDados: false,
       principalGargalo: null,
@@ -253,6 +229,19 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       anamnese: anamneseCtx,
       linhaAnamnese: linhaContrasteAnamnese(anamneseCtx, false),
     };
+
+    if (usaIa && planoData.plan?.narrative) {
+      aplicarNarrativaIa(base, planoData.plan.narrative);
+    } else {
+      await garantirQuestsAlavanca(userId, base);
+    }
+
+    const oQueFazer = await getOQueFazerAgora(userId);
+    if (base.missao) {
+      base.missao.questsPendentes = oQueFazer.map((q) => ({ id: q.id, titulo: q.titulo }));
+    }
+
+    return base;
   }
 
   const pctsRecentes = ultimosExams.map((e) => pctAcertoRegistro(e.questionAttempts));
@@ -363,9 +352,13 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     linhaAnamnese: linhaContrasteAnamnese(anamneseCtx, true),
   };
 
-  await garantirQuestsAlavanca(userId, insightSemQuests);
-  const oQueFazer = await getOQueFazerAgora(userId);
+  if (usaIa && planoData.plan?.narrative) {
+    aplicarNarrativaIa(insightSemQuests, planoData.plan.narrative);
+  } else {
+    await garantirQuestsAlavanca(userId, insightSemQuests);
+  }
 
+  const oQueFazer = await getOQueFazerAgora(userId);
   if (insightSemQuests.missao) {
     insightSemQuests.missao.questsPendentes = oQueFazer.map((q) => ({
       id: q.id,
@@ -374,4 +367,54 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   }
 
   return insightSemQuests;
+}
+
+/** Sobrepõe os campos narrativos do insight com a narrativa gravada (IA). */
+function aplicarNarrativaIa(insight: JourneyInsight, narrativa: CopilotoNarrativa): void {
+  insight.copiloto = {
+    titulo: narrativa.diagnosticoTitulo,
+    paragrafo: narrativa.diagnosticoParagrafo,
+    camadas: narrativa.camadas ?? {
+      oQueAcontece: narrativa.diagnosticoParagrafo,
+      comoCognitivo: "",
+      quandoAparece: "",
+      naoSignifica: "",
+      caminho: narrativa.missaoDescricao,
+    },
+    linhaFoco: narrativa.missaoImpacto ?? "",
+    proximoPasso: narrativa.missaoDescricao,
+    exemploConcreto: null,
+    causaComoVoceErra: null,
+  };
+
+  insight.diagnosticoIntegrado = {
+    titulo: narrativa.diagnosticoTitulo,
+    paragrafo: narrativa.diagnosticoParagrafo,
+    lacunaChave: "ia",
+  };
+
+  const base = insight.principalGargalo;
+  insight.principalGargalo = {
+    descricao: narrativa.diagnosticoParagrafo,
+    tipoLabel: narrativa.diagnosticoTitulo,
+    materiaContexto: base?.materiaContexto ?? null,
+    pctAcertoMateria: base?.pctAcertoMateria ?? null,
+    erros: base?.erros ?? 0,
+    exemploConhecimento: base?.exemploConhecimento ?? null,
+    causaMetacognitiva: base?.causaMetacognitiva ?? null,
+    pctCausaMetacognitiva: base?.pctCausaMetacognitiva ?? null,
+    materiaDeficitPrincipal: base?.materiaDeficitPrincipal ?? null,
+  };
+
+  insight.missao = {
+    focoTitulo: narrativa.missaoTitulo,
+    focoDescricao: narrativa.missaoDescricao,
+    impactoEstimado: narrativa.missaoImpacto,
+    questsPendentes: insight.missao?.questsPendentes ?? [],
+    temPlano: true,
+  };
+
+  if (narrativa.linhaAnamnese) {
+    insight.linhaAnamnese = narrativa.linhaAnamnese;
+  }
 }

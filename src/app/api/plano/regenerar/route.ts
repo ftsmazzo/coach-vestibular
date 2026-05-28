@@ -4,6 +4,9 @@ import { getSession } from "@/lib/auth";
 import { regenerarPlanoGlobalUsuario } from "@/lib/prova-attempt";
 
 function mensagemResultado(r: Awaited<ReturnType<typeof regenerarPlanoGlobalUsuario>>): string {
+  if (r.fonte === "ia") {
+    return `Copiloto reescreveu sua semana com IA: ${r.blocosPlano} blocos e ${r.questsPendentes} tarefa(s) personalizadas. O texto muda a cada atualização.`;
+  }
   if (r.fonte === "anamnese") {
     return `Plano recriado com base na sua anamnese (${r.blocosPlano} blocos) e ${r.questsPendentes} tarefa(s) em Quests. Quando registrar provas, atualize de novo para cruzar com erros reais.`;
   }

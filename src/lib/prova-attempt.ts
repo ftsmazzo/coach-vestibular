@@ -353,10 +353,42 @@ async function aplicarPlanoEQuests(
   _ehProvaOficial: boolean,
   _rawAttemptsUltimo: AttemptInput[] = []
 ) {
-  const { buildPlanoSemanalCopiloto } = await import("@/lib/plano-copiloto");
-  const { items, recoveryMode, fonte } = await buildPlanoSemanalCopiloto(userId);
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+
+  const { gerarCopilotoIA } = await import("@/lib/copiloto-ia");
+  const ia = await gerarCopilotoIA(userId);
+
+  if (ia) {
+    const plan = await prisma.studyPlan.create({
+      data: {
+        userId,
+        escopo: "GLOBAL",
+        provaId: null,
+        weekStart,
+        itemsJson: JSON.stringify(ia.planoItems),
+        narrativeJson: JSON.stringify(ia.narrativa),
+        fonteGeracao: "ia",
+        recoveryMode: ia.recoveryMode,
+      },
+    });
+
+    const { persistirQuestsIA } = await import("@/lib/quests-alavanca");
+    await persistirQuestsIA(userId, ia.quests);
+
+    const { buildJourneyInsight } = await import("@/lib/journey-insight");
+    await buildJourneyInsight(userId);
+
+    return {
+      planId: plan.id,
+      fonte: "ia" as const,
+      blocosPlano: ia.planoItems.length,
+      questsPendentes: ia.quests.length,
+    };
+  }
+
+  const { buildPlanoSemanalCopiloto } = await import("@/lib/plano-copiloto");
+  const { items, recoveryMode, fonte } = await buildPlanoSemanalCopiloto(userId);
 
   const plan = await prisma.studyPlan.create({
     data: {
@@ -365,6 +397,7 @@ async function aplicarPlanoEQuests(
       provaId: null,
       weekStart,
       itemsJson: JSON.stringify(items),
+      fonteGeracao: "template",
       recoveryMode,
     },
   });
@@ -385,7 +418,7 @@ async function aplicarPlanoEQuests(
 
 export type RegenerarPlanoResult = {
   planId: string;
-  fonte: "jornada" | "anamnese" | "vazio";
+  fonte: "ia" | "jornada" | "anamnese" | "vazio";
   blocosPlano: number;
   questsPendentes: number;
   questsRemovidas?: number;

@@ -1,15 +1,27 @@
 import { prisma } from "./prisma";
 import type { StudyPlanItem } from "./study-plan";
 import { isQuestAlavanca } from "./quests-alavanca";
+import type { CopilotoNarrativa } from "./copiloto-ia-types";
 
 export interface PlanoAtualData {
   plan: {
     id: string;
     recoveryMode: boolean;
     createdAt: Date;
+    fonteGeracao: string | null;
+    narrative: CopilotoNarrativa | null;
   } | null;
   items: StudyPlanItem[];
   titulosQuests: Set<string>;
+}
+
+function parseNarrative(raw: string | null): CopilotoNarrativa | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as CopilotoNarrativa;
+  } catch {
+    return null;
+  }
 }
 
 export async function getPlanoAtual(userId: string): Promise<PlanoAtualData> {
@@ -27,7 +39,13 @@ export async function getPlanoAtual(userId: string): Promise<PlanoAtualData> {
 
   return {
     plan: plan
-      ? { id: plan.id, recoveryMode: plan.recoveryMode, createdAt: plan.createdAt }
+      ? {
+          id: plan.id,
+          recoveryMode: plan.recoveryMode,
+          createdAt: plan.createdAt,
+          fonteGeracao: plan.fonteGeracao ?? "template",
+          narrative: parseNarrative(plan.narrativeJson),
+        }
       : null,
     items,
     titulosQuests,
