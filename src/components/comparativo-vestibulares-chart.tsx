@@ -10,14 +10,25 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { TooltipProps } from "recharts";
 import type { ComparativoVestibulares } from "@/lib/jornada-analytics";
 import { getMateriaLabel } from "@/lib/taxonomy";
 
 const KEY_PENULTIMO = "Penúltimo";
 const KEY_ULTIMO = "Último";
 
-type TooltipPayload = NonNullable<TooltipProps<number, string>["payload"]>[number];
+type TooltipEntry = {
+  dataKey?: string | number;
+  value?: number;
+  color?: string;
+};
+
+type TooltipComparativoProps = {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: string;
+  dataPenultimo: string;
+  dataUltimo: string;
+};
 
 function TooltipComparativo({
   active,
@@ -25,13 +36,10 @@ function TooltipComparativo({
   label,
   dataPenultimo,
   dataUltimo,
-}: TooltipProps<number, string> & {
-  dataPenultimo: string;
-  dataUltimo: string;
-}) {
+}: TooltipComparativoProps) {
   if (!active || !payload?.length) return null;
 
-  const rotuloSerie = (entry: TooltipPayload) =>
+  const rotuloSerie = (entry: TooltipEntry) =>
     entry.dataKey === KEY_ULTIMO ? `Último · ${dataUltimo}` : `Penúltimo · ${dataPenultimo}`;
 
   return (
