@@ -5,6 +5,8 @@ import { getPlanoAtual } from "@/lib/plano-atual";
 import { buildResumoJornada } from "@/lib/jornada";
 import { prisma } from "@/lib/prisma";
 import { RecalcularDiagnosticoButton } from "@/components/recalcular-diagnostico-button";
+import { RegenerarPlanoButton } from "@/components/regenerar-plano-button";
+import { PanoramaJornadaLive } from "@/components/panorama-jornada-live";
 import { Card, Badge, LinkButton } from "@/components/ui";
 import type { StudyPlanItem } from "@/lib/study-plan";
 
@@ -25,7 +27,8 @@ function CardAnaliseMateria({ item }: { item: StudyPlanItem }) {
         {prioridade === "manter" && <Badge tone="success">Manter</Badge>}
         {item.errosNaMateria != null && item.errosNaMateria > 0 && (
           <span className="text-xs text-slate-500">
-            {item.errosNaMateria} erro{item.errosNaMateria > 1 ? "s" : ""} na prova
+            {item.errosNaMateria} erro{item.errosNaMateria > 1 ? "s" : ""}{" "}
+            {item.errosContexto === "prova" ? "na prova" : "na jornada"}
           </span>
         )}
       </div>
@@ -90,10 +93,12 @@ export default async function PlanoPage() {
           )}
         </p>
         {temContextoJornada && (
-          <p className="mt-2 text-sm text-teal-800">
-            Inclui bloco <strong>Panorama da sua jornada</strong> — gere de novo o plano após um
-            registro oficial para atualizar.
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <RegenerarPlanoButton />
+            <span className="text-xs text-slate-500">
+              Use se removeu um registro inválido ou o texto do plano ficou desatualizado.
+            </span>
+          </div>
         )}
         {plan && horasQuests > 0 && (
           <p className="mt-1 text-sm text-teal-800">
@@ -158,9 +163,13 @@ export default async function PlanoPage() {
           {contexto.map((item) => (
             <Card key={item.ordem} className="border-slate-200 bg-slate-50/50">
               <h3 className="font-semibold text-slate-900">{item.titulo}</h3>
-              <p className="mt-2 whitespace-pre-line text-sm text-slate-700">
-                {item.descricao}
-              </p>
+              {item.titulo === "Panorama da sua jornada" ? (
+                <PanoramaJornadaLive userId={session.userId} />
+              ) : (
+                <p className="mt-2 whitespace-pre-line text-sm text-slate-700">
+                  {item.descricao}
+                </p>
+              )}
             </Card>
           ))}
 

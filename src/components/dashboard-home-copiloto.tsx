@@ -40,7 +40,8 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
     );
   }
 
-  const { missao, estado, padraoCognitivo, alavancas, atividadesRecentes } = insight;
+  const { missao, estado, padraoCognitivo, alavancas, lacunasConhecimento, atividadesRecentes } =
+    insight;
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -142,7 +143,36 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
         </Card>
       )}
 
-      {/* D — Ganhos rápidos */}
+      {/* D — Lacunas de conhecimento */}
+      {lacunasConhecimento.length > 0 && (
+        <Card className="border-amber-100 bg-amber-50/50 p-4 sm:p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+            O que a prova exigiu e ainda falta
+          </p>
+          <p className="mt-1 text-xs text-amber-900/80">
+            Por conhecimento exigido na questão — mais estável que só o rótulo de matéria/assunto.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {lacunasConhecimento.map((l) => (
+              <li
+                key={l.chave}
+                className="rounded-lg border border-amber-100 bg-white/90 px-3 py-2.5"
+              >
+                <p className="text-sm font-medium text-slate-900">{l.texto}</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  {l.erros} erro{l.erros !== 1 ? "s" : ""} na jornada
+                  {l.materia ? ` · ${l.materia}` : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <LinkButton href="/quests#alavancas" variant="secondary" className="mt-4">
+            Ver quests de alavanca
+          </LinkButton>
+        </Card>
+      )}
+
+      {/* E — Ganhos rápidos (matéria) */}
       {alavancas.length > 0 && (
         <Card className="p-4 sm:p-5">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
@@ -172,10 +202,13 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
               </li>
             ))}
           </ul>
+          <LinkButton href="/quests#alavancas" variant="ghost" className="mt-3 !text-xs">
+            Quests extras para estas prioridades →
+          </LinkButton>
         </Card>
       )}
 
-      {/* E — Atividades recentes */}
+      {/* F — Atividades recentes */}
       {atividadesRecentes.length > 0 && (
         <div>
           <h2 className="text-base font-semibold text-slate-900">Atividades recentes</h2>

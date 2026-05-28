@@ -20,6 +20,10 @@ Agregadores: `aggregateJourneyLearning()` (dados) + `buildJourneyInsight()` (sí
 
 Widgets na Home usam `mode: "HOME"` (menos botões, sem XP no detalhe colapsado).
 
+**Conhecimento exigido:** `aggregateKnowledgeGaps()` agrupa erros pela frase `ProvaQuestao.conhecimentoExigido` (mais estável que matéria/assunto). Quests `[Alavanca]` são extras, geradas na Home.
+
+**Plano global:** montado com `planoSoJornada` (toda a jornada, não só o último registro). Ao excluir um `Exam`, o plano e as quests da semana são recriados. Botão *Atualizar plano pela jornada* em `/plano`.
+
 ## Modo de uso (`Exam.modoUso`)
 
 | Valor | Peso |

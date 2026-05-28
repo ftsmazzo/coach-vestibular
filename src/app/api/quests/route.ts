@@ -3,6 +3,11 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getQuestsDaProva, getQuestsDoPlanoAtual } from "@/lib/plano-atual";
+import {
+  getQuestsAlavancaPendentes,
+  isQuestAlavanca,
+  limparDescricaoQuest,
+} from "@/lib/quests-alavanca";
 import type { StudyPlanItem } from "@/lib/study-plan";
 import { pickRewardMessage } from "@/lib/messages";
 import { tentarXpQuestsSemana } from "@/lib/xp";
@@ -32,6 +37,8 @@ export async function GET(request: Request) {
     plan = global.plan;
     items = global.items;
   }
+
+  const questsAlavanca = provaId ? [] : await getQuestsAlavancaPendentes(session.userId);
 
   const ordemPorTitulo = new Map<string, number>();
   const metaPorTitulo = new Map<
@@ -65,10 +72,18 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    quests: quests.map((q) => ({
+    quests: quests
+      .filter((q) => !isQuestAlavanca(q.titulo))
+      .map((q) => ({
+        ...q,
+        descricao: limparDescricaoQuest(q.descricao),
+        ordemPlano: ordemPorTitulo.get(q.titulo) ?? metaForQuest(q.titulo)?.ordem ?? null,
+        meta: metaPorTitulo.get(q.titulo) ?? metaForQuest(q.titulo),
+      })),
+    questsAlavanca: questsAlavanca.map((q) => ({
       ...q,
-      ordemPlano: ordemPorTitulo.get(q.titulo) ?? metaForQuest(q.titulo)?.ordem ?? null,
-      meta: metaPorTitulo.get(q.titulo) ?? metaForQuest(q.titulo),
+      ordemPlano: null,
+      meta: { bloco: "alavanca" as const },
     })),
     planoAtualizadoEm: plan?.createdAt ?? null,
     recoveryMode: plan?.recoveryMode ?? false,

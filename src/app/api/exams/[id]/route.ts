@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { regenerarPlanoGlobalUsuario } from "@/lib/prova-attempt";
 
 export async function DELETE(
   _request: Request,
@@ -20,5 +21,11 @@ export async function DELETE(
 
   await prisma.exam.delete({ where: { id } });
 
-  return NextResponse.json({ ok: true, removido: exam.nome });
+  try {
+    await regenerarPlanoGlobalUsuario(session.userId);
+  } catch {
+    /* jornada vazia — plano antigo já foi invalidado pelo delete */
+  }
+
+  return NextResponse.json({ ok: true, removido: exam.nome, planoAtualizado: true });
 }

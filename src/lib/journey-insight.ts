@@ -4,6 +4,7 @@
  */
 import type { RegistroDashboardCard } from "@/lib/jornada-analytics";
 import { aggregateJourneyLearning, materiasComDadosReais } from "@/lib/jornada-analytics";
+import { aggregateKnowledgeGaps, type LacunaConhecimento } from "@/lib/knowledge-gaps";
 import { buildMetacognicaoGlobalJornada } from "@/lib/jornada-metacognicao";
 import { buildResumoJornada } from "@/lib/jornada";
 import { getPlanoAtual, getQuestsDoPlanoAtual } from "@/lib/plano-atual";
@@ -52,8 +53,11 @@ export type JourneyInsight = {
     pctErrosClassificados: number;
   } | null;
   alavancas: AlavancaJornada[];
+  lacunasConhecimento: LacunaConhecimento[];
   atividadesRecentes: RegistroDashboardCard[];
 };
+
+export type { LacunaConhecimento };
 
 function calcularTendencia(pcts: number[]): { tendencia: TendenciaJornada; label: string } {
   if (pcts.length === 0) return { tendencia: "inicio", label: "Comece registrando uma atividade" };
@@ -124,13 +128,14 @@ function calcularAlavancas(
 }
 
 export async function buildJourneyInsight(userId: string): Promise<JourneyInsight> {
-  const [resumo, metacognicao, planoData, questsData, analytics, ultimosExams] =
+  const [resumo, metacognicao, planoData, questsData, analytics, lacunasConhecimento, ultimosExams] =
     await Promise.all([
       buildResumoJornada(userId),
       buildMetacognicaoGlobalJornada(userId),
       getPlanoAtual(userId),
       getQuestsDoPlanoAtual(userId),
       aggregateJourneyLearning(userId, "todos"),
+      aggregateKnowledgeGaps(userId, 5),
       prisma.exam.findMany({
         where: { userId },
         orderBy: { data: "asc" },
@@ -153,6 +158,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       estado: null,
       padraoCognitivo: null,
       alavancas: [],
+      lacunasConhecimento: [],
       atividadesRecentes: [],
     };
   }
@@ -175,26 +181,35 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     planoData.items[0];
 
   const topAlavanca = alavancas[0];
+  const topLacuna = lacunasConhecimento[0];
   const questsPendentes = questsData.quests
     .filter((q) => q.status === "pending")
     .slice(0, 3)
     .map((q) => ({ id: q.id, titulo: q.titulo }));
 
   const missao =
-    itemFoco || questsPendentes.length > 0 || topAlavanca
+    itemFoco || questsPendentes.length > 0 || topAlavanca || topLacuna
       ? {
           focoTitulo:
             itemFoco?.titulo ??
-            (topAlavanca ? `Priorize ${topAlavanca.label}` : "Missão da semana"),
+            (topLacuna
+              ? "Fechar lacuna de conhecimento"
+              : topAlavanca
+                ? `Priorize ${topAlavanca.label}`
+                : "Missão da semana"),
           focoDescricao:
             itemFoco?.descricao?.slice(0, 280) ??
-            (topAlavanca?.mensagem ??
-              "Abra suas quests e siga o plano da semana — foco em uma matéria por vez."),
-          impactoEstimado: topAlavanca
-            ? topAlavanca.potencial === "alto"
-              ? `Maior alavanca agora: ${topAlavanca.label}`
-              : null
-            : null,
+            (topLacuna
+              ? topLacuna.texto
+              : (topAlavanca?.mensagem ??
+                "Abra suas quests e siga o plano da semana — foco em uma matéria por vez.")),
+          impactoEstimado: topLacuna
+            ? `Lacuna mais repetida na jornada (${topLacuna.erros} erro${topLacuna.erros !== 1 ? "s" : ""})`
+            : topAlavanca
+              ? topAlavanca.potencial === "alto"
+                ? `Maior alavanca agora: ${topAlavanca.label}`
+                : null
+              : null,
           questsPendentes,
           temPlano: Boolean(planoData.plan),
         }
@@ -235,6 +250,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
         }
       : null,
     alavancas,
+    lacunasConhecimento,
     atividadesRecentes: analytics.registrosRecentes.slice(0, 4),
   };
 }

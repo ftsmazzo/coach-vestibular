@@ -100,12 +100,16 @@ export async function buildDiagnosisFromJornada(userId: string): Promise<Diagnos
 export async function buildPlanoGlobalFromJornada(
   userId: string,
   ultimoDiagnosis: DiagnosisResult,
-  rawAttemptsUltimo: AttemptInput[]
+  rawAttemptsUltimo: AttemptInput[],
+  options?: { planoSoJornada?: boolean }
 ) {
   const jornada = await buildDiagnosisFromJornada(userId);
   const merged: DiagnosisResult = {
     ...jornada,
-    resumoProva: ultimoDiagnosis.resumoProva ?? jornada.resumoProva,
+    /** Plano global prioriza jornada inteira — não só o último registro (evita "4 provas" após excluir uma). */
+    resumoProva: options?.planoSoJornada
+      ? undefined
+      : (ultimoDiagnosis.resumoProva ?? jornada.resumoProva),
     recoveryMode: jornada.recoveryMode || ultimoDiagnosis.recoveryMode,
   };
 

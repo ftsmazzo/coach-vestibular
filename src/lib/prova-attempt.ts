@@ -364,7 +364,8 @@ async function aplicarPlanoEQuests(
   let planDiagnosis = await buildPlanoGlobalFromJornada(
     userId,
     diagnosis,
-    rawAttemptsUltimo
+    rawAttemptsUltimo,
+    { planoSoJornada: true }
   );
 
   let items =
@@ -375,6 +376,7 @@ async function aplicarPlanoEQuests(
     planDiagnosis = { ...planDiagnosis, planoCoachStatus: "legado" };
   }
   items = await mesclarPlanoComJornada(items, userId);
+  items = items.map((item) => ({ ...item, errosContexto: "jornada" as const }));
   const recoveryMode = planDiagnosis.recoveryMode;
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
@@ -391,6 +393,13 @@ async function aplicarPlanoEQuests(
   });
 
   await prisma.quest.createMany({ data: planToQuests(items, userId) });
+}
+
+/** Recria plano global e quests a partir da jornada atual (ex.: após excluir registro inválido). */
+export async function regenerarPlanoGlobalUsuario(userId: string) {
+  const { buildDiagnosisFromJornada } = await import("@/lib/jornada-diagnostico");
+  const diagnosis = await buildDiagnosisFromJornada(userId);
+  await aplicarPlanoEQuests(userId, diagnosis, false, []);
 }
 
 /** Recalcula diagnóstico, plano e quests a partir do gabarito já salvo (sem redigitar). */

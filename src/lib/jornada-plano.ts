@@ -65,7 +65,7 @@ export async function itensContextoJornadaNoPlano(userId: string): Promise<Study
       ordem: 0,
       titulo: "Panorama da sua jornada",
       descricao:
-        `Este plano considera o último registro **e** seus ${j.totalRegistros} registros no total ` +
+        `Este plano considera seus **${j.totalRegistros}** registro${j.totalRegistros !== 1 ? "s" : ""} na jornada ` +
         `(acerto ponderado ${j.pctAcertoPonderado}% — oficiais pesam mais que treinos e revisões). ` +
         (modos ? `Por tipo: ${modos}. ` : "") +
         (topMaterias

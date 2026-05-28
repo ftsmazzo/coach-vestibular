@@ -27,6 +27,8 @@ export interface StudyPlanItem {
   bloco?: BlocoPlano;
   materiaDestaque?: string;
   errosNaMateria?: number;
+  /** Texto de erros nas quests: prova isolada vs jornada agregada */
+  errosContexto?: "prova" | "jornada";
   geraQuest?: boolean;
 }
 
@@ -340,9 +342,11 @@ export function planToQuests(
   return items
     .filter((item) => item.geraQuest !== false && item.duracaoMin > 0)
     .map((item) => {
+      const onde =
+        item.errosContexto === "prova" ? "na prova" : "na jornada";
       const erros =
         item.errosNaMateria != null && item.errosNaMateria > 0
-          ? ` (${item.errosNaMateria} erro${item.errosNaMateria > 1 ? "s" : ""} na prova)`
+          ? ` (${item.errosNaMateria} erro${item.errosNaMateria > 1 ? "s" : ""} ${onde})`
           : "";
       return {
         userId,

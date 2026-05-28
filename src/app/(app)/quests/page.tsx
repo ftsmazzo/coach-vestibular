@@ -23,6 +23,8 @@ function labelBloco(bloco?: string): { text: string; tone: "danger" | "warning" 
       return { text: "Manter", tone: "success" };
     case "integracao":
       return { text: "Integrar", tone: "neutral" };
+    case "alavanca":
+      return { text: "Alavanca", tone: "success" };
     default:
       return null;
   }
@@ -41,6 +43,7 @@ interface Quest {
 
 interface QuestsResponse {
   quests: Quest[];
+  questsAlavanca?: Quest[];
   planoAtualizadoEm: string | null;
   recoveryMode: boolean;
   provaId?: string | null;
@@ -96,6 +99,7 @@ export default function QuestsPage() {
   }
 
   const quests = data?.quests ?? [];
+  const alavancas = data?.questsAlavanca ?? [];
   const pending = quests.filter((q) => q.status === "pending");
   const pendingPlano = pending.filter((q) => q.ordemPlano != null);
   const pendingAntigas = pending.filter((q) => q.ordemPlano == null);
@@ -124,7 +128,7 @@ export default function QuestsPage() {
               {blocoLabel && <Badge tone={blocoLabel.tone}>{blocoLabel.text}</Badge>}
               {erros != null && erros > 0 && (
                 <Badge tone="danger">
-                  {erros} erro{erros > 1 ? "s" : ""} na prova
+                  {erros} erro{erros > 1 ? "s" : ""} na jornada
                 </Badge>
               )}
             </div>
@@ -209,6 +213,23 @@ export default function QuestsPage() {
                 </Link>
               </div>
             </Card>
+          )}
+
+          {alavancas.length > 0 && !provaId && (
+            <section id="alavancas">
+              <h2 className="mb-1 font-semibold text-teal-900">Alavancas do copiloto</h2>
+              <p className="mb-3 text-sm text-slate-500">
+                Tarefas extras geradas a partir das prioridades da Home — não substituem o plano
+                semanal.
+              </p>
+              <ul className="space-y-3">
+                {alavancas.map((q) => (
+                  <li key={q.id}>
+                    <QuestCard q={q} destaque />
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
           <section>

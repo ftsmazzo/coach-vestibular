@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import type { StudyPlanItem } from "./study-plan";
+import { isQuestAlavanca } from "./quests-alavanca";
 
 export interface PlanoAtualData {
   plan: {
@@ -44,6 +45,7 @@ export async function getQuestsDoPlanoAtual(userId: string) {
   });
 
   const filtradas = todas.filter((q) => {
+    if (isQuestAlavanca(q.titulo)) return false;
     if (q.status !== "pending") return true;
     if (!plan) return false;
     if (titulosQuests.has(q.titulo)) return true;
