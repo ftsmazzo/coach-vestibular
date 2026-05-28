@@ -64,23 +64,6 @@ function TooltipComparativo({
   );
 }
 
-/** Mantém o tooltip dentro da largura do gráfico (evita estourar no mobile). */
-function posicaoTooltipDentro(
-  coord: { x?: number; y?: number },
-  _pos: unknown,
-  _item: unknown,
-  _offset: unknown,
-  viewBox?: { x?: number; y?: number; width?: number; height?: number }
-) {
-  if (coord?.x == null || viewBox?.width == null) return coord;
-  const largura = 200;
-  const margem = 6;
-  const xMin = (viewBox.x ?? 0) + margem;
-  const xMax = (viewBox.x ?? 0) + viewBox.width - largura - margem;
-  const x = Math.min(Math.max(coord.x - largura / 2, xMin), Math.max(xMin, xMax));
-  return { x, y: coord.y };
-}
-
 export function ComparativoVestibularesChart({
   comparativo,
 }: {
@@ -143,15 +126,16 @@ export function ComparativoVestibularesChart({
             <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} width={28} />
             <Tooltip
               allowEscapeViewBox={{ x: false, y: true }}
-              position={posicaoTooltipDentro}
               offset={8}
+              wrapperStyle={{ outline: "none", zIndex: 20 }}
               cursor={{ fill: "rgba(15, 118, 110, 0.08)" }}
-              content={
+              content={(props) => (
                 <TooltipComparativo
+                  {...props}
                   dataPenultimo={anterior.dataLabel}
                   dataUltimo={atual.dataLabel}
                 />
-              }
+              )}
             />
             <Legend
               wrapperStyle={{ fontSize: 10, lineHeight: 1.2, paddingTop: 4 }}
