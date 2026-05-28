@@ -3,12 +3,101 @@ import { aplicarPlanoCoachIA } from "@/lib/diagnosis";
 import { prisma } from "@/lib/prisma";
 import { generateStudyPlan, planToQuests } from "@/lib/study-plan";
 import type { StudyPlanItem } from "@/lib/study-plan";
+import type { CopilotoNarrativa } from "@/lib/copiloto-ia-types";
+
+/** Lê o micro-plano salvo desta prova (escopo PROVA), com narrativa IA se houver. */
+export async function getMicroPlanoProva(userId: string, provaId: string) {
+  const plan = await prisma.studyPlan.findFirst({
+    where: { userId, provaId, escopo: "PROVA" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!plan) return { plan: null, items: [] as StudyPlanItem[], narrative: null };
+
+  let narrative: CopilotoNarrativa | null = null;
+  if (plan.narrativeJson) {
+    try {
+      narrative = JSON.parse(plan.narrativeJson) as CopilotoNarrativa;
+    } catch {
+      narrative = null;
+    }
+  }
+
+  return {
+    plan: {
+      id: plan.id,
+      createdAt: plan.createdAt,
+      fonteGeracao: plan.fonteGeracao ?? "template",
+      recoveryMode: plan.recoveryMode,
+    },
+    items: JSON.parse(plan.itemsJson) as StudyPlanItem[],
+    narrative,
+  };
+}
+
+/** Arquiva quests pendentes desta prova (pelo prefixo) antes de recriar. */
+async function arquivarQuestsDaProva(userId: string, nomeProva: string) {
+  const prefix = `[${nomeProva.slice(0, 20)}]`;
+  const pendentes = await prisma.quest.findMany({
+    where: { userId, status: "pending" },
+    select: { id: true, titulo: true },
+  });
+  const ids = pendentes.filter((q) => q.titulo.startsWith(prefix)).map((q) => q.id);
+  if (ids.length > 0) {
+    await prisma.quest.updateMany({
+      where: { id: { in: ids } },
+      data: { status: "skipped" },
+    });
+  }
+}
 
 export async function gerarMicroPlanoProva(userId: string, provaId: string) {
   const prova = await prisma.prova.findFirst({
     where: { id: provaId, publicada: true },
   });
   if (!prova) return { error: "PROVA_NOT_FOUND" as const };
+
+  // Caminho IA: diagnóstico + micro-plano + quests específicos da prova.
+  const { gerarProvaIA } = await import("@/lib/prova-ia");
+  const ia = await gerarProvaIA(userId, provaId);
+  if (ia) {
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+
+    await arquivarQuestsDaProva(userId, prova.nome);
+    await prisma.studyPlan.deleteMany({ where: { userId, provaId, escopo: "PROVA" } });
+
+    const plan = await prisma.studyPlan.create({
+      data: {
+        userId,
+        provaId,
+        escopo: "PROVA",
+        weekStart,
+        itemsJson: JSON.stringify(ia.planoItems),
+        narrativeJson: JSON.stringify(ia.narrativa),
+        fonteGeracao: "ia",
+        recoveryMode: ia.recoveryMode,
+      },
+    });
+
+    if (ia.quests.length > 0) {
+      await prisma.quest.createMany({
+        data: ia.quests.map((q) => ({
+          userId,
+          titulo: q.titulo,
+          descricao: q.descricao,
+          duracaoMin: q.duracaoMin,
+          rewardMsg: "Foco só desta prova — corrija cada erro na hora.",
+        })),
+      });
+    }
+
+    return {
+      plan,
+      items: ia.planoItems,
+      fonte: "ia" as const,
+      questsCount: ia.quests.length,
+    };
+  }
 
   const diagnosis = await buildDiagnosisForProva(userId, provaId);
   if (!diagnosis) return { error: "SEM_REGISTROS" as const };
@@ -45,6 +134,7 @@ export async function gerarMicroPlanoProva(userId: string, provaId: string) {
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
 
+  await arquivarQuestsDaProva(userId, prova.nome);
   await prisma.studyPlan.deleteMany({
     where: { userId, provaId, escopo: "PROVA" },
   });
@@ -56,6 +146,7 @@ export async function gerarMicroPlanoProva(userId: string, provaId: string) {
       escopo: "PROVA",
       weekStart,
       itemsJson: JSON.stringify(items),
+      fonteGeracao: "template",
       recoveryMode: withIA.recoveryMode,
     },
   });
@@ -72,5 +163,11 @@ export async function gerarMicroPlanoProva(userId: string, provaId: string) {
     await prisma.quest.createMany({ data: questData });
   }
 
-  return { plan, items, diagnosis: withIA };
+  return {
+    plan,
+    items,
+    diagnosis: withIA,
+    fonte: "template" as const,
+    questsCount: questData.length,
+  };
 }

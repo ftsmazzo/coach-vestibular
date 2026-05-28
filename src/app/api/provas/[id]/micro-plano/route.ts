@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { gerarMicroPlanoProva } from "@/lib/micro-plano-prova";
@@ -22,10 +23,18 @@ export async function POST(
     );
   }
 
+  revalidatePath(`/provas/${provaId}/lente`);
+
+  const mensagem =
+    result.fonte === "ia"
+      ? `Análise da prova criada com IA: diagnóstico, micro-plano e ${result.questsCount} quest(s) só desta prova.`
+      : `Micro-plano e ${result.questsCount} quest(s) desta prova criados.`;
+
   return NextResponse.json({
     ok: true,
     planId: result.plan.id,
-    quests: result.items.filter((i) => i.geraQuest !== false && i.duracaoMin > 0).length,
-    mensagem: "Micro-plano e quests desta prova criados. Veja em Quests e no plano global.",
+    quests: result.questsCount,
+    fonte: result.fonte,
+    mensagem,
   });
 }

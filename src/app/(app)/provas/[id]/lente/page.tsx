@@ -3,11 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { buildHistoricoProva } from "@/lib/jornada-historico";
 import { buildDiagnosisForProva } from "@/lib/jornada-diagnostico";
+import { getMicroPlanoProva } from "@/lib/micro-plano-prova";
 import { getLeituraCoachProva } from "@/lib/leitura-coach";
 import { abreviarNomeProva } from "@/lib/prova-label";
 import { labelTipoProva } from "@/lib/prova-tipo";
 import { getMateriaLabel } from "@/lib/taxonomy";
 import { GerarMicroPlanoButton } from "@/components/gerar-micro-plano-button";
+import { ProvaDiagnosticoIA } from "@/components/prova-diagnostico-ia";
 import { LeituraCoachCard } from "@/components/leitura-coach-card";
 import { ComparativoVestibularesChart } from "@/components/comparativo-vestibulares-chart";
 import { EvolutionChart } from "@/components/evolution-chart";
@@ -25,12 +27,18 @@ export default async function ProvaLentePage({
   if (!session) redirect("/login");
 
   const { id: provaId } = await params;
-  const [historico, diagnosis, leitura] = await Promise.all([
+  const [historico, diagnosis, leitura, microPlano] = await Promise.all([
     buildHistoricoProva(session.userId, provaId),
     buildDiagnosisForProva(session.userId, provaId),
     getLeituraCoachProva(session.userId, provaId),
+    getMicroPlanoProva(session.userId, provaId),
   ]);
   if (!historico) notFound();
+
+  const narrativaIA = microPlano.narrative;
+  const blocosMicroPlano = microPlano.items.filter(
+    (i) => i.bloco !== "contexto" && i.titulo
+  );
 
   const {
     prova,
@@ -67,13 +75,17 @@ export default async function ProvaLentePage({
         <ProvaSubNav provaId={provaId} active="lente" />
       </header>
 
-      {leitura && (
-        <LeituraCoachCard
-          titulo={leitura.tituloProva}
-          mensagem={leitura.mensagem}
-          focos={leitura.focos}
-          pctReferencia={leitura.pctReferencia}
-        />
+      {narrativaIA ? (
+        <ProvaDiagnosticoIA narrativa={narrativaIA} provaNome={tituloProva} />
+      ) : (
+        leitura && (
+          <LeituraCoachCard
+            titulo={leitura.tituloProva}
+            mensagem={leitura.mensagem}
+            focos={leitura.focos}
+            pctReferencia={leitura.pctReferencia}
+          />
+        )
       )}
 
       {tentativas.length > 0 && (
@@ -129,12 +141,52 @@ export default async function ProvaLentePage({
         </Card>
       )}
 
+      {blocosMicroPlano.length > 0 && (
+        <Card>
+          <h2 className="mb-1 font-semibold text-slate-900">Micro-plano desta prova</h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Blocos de estudo só desta prova. O passo a passo está em{" "}
+            <Link href={`/quests?provaId=${provaId}`} className="font-medium text-teal-700 underline">
+              Quests desta prova
+            </Link>
+            .
+          </p>
+          <ul className="space-y-3">
+            {blocosMicroPlano.map((item) => (
+              <li
+                key={`${item.ordem}-${item.titulo}`}
+                className={`rounded-xl border p-3 ${
+                  item.bloco === "foco_profundo"
+                    ? "border-teal-200 bg-teal-50/30"
+                    : "border-slate-200"
+                }`}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold text-slate-900">{item.titulo}</h3>
+                  {item.bloco === "foco_profundo" && <Badge tone="danger">Prioridade</Badge>}
+                  {item.duracaoMin > 0 && (
+                    <span className="text-xs text-slate-500">~{item.duracaoMin} min</span>
+                  )}
+                </div>
+                {item.descricao && (
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+                    {item.descricao}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       <Card className="border-teal-200 bg-teal-50/40">
-        <h2 className="font-semibold text-teal-950">Micro-plano desta prova</h2>
+        <h2 className="font-semibold text-teal-950">
+          {narrativaIA ? "Atualizar análise desta prova" : "Análise e micro-plano desta prova"}
+        </h2>
         <p className="mt-2 text-sm text-teal-900">
-          Gera quests e blocos de estudo só para esta prova do catálogo, com base em todas as suas
-          tentativas. O <strong>plano global da semana</strong> continua considerando toda a jornada
-          (oficiais + simulados).
+          {narrativaIA
+            ? "Regerar o diagnóstico, o micro-plano e as quests com suas tentativas mais recentes desta prova."
+            : "Gera um diagnóstico com IA, micro-plano e quests só para esta prova do catálogo. O plano global da semana continua considerando toda a jornada."}
         </p>
         {tentativas.length > 0 ? (
           <div className="mt-4">

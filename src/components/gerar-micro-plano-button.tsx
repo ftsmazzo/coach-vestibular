@@ -27,9 +27,9 @@ export function GerarMicroPlanoButton({ provaId }: { provaId: string }) {
   return (
     <div className="space-y-3">
       <Button type="button" onClick={gerar} disabled={loading} className="w-full sm:w-auto">
-        {loading ? "Gerando..." : "Gerar micro-plano + quests"}
+        {loading ? "Analisando esta prova…" : "Gerar análise + micro-plano (IA)"}
       </Button>
-      {msg && <p className="text-sm text-teal-700">{msg}</p>}
+      {msg && <p className="text-sm font-medium text-teal-800">{msg}</p>}
       <p className="text-xs text-teal-800">
         Depois de gerar, abra{" "}
         <Link href={`/quests?provaId=${provaId}`} className="font-medium underline">

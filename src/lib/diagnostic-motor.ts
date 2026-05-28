@@ -72,14 +72,17 @@ function materiaCoincide(a: string, b: string): boolean {
   return na.includes(nb) || nb.includes(na);
 }
 
-export async function coletarEventosErro(userId: string): Promise<EventoErroPedagogico[]> {
+export async function coletarEventosErro(
+  userId: string,
+  opts?: { provaId?: string }
+): Promise<EventoErroPedagogico[]> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { metaProva: true, vestibularAlvo: true },
   });
 
   const exams = await prisma.exam.findMany({
-    where: { userId },
+    where: { userId, ...(opts?.provaId ? { provaId: opts.provaId } : {}) },
     orderBy: { data: "desc" },
     take: 24,
     select: {
@@ -315,11 +318,16 @@ export function agregarClustersPedagogicos(
 
 export { narrativaCopiloto as narrativaDiagnostico } from "@/lib/narrativa-copiloto";
 
-export async function buildDiagnosticoMotor(userId: string): Promise<DiagnosticoMotor> {
+export async function buildDiagnosticoMotor(
+  userId: string,
+  opts?: { provaId?: string }
+): Promise<DiagnosticoMotor> {
   const [eventos, journey, totalExames] = await Promise.all([
-    coletarEventosErro(userId),
+    coletarEventosErro(userId, opts),
     aggregateJourneyLearning(userId, "todos"),
-    prisma.exam.count({ where: { userId } }),
+    prisma.exam.count({
+      where: { userId, ...(opts?.provaId ? { provaId: opts.provaId } : {}) },
+    }),
   ]);
 
   if (eventos.length === 0) {
