@@ -353,11 +353,6 @@ async function aplicarPlanoEQuests(
   _ehProvaOficial: boolean,
   _rawAttemptsUltimo: AttemptInput[] = []
 ) {
-  await prisma.quest.updateMany({
-    where: { userId, status: "pending" },
-    data: { status: "skipped" },
-  });
-
   const { buildPlanoSemanalCopiloto } = await import("@/lib/plano-copiloto");
   const { items, recoveryMode } = await buildPlanoSemanalCopiloto(userId);
   const weekStart = new Date();
@@ -379,7 +374,16 @@ async function aplicarPlanoEQuests(
 }
 
 /** Recria plano global e quests a partir da jornada atual (ex.: após excluir registro inválido). */
-export async function regenerarPlanoGlobalUsuario(userId: string) {
+export async function regenerarPlanoGlobalUsuario(
+  userId: string,
+  opts?: { pularLimpeza?: boolean; incluirAnamnese?: boolean }
+) {
+  if (!opts?.pularLimpeza) {
+    const { zerarDerivadosCopiloto } = await import("@/lib/zerar-copiloto-usuario");
+    await zerarDerivadosCopiloto(userId, {
+      incluirAnamnese: opts?.incluirAnamnese ?? false,
+    });
+  }
   const { buildDiagnosisFromJornada } = await import("@/lib/jornada-diagnostico");
   const diagnosis = await buildDiagnosisFromJornada(userId);
   await aplicarPlanoEQuests(userId, diagnosis, false, []);

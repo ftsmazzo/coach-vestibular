@@ -21,6 +21,7 @@ export default function AdminUsuariosPage() {
   const [error, setError] = useState("");
   const [sucesso, setSucesso] = useState("");
   const [senhaGerada, setSenhaGerada] = useState<string | null>(null);
+  const [zerandoId, setZerandoId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -80,6 +81,41 @@ export default function AdminUsuariosPage() {
       metaProva: "",
     });
     load();
+  }
+
+  async function zerarCopiloto(aluno: Aluno) {
+    if (
+      !confirm(
+        `Zerar copiloto de ${aluno.name}?\n\n` +
+          "Remove TODOS os planos e quests (incluindo concluídas) e gera novos a partir dos registros de prova atuais.\n" +
+          "Mantém: conta, provas cadastradas, gabaritos e respostas.\n\n" +
+          "Continuar?"
+      )
+    ) {
+      return;
+    }
+    const incluirAnamnese = confirm(
+      "Apagar também a anamnese (Entendendo sua jornada)?\n\n" +
+        "OK = sim, o banner volta na Home para refazer.\n" +
+        "Cancelar = mantém a anamnese já feita."
+    );
+
+    setZerandoId(aluno.id);
+    setError("");
+    setSucesso("");
+    const res = await fetch(`/api/admin/users/${aluno.id}/zerar-copiloto`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ incluirAnamnese }),
+    });
+    const data = await res.json();
+    setZerandoId(null);
+
+    if (!res.ok) {
+      setError(data.error ?? "Erro ao zerar copiloto");
+      return;
+    }
+    setSucesso(data.mensagem ?? "Copiloto recriado.");
   }
 
   return (
@@ -187,6 +223,7 @@ export default function AdminUsuariosPage() {
                   <th className="p-3 font-medium">Meta</th>
                   <th className="p-3 font-medium text-center">Provas</th>
                   <th className="p-3 font-medium">Desde</th>
+                  <th className="p-3 font-medium">Copiloto</th>
                 </tr>
               </thead>
               <tbody>
@@ -206,6 +243,17 @@ export default function AdminUsuariosPage() {
                     </td>
                     <td className="p-3 text-slate-500 whitespace-nowrap">
                       {new Date(a.createdAt).toLocaleDateString("pt-BR")}
+                    </td>
+                    <td className="p-3">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="text-xs"
+                        disabled={zerandoId === a.id}
+                        onClick={() => zerarCopiloto(a)}
+                      >
+                        {zerandoId === a.id ? "Recriando…" : "Zerar e recriar"}
+                      </Button>
                     </td>
                   </tr>
                 ))}

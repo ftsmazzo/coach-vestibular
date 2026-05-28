@@ -9,7 +9,11 @@ export function RegenerarPlanoButton() {
   const [loading, setLoading] = useState(false);
 
   async function regenerar() {
-    if (!confirm("Recriar o plano e as quests da semana com os registros atuais da jornada?")) {
+    if (
+      !confirm(
+        "Apagar planos e tarefas antigos do copiloto e recriar tudo com os registros atuais da jornada? (Provas e gabaritos não são apagados.)"
+      )
+    ) {
       return;
     }
     setLoading(true);
