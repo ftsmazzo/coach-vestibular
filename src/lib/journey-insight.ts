@@ -171,8 +171,8 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     analytics,
     lacunasConhecimento,
     motor,
-    ultimosExams,
     anamneseCtx,
+    ultimosExams,
   ] = await Promise.all([
       buildResumoJornada(userId),
       buildMetacognicaoGlobalJornada(userId),
