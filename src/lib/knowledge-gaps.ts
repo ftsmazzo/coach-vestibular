@@ -82,7 +82,7 @@ function causaComPct(causas: Map<ErrorType, number>): CausaErroLacuna | null {
   const total = sorted.reduce((s, [, c]) => s + c, 0);
   return {
     tipo: top[0],
-    label: getTipoErroLabel(top[0]),
+    label: getTipoErroLabel(top[0]) ?? top[0],
     count: top[1],
     pct: total > 0 ? Math.round((top[1] / total) * 100) : 0,
   };
@@ -198,7 +198,8 @@ export async function aggregateCognitiveClusters(
 
   for (const c of clusters) {
     if (c.causaDominante) {
-      c.causaDominante.label = getTipoErroLabel(c.causaDominante.tipo);
+      c.causaDominante.label =
+        getTipoErroLabel(c.causaDominante.tipo) ?? c.causaDominante.tipo;
     }
   }
 

@@ -39,7 +39,7 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
     estado,
     padraoCognitivo,
     principalGargalo,
-    clustersCognitivos,
+    clustersPedagogicos,
     temDiagnosticoCognitivo,
     diagnosticoIntegrado,
     alavancas,
@@ -113,17 +113,24 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
             )}
           </div>
 
-          {clustersCognitivos.length > 1 && (
+          {principalGargalo.exemploConhecimento && (
+            <p className="mt-3 text-xs italic text-slate-600">
+              Evidência da banca: «{principalGargalo.exemploConhecimento}»
+            </p>
+          )}
+
+          {clustersPedagogicos.length > 1 && (
             <div className="mt-4 border-t border-amber-100 pt-3">
               <p className="text-[10px] font-semibold uppercase text-amber-900/80">
-                Outras demandas cognitivas (por impacto na jornada)
+                Outros padrões (prioridade estatística na jornada)
               </p>
               <ul className="mt-2 space-y-2">
-                {clustersCognitivos.slice(0, 4).map((c) => (
-                  <li key={c.tipo} className="text-xs text-slate-700">
+                {clustersPedagogicos.slice(1, 4).map((c) => (
+                  <li key={c.clusterId} className="text-xs text-slate-700">
                     <span className="font-medium text-slate-900">{c.label}</span>
+                    <span className="text-slate-500"> · {c.operacaoCognitiva}</span>
                     {c.materias[0] && (
-                      <span className="text-slate-500"> · {c.materias[0]}</span>
+                      <span className="text-slate-500"> · {c.materias[0].nome}</span>
                     )}
                     {c.causaDominante && (
                       <span className="text-violet-700">
@@ -231,8 +238,8 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
           </summary>
           <div className="space-y-2 border-t border-slate-200 px-4 py-3">
             <p className="text-xs text-slate-500">
-              Ordenado por impacto na nota — o diagnóstico principal usa conhecimento exigido na
-              matéria com maior déficit.
+              Ordenado por impacto na nota — o diagnóstico principal vem de clusters pedagógicos
+              (não do texto bruto de uma questão).
             </p>
             {alavancas.slice(0, 4).map((a) => (
               <div

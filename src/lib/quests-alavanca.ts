@@ -34,32 +34,38 @@ export async function garantirQuestsAlavanca(
     });
   }
 
-  const lacunaTop = insight.lacunasConhecimento[0];
-  if (lacunaTop) {
+  const clusterTop = insight.clustersPedagogicos[0];
+  if (clusterTop) {
     desejadas.push({
-      chave: chaveQuest("conhecimento", `prio-${lacunaTop.chave}`),
-      titulo: `${PREFIXO_QUEST_ALAVANCA}${lacunaTop.tipoCognitivoLabel}: prática focada`,
+      chave: chaveQuest("conhecimento", `cluster-${clusterTop.clusterId}`),
+      titulo: `${PREFIXO_QUEST_ALAVANCA}${clusterTop.label}: prática guiada`,
       descricao:
-        `${lacunaTop.texto} ` +
-        (lacunaTop.causaDominante
-          ? `Causa mais marcada: ${lacunaTop.causaDominante.label}. `
-          : "") +
-        (lacunaTop.materia ? `Contexto: ${lacunaTop.materia}. ` : "") +
-        "20 min teoria + 15 questões parecidas + anotar regra no caderno.",
+        `${clusterTop.diagnosticoAbstrato} ` +
+        `Operação: ${clusterTop.operacaoCognitiva}. ` +
+        `${clusterTop.erros} erro${clusterTop.erros !== 1 ? "s" : ""} no padrão na jornada` +
+        (clusterTop.materias[0] ? ` (contexto: ${clusterTop.materias[0].nome})` : "") +
+        (clusterTop.evidencias[0]
+          ? `. Evidência: ${clusterTop.evidencias[0]}.`
+          : ".") +
+        " 20 min teoria + 15 questões parecidas.",
       duracaoMin: 50,
     });
-  }
-
-  for (const c of insight.clustersCognitivos.slice(0, 1)) {
-    desejadas.push({
-      chave: chaveQuest("conhecimento", `cluster-${c.tipo}`),
-      titulo: `${PREFIXO_QUEST_ALAVANCA}${c.label}: prática guiada`,
-      descricao:
-        `Treinar ${c.verboTreino}. ${c.erros} erro${c.erros !== 1 ? "s" : ""} na jornada` +
-        (c.materias[0] ? ` (contexto: ${c.materias[0]})` : "") +
-        `. Ex.: ${c.exemplosConhecimento[0] ?? "revisar questões erradas"}.`,
-      duracaoMin: 45,
-    });
+  } else {
+    const lacunaTop = insight.lacunasConhecimento[0];
+    if (lacunaTop) {
+      desejadas.push({
+        chave: chaveQuest("conhecimento", `prio-${lacunaTop.chave}`),
+        titulo: `${PREFIXO_QUEST_ALAVANCA}${lacunaTop.tipoCognitivoLabel}: prática focada`,
+        descricao:
+          `${lacunaTop.texto} ` +
+          (lacunaTop.causaDominante
+            ? `Causa mais marcada: ${lacunaTop.causaDominante.label}. `
+            : "") +
+          (lacunaTop.materia ? `Contexto: ${lacunaTop.materia}. ` : "") +
+          "20 min teoria + 15 questões parecidas + anotar regra no caderno.",
+        duracaoMin: 50,
+      });
+    }
   }
 
 
