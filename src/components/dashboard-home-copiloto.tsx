@@ -46,6 +46,7 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
     copiloto,
     alavancas,
     atividadesRecentes,
+    linhaAnamnese,
   } = insight;
 
   const padraoSeparado =
@@ -143,6 +144,12 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
             Ver passos na lista de tarefas
           </LinkButton>
         </Card>
+      )}
+
+      {linhaAnamnese && (
+        <p className="rounded-lg border border-violet-100 bg-violet-50/60 px-3 py-2 text-sm text-violet-950">
+          {linhaAnamnese}
+        </p>
       )}
 
       {!temDiagnosticoCognitivo && (

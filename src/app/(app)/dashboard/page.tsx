@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { buildJourneyInsight } from "@/lib/journey-insight";
+import { getAnamneseStatus } from "@/lib/anamnese-motor";
+import { AnamneseBanner } from "@/components/anamnese-banner";
 import { DashboardHomeCopiloto } from "@/components/dashboard-home-copiloto";
 import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
@@ -12,7 +14,10 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
   if (session.role === "ADMIN") redirect("/admin");
 
-  const insight = await buildJourneyInsight(session.userId);
+  const [insight, anamnese] = await Promise.all([
+    buildJourneyInsight(session.userId),
+    getAnamneseStatus(session.userId),
+  ]);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -25,6 +30,8 @@ export default async function DashboardPage() {
           <Button className="w-full sm:w-auto">Ver atividades</Button>
         </Link>
       </div>
+
+      <AnamneseBanner anamnese={anamnese} />
 
       <DashboardHomeCopiloto insight={insight} />
 

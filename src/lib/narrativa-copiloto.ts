@@ -3,6 +3,8 @@
  */
 import type { ErrorType } from "@/generated/prisma/client";
 import { fraseContextoLongitudinal } from "@/lib/comportamento-longitudinal";
+import type { AnamneseMotorContext } from "@/lib/anamnese-types";
+import { enriquecerParagrafoComAnamnese } from "@/lib/anamnese-contexto";
 import type { ClusterAgregado } from "@/lib/diagnostic-motor";
 import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
 
@@ -79,7 +81,8 @@ function materiaCoincideSimples(a: string, b: string): boolean {
 export function narrativaCopiloto(
   principal: ClusterAgregado,
   materiaDeficit: { label: string; pct: number } | null,
-  _totalProvas: number
+  _totalProvas: number,
+  anamnese?: AnamneseMotorContext | null
 ): NarrativaCopiloto {
   const def = CLUSTERS_PEDAGOGICOS[principal.clusterId];
   const mat = materiaPrincipal(principal, materiaDeficit);
@@ -123,9 +126,15 @@ export function narrativaCopiloto(
     ? (CAUSA_BADGE[principal.causaDominante.tipo] ?? null)
     : null;
 
+  const paragrafoFinal = enriquecerParagrafoComAnamnese(
+    paragrafo,
+    anamnese ?? null,
+    principal
+  );
+
   return {
     titulo,
-    paragrafo,
+    paragrafo: paragrafoFinal,
     camadas: { oQueAcontece, comoCognitivo, quandoAparece, naoSignifica, caminho },
     linhaFoco,
     proximoPasso: def.proximoPassoSemana,

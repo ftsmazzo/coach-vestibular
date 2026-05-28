@@ -16,6 +16,9 @@ import {
 } from "@/lib/quests-alavanca";
 import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { prisma } from "@/lib/prisma";
+import { getAnamneseMotorContext } from "@/lib/anamnese-motor";
+import { linhaContrasteAnamnese } from "@/lib/anamnese-contexto";
+import type { AnamneseMotorContext } from "@/lib/anamnese-types";
 
 export type TendenciaJornada = "subindo" | "estavel" | "cuidado" | "inicio";
 
@@ -85,6 +88,9 @@ export type JourneyInsight = {
   alavancas: AlavancaJornada[];
   lacunasConhecimento: LacunaConhecimento[];
   atividadesRecentes: RegistroDashboardCard[];
+  anamnese: AnamneseMotorContext;
+  /** Linha extra quando anamnese cruza com jornada */
+  linhaAnamnese: string | null;
 };
 
 export type { ClusterAgregado, LacunaConhecimento, NarrativaCopiloto };
@@ -166,6 +172,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     lacunasConhecimento,
     motor,
     ultimosExams,
+    anamneseCtx,
   ] = await Promise.all([
       buildResumoJornada(userId),
       buildMetacognicaoGlobalJornada(userId),
@@ -173,6 +180,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       aggregateJourneyLearning(userId, "todos"),
       aggregateKnowledgeGaps(userId, 5),
       buildDiagnosticoMotor(userId),
+      getAnamneseMotorContext(userId),
       prisma.exam.findMany({
         where: { userId },
         orderBy: { data: "asc" },
@@ -185,6 +193,47 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     ]);
 
   if (resumo.totalRegistros === 0) {
+    const missaoAnamnese =
+      anamneseCtx.completed && anamneseCtx.focoInicialTitulo
+        ? {
+            focoTitulo: anamneseCtx.focoInicialTitulo,
+            focoDescricao:
+              anamneseCtx.focoInicialDescricao ??
+              "Registre sua primeira atividade quando puder — até lá, siga o passo em Quests.",
+            impactoEstimado: "Baseado na conversa inicial com o copiloto",
+            questsPendentes: [] as Array<{ id: string; titulo: string }>,
+            temPlano: Boolean(planoData.plan),
+          }
+        : null;
+
+    await garantirQuestsAlavanca(userId, {
+      context: "JOURNEY",
+      temDados: false,
+      principalGargalo: null,
+      copiloto: null,
+      clustersPedagogicos: [],
+      temDiagnosticoCognitivo: false,
+      principalAlavanca: null,
+      focoSemana: null,
+      missao: missaoAnamnese,
+      estado: null,
+      padraoCognitivo: null,
+      diagnosticoIntegrado: null,
+      alavancas: [],
+      lacunasConhecimento: [],
+      atividadesRecentes: [],
+      anamnese: anamneseCtx,
+      linhaAnamnese: linhaContrasteAnamnese(anamneseCtx, false),
+    } as JourneyInsight);
+
+    const oQueFazer = await getOQueFazerAgora(userId);
+    if (missaoAnamnese) {
+      missaoAnamnese.questsPendentes = oQueFazer.map((q) => ({
+        id: q.id,
+        titulo: q.titulo,
+      }));
+    }
+
     return {
       context: "JOURNEY",
       temDados: false,
@@ -194,13 +243,15 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       temDiagnosticoCognitivo: false,
       principalAlavanca: null,
       focoSemana: null,
-      missao: null,
+      missao: missaoAnamnese,
       estado: null,
       padraoCognitivo: null,
       diagnosticoIntegrado: null,
       alavancas: [],
       lacunasConhecimento: [],
       atividadesRecentes: [],
+      anamnese: anamneseCtx,
+      linhaAnamnese: linhaContrasteAnamnese(anamneseCtx, false),
     };
   }
 
@@ -218,7 +269,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
 
   const narrativa =
     principalCluster && temDiagnosticoCognitivo
-      ? narrativaCopiloto(principalCluster, materiaDeficit, motor.totalExames)
+      ? narrativaCopiloto(principalCluster, materiaDeficit, motor.totalExames, anamneseCtx)
       : null;
 
   const principalGargalo: GargaloCognitivoInsight | null =
@@ -308,6 +359,8 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     alavancas,
     lacunasConhecimento,
     atividadesRecentes: analytics.registrosRecentes.slice(0, 4),
+    anamnese: anamneseCtx,
+    linhaAnamnese: linhaContrasteAnamnese(anamneseCtx, true),
   };
 
   await garantirQuestsAlavanca(userId, insightSemQuests);

@@ -10,15 +10,17 @@ import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
 import type { StudyPlanItem } from "@/lib/study-plan";
 import { materiasComDadosReais } from "@/lib/jornada-analytics";
 import { aggregateJourneyLearning } from "@/lib/jornada-analytics";
+import { getAnamneseMotorContext } from "@/lib/anamnese-motor";
 
 export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
   items: StudyPlanItem[];
   recoveryMode: boolean;
 }> {
-  const [motor, resumo, analytics] = await Promise.all([
+  const [motor, resumo, analytics, anamneseCtx] = await Promise.all([
     buildDiagnosticoMotor(userId),
     buildResumoJornada(userId),
     aggregateJourneyLearning(userId, "todos"),
+    getAnamneseMotorContext(userId),
   ]);
 
   const recoveryMode = resumo.pctAcertoPonderado < 50 && resumo.totalRegistros >= 2;
@@ -57,7 +59,12 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
   }
 
   const principal = motor.clusterPrincipal;
-  const narrativa = narrativaCopiloto(principal, motor.materiaDeficit, motor.totalExames);
+  const narrativa = narrativaCopiloto(
+    principal,
+    motor.materiaDeficit,
+    motor.totalExames,
+    anamneseCtx
+  );
   const def = CLUSTERS_PEDAGOGICOS[principal.clusterId];
   const materia =
     principal.materias[0]?.nome ?? motor.materiaDeficit?.label ?? "sua matéria prioritária";

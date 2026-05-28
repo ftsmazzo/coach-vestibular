@@ -1,4 +1,5 @@
 import type { JourneyInsight } from "@/lib/journey-insight";
+import type { StructuredAnamneseProfile } from "@/lib/anamnese-types";
 import type { AlavancaJornada } from "@/lib/journey-insight";
 import { formatarPassos, PASSOS_POR_CLUSTER } from "@/lib/copiloto-passos";
 import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
@@ -20,14 +21,14 @@ export type QuestCopiloto = {
 };
 
 /** Identidade estável da quest (sem ordem — evita duplicar ao reordenar). */
-function chaveQuest(tipo: "padrao" | "materia", id: string) {
+function chaveQuest(tipo: "padrao" | "materia" | "anamnese", id: string) {
   return `copiloto:${tipo}:${id}:${VERSAO_COPY}`;
 }
 
 /** Agrupa chaves antigas (com ordem no meio) e novas. */
 export function chaveSemanticaQuest(chave: string | null): string | null {
   if (!chave) return null;
-  const m = chave.match(/^copiloto:(?:(\d+):)?(padrao|materia):([^:]+)/);
+  const m = chave.match(/^copiloto:(?:(\d+):)?(padrao|materia|anamnese):([^:]+)/);
   if (m) return `${m[2]}:${m[3]}`;
   return null;
 }
@@ -173,6 +174,54 @@ function montarListaDesejada(insight: JourneyInsight) {
     }
   }
 
+  if (desejadas.length === 0 && insight.anamnese?.completed && insight.anamnese.profile) {
+    desejadas.push(...montarQuestsDaAnamnese(insight.anamnese.profile));
+  }
+
+  return desejadas;
+}
+
+function montarQuestsDaAnamnese(profile: StructuredAnamneseProfile) {
+  const desejadas: ReturnType<typeof montarListaDesejada> = [];
+  const passos: string[] = [];
+
+  if (profile.metacognition?.metacognitiveMaturity === "BAIXA") {
+    passos.push(
+      "Escolha 5 erros recentes (de qualquer lista ou simulado).",
+      "Para cada um, escreva em uma frase: foi conteúdo, interpretação, pressa ou insegurança?",
+      "Marque quantos caem no mesmo tipo — esse é seu padrão inicial.",
+      "Nos últimos 5 min, escolha só 2 para refazer com calma.",
+    );
+  } else if (profile.examBehavior?.fatigueInLongExams) {
+    passos.push(
+      "Separe 20 questões em dois blocos de 10 (sem pausa longa entre blocos).",
+      "Após o bloco 1, anote de 0 a 5 sua clareza mental.",
+      "No bloco 2, se a clareza cair, pause 2 min antes de continuar.",
+      "Ao final, compare em quais números você errou mais.",
+    );
+  } else {
+    const mat = profile.academicSelfPerception?.perceivedWeakSubjects?.[0] ?? "sua matéria mais fraca";
+    passos.push(
+      `Abra ${mat} no material que você já usa.`,
+      "Faça 10 questões curtas — sem cronômetro na primeira passada.",
+      "Corrija e anote o que travou em cada erro.",
+      "Refaça só as que errou, explicando o passo em voz alta.",
+    );
+  }
+
+  desejadas.push({
+    chave: chaveQuest("anamnese", "inicial"),
+    titulo: "Comece por aqui: primeiro passo da sua jornada",
+    descricao: formatarPassos(
+      passos,
+      "baseado na conversa inicial com o copiloto — antes dos registros de prova.",
+      35
+    ),
+    duracaoMin: 35,
+    ordem: 1,
+    rotulo: "Prioridade da semana",
+  });
+
   return desejadas;
 }
 
@@ -274,7 +323,8 @@ export async function garantirQuestsAlavanca(
   userId: string,
   insight: JourneyInsight
 ): Promise<void> {
-  if (!insight.temDados) return;
+  const soAnamnese = !insight.temDados && insight.anamnese?.completed;
+  if (!insight.temDados && !soAnamnese) return;
 
   await arquivarQuestsPlanoDuplicadas(userId);
   await deduplicarQuestsCopilotoPendentes(userId);
