@@ -18,14 +18,14 @@ const KEY_ULTIMO = "Último";
 
 type TooltipEntry = {
   dataKey?: string | number;
-  value?: number;
+  value?: number | string;
   color?: string;
 };
 
 type TooltipComparativoProps = {
   active?: boolean;
-  payload?: TooltipEntry[];
-  label?: string;
+  payload?: ReadonlyArray<TooltipEntry>;
+  label?: string | number;
   dataPenultimo: string;
   dataUltimo: string;
 };
@@ -44,7 +44,9 @@ function TooltipComparativo({
 
   return (
     <div className="pointer-events-none w-[min(200px,calc(100vw-2.5rem))] rounded-lg border border-slate-200 bg-white/95 px-2.5 py-2 text-[11px] leading-snug shadow-lg backdrop-blur-sm">
-      <p className="truncate font-semibold text-slate-900">{label}</p>
+      <p className="truncate font-semibold text-slate-900">
+        {label != null ? String(label) : ""}
+      </p>
       <ul className="mt-1.5 space-y-1">
         {payload.map((entry) => (
           <li key={String(entry.dataKey)} className="flex items-center gap-2">
@@ -131,7 +133,9 @@ export function ComparativoVestibularesChart({
               cursor={{ fill: "rgba(15, 118, 110, 0.08)" }}
               content={(props) => (
                 <TooltipComparativo
-                  {...props}
+                  active={props.active}
+                  payload={props.payload}
+                  label={props.label}
                   dataPenultimo={anterior.dataLabel}
                   dataUltimo={atual.dataLabel}
                 />
