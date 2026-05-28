@@ -1,15 +1,25 @@
 import { prisma } from "@/lib/prisma";
 import { pesoModoUso } from "@/lib/modo-uso";
 import { pesoBancaParaMeta } from "@/lib/meta-vestibular";
+import {
+  agruparPorTipoCognitivo,
+  inferirTipoCognitivo,
+  type ClusterCognitivo,
+  type TipoCognitivoId,
+} from "@/lib/tipo-cognitivo";
 
 export type LacunaConhecimento = {
   chave: string;
   texto: string;
   materia: string | null;
+  tipoCognitivo: TipoCognitivoId;
+  tipoCognitivoLabel: string;
   erros: number;
   errosPonderados: number;
   numeros: number[];
 };
+
+export type { ClusterCognitivo };
 
 function normalizarConhecimento(s: string): string {
   return s
@@ -62,12 +72,15 @@ export async function aggregateKnowledgeGaps(
       if (!raw || raw.length < 8) continue;
 
       const chave = normalizarConhecimento(raw);
+      const tipo = inferirTipoCognitivo(raw);
       const entry =
         map.get(chave) ??
         ({
           chave,
           texto: raw.length > 160 ? `${raw.slice(0, 157)}…` : raw,
           materia: a.provaQuestao?.materia?.trim() || null,
+          tipoCognitivo: tipo.id,
+          tipoCognitivoLabel: tipo.label,
           erros: 0,
           errosPonderados: 0,
           numeros: [],
@@ -85,4 +98,13 @@ export async function aggregateKnowledgeGaps(
   return [...map.values()]
     .sort((a, b) => b.errosPonderados - a.errosPonderados || b.erros - a.erros)
     .slice(0, limit);
+}
+
+/** Agrupa lacunas por operação cognitiva inferida. */
+export async function aggregateCognitiveClusters(
+  userId: string,
+  limit = 4
+): Promise<ClusterCognitivo[]> {
+  const lacunas = await aggregateKnowledgeGaps(userId, 24);
+  return agruparPorTipoCognitivo(lacunas).slice(0, limit);
 }

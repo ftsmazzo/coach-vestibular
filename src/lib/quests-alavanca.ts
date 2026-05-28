@@ -22,7 +22,7 @@ export async function garantirQuestsAlavanca(
     duracaoMin: number;
   }> = [];
 
-  for (const a of insight.alavancas.filter((x) => x.potencial === "alto").slice(0, 2)) {
+  for (const a of insight.alavancas.filter((x) => x.potencial === "alto").slice(0, 1)) {
     desejadas.push({
       chave: chaveQuest("materia", a.materiaId),
       titulo: `${PREFIXO_QUEST_ALAVANCA}Reforço: ${a.label}`,
@@ -34,14 +34,26 @@ export async function garantirQuestsAlavanca(
     });
   }
 
-  for (const l of insight.lacunasConhecimento.slice(0, 2)) {
+  for (const c of insight.clustersCognitivos.slice(0, 2)) {
+    desejadas.push({
+      chave: chaveQuest("conhecimento", `cluster-${c.tipo}`),
+      titulo: `${PREFIXO_QUEST_ALAVANCA}${c.label}: prática guiada`,
+      descricao:
+        `Treinar ${c.verboTreino}. ${c.erros} erro${c.erros !== 1 ? "s" : ""} na jornada` +
+        (c.materias[0] ? ` (contexto: ${c.materias[0]})` : "") +
+        `. Ex.: ${c.exemplosConhecimento[0] ?? "revisar questões erradas"}.`,
+      duracaoMin: 45,
+    });
+  }
+
+  for (const l of insight.lacunasConhecimento.slice(0, 1)) {
     desejadas.push({
       chave: chaveQuest("conhecimento", l.chave),
-      titulo: `${PREFIXO_QUEST_ALAVANCA}Lacuna: ${l.texto.slice(0, 52)}${l.texto.length > 52 ? "…" : ""}`,
+      titulo: `${PREFIXO_QUEST_ALAVANCA}${l.tipoCognitivoLabel}: ${l.texto.slice(0, 40)}${l.texto.length > 40 ? "…" : ""}`,
       descricao:
-        `Conhecimento que a banca cobrou e você errou ${l.erros} vez${l.erros !== 1 ? "es" : ""} na jornada` +
-        (l.materia ? ` (${l.materia})` : "") +
-        ". Releia a teoria, refaça questões parecidas e anote uma regra no caderno.",
+        `Conhecimento exigido que você errou ${l.erros} vez${l.erros !== 1 ? "es" : ""}. ` +
+        `Releia teoria, refaça 12 questões parecidas e anote uma regra no caderno.` +
+        (l.materia ? ` Contexto: ${l.materia}.` : ""),
       duracaoMin: 40,
     });
   }

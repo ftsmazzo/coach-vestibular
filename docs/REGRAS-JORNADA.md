@@ -20,7 +20,16 @@ Agregadores: `aggregateJourneyLearning()` (dados) + `buildJourneyInsight()` (sí
 
 Widgets na Home usam `mode: "HOME"` (menos botões, sem XP no detalhe colapsado).
 
-**Conhecimento exigido:** `aggregateKnowledgeGaps()` agrupa erros pela frase `ProvaQuestao.conhecimentoExigido` (mais estável que matéria/assunto). Quests `[Alavanca]` são extras, geradas na Home.
+## Hierarquia pedagógica (diagnóstico)
+
+| Nível | Campo | Papel |
+|-------|--------|--------|
+| 1 | **Conhecimento exigido** | O que a questão exige cognitivamente — eixo do diagnóstico |
+| 2 | **Tipo cognitivo** | Inferido (`interpretação`, `modelagem`, `visualização`…) via `tipo-cognitivo.ts` |
+| 3 | **Matéria** | Contexto curricular (“em Biologia”) |
+| 4 | **Assunto** | Indexador / catálogo — não centro da inteligência |
+
+Home: `aggregateKnowledgeGaps()` + `aggregateCognitiveClusters()`. Gargalo = frase cognitiva, não “Matemática 40%”. Quests `[Alavanca]` priorizam clusters cognitivos.
 
 **Plano global:** montado com `planoSoJornada` (toda a jornada, não só o último registro). Ao excluir um `Exam`, o plano e as quests da semana são recriados. Botão *Atualizar plano pela jornada* em `/plano`.
 

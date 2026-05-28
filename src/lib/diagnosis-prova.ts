@@ -140,11 +140,15 @@ function buildMensagemConcreta(
   }
 
   if (resumo.assuntosPrioritarios.length > 0) {
-    const assuntoTexto = resumo.assuntosPrioritarios
+    const prioridadeTexto = resumo.assuntosPrioritarios
       .slice(0, 2)
-      .map((a) => `${a.materia} — ${a.assunto}`)
+      .map((a) =>
+        a.conhecimentoExigido?.trim()
+          ? a.conhecimentoExigido.trim()
+          : `${a.materia} — ${a.assunto}`
+      )
       .join("; ");
-    partes.push(`Assuntos para priorizar na semana: ${assuntoTexto}.`);
+    partes.push(`O que a banca exigiu e você precisa treinar: ${prioridadeTexto}.`);
   }
 
   if (diagnosis.recoveryMode) {
@@ -172,15 +176,22 @@ export function enriquecerDiagnosticoComProva(
     const nums = formatNumeros(a.numerosErrados, 8);
     const conhec =
       a.conhecimentoExigido && a.conhecimentoExigido.length > 0
-        ? ` · ${a.conhecimentoExigido}`
-        : "";
+        ? a.conhecimentoExigido
+        : null;
     const dif = a.nivelDificuldade ? ` (${a.nivelDificuldade})` : "";
+    const label = conhec
+      ? conhec.length > 72
+        ? `${conhec.slice(0, 69)}…`
+        : conhec
+      : `${a.materia} — ${a.assunto}`;
     return {
       materiaId: prev?.materiaId ?? "geral",
       temaId: prev?.temaId ?? "geral",
-      label: `${a.materia} — ${a.assunto}`,
+      label,
       prioridade: (a.erros >= 2 ? "alta" : "media") as "alta" | "media",
-      motivo: `${a.erros} erro(s) — ${nums}${conhec}${dif}`,
+      motivo: conhec
+        ? `${a.erros} erro(s) · ${a.materia} (contexto) — ${nums}${dif}`
+        : `${a.erros} erro(s) — ${nums}${dif}`,
       tipoErroDominante: prev?.tipoErroDominante,
       assunto: a.assunto,
       conhecimentoExigido: a.conhecimentoExigido,

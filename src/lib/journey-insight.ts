@@ -4,7 +4,13 @@
  */
 import type { RegistroDashboardCard } from "@/lib/jornada-analytics";
 import { aggregateJourneyLearning, materiasComDadosReais } from "@/lib/jornada-analytics";
-import { aggregateKnowledgeGaps, type LacunaConhecimento } from "@/lib/knowledge-gaps";
+import {
+  aggregateCognitiveClusters,
+  aggregateKnowledgeGaps,
+  type ClusterCognitivo,
+  type LacunaConhecimento,
+} from "@/lib/knowledge-gaps";
+import { fraseGargaloCognitivo, tituloMissaoCognitiva } from "@/lib/tipo-cognitivo";
 import { buildMetacognicaoGlobalJornada } from "@/lib/jornada-metacognicao";
 import { buildResumoJornada } from "@/lib/jornada";
 import { getPlanoAtual, getQuestsDoPlanoAtual } from "@/lib/plano-atual";
@@ -24,10 +30,21 @@ export type AlavancaJornada = {
   mensagem: string;
 };
 
+export type GargaloCognitivoInsight = {
+  descricao: string;
+  tipoLabel: string;
+  materiaContexto: string | null;
+  erros: number;
+  exemploConhecimento: string | null;
+};
+
 export type JourneyInsight = {
   context: "JOURNEY";
   temDados: boolean;
-  principalGargalo: { label: string; pctAcerto: number } | null;
+  /** Eixo principal — operação cognitiva, não matéria */
+  principalGargalo: GargaloCognitivoInsight | null;
+  clustersCognitivos: ClusterCognitivo[];
+  temDiagnosticoCognitivo: boolean;
   principalAlavanca: AlavancaJornada | null;
   focoSemana: string | null;
   missao: {
@@ -57,7 +74,7 @@ export type JourneyInsight = {
   atividadesRecentes: RegistroDashboardCard[];
 };
 
-export type { LacunaConhecimento };
+export type { ClusterCognitivo, LacunaConhecimento };
 
 function calcularTendencia(pcts: number[]): { tendencia: TendenciaJornada; label: string } {
   if (pcts.length === 0) return { tendencia: "inicio", label: "Comece registrando uma atividade" };
@@ -128,14 +145,23 @@ function calcularAlavancas(
 }
 
 export async function buildJourneyInsight(userId: string): Promise<JourneyInsight> {
-  const [resumo, metacognicao, planoData, questsData, analytics, lacunasConhecimento, ultimosExams] =
-    await Promise.all([
+  const [
+    resumo,
+    metacognicao,
+    planoData,
+    questsData,
+    analytics,
+    lacunasConhecimento,
+    clustersCognitivos,
+    ultimosExams,
+  ] = await Promise.all([
       buildResumoJornada(userId),
       buildMetacognicaoGlobalJornada(userId),
       getPlanoAtual(userId),
       getQuestsDoPlanoAtual(userId),
       aggregateJourneyLearning(userId, "todos"),
       aggregateKnowledgeGaps(userId, 5),
+      aggregateCognitiveClusters(userId, 4),
       prisma.exam.findMany({
         where: { userId },
         orderBy: { data: "asc" },
@@ -152,6 +178,8 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       context: "JOURNEY",
       temDados: false,
       principalGargalo: null,
+      clustersCognitivos: [],
+      temDiagnosticoCognitivo: false,
       principalAlavanca: null,
       focoSemana: null,
       missao: null,
@@ -170,10 +198,27 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   const materiasBase = materiasComDadosReais(analytics.materiasMedia, 3);
   const alavancas = calcularAlavancas(materiasBase);
   const principalAlavanca = alavancas[0] ?? null;
-  const piorMateria = [...materiasBase].sort((a, b) => a.pctAcerto - b.pctAcerto)[0];
-  const principalGargalo = piorMateria
-    ? { label: piorMateria.label, pctAcerto: piorMateria.pctAcerto }
-    : null;
+  const topCluster = clustersCognitivos[0] ?? null;
+  const topLacuna = lacunasConhecimento[0] ?? null;
+  const temDiagnosticoCognitivo = lacunasConhecimento.length > 0;
+
+  const principalGargalo: GargaloCognitivoInsight | null = topCluster
+    ? {
+        descricao: fraseGargaloCognitivo(topCluster),
+        tipoLabel: topCluster.label,
+        materiaContexto: topCluster.materias[0] ?? topLacuna?.materia ?? null,
+        erros: topCluster.erros,
+        exemploConhecimento: topCluster.exemplosConhecimento[0] ?? null,
+      }
+    : topLacuna
+      ? {
+          descricao: `Lacuna em ${topLacuna.tipoCognitivoLabel.toLowerCase()}: ${topLacuna.texto}`,
+          tipoLabel: topLacuna.tipoCognitivoLabel,
+          materiaContexto: topLacuna.materia,
+          erros: topLacuna.erros,
+          exemploConhecimento: topLacuna.texto,
+        }
+      : null;
 
   const itemFoco =
     planoData.items.find((i) => i.bloco === "analise_materia") ??
@@ -181,35 +226,39 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     planoData.items[0];
 
   const topAlavanca = alavancas[0];
-  const topLacuna = lacunasConhecimento[0];
   const questsPendentes = questsData.quests
     .filter((q) => q.status === "pending")
     .slice(0, 3)
     .map((q) => ({ id: q.id, titulo: q.titulo }));
 
   const missao =
-    itemFoco || questsPendentes.length > 0 || topAlavanca || topLacuna
+    itemFoco || questsPendentes.length > 0 || topCluster || topLacuna || topAlavanca
       ? {
           focoTitulo:
+            (topCluster && temDiagnosticoCognitivo
+              ? tituloMissaoCognitiva(topCluster)
+              : null) ??
             itemFoco?.titulo ??
             (topLacuna
-              ? "Fechar lacuna de conhecimento"
+              ? `Treinar: ${topLacuna.tipoCognitivoLabel}`
               : topAlavanca
-                ? `Priorize ${topAlavanca.label}`
+                ? `Contexto: ${topAlavanca.label}`
                 : "Missão da semana"),
           focoDescricao:
+            (topCluster && temDiagnosticoCognitivo
+              ? `${fraseGargaloCognitivo(topCluster)} Exemplo do que a banca cobrou: «${topCluster.exemplosConhecimento[0]}».`
+              : null) ??
             itemFoco?.descricao?.slice(0, 280) ??
-            (topLacuna
-              ? topLacuna.texto
-              : (topAlavanca?.mensagem ??
-                "Abra suas quests e siga o plano da semana — foco em uma matéria por vez.")),
-          impactoEstimado: topLacuna
-            ? `Lacuna mais repetida na jornada (${topLacuna.erros} erro${topLacuna.erros !== 1 ? "s" : ""})`
-            : topAlavanca
-              ? topAlavanca.potencial === "alto"
-                ? `Maior alavanca agora: ${topAlavanca.label}`
-                : null
-              : null,
+            topLacuna?.texto ??
+            topAlavanca?.mensagem ??
+            "Abra suas quests e siga o plano da semana.",
+          impactoEstimado: topCluster
+            ? `${topCluster.erros} erro${topCluster.erros !== 1 ? "s" : ""} neste tipo cognitivo na jornada`
+            : topLacuna
+              ? `Operação: ${topLacuna.tipoCognitivoLabel}`
+              : topAlavanca?.potencial === "alto"
+                ? `Contexto curricular: ${topAlavanca.label}`
+                : null,
           questsPendentes,
           temPlano: Boolean(planoData.plan),
         }
@@ -223,12 +272,15 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   let consistenciaLabel = `${resumo.totalRegistros} registro(s) na jornada`;
   if (resumo.totalRegistros >= 3) consistenciaLabel = "Você está construindo histórico — bom para o plano";
 
-  const focoSemana = missao?.focoTitulo ?? principalAlavanca?.label ?? null;
+  const focoSemana =
+    principalGargalo?.tipoLabel ?? missao?.focoTitulo ?? principalAlavanca?.label ?? null;
 
   return {
     context: "JOURNEY",
     temDados: true,
     principalGargalo,
+    clustersCognitivos,
+    temDiagnosticoCognitivo,
     principalAlavanca,
     focoSemana,
     missao,
