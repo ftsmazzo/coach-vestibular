@@ -34,7 +34,23 @@ export async function garantirQuestsAlavanca(
     });
   }
 
-  for (const c of insight.clustersCognitivos.slice(0, 2)) {
+  const lacunaTop = insight.lacunasConhecimento[0];
+  if (lacunaTop) {
+    desejadas.push({
+      chave: chaveQuest("conhecimento", `prio-${lacunaTop.chave}`),
+      titulo: `${PREFIXO_QUEST_ALAVANCA}${lacunaTop.tipoCognitivoLabel}: prática focada`,
+      descricao:
+        `${lacunaTop.texto} ` +
+        (lacunaTop.causaDominante
+          ? `Causa mais marcada: ${lacunaTop.causaDominante.label}. `
+          : "") +
+        (lacunaTop.materia ? `Contexto: ${lacunaTop.materia}. ` : "") +
+        "20 min teoria + 15 questões parecidas + anotar regra no caderno.",
+      duracaoMin: 50,
+    });
+  }
+
+  for (const c of insight.clustersCognitivos.slice(0, 1)) {
     desejadas.push({
       chave: chaveQuest("conhecimento", `cluster-${c.tipo}`),
       titulo: `${PREFIXO_QUEST_ALAVANCA}${c.label}: prática guiada`,
@@ -46,17 +62,6 @@ export async function garantirQuestsAlavanca(
     });
   }
 
-  for (const l of insight.lacunasConhecimento.slice(0, 1)) {
-    desejadas.push({
-      chave: chaveQuest("conhecimento", l.chave),
-      titulo: `${PREFIXO_QUEST_ALAVANCA}${l.tipoCognitivoLabel}: ${l.texto.slice(0, 40)}${l.texto.length > 40 ? "…" : ""}`,
-      descricao:
-        `Conhecimento exigido que você errou ${l.erros} vez${l.erros !== 1 ? "es" : ""}. ` +
-        `Releia teoria, refaça 12 questões parecidas e anote uma regra no caderno.` +
-        (l.materia ? ` Contexto: ${l.materia}.` : ""),
-      duracaoMin: 40,
-    });
-  }
 
   if (desejadas.length === 0) return;
 

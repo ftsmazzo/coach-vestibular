@@ -7,10 +7,16 @@ import { aggregateJourneyLearning, materiasComDadosReais } from "@/lib/jornada-a
 import {
   aggregateCognitiveClusters,
   aggregateKnowledgeGaps,
+  escolherLacunaPrioritaria,
+  labelMateriaDeficit,
   type ClusterCognitivo,
   type LacunaConhecimento,
 } from "@/lib/knowledge-gaps";
-import { fraseGargaloCognitivo, tituloMissaoCognitiva } from "@/lib/tipo-cognitivo";
+import {
+  fraseGargaloProfundo,
+  inferirTipoCognitivo,
+  tituloMissaoCognitiva,
+} from "@/lib/tipo-cognitivo";
 import { buildMetacognicaoGlobalJornada } from "@/lib/jornada-metacognicao";
 import { buildResumoJornada } from "@/lib/jornada";
 import { getPlanoAtual, getQuestsDoPlanoAtual } from "@/lib/plano-atual";
@@ -34,8 +40,18 @@ export type GargaloCognitivoInsight = {
   descricao: string;
   tipoLabel: string;
   materiaContexto: string | null;
+  pctAcertoMateria: number | null;
   erros: number;
   exemploConhecimento: string | null;
+  causaMetacognitiva: string | null;
+  pctCausaMetacognitiva: number | null;
+  materiaDeficitPrincipal: string | null;
+};
+
+export type DiagnosticoIntegrado = {
+  titulo: string;
+  paragrafo: string;
+  lacunaChave: string;
 };
 
 export type JourneyInsight = {
@@ -69,6 +85,7 @@ export type JourneyInsight = {
     causaDominante: string | null;
     pctErrosClassificados: number;
   } | null;
+  diagnosticoIntegrado: DiagnosticoIntegrado | null;
   alavancas: AlavancaJornada[];
   lacunasConhecimento: LacunaConhecimento[];
   atividadesRecentes: RegistroDashboardCard[];
@@ -185,6 +202,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       missao: null,
       estado: null,
       padraoCognitivo: null,
+      diagnosticoIntegrado: null,
       alavancas: [],
       lacunasConhecimento: [],
       atividadesRecentes: [],
@@ -198,25 +216,56 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   const materiasBase = materiasComDadosReais(analytics.materiasMedia, 3);
   const alavancas = calcularAlavancas(materiasBase);
   const principalAlavanca = alavancas[0] ?? null;
-  const topCluster = clustersCognitivos[0] ?? null;
-  const topLacuna = lacunasConhecimento[0] ?? null;
   const temDiagnosticoCognitivo = lacunasConhecimento.length > 0;
+  const materiaDeficit = labelMateriaDeficit(materiasBase);
+  const lacunaPrioritaria = escolherLacunaPrioritaria(
+    lacunasConhecimento,
+    materiaDeficit?.label ?? null
+  );
+  const topCluster =
+    clustersCognitivos.find(
+      (c) =>
+        lacunaPrioritaria &&
+        c.tipo === lacunaPrioritaria.tipoCognitivo
+    ) ?? clustersCognitivos[0] ?? null;
 
-  const principalGargalo: GargaloCognitivoInsight | null = topCluster
+  const gargaloInput = lacunaPrioritaria
     ? {
-        descricao: fraseGargaloCognitivo(topCluster),
-        tipoLabel: topCluster.label,
-        materiaContexto: topCluster.materias[0] ?? topLacuna?.materia ?? null,
-        erros: topCluster.erros,
-        exemploConhecimento: topCluster.exemplosConhecimento[0] ?? null,
+        exemploConhecimento: lacunaPrioritaria.texto,
+        tipoLabel: lacunaPrioritaria.tipoCognitivoLabel,
+        verboTreino: inferirTipoCognitivo(lacunaPrioritaria.texto).verboTreino,
+        materia: lacunaPrioritaria.materia,
+        pctAcertoMateria: lacunaPrioritaria.pctAcertoMateria,
+        erros: lacunaPrioritaria.erros,
+        causaDominante: lacunaPrioritaria.causaDominante?.label ?? metacognicao?.causaDominante?.label ?? null,
+        pctCausa:
+          lacunaPrioritaria.causaDominante?.pct ??
+          metacognicao?.causaDominante?.pct ??
+          null,
+        materiaDeficitPrincipal: materiaDeficit?.label ?? null,
       }
-    : topLacuna
+    : null;
+
+  const principalGargalo: GargaloCognitivoInsight | null = gargaloInput
+    ? {
+        descricao: fraseGargaloProfundo(gargaloInput),
+        tipoLabel: gargaloInput.tipoLabel,
+        materiaContexto: gargaloInput.materia,
+        pctAcertoMateria: gargaloInput.pctAcertoMateria,
+        erros: gargaloInput.erros,
+        exemploConhecimento: gargaloInput.exemploConhecimento,
+        causaMetacognitiva: gargaloInput.causaDominante,
+        pctCausaMetacognitiva: gargaloInput.pctCausa,
+        materiaDeficitPrincipal: gargaloInput.materiaDeficitPrincipal,
+      }
+    : null;
+
+  const diagnosticoIntegrado: DiagnosticoIntegrado | null =
+    principalGargalo && lacunaPrioritaria
       ? {
-          descricao: `Lacuna em ${topLacuna.tipoCognitivoLabel.toLowerCase()}: ${topLacuna.texto}`,
-          tipoLabel: topLacuna.tipoCognitivoLabel,
-          materiaContexto: topLacuna.materia,
-          erros: topLacuna.erros,
-          exemploConhecimento: topLacuna.texto,
+          titulo: tituloMissaoCognitiva(gargaloInput!),
+          paragrafo: principalGargalo.descricao,
+          lacunaChave: lacunaPrioritaria.chave,
         }
       : null;
 
@@ -232,32 +281,24 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     .map((q) => ({ id: q.id, titulo: q.titulo }));
 
   const missao =
-    itemFoco || questsPendentes.length > 0 || topCluster || topLacuna || topAlavanca
+    itemFoco || questsPendentes.length > 0 || gargaloInput || topAlavanca
       ? {
           focoTitulo:
-            (topCluster && temDiagnosticoCognitivo
-              ? tituloMissaoCognitiva(topCluster)
+            (gargaloInput && temDiagnosticoCognitivo
+              ? tituloMissaoCognitiva(gargaloInput)
               : null) ??
             itemFoco?.titulo ??
-            (topLacuna
-              ? `Treinar: ${topLacuna.tipoCognitivoLabel}`
-              : topAlavanca
-                ? `Contexto: ${topAlavanca.label}`
-                : "Missão da semana"),
+            (topAlavanca ? `Reforço: ${topAlavanca.label}` : "Missão da semana"),
           focoDescricao:
-            (topCluster && temDiagnosticoCognitivo
-              ? `${fraseGargaloCognitivo(topCluster)} Exemplo do que a banca cobrou: «${topCluster.exemplosConhecimento[0]}».`
-              : null) ??
+            (principalGargalo?.descricao ?? null) ??
             itemFoco?.descricao?.slice(0, 280) ??
-            topLacuna?.texto ??
             topAlavanca?.mensagem ??
             "Abra suas quests e siga o plano da semana.",
-          impactoEstimado: topCluster
-            ? `${topCluster.erros} erro${topCluster.erros !== 1 ? "s" : ""} neste tipo cognitivo na jornada`
-            : topLacuna
-              ? `Operação: ${topLacuna.tipoCognitivoLabel}`
-              : topAlavanca?.potencial === "alto"
-                ? `Contexto curricular: ${topAlavanca.label}`
+          impactoEstimado:
+            materiaDeficit && lacunaPrioritaria?.materia
+              ? `${lacunaPrioritaria.erros} erro(s) nesta demanda · déficit em ${materiaDeficit.label} (${materiaDeficit.pct}%)`
+              : lacunaPrioritaria
+                ? `${lacunaPrioritaria.erros} erro(s) com este conhecimento na jornada`
                 : null,
           questsPendentes,
           temPlano: Boolean(planoData.plan),
@@ -301,6 +342,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
           pctErrosClassificados: metacognicao.pctErrosClassificados,
         }
       : null,
+    diagnosticoIntegrado,
     alavancas,
     lacunasConhecimento,
     atividadesRecentes: analytics.registrosRecentes.slice(0, 4),
