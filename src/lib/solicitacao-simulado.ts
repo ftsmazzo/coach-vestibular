@@ -9,6 +9,13 @@ export type SolicitacaoSimuladoMeta = {
   tamanhoBytes?: number;
   mimeType?: string;
   mensagem?: string;
+  /** Gabarito oficial colado pelo aluno (ex.: "1-A 2-C 3-B...") */
+  gabaritoTexto?: string | null;
+  /** Arquivo do gabarito oficial (PDF/foto), se enviado */
+  gabaritoStoragePath?: string | null;
+  gabaritoFileName?: string | null;
+  gabaritoMimeType?: string | null;
+  gabaritoTamanhoBytes?: number | null;
 };
 
 export function parseSolicitacaoMeta(resultJson: string | null): SolicitacaoSimuladoMeta {

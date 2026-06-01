@@ -25,6 +25,17 @@ export async function saveSolicitacaoFile(jobId: string, file: File): Promise<st
   return rel;
 }
 
+/** Salva o gabarito oficial num subdiretório próprio (evita colisão com a prova). */
+export async function saveSolicitacaoGabarito(jobId: string, file: File): Promise<string> {
+  const safeName = sanitizeFileName(file.name);
+  const rel = path.posix.join(SUBDIR_SOLICITACOES, jobId, "gabarito", safeName);
+  const abs = path.join(getUploadRoot(), rel);
+  await fs.mkdir(path.dirname(abs), { recursive: true });
+  const buf = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(abs, buf);
+  return rel;
+}
+
 export function resolveStoredFilePath(storagePath: string): string {
   const root = getUploadRoot();
   const normalized = storagePath.replace(/\\/g, "/");

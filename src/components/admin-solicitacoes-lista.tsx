@@ -22,6 +22,9 @@ type Solicitacao = {
   observacao: string | null;
   tamanhoBytes?: number;
   mimeType?: string;
+  gabaritoTexto?: string | null;
+  gabaritoFileName?: string | null;
+  temGabaritoArquivo?: boolean;
 };
 
 function formatarData(iso: string) {
@@ -151,7 +154,26 @@ export function AdminSolicitacoesLista() {
                     <dd className="sm:col-span-1">{s.observacao}</dd>
                   </>
                 )}
+                <dt className="text-slate-500">Gabarito oficial</dt>
+                <dd>
+                  {s.gabaritoTexto || s.temGabaritoArquivo ? (
+                    <span className="font-medium text-emerald-700">Enviado pelo aluno ✓</span>
+                  ) : (
+                    <span className="text-slate-400">Não enviado</span>
+                  )}
+                </dd>
               </dl>
+
+              {s.gabaritoTexto && (
+                <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                    Gabarito colado pelo aluno
+                  </p>
+                  <pre className="mt-1 whitespace-pre-wrap break-words font-mono text-xs text-slate-800">
+                    {s.gabaritoTexto}
+                  </pre>
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-2">
                 {s.temArquivo ? (
@@ -166,6 +188,15 @@ export function AdminSolicitacoesLista() {
                   <span className="text-sm text-amber-700">
                     Arquivo indisponível — pedir reenvio ao aluno
                   </span>
+                )}
+                {s.temGabaritoArquivo && (
+                  <a
+                    href={`/api/admin/solicitacoes/${s.id}/arquivo?tipo=gabarito`}
+                    className="inline-flex items-center rounded-lg bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800"
+                    download
+                  >
+                    Baixar gabarito
+                  </a>
                 )}
                 <Link href="/admin/provas">
                   <Button type="button" variant="secondary">

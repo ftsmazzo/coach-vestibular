@@ -39,6 +39,9 @@ export async function GET(request: Request) {
         const temArquivo = j.storagePath
           ? await storedFileExists(j.storagePath)
           : false;
+        const temGabaritoArquivo = meta.gabaritoStoragePath
+          ? await storedFileExists(meta.gabaritoStoragePath)
+          : false;
         return {
           id: j.id,
           fileName: j.fileName,
@@ -52,6 +55,9 @@ export async function GET(request: Request) {
           observacao: meta.observacao ?? null,
           tamanhoBytes: meta.tamanhoBytes,
           mimeType: meta.mimeType,
+          gabaritoTexto: meta.gabaritoTexto ?? null,
+          gabaritoFileName: meta.gabaritoFileName ?? null,
+          temGabaritoArquivo,
         };
       })
   );
