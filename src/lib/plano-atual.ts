@@ -64,6 +64,9 @@ export async function getQuestsDoPlanoAtual(userId: string) {
 
   const filtradas = todas.filter((q) => {
     if (isQuestAlavanca(q.titulo)) return false;
+    // Quests com prefixo [Prova] são do escopo PROVA — só aparecem na visão da prova,
+    // nunca na lista global (senão a Home as trata como "planos antigos").
+    if (q.titulo.startsWith("[")) return false;
     if (q.status !== "pending") return true;
     if (!plan) return false;
     if (titulosQuests.has(q.titulo)) return true;
