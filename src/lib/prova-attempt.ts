@@ -379,6 +379,9 @@ async function aplicarPlanoEQuests(
     const { buildJourneyInsight } = await import("@/lib/journey-insight");
     await buildJourneyInsight(userId);
 
+    const { sincronizarCicloDaSemana } = await import("@/lib/ciclo");
+    await sincronizarCicloDaSemana(userId);
+
     return {
       planId: plan.id,
       fonte: "ia" as const,
@@ -404,6 +407,9 @@ async function aplicarPlanoEQuests(
 
   const { buildJourneyInsight } = await import("@/lib/journey-insight");
   await buildJourneyInsight(userId);
+
+  const { sincronizarCicloDaSemana } = await import("@/lib/ciclo");
+  await sincronizarCicloDaSemana(userId);
 
   const { getOQueFazerAgora } = await import("@/lib/quests-alavanca");
   const quests = await getOQueFazerAgora(userId);
