@@ -11,7 +11,9 @@ export type EventoCopiloto =
   | "bug_resolvido"
   | "sugestao_acatada"
   | "classificacao_aceita"
-  | "nova_prova";
+  | "nova_prova"
+  | "quest_lembrete"
+  | "ciclo_fechando";
 
 export function telefoneParaWhatsapp(raw: string | null | undefined): string | null {
   return normalizarTelefone(raw);
