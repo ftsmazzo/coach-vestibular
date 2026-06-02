@@ -69,6 +69,8 @@ export async function PATCH(
   const atual = await prisma.prova.findUnique({ where: { id } });
   if (!atual) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
 
+  const publicandoAgora = body.publicada === true && !atual.publicada;
+
   const merged = {
     banca: body.banca ?? atual.banca,
     ano: body.ano !== undefined ? body.ano : atual.ano,
@@ -88,7 +90,38 @@ export async function PATCH(
     where: { id },
     data: { ...body, nome },
   });
+
+  if (publicandoAgora) {
+    await notificarNovaProva(prova.nome);
+  }
+
   return NextResponse.json(prova);
+}
+
+/** Avisa os alunos com WhatsApp cadastrado que uma nova atividade entrou no catálogo. */
+async function notificarNovaProva(nomeProva: string) {
+  const { enviarNotificacao, telefoneParaWhatsapp } = await import("@/lib/notificacoes");
+  const alunos = await prisma.user.findMany({
+    where: { role: "STUDENT", telefone: { not: null } },
+    select: { name: true, telefone: true },
+  });
+
+  await Promise.allSettled(
+    alunos.map((a) => {
+      const numero = telefoneParaWhatsapp(a.telefone);
+      if (!numero) return Promise.resolve();
+      const primeiroNome = a.name.split(/\s+/)[0] || "você";
+      const mensagem =
+        `Oi, ${primeiroNome}! 📝 Entrou uma atividade nova no Coach: *${nomeProva}*.\n\n` +
+        `Que tal fazer e registrar o resultado? O copiloto ajusta seu plano com isso. 💪`;
+      return enviarNotificacao({
+        evento: "nova_prova",
+        numero,
+        mensagem,
+        meta: { prova: nomeProva },
+      });
+    })
+  );
 }
 
 export async function DELETE(

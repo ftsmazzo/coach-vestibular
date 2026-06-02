@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import { concederXp, XP_VALORES } from "@/lib/xp";
+import { enviarNotificacao, telefoneParaWhatsapp } from "@/lib/notificacoes";
 import { prisma } from "@/lib/prisma";
 import {
   normalizarLabelAssunto,
@@ -93,6 +94,24 @@ export async function PATCH(
       id,
       XP_VALORES.SUGESTAO_ACEITA
     );
+
+    const aluno = await prisma.user.findUnique({
+      where: { id: sugestao.userId },
+      select: { name: true, telefone: true, email: true },
+    });
+    if (aluno) {
+      const primeiroNome = aluno.name.split(/\s+/)[0] || "você";
+      const numero = telefoneParaWhatsapp(aluno.telefone);
+      const mensagem = numero
+        ? `Oi, ${primeiroNome}! ✅ Sua correção de classificação (questão ${sugestao.numero}) foi aceita${xp > 0 ? ` — +${xp} XP!` : "!"} Obrigado por deixar o banco mais preciso. 🙌`
+        : `(Aluno sem WhatsApp) ${aluno.name}: classificação da questão ${sugestao.numero} aceita${xp > 0 ? ` (+${xp} XP)` : ""}`;
+      await enviarNotificacao({
+        evento: "classificacao_aceita",
+        numero,
+        mensagem,
+        meta: { sugestaoId: id, aluno: aluno.email },
+      });
+    }
 
     return NextResponse.json({
       ok: true,

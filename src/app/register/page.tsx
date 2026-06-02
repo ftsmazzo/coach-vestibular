@@ -16,6 +16,7 @@ function RegisterForm() {
     password: "",
     inviteCode: "",
     vestibularAlvo: "Medicina",
+    telefone: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -102,6 +103,19 @@ function RegisterForm() {
               value={form.vestibularAlvo}
               onChange={(e) => setForm({ ...form, vestibularAlvo: e.target.value })}
             />
+          </div>
+          <div>
+            <Label>WhatsApp (opcional)</Label>
+            <Input
+              type="tel"
+              value={form.telefone}
+              onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+              placeholder="(11) 99999-9999"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Para avisarmos quando uma sugestão sua for acatada, um bug que você reportou for
+              resolvido ou entrar uma prova nova. Sem spam.
+            </p>
           </div>
           {error && <p className="text-sm text-rose-600">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { consumeInviteCode, createSession, hashPassword, peekInviteCode } from "@/lib/auth";
+import { normalizarTelefone } from "@/lib/telefone";
 
 const schema = z.object({
   email: z.string().email(),
@@ -9,6 +10,7 @@ const schema = z.object({
   name: z.string().min(2),
   inviteCode: z.string().min(4),
   vestibularAlvo: z.string().optional(),
+  telefone: z.string().max(30).optional(),
 });
 
 export async function POST(request: Request) {
@@ -35,6 +37,7 @@ export async function POST(request: Request) {
         passwordHash: await hashPassword(body.password),
         name: body.name.trim(),
         vestibularAlvo: body.vestibularAlvo?.trim() || "Medicina",
+        telefone: normalizarTelefone(body.telefone),
       },
     });
 

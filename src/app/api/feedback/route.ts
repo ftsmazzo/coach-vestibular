@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { saveFeedbackAnexo } from "@/lib/upload-storage";
-import { enviarFeedbackWebhook } from "@/lib/feedback-webhook";
+import { enviarNotificacao } from "@/lib/notificacoes";
 import type { FeedbackTipo } from "@/generated/prisma/client";
 
 const MAX_MB = 8;
 const ALLOWED = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const TIPOS: FeedbackTipo[] = ["BUG", "SUGESTAO", "DUVIDA"];
+
+const TIPO_LABEL: Record<FeedbackTipo, string> = {
+  BUG: "🐞 Bug",
+  SUGESTAO: "💡 Sugestão",
+  DUVIDA: "❓ Dúvida",
+};
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -86,24 +92,27 @@ export async function POST(request: Request) {
   });
 
   const origin = new URL(request.url).origin;
-  await enviarFeedbackWebhook({
-    id: feedback.id,
-    tipo,
-    status: "NOVO",
-    titulo,
-    descricao,
-    esperado: esperado || null,
-    severidade: severidade || null,
-    pagina: pagina || null,
-    contexto,
-    temAnexo: Boolean(temAnexo),
-    aluno: {
-      id: session.userId,
-      nome: user?.name ?? "—",
-      email: user?.email ?? "—",
+  const mensagem =
+    `${TIPO_LABEL[tipo]} — novo report\n\n` +
+    `*${titulo}*\n${descricao}` +
+    (esperado ? `\n\nEsperava: ${esperado}` : "") +
+    `\n\n• Severidade: ${severidade || "-"}` +
+    `\n• Página: ${pagina || "-"}` +
+    `\n• Aluno: ${user?.name ?? "—"} (${user?.email ?? "—"})` +
+    `\n\nVer no admin: ${origin}/admin/feedback`;
+
+  await enviarNotificacao({
+    evento: "report_novo",
+    numero: null,
+    mensagem,
+    meta: {
+      id: feedback.id,
+      tipo,
+      titulo,
+      pagina: pagina || null,
+      temAnexo: Boolean(temAnexo),
+      aluno: { id: session.userId, nome: user?.name, email: user?.email },
     },
-    criadoEm: feedback.createdAt.toISOString(),
-    appUrl: `${origin}/admin/feedback`,
   });
 
   return NextResponse.json({
