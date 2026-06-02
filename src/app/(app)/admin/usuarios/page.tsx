@@ -22,6 +22,7 @@ export default function AdminUsuariosPage() {
   const [sucesso, setSucesso] = useState("");
   const [senhaGerada, setSenhaGerada] = useState<string | null>(null);
   const [zerandoId, setZerandoId] = useState<string | null>(null);
+  const [resetandoId, setResetandoId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -120,6 +121,32 @@ export default function AdminUsuariosPage() {
         ? ` Gerado em ${new Date(data.planoGeradoEm).toLocaleString("pt-BR")}.`
         : "";
     setSucesso((data.mensagem ?? "Copiloto recriado.") + detalhe);
+  }
+
+  async function resetarAnamnese(aluno: Aluno) {
+    if (
+      !confirm(
+        `Resetar SÓ a anamnese de ${aluno.name}?\n\n` +
+          "Apaga apenas a conversa inicial. Mantém plano, quests, provas e respostas.\n" +
+          "O banner volta na Home; quando o aluno refizer a anamnese, o plano é regenerado a partir dela.\n\n" +
+          "Continuar?"
+      )
+    ) {
+      return;
+    }
+    setResetandoId(aluno.id);
+    setError("");
+    setSucesso("");
+    const res = await fetch(`/api/admin/users/${aluno.id}/resetar-anamnese`, {
+      method: "POST",
+    });
+    const data = await res.json();
+    setResetandoId(null);
+    if (!res.ok) {
+      setError(data.error ?? "Erro ao resetar anamnese");
+      return;
+    }
+    setSucesso(data.mensagem ?? "Anamnese resetada.");
   }
 
   return (
@@ -249,15 +276,26 @@ export default function AdminUsuariosPage() {
                       {new Date(a.createdAt).toLocaleDateString("pt-BR")}
                     </td>
                     <td className="p-3">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="text-xs"
-                        disabled={zerandoId === a.id}
-                        onClick={() => zerarCopiloto(a)}
-                      >
-                        {zerandoId === a.id ? "Recriando…" : "Zerar e recriar"}
-                      </Button>
+                      <div className="flex flex-col gap-1.5">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="text-xs"
+                          disabled={resetandoId === a.id}
+                          onClick={() => resetarAnamnese(a)}
+                        >
+                          {resetandoId === a.id ? "Resetando…" : "Resetar anamnese"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-xs"
+                          disabled={zerandoId === a.id}
+                          onClick={() => zerarCopiloto(a)}
+                        >
+                          {zerandoId === a.id ? "Recriando…" : "Zerar e recriar"}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

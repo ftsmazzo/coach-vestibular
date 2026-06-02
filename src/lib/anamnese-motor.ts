@@ -678,8 +678,16 @@ export async function finalizarAnamnese(userId: string): Promise<AnamnesePublicV
     },
   });
 
-  const { buildJourneyInsight } = await import("@/lib/journey-insight");
-  await buildJourneyInsight(userId);
+  // Ao concluir a anamnese, regenera o plano/quests para nascerem da conversa
+  // (não só recalcula o insight). Best-effort: não quebra o fechamento.
+  try {
+    const { regenerarPlanoGlobalUsuario } = await import("@/lib/prova-attempt");
+    await regenerarPlanoGlobalUsuario(userId);
+  } catch (e) {
+    console.error("[anamnese] falha ao regenerar plano após concluir:", e);
+    const { buildJourneyInsight } = await import("@/lib/journey-insight");
+    await buildJourneyInsight(userId);
+  }
 
   return toPublicView(updated);
 }
