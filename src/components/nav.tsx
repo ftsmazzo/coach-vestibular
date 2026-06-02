@@ -15,6 +15,7 @@ const studentLinks = [
   { href: "/analise", label: "Análise" },
   { href: "/comunidade", label: "Comunidade" },
   { href: "/perfil", label: "Perfil" },
+  { href: "/reportar", label: "Reportar erro" },
 ];
 
 const adminLinks = [
