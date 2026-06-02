@@ -32,6 +32,11 @@ enum AnamnesisStatus {
   COMPLETED
 }
 
+enum CicloStatus {
+  ATIVO
+  FECHADO
+}
+
 enum FeedbackTipo {
   BUG
   SUGESTAO
@@ -142,6 +147,7 @@ model User {
   uploadJobs          UploadJob[]
   anamnesis           StudentAnamnesis?
   feedbacks           Feedback[]
+  ciclos              LearningCycle[]
 }
 
 /// Report de erro / sugestão do aluno (beta). Fonte da verdade; também enviado a um webhook (N8N).
@@ -324,6 +330,7 @@ model StudyPlan {
 model Quest {
   id          String      @id @default(cuid())
   userId      String
+  cicloId     String?
   titulo      String
   descricao   String?
   materiaId   String?
@@ -336,7 +343,57 @@ model Quest {
   moodAfter   Int?
   createdAt   DateTime    @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ciclo LearningCycle? @relation(fields: [cicloId], references: [id], onDelete: SetNull)
+
+  @@index([cicloId])
+}
+
+/// Ciclo de aprendizagem (semana): meta mensurável, prazo, baseline e resultado.
+model LearningCycle {
+  id            String      @id @default(cuid())
+  userId        String
+  indice        Int         @default(1)
+  status        CicloStatus @default(ATIVO)
+  startAt       DateTime    @default(now())
+  endAt         DateTime
+  metaClusterId String?
+  metaMateria   String?
+  metaTitulo    String
+  /// Snapshot do alvo no início (pct/erros do cluster e matéria)
+  baselineJson  String?     @db.Text
+  /// Resultado no fechamento (mini-quiz, antes x depois)
+  resultadoJson String?     @db.Text
+  fechadoEm     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quests  Quest[]
+  quizzes CicloQuiz[]
+
+  @@index([userId, status])
+}
+
+/// Mini-quiz dirigido de fechamento do ciclo (questões do banco no padrão-alvo).
+model CicloQuiz {
+  id            String    @id @default(cuid())
+  cicloId       String
+  clusterAlvo   String?
+  materiaAlvo   String?
+  /// Questões sorteadas (provaQuestaoId, numero, materia, gabarito...)
+  itemsJson     String    @db.Text
+  /// Respostas do aluno por questão
+  respostasJson String?   @db.Text
+  totalQuestoes Int       @default(0)
+  pctAcerto     Int?
+  status        String    @default("EM_ABERTO")
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  ciclo LearningCycle @relation(fields: [cicloId], references: [id], onDelete: Cascade)
+
+  @@index([cicloId])
 }
 
 model EmotionalLog {
