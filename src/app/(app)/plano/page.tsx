@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getPlanoAtual } from "@/lib/plano-atual";
+import { getCicloResumo } from "@/lib/ciclo";
+import { CicloHeader } from "@/components/ciclo-header";
 import { buildResumoJornada } from "@/lib/jornada";
 import { RecalcularDiagnosticoButton } from "@/components/recalcular-diagnostico-button";
 import { RegenerarPlanoButton } from "@/components/regenerar-plano-button";
@@ -84,9 +86,10 @@ export default async function PlanoPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [{ plan, items }, jornada] = await Promise.all([
+  const [{ plan, items }, jornada, ciclo] = await Promise.all([
     getPlanoAtual(session.userId),
     buildResumoJornada(session.userId),
+    getCicloResumo(session.userId),
   ]);
 
   const copiloto = isPlanoCopiloto(items);
@@ -168,6 +171,8 @@ export default async function PlanoPage() {
           </p>
         )}
       </div>
+
+      {ciclo && <CicloHeader ciclo={ciclo} />}
 
       {plan?.recoveryMode && (
         <Card className="border-amber-200 bg-amber-50">

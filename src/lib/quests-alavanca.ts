@@ -18,6 +18,7 @@ export type QuestCopiloto = {
   duracaoMin: number;
   ordem: number;
   rotulo: string;
+  dueDate: string | null;
 };
 
 /** Identidade estável da quest (sem ordem — evita duplicar ao reordenar). */
@@ -488,6 +489,7 @@ export async function getOQueFazerAgora(userId: string): Promise<QuestCopiloto[]
         duracaoMin: q.duracaoMin,
         ordem,
         rotulo,
+        dueDate: q.dueDate ? q.dueDate.toISOString() : null,
         sem,
         chaveAtual: chave,
       };

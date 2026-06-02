@@ -40,10 +40,13 @@ export async function GET(request: Request) {
   }
 
   let oQueFazerAgora: Awaited<ReturnType<typeof getOQueFazerAgora>> = [];
+  let ciclo: Awaited<ReturnType<typeof import("@/lib/ciclo").getCicloResumo>> = null;
   if (!provaId) {
     const { buildJourneyInsight } = await import("@/lib/journey-insight");
     await buildJourneyInsight(session.userId);
     oQueFazerAgora = await getOQueFazerAgora(session.userId);
+    const { getCicloResumo } = await import("@/lib/ciclo");
+    ciclo = await getCicloResumo(session.userId);
   }
 
   const copilotoConcluidas = provaId
@@ -117,8 +120,10 @@ export async function GET(request: Request) {
       status: "pending",
       rewardMsg: null,
       ordemPlano: q.ordem,
+      dueDate: q.dueDate,
       meta: { bloco: "copiloto" as const, rotulo: q.rotulo },
     })),
+    ciclo,
     copilotoConcluidas,
     questsAlavanca: [],
     planoAtualizadoEm: plan?.createdAt ?? null,

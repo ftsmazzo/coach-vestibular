@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card, Button, Badge } from "@/components/ui";
+import { CicloHeader } from "@/components/ciclo-header";
 
 interface QuestMeta {
   ordem?: number;
@@ -21,17 +22,40 @@ interface Quest {
   duracaoMin: number;
   rewardMsg: string | null;
   ordemPlano: number | null;
+  dueDate?: string | null;
   meta: QuestMeta | null;
+}
+
+interface CicloResumoView {
+  id: string;
+  indice: number;
+  metaTitulo: string;
+  metaMateria: string | null;
+  endAt: string;
+  diasRestantes: number;
+  expirado: boolean;
+  total: number;
+  feitas: number;
+  pendentes: number;
+  pctConcluido: number;
 }
 
 interface QuestsResponse {
   quests: Quest[];
   oQueFazerAgora?: Quest[];
   copilotoConcluidas?: Quest[];
+  ciclo?: CicloResumoView | null;
   planoAtualizadoEm: string | null;
   recoveryMode: boolean;
   provaId?: string | null;
   provaNome?: string | null;
+}
+
+function diaSugeridoLabel(dueDate?: string | null): string | null {
+  if (!dueDate) return null;
+  const d = new Date(dueDate);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
 export default function QuestsPage() {
@@ -100,6 +124,7 @@ export default function QuestsPage() {
     numero?: number;
   }) {
     const rotulo = q.meta?.rotulo;
+    const dia = diaSugeridoLabel(q.dueDate);
     return (
       <Card
         className={
@@ -124,7 +149,10 @@ export default function QuestsPage() {
                 {q.descricao}
               </p>
             )}
-            <p className="mt-1 text-xs text-slate-500">~{q.duracaoMin} min</p>
+            <p className="mt-1 text-xs text-slate-500">
+              ~{q.duracaoMin} min
+              {dia ? ` · sugerido: ${dia}` : ""}
+            </p>
           </div>
           <Button onClick={() => completeQuest(q.id)} className="w-full shrink-0 sm:w-auto">
             Concluir
@@ -160,6 +188,8 @@ export default function QuestsPage() {
           <p className="mt-1 text-sm text-amber-800">Modo recuperação: menos tarefas, metas menores.</p>
         )}
       </div>
+
+      {!provaId && data?.ciclo && <CicloHeader ciclo={data.ciclo} />}
 
       <Card>
         <p className="text-sm font-medium">Como você está agora? (ao concluir uma tarefa)</p>
