@@ -41,6 +41,8 @@ interface Prova {
   questoes: ProvaQuestao[];
   temTextoFonte?: boolean;
   tamanhoTextoFonte?: number | null;
+  cadernoFileName?: string | null;
+  cadernoStoragePath?: string | null;
   tentativas?: {
     id: string;
     data: string;
@@ -119,6 +121,8 @@ export default function AdminProvaDetailPage() {
   const [csvSoAtualizar, setCsvSoAtualizar] = useState(true);
   const [importandoCsv, setImportandoCsv] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [cadernoFile, setCadernoFile] = useState<File | null>(null);
+  const [salvandoCaderno, setSalvandoCaderno] = useState(false);
   const [textoProva, setTextoProva] = useState("");
   const [salvandoTexto, setSalvandoTexto] = useState(false);
   const [textoFaltantes, setTextoFaltantes] = useState("");
@@ -293,6 +297,33 @@ export default function AdminProvaDetailPage() {
     const res = await fetch(`/api/admin/provas/${id}/texto-fonte`, { method: "DELETE" });
     const data = await res.json();
     setMsg(res.ok ? data.mensagem ?? "Texto removido." : data.error ?? "Erro");
+    if (res.ok) load();
+  }
+
+  async function enviarCaderno() {
+    if (!cadernoFile) {
+      setMsg("Selecione o arquivo do caderno.");
+      return;
+    }
+    setSalvandoCaderno(true);
+    setMsg("");
+    const fd = new FormData();
+    fd.append("file", cadernoFile);
+    const res = await fetch(`/api/admin/provas/${id}/caderno`, { method: "POST", body: fd });
+    const data = await res.json();
+    setSalvandoCaderno(false);
+    setMsg(res.ok ? data.mensagem ?? "Caderno salvo." : data.error ?? "Erro ao salvar caderno");
+    if (res.ok) {
+      setCadernoFile(null);
+      load();
+    }
+  }
+
+  async function removerCaderno() {
+    if (!confirm("Remover o caderno do download dos alunos?")) return;
+    const res = await fetch(`/api/admin/provas/${id}/caderno`, { method: "DELETE" });
+    const data = await res.json();
+    setMsg(res.ok ? data.mensagem ?? "Caderno removido." : data.error ?? "Erro");
     if (res.ok) load();
   }
 
@@ -566,6 +597,42 @@ export default function AdminProvaDetailPage() {
               )}
             </div>
           </div>
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="mb-2 font-semibold text-slate-800">Caderno para o aluno baixar</h2>
+        <p className="mb-3 text-sm text-slate-600">
+          Envie o PDF (ou imagem) do caderno desta prova. O aluno verá um botão{" "}
+          <strong>⬇ Caderno</strong> no card de Atividades para baixar e fazer a prova. É opcional e
+          separado da extração de questões.
+        </p>
+        {prova.cadernoFileName ? (
+          <p className="mb-2 text-sm font-medium text-emerald-700">
+            Caderno atual: {prova.cadernoFileName}
+          </p>
+        ) : (
+          <p className="mb-2 text-sm text-slate-500">Nenhum caderno enviado ainda.</p>
+        )}
+        <Input
+          type="file"
+          accept=".pdf,application/pdf,image/jpeg,image/png,image/webp"
+          onChange={(e) => setCadernoFile(e.target.files?.[0] ?? null)}
+        />
+        {cadernoFile && (
+          <p className="mt-1 text-xs text-slate-600">
+            Selecionado: {cadernoFile.name} ({(cadernoFile.size / 1024).toFixed(0)} KB)
+          </p>
+        )}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button type="button" disabled={salvandoCaderno || !cadernoFile} onClick={enviarCaderno}>
+            {salvandoCaderno ? "Enviando…" : "Salvar caderno"}
+          </Button>
+          {prova.cadernoFileName && (
+            <Button type="button" variant="secondary" onClick={removerCaderno}>
+              Remover caderno
+            </Button>
+          )}
         </div>
       </Card>
 

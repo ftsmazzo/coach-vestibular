@@ -10,6 +10,7 @@ export type ProvaCatalogoItem = {
   banca: string;
   ano: number | null;
   minhasTentativas: number;
+  temCaderno: boolean;
   ultimaTentativa: {
     id: string;
     dataLabel: string;
@@ -45,6 +46,7 @@ export function CatalogoProvasGrid({ provas }: { provas: ProvaCatalogoItem[] }) 
         const tipo = tipoAtividadeFromProvaTipo(p.tipo);
         const subtitulo = subtituloProva(p);
         const lenteHref = `/provas/${p.id}/lente`;
+        const cadernoHref = p.temCaderno ? `/api/provas/${p.id}/caderno` : null;
 
         if (!p.ultimaTentativa) {
           return (
@@ -58,6 +60,7 @@ export function CatalogoProvasGrid({ provas }: { provas: ProvaCatalogoItem[] }) 
               dadosHref={lenteHref}
               terceiroHref={`/quests?provaId=${p.id}`}
               terceiroLabel="Quests"
+              cadernoHref={cadernoHref}
             />
           );
         }
@@ -74,6 +77,7 @@ export function CatalogoProvasGrid({ provas }: { provas: ProvaCatalogoItem[] }) 
             dadosHref={`/simulados/${examId}`}
             terceiroHref={`/quests?provaId=${p.id}`}
             terceiroLabel="Quests"
+            cadernoHref={cadernoHref}
           />
         );
       })}

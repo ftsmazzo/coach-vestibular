@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 
 const SUBDIR_SOLICITACOES = "solicitacoes";
+const SUBDIR_PROVAS = "provas";
 
 export function getUploadRoot(): string {
   const root = process.env.UPLOAD_STORAGE_DIR?.trim();
@@ -29,6 +30,17 @@ export async function saveSolicitacaoFile(jobId: string, file: File): Promise<st
 export async function saveSolicitacaoGabarito(jobId: string, file: File): Promise<string> {
   const safeName = sanitizeFileName(file.name);
   const rel = path.posix.join(SUBDIR_SOLICITACOES, jobId, "gabarito", safeName);
+  const abs = path.join(getUploadRoot(), rel);
+  await fs.mkdir(path.dirname(abs), { recursive: true });
+  const buf = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(abs, buf);
+  return rel;
+}
+
+/** Salva o caderno (PDF/imagem) de uma prova para download do aluno. */
+export async function saveProvaCaderno(provaId: string, file: File): Promise<string> {
+  const safeName = sanitizeFileName(file.name);
+  const rel = path.posix.join(SUBDIR_PROVAS, provaId, "caderno", safeName);
   const abs = path.join(getUploadRoot(), rel);
   await fs.mkdir(path.dirname(abs), { recursive: true });
   const buf = Buffer.from(await file.arrayBuffer());

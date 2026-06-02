@@ -56,6 +56,7 @@ export default async function AtividadesPage() {
     banca: p.banca,
     ano: p.ano,
     minhasTentativas: contagemPorProvaId.get(p.id) ?? 0,
+    temCaderno: Boolean(p.cadernoStoragePath),
     ultimaTentativa: ultimaPorProvaId.get(p.id) ?? null,
   }));
 

@@ -68,6 +68,10 @@ model Prova {
   gabaritoCompleto Boolean  @default(false)
   /// Texto completo da última extração (PDF/cola) — para auditoria sem reenviar arquivo
   textoFonte       String?   @db.Text
+  /// Caderno (PDF/imagem) disponível para o aluno baixar e fazer a prova
+  cadernoStoragePath String?
+  cadernoFileName    String?
+  cadernoMimeType    String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
