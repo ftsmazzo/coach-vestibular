@@ -109,6 +109,60 @@ export async function sincronizarCicloDaSemana(userId: string) {
   return ciclo;
 }
 
+export type CicloResultado = {
+  quizPct: number | null;
+  baselinePct: number | null;
+  deltaPct: number | null;
+  totalQuests: number;
+  feitas: number;
+  fechadoEm: string;
+};
+
+/** Fecha o ciclo ativo (grava resultado: quiz x baseline) e abre o próximo. */
+export async function fecharCiclo(
+  userId: string,
+  opts?: { quizPct?: number | null }
+): Promise<{ resultado: CicloResultado; proximo: Awaited<ReturnType<typeof abrirOuRenovarCiclo>> } | null> {
+  const ativo = await getCicloAtivo(userId);
+  if (!ativo) return null;
+
+  const [total, feitas] = await Promise.all([
+    prisma.quest.count({ where: { userId, cicloId: ativo.id } }),
+    prisma.quest.count({ where: { userId, cicloId: ativo.id, status: "done" } }),
+  ]);
+
+  let baselinePct: number | null = null;
+  if (ativo.baselineJson) {
+    try {
+      baselinePct = (JSON.parse(ativo.baselineJson) as CicloBaseline).pctMateria ?? null;
+    } catch {
+      baselinePct = null;
+    }
+  }
+
+  const quizPct = opts?.quizPct ?? null;
+  const resultado: CicloResultado = {
+    quizPct,
+    baselinePct,
+    deltaPct: quizPct != null && baselinePct != null ? quizPct - baselinePct : null,
+    totalQuests: total,
+    feitas,
+    fechadoEm: new Date().toISOString(),
+  };
+
+  await prisma.learningCycle.update({
+    where: { id: ativo.id },
+    data: {
+      status: "FECHADO",
+      fechadoEm: new Date(),
+      resultadoJson: JSON.stringify(resultado),
+    },
+  });
+
+  const proximo = await abrirOuRenovarCiclo(userId);
+  return { resultado, proximo };
+}
+
 export type CicloResumo = {
   id: string;
   indice: number;

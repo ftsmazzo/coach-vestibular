@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, Badge } from "@/components/ui";
 import type { CicloResumo } from "@/lib/ciclo";
 
@@ -43,6 +44,19 @@ export function CicloHeader({ ciclo }: { ciclo: CicloResumo }) {
             style={{ width: `${ciclo.pctConcluido}%` }}
           />
         </div>
+      </div>
+
+      <div className="mt-3">
+        <Link
+          href="/ciclo/fechar"
+          className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium ${
+            ciclo.expirado
+              ? "bg-teal-600 text-white hover:bg-teal-700"
+              : "text-teal-700 hover:underline"
+          }`}
+        >
+          {ciclo.expirado ? "Fechar ciclo e avaliar →" : "Fechar ciclo agora (mini-quiz) →"}
+        </Link>
       </div>
     </Card>
   );
