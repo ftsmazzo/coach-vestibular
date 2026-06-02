@@ -177,6 +177,59 @@ export type CicloResumo = {
   pctConcluido: number;
 };
 
+export type CicloFechadoView = {
+  indice: number;
+  metaTitulo: string;
+  metaMateria: string | null;
+  quizPct: number | null;
+  baselinePct: number | null;
+  deltaPct: number | null;
+  feitas: number;
+  totalQuests: number;
+  fechadoEm: string | null;
+};
+
+/** Ciclos já fechados, com o resultado (para progressão e card de resultado). */
+export async function getCiclosFechados(
+  userId: string,
+  limit = 8
+): Promise<CicloFechadoView[]> {
+  const ciclos = await prisma.learningCycle.findMany({
+    where: { userId, status: "FECHADO" },
+    orderBy: { fechadoEm: "desc" },
+    take: limit,
+  });
+
+  return ciclos.map((c) => {
+    let r: Partial<CicloResultado> = {};
+    if (c.resultadoJson) {
+      try {
+        r = JSON.parse(c.resultadoJson) as CicloResultado;
+      } catch {
+        r = {};
+      }
+    }
+    return {
+      indice: c.indice,
+      metaTitulo: c.metaTitulo,
+      metaMateria: c.metaMateria,
+      quizPct: r.quizPct ?? null,
+      baselinePct: r.baselinePct ?? null,
+      deltaPct: r.deltaPct ?? null,
+      feitas: r.feitas ?? 0,
+      totalQuests: r.totalQuests ?? 0,
+      fechadoEm: c.fechadoEm?.toISOString() ?? null,
+    };
+  });
+}
+
+export async function getUltimoCicloFechado(
+  userId: string
+): Promise<CicloFechadoView | null> {
+  const [c] = await getCiclosFechados(userId, 1);
+  return c ?? null;
+}
+
 /** Resumo do ciclo ativo para a UI (Home/Plano/Quests). Null se não houver. */
 export async function getCicloResumo(userId: string): Promise<CicloResumo | null> {
   const ciclo = await getCicloAtivo(userId);

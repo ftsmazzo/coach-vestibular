@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { buildJornadaGraficos } from "@/lib/jornada-graficos";
+import { getCiclosFechados } from "@/lib/ciclo";
 import { JornadaGraficos } from "@/components/jornada-graficos";
+import { CiclosProgressao } from "@/components/ciclos-progressao";
 import { Card, LinkButton } from "@/components/ui";
 
 export default async function AnalisePage() {
@@ -10,7 +12,10 @@ export default async function AnalisePage() {
   if (!session) redirect("/login");
   if (session.role === "ADMIN") redirect("/admin");
 
-  const data = await buildJornadaGraficos(session.userId);
+  const [data, ciclos] = await Promise.all([
+    buildJornadaGraficos(session.userId),
+    getCiclosFechados(session.userId, 8),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -41,7 +46,10 @@ export default async function AnalisePage() {
           </LinkButton>
         </Card>
       ) : (
-        <JornadaGraficos data={data} />
+        <>
+          {ciclos.length > 0 && <CiclosProgressao ciclos={ciclos} />}
+          <JornadaGraficos data={data} />
+        </>
       )}
     </div>
   );
