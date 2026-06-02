@@ -32,6 +32,19 @@ enum AnamnesisStatus {
   COMPLETED
 }
 
+enum FeedbackTipo {
+  BUG
+  SUGESTAO
+  DUVIDA
+}
+
+enum FeedbackStatus {
+  NOVO
+  EM_ANALISE
+  RESOLVIDO
+  ARQUIVADO
+}
+
 enum ProvaTipo {
   ENEM_OFICIAL
   SIMULADO
@@ -128,6 +141,37 @@ model User {
   xpEvents            UserXpEvent[]
   uploadJobs          UploadJob[]
   anamnesis           StudentAnamnesis?
+  feedbacks           Feedback[]
+}
+
+/// Report de erro / sugestão do aluno (beta). Fonte da verdade; também enviado a um webhook (N8N).
+model Feedback {
+  id            String         @id @default(cuid())
+  userId        String
+  tipo          FeedbackTipo   @default(BUG)
+  status        FeedbackStatus @default(NOVO)
+  titulo        String
+  descricao     String         @db.Text
+  /// Para bug: o que o aluno esperava que acontecesse
+  esperado      String?        @db.Text
+  severidade    String?
+  /// Página/rota onde ocorreu (preenchida ou automática)
+  pagina        String?
+  /// Contexto técnico automático (url, userAgent, viewport, versão, etc.)
+  contextoJson  String?        @db.Text
+  /// Anexo opcional (print do erro)
+  anexoPath     String?
+  anexoFileName String?
+  anexoMimeType String?
+  /// Nota interna do admin ao tratar
+  notaAdmin     String?        @db.Text
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([tipo])
 }
 
 /// Anamnese inicial — entrevista guiada única (não chat aberto)

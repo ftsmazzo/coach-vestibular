@@ -20,6 +20,7 @@ const studentLinks = [
 const adminLinks = [
   { href: "/admin", label: "Painel" },
   { href: "/admin/provas", label: "Banco de provas" },
+  { href: "/admin/feedback", label: "Reports" },
   { href: "/admin/sugestoes", label: "Sugestões" },
   { href: "/admin/usuarios", label: "Alunos" },
   { href: "/admin/convites", label: "Convites" },
@@ -38,6 +39,7 @@ const moreStudentLinks = [
   { href: "/analise", label: "Análise", desc: "Gráficos da jornada" },
   { href: "/comunidade", label: "Comunidade", desc: "Ranking e XP" },
   { href: "/perfil", label: "Perfil", desc: "Meta e conquistas" },
+  { href: "/reportar", label: "Reportar erro", desc: "Bug ou sugestão (beta)" },
 ];
 
 function isActive(pathname: string, href: string) {
