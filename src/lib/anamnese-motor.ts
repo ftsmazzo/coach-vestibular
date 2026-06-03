@@ -33,7 +33,7 @@ const SEED_PERGUNTA: Record<AnamneseStageId, string> = {
   metacognicao:
     "Depois que erra uma questão, você costuma entender por quê — ou parece tudo misturado? Você revisa seus erros com algum método?",
   emocional:
-    "O que mais pesa emocionalmente na preparação agora — pressa, comparação, medo de não dar conta, ou outra coisa?",
+    "O que mais pesa emocionalmente na preparação agora — pressa, comparação, medo de não dar conta, ou outra coisa? E esse objetivo é mais seu ou tem cobrança da família junto?",
   sintese:
     "Pra fechar: tem algo importante sobre como você aprende que ainda não entrou na conversa?",
 };
@@ -44,10 +44,12 @@ function buildSystemPrompt(primeiroNome: string, vestibularAlvo: string | null):
 Sua função AGORA: anamnese inicial — conhecer a pessoa, NÃO dar aula nem montar plano.
 
 TOM (obrigatório):
-- Humano, natural, brasileiro; como um mentor atento, não formulário nem SDR.
-- SEMPRE comece reconhecendo algo concreto que ${primeiroNome} acabou de dizer (1 frase curta e específica).
+- Humano, natural, brasileiro; como um mentor que já ajudou centenas de alunos — não formulário nem SDR.
+- Validação antes de aprofundar: SEMPRE reconheça/acolha algo concreto que ${primeiroNome} acabou de dizer (1 frase curta e específica) antes da próxima pergunta.
+- Sem julgamento: nunca corrija nem alarme se a pessoa estuda pouco, já reprovou ou pensa em desistir — acolhe e segue.
+- Curiosidade genuína: se aparecer algo marcante (um medo específico, uma matéria que ama), reaja brevemente — isso é contexto, não desvio.
 - Use o primeiro nome de vez em quando, sem exagero.
-- PROIBIDO: "Certo.", "Perfeito.", "Entendi." sozinhos; listas de confirmação; repetir pergunta já respondida.
+- PROIBIDO: "Certo.", "Perfeito.", "Entendi." sozinhos; listas de confirmação; tom de formulário ("informe", "preencha"); repetir pergunta já respondida.
 - Se a resposta já trouxe várias informações, NÃO peça de novo — avance ou aprofunde só o que faltou.
 - Uma pergunta nova por mensagem (pode vir depois do reconhecimento).
 - Não seja terapeuta; não prometa aprovação.
@@ -55,8 +57,9 @@ TOM (obrigatório):
 ETAPAS (ordem) — cobrir antes de avançar:
 - trajetoria: tempo de preparação, cursinho ou autônomo, vestibulares alvo, intervalos entre aulas e estudo em casa.
 - rotina: horas reais, dias da semana, o que atrapalha constância.
-- autopercepcao: matérias fortes E fracas (se só citou uma, pergunte a outra).
+- autopercepcao: matérias fortes E fracas (se só citou uma, pergunte a outra). IMPORTANTE: na matéria fraca, descubra a NATUREZA da dificuldade com UMA pergunta — "é não entender o conteúdo, entender e travar na prova, ou não conseguir sentar pra estudar?". Isso muda a estratégia do plano.
 - comportamento_prova → metacognicao → emocional → sintese.
+- emocional: além do peso emocional, capte a ORIGEM do objetivo (vocação própria × pressão da família) e se há um plano B — sem dramatizar, leve.
 - advanceStage=true só quando a etapa tiver informação suficiente (máx. ${MAX_APROFUNDAMENTOS_POR_ETAPA} aprofundamentos se resposta vaga).
 - shouldComplete=true APENAS na etapa emocional ou sintese E quando já houver contexto rico; nunca no meio da trajetória ou rotina.`;
 }
@@ -519,6 +522,29 @@ function extrairPerfilHeuristico(
   }
   const ansiedade = /ansiedade|branco|medo|pressão|confiança|confianca/i.test(texto);
 
+  // Natureza da dificuldade na matéria fraca (roteia a intervenção).
+  let tipoDificuldade: "conteudo" | "prova" | "motivacao" | undefined;
+  if (/não consigo sentar|nao consigo sentar|preguiça|preguica|deixo de lado|procrastin|não estudo|nao estudo/i.test(texto)) {
+    tipoDificuldade = "motivacao";
+  } else if (/travo na prova|trava na prova|na hora da prova|esqueço na prova|esqueco na prova|sei mas erro|entendo mas/i.test(texto)) {
+    tipoDificuldade = "prova";
+  } else if (/não entendo|nao entendo|não sei a matéria|nao sei a materia|falta base|não aprendi|nao aprendi/i.test(texto)) {
+    tipoDificuldade = "conteudo";
+  } else if (fracos.length) {
+    tipoDificuldade = "conteudo";
+  }
+
+  // Origem do objetivo + plano B (calibra o tom).
+  const pressaoExterna = /família|familia|meus pais|cobrança|cobranca|esperam de mim|querem que eu/i.test(texto);
+  const vocacao = /sempre quis|sonho|amo|me identifico|é o que eu quero|sempre soube/i.test(texto);
+  const origemEscolha: "vocacao" | "pressao_externa" | "misto" | undefined =
+    pressaoExterna && vocacao ? "misto" : pressaoExterna ? "pressao_externa" : vocacao ? "vocacao" : undefined;
+  const temPlanoB = /plano b|tenho outro|se não der|se nao der/i.test(texto) ? true : undefined;
+
+  const confiancaBaixa = /pouca confiança|sem confiança|pouca confianca|sem confianca|inseguran|me acho incapaz/i.test(texto);
+  const preferredTone: "ACOLHEDOR" | "DIRETO" | "MOTIVADOR" | "TECNICO_LEVE" =
+    confiancaBaixa || origemEscolha === "pressao_externa" ? "ACOLHEDOR" : "MOTIVADOR";
+
   const nome = primeiroNome(user?.name ?? "");
 
   return {
@@ -536,6 +562,7 @@ function extrairPerfilHeuristico(
         perceivedStrongSubjects: fortes.length ? fortes : undefined,
         perceivedWeakSubjects: fracos,
         mainDeclaredBlocker: fracos[0] ? `dificuldade em ${fracos.join(" e ")}` : undefined,
+        tipoDificuldadePrincipal: tipoDificuldade,
       },
       examBehavior: {
         fatigueInLongExams: fatiga,
@@ -548,8 +575,10 @@ function extrairPerfilHeuristico(
       },
       emotionalContext: {
         fearOfNotEnoughTime: /tempo|dar conta/i.test(texto),
-        confidenceLevel: /pouca confiança|sem confiança/i.test(texto) ? "BAIXA" : "MEDIA",
-        preferredTone: "ACOLHEDOR",
+        confidenceLevel: confiancaBaixa ? "BAIXA" : "MEDIA",
+        origemEscolha,
+        temPlanoB,
+        preferredTone,
       },
       declaredPatterns: fatiga
         ? ["perde clareza em provas longas"]

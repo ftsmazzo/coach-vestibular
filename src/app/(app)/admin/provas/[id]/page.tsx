@@ -7,7 +7,15 @@ import { AdminAuditoriaProva } from "@/components/admin-auditoria-prova";
 import { AdminTabelaQuestoes } from "@/components/admin-tabela-questoes";
 import { AdminExtracaoPipeline } from "@/components/admin-extracao-pipeline";
 import { AdminProvaPipelineV2 } from "@/components/admin-prova-pipeline-v2";
+import { GabaritoRevisaoGrid } from "@/components/gabarito-revisao-grid";
 import { Button, Card, Input, Label } from "@/components/ui";
+import {
+  buildGradeRevisao,
+  gradeFromQuestoesGabarito,
+  respostasParaGabaritoLote,
+  type LinhaRevisaoGabarito,
+} from "@/lib/extrair-gabarito-aluno";
+import { parseGabaritoLote } from "@/lib/gabarito";
 import { buildProvaNome } from "@/lib/prova-nome";
 
 interface ProvaQuestao {
@@ -115,6 +123,11 @@ export default function AdminProvaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [prova, setProva] = useState<Prova | null>(null);
   const [gabaritoLote, setGabaritoLote] = useState("");
+  const [gradeGabarito, setGradeGabarito] = useState<LinhaRevisaoGabarito[] | null>(null);
+  const [arquivosGabarito, setArquivosGabarito] = useState<File[]>([]);
+  const [extraindoGabaritoFoto, setExtraindoGabaritoFoto] = useState(false);
+  const [avisosExtracaoGabarito, setAvisosExtracaoGabarito] = useState<string[]>([]);
+  const [lidasIaGabarito, setLidasIaGabarito] = useState<number | undefined>();
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [csvFileName, setCsvFileName] = useState("");
   const [csvIncluirGabarito, setCsvIncluirGabarito] = useState(false);
@@ -173,6 +186,81 @@ export default function AdminProvaDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!prova) return;
+    const grade = gradeFromQuestoesGabarito(prova.totalQuestoes, prova.questoes);
+    setGradeGabarito(grade);
+    setGabaritoLote(
+      respostasParaGabaritoLote(
+        grade.filter((l) => l.letra).map((l) => ({ numero: l.numero, letra: l.letra }))
+      )
+    );
+  }, [prova]);
+
+  function atualizarGradeGabarito(linhas: LinhaRevisaoGabarito[]) {
+    setGradeGabarito(linhas);
+    setGabaritoLote(
+      respostasParaGabaritoLote(
+        linhas.filter((l) => l.letra).map((l) => ({ numero: l.numero, letra: l.letra }))
+      )
+    );
+  }
+
+  async function lerGabaritoDaFoto() {
+    if (!prova) return;
+    if (arquivosGabarito.length === 0) {
+      setMsg("Anexe um PDF ou foto do gabarito oficial.");
+      return;
+    }
+    setExtraindoGabaritoFoto(true);
+    setMsg("");
+    const fd = new FormData();
+    for (const f of arquivosGabarito) fd.append("file", f);
+
+    try {
+      const res = await fetch(`/api/admin/provas/${id}/extrair-gabarito`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg(data.error ?? "Não foi possível ler o gabarito");
+        return;
+      }
+      const grade = buildGradeRevisao(prova.totalQuestoes, data.respostas ?? []);
+      atualizarGradeGabarito(grade);
+      setAvisosExtracaoGabarito(Array.isArray(data.avisos) ? data.avisos : []);
+      setLidasIaGabarito(typeof data.lidas === "number" ? data.lidas : undefined);
+      setMsg(
+        `IA leu ${data.lidas ?? grade.filter((l) => l.letra).length} resposta(s). Revise o grid e clique em Salvar.`
+      );
+    } catch {
+      setMsg("Falha de rede ao ler gabarito — tente de novo.");
+    } finally {
+      setExtraindoGabaritoFoto(false);
+    }
+  }
+
+  function aplicarTextoColadoNoGrid() {
+    if (!prova) return;
+    const mapa = parseGabaritoLote(gabaritoLote);
+    if (mapa.size === 0) {
+      setMsg("Nenhuma linha válida. Use o formato número,letra (ex.: 1,C).");
+      return;
+    }
+    const grade = gradeFromQuestoesGabarito(
+      prova.totalQuestoes,
+      [...mapa.entries()].map(([numero, gabarito]) => ({ numero, gabarito }))
+    );
+    setGradeGabarito(grade);
+    setGabaritoLote(
+      respostasParaGabaritoLote(
+        grade.filter((l) => l.letra).map((l) => ({ numero: l.numero, letra: l.letra }))
+      )
+    );
+    setMsg(`Aplicadas ${mapa.size} resposta(s) no grid. Revise e clique em Salvar.`);
+  }
 
   async function salvarMetadados() {
     const res = await fetch(`/api/admin/provas/${id}`, {
@@ -390,18 +478,19 @@ export default function AdminProvaDetailPage() {
   }
 
   async function salvarGabaritoLote() {
-    const linhas = gabaritoLote.trim().split(/\n/).filter(Boolean);
-    const itens = linhas.map((l) => {
-      const [num, gab] = l.split(/[,;\s]+/);
-      return { numero: parseInt(num, 10), gabarito: gab.trim() };
-    });
+    const mapa = parseGabaritoLote(gabaritoLote);
+    const itens = [...mapa.entries()].map(([numero, gabarito]) => ({ numero, gabarito }));
+    if (itens.length === 0) {
+      setMsg("Marque ao menos uma alternativa (A–E) ou cole linhas no formato 1,C.");
+      return;
+    }
     const res = await fetch(`/api/admin/provas/${id}/gabarito`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ itens }),
     });
     const data = await res.json();
-    setMsg(res.ok ? `Gabarito atualizado (${data.updated} itens)` : "Erro");
+    setMsg(res.ok ? `Gabarito atualizado (${data.updated} itens)` : (data.error ?? "Erro"));
     load();
   }
 
@@ -731,8 +820,9 @@ export default function AdminProvaDetailPage() {
       <Card>
         <h2 className="mb-2 font-semibold">Gabarito oficial (somente admin)</h2>
         <p className="mb-2 text-sm text-slate-600">
-          O pipeline de classificação <strong>não inventa</strong> gabarito. Cole o oficial abaixo
-          e marque «Aplicar gabarito ao gravar» — o sistema cruza em código ao gravar PDF ou CSV.
+          O pipeline de classificação <strong>não inventa</strong> gabarito. Envie foto/PDF do
+          oficial, revise no grid ou cole texto — e marque «Aplicar gabarito ao gravar» para cruzar
+          ao gravar PDF ou CSV.
         </p>
         <label className="mb-2 flex items-center gap-2 text-sm text-slate-600">
           <input
@@ -752,16 +842,74 @@ export default function AdminProvaDetailPage() {
             </span>
           )}
         </div>
-        <p className="mb-2 text-sm text-slate-600">Uma linha por questão: número e letra. Ex: 1,C</p>
-        <textarea
-          className="w-full rounded-xl border p-3 font-mono text-sm"
-          rows={6}
-          placeholder={"1,C\n2,A\n3,B"}
-          value={gabaritoLote}
-          onChange={(e) => setGabaritoLote(e.target.value)}
-        />
-        <Button className="mt-2" onClick={salvarGabaritoLote}>
-          Salvar gabarito em lote
+        <div className="mb-4 space-y-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+          <div>
+            <Label>PDF ou foto do gabarito oficial</Label>
+            <p className="mt-1 text-xs text-slate-500">
+              Tabela da banca, PDF do INEP ou folha de respostas modelo. Até 4 arquivos (páginas). A
+              IA sugere as respostas — você revisa no grid antes de salvar.
+            </p>
+            <Input
+              type="file"
+              accept=".pdf,image/jpeg,image/png,image/webp"
+              multiple
+              className="mt-2"
+              onChange={(e) => {
+                setArquivosGabarito(Array.from(e.target.files ?? []));
+                setAvisosExtracaoGabarito([]);
+                setLidasIaGabarito(undefined);
+              }}
+            />
+            {arquivosGabarito.length > 0 && (
+              <p className="mt-1 text-xs text-slate-600">
+                {arquivosGabarito.length} arquivo(s):{" "}
+                {arquivosGabarito.map((f) => f.name).join(", ")}
+              </p>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={extraindoGabaritoFoto || arquivosGabarito.length === 0}
+            onClick={lerGabaritoDaFoto}
+          >
+            {extraindoGabaritoFoto ? "Lendo gabarito…" : "Ler gabarito da foto/PDF"}
+          </Button>
+        </div>
+        <p className="mb-3 text-sm text-slate-600">
+          Toque na letra correta de cada questão — o mesmo grid usado pelo aluno. O texto para o
+          pipeline atualiza automaticamente conforme você marca.
+        </p>
+        {gradeGabarito && gradeGabarito.length > 0 ? (
+          <GabaritoRevisaoGrid
+            linhas={gradeGabarito}
+            onChange={atualizarGradeGabarito}
+            avisos={avisosExtracaoGabarito}
+            lidas={lidasIaGabarito}
+          />
+        ) : (
+          <p className="text-sm text-slate-500">Defina o total de questões da prova para exibir o grid.</p>
+        )}
+        <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2">
+          <summary className="cursor-pointer text-sm font-medium text-slate-700">
+            Colar texto em lote (opcional)
+          </summary>
+          <p className="mt-2 text-xs text-slate-500">
+            Uma linha por questão: número e letra. Ex.: 1,C — depois clique em «Aplicar no grid».
+          </p>
+          <textarea
+            className="mt-2 w-full rounded-xl border p-3 font-mono text-sm"
+            rows={5}
+            placeholder={"1,C\n2,A\n3,B"}
+            value={gabaritoLote}
+            onChange={(e) => setGabaritoLote(e.target.value)}
+          />
+          <Button type="button" variant="secondary" className="mt-2" onClick={aplicarTextoColadoNoGrid}>
+            Aplicar no grid
+          </Button>
+        </details>
+        <Button className="mt-4" onClick={salvarGabaritoLote}>
+          Salvar gabarito oficial
         </Button>
       </Card>
 

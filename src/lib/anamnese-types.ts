@@ -63,6 +63,12 @@ export type StructuredAnamneseProfile = {
     perceivedWeakSubjects?: string[];
     historicalDifficulties?: string[];
     mainDeclaredBlocker?: string;
+    /**
+     * Natureza da dificuldade na matéria fraca — roteia a intervenção:
+     * conteudo = não entende a base; prova = entende mas trava na prova;
+     * motivacao = não consegue sentar pra estudar.
+     */
+    tipoDificuldadePrincipal?: "conteudo" | "prova" | "motivacao";
   };
   examBehavior: {
     fatigueInLongExams?: boolean;
@@ -84,6 +90,9 @@ export type StructuredAnamneseProfile = {
     fearOfNotEnoughTime?: boolean;
     mainEmotionalWeight?: string;
     preferredTone?: "ACOLHEDOR" | "DIRETO" | "MOTIVADOR" | "TECNICO_LEVE";
+    /** Origem do objetivo — calibra o tom (pressão externa pede mais acolhimento). */
+    origemEscolha?: "vocacao" | "pressao_externa" | "misto";
+    temPlanoB?: boolean;
   };
   /** Frases declaradas pelo aluno — para cruzar com provas depois */
   declaredPatterns?: string[];
