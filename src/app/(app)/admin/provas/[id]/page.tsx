@@ -12,9 +12,11 @@ import { Button, Card, Input, Label } from "@/components/ui";
 import {
   buildGradeRevisao,
   gradeFromQuestoesGabarito,
+  itensGabaritoOficialFromGrade,
   respostasParaGabaritoLote,
   type LinhaRevisaoGabarito,
 } from "@/lib/extrair-gabarito-aluno";
+import { faixaIdiomaProva, temDuplicataEnEs } from "@/lib/prova-idioma";
 import { parseGabaritoLote } from "@/lib/gabarito";
 import { buildProvaNome } from "@/lib/prova-nome";
 import { normalizarMapaGabarito, resolverNumerosGradeProva } from "@/lib/prova-numeracao";
@@ -22,6 +24,7 @@ import { normalizarMapaGabarito, resolverNumerosGradeProva } from "@/lib/prova-n
 interface ProvaQuestao {
   id: string;
   numero: number;
+  idiomaVariante?: string;
   areaBloco: string | null;
   materia: string;
   assunto: string;
@@ -44,6 +47,9 @@ interface Prova {
   publicada: boolean;
   gabaritoCompleto: boolean;
   totalQuestoes: number;
+  politicaIdiomas?: string;
+  idiomaQuestaoInicio?: number | null;
+  idiomaQuestaoFim?: number | null;
   questoesCadastradas?: number;
   questoesFaltando?: number[];
   bancoIncompleto?: boolean;
@@ -173,6 +179,8 @@ export default function AdminProvaDetailPage() {
     });
   }, [prova]);
 
+  const faixaIdiomaDual = useMemo(() => faixaIdiomaProva(prova ?? undefined), [prova]);
+
   const load = useCallback(async () => {
     const res = await fetch(`/api/admin/provas/${id}`);
     if (res.ok) {
@@ -200,14 +208,9 @@ export default function AdminProvaDetailPage() {
 
   useEffect(() => {
     if (!prova || numerosGrade.length === 0) return;
-    const grade = gradeFromQuestoesGabarito(numerosGrade, prova.questoes);
+    const grade = gradeFromQuestoesGabarito(numerosGrade, prova.questoes, faixaIdiomaDual);
     setGradeGabarito(grade);
-    setGabaritoLote(
-      respostasParaGabaritoLote(
-        grade.filter((l) => l.letra).map((l) => ({ numero: l.numero, letra: l.letra }))
-      )
-    );
-  }, [prova, numerosGrade]);
+  }, [prova, numerosGrade, faixaIdiomaDual]);
 
   function atualizarGradeGabarito(linhas: LinhaRevisaoGabarito[]) {
     setGradeGabarito(linhas);
@@ -489,8 +492,11 @@ export default function AdminProvaDetailPage() {
   }
 
   async function salvarGabaritoLote() {
-    const mapa = normalizarMapaGabarito(parseGabaritoLote(gabaritoLote), numerosGrade);
-    const itens = [...mapa.entries()].map(([numero, gabarito]) => ({ numero, gabarito }));
+    if (!gradeGabarito?.length) {
+      setMsg("Marque ao menos uma alternativa (A–E) no grid.");
+      return;
+    }
+    const itens = itensGabaritoOficialFromGrade(gradeGabarito, faixaIdiomaDual);
     if (itens.length === 0) {
       setMsg("Marque ao menos uma alternativa (A–E) ou cole linhas no formato 1,C.");
       return;
@@ -517,7 +523,11 @@ export default function AdminProvaDetailPage() {
           <h1 className="text-2xl font-bold">{prova.nome}</h1>
           <p className="text-slate-600">
             <span className={prova.bancoIncompleto ? "font-medium text-amber-800" : ""}>
-              {prova.questoes.length} de {prova.totalQuestoes} questões no banco
+              {prova.questoesCadastradas ?? prova.questoes.length} de {prova.totalQuestoes} questões
+              lógicas no banco
+              {temDuplicataEnEs(prova) && (
+                <span className="text-slate-500"> ({prova.questoes.length} linhas EN+ES)</span>
+              )}
             </span>
             {" · "}
             Gabarito {prova.gabaritoCompleto ? "completo" : "pendente (use lote abaixo)"}
@@ -897,6 +907,7 @@ export default function AdminProvaDetailPage() {
             onChange={atualizarGradeGabarito}
             avisos={avisosExtracaoGabarito}
             lidas={lidasIaGabarito}
+            faixaIdiomaDual={faixaIdiomaDual}
           />
         ) : (
           <p className="text-sm text-slate-500">Defina o total de questões da prova para exibir o grid.</p>

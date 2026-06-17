@@ -23,6 +23,11 @@ import {
 } from "@/lib/prova-pipeline-v2-prompts";
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import {
+  chaveQuestaoVariante,
+  inferirFaixaIdiomaDoPdf,
+  type FaixaIdiomaOpcional,
+} from "@/lib/prova-idioma";
+import {
   areaBlocoPorNumero,
   validarItemClassificado,
 } from "@/lib/prova-classificacao-regras";
@@ -44,6 +49,8 @@ export interface PipelineV2Result {
   numerosDetectados: number[];
   etapas: string[];
   estruturaDetectada?: EstruturaProvaDetectada;
+  politicaIdiomas?: "NENHUMA" | "DUPLICATA_EN_ES";
+  faixaIdioma?: FaixaIdiomaOpcional | null;
 }
 
 const SCHEMA_ESTRUTURA = {
@@ -208,7 +215,8 @@ function tamanhoLote(totalNumeros: number): number {
 
 function questaoParaRow(
   q: QuestaoClassificada,
-  estrutura: EstruturaRes
+  estrutura: EstruturaRes,
+  idiomaVariante: ProvaQuestaoRow["idiomaVariante"] = "COMUM"
 ): ProvaQuestaoRow {
   const areaRaw =
     q.area_bloco?.trim() ||
@@ -225,6 +233,7 @@ function questaoParaRow(
   const resumo = q.resumo_enunciado?.trim() ?? "";
   return {
     numero: q.numero,
+    idiomaVariante,
     areaBloco,
     materia,
     assunto,
@@ -239,12 +248,14 @@ function aplicarQuestoesClassificadas(
   questoes: QuestaoClassificada[],
   lote: number[],
   estrutura: EstruturaRes,
-  rowsMap: Map<number, ProvaQuestaoRow>,
-  invalidos: Set<number>
+  rowsMap: Map<string, ProvaQuestaoRow>,
+  invalidos: Set<string>,
+  idiomaVariante: ProvaQuestaoRow["idiomaVariante"] = "COMUM"
 ): void {
   for (const q of questoes) {
     if (!lote.includes(q.numero)) continue;
-    const row = questaoParaRow(q, estrutura);
+    const row = questaoParaRow(q, estrutura, idiomaVariante);
+    const chave = chaveQuestaoVariante(q.numero, idiomaVariante ?? "COMUM");
     const area = row.areaBloco ?? "";
     const val = validarItemClassificado({
       numero: q.numero,
@@ -255,16 +266,16 @@ function aplicarQuestoesClassificadas(
       resumoEnunciado: q.resumo_enunciado,
     });
     if (!val.ok) {
-      invalidos.add(q.numero);
-      rowsMap.set(q.numero, {
+      invalidos.add(chave);
+      rowsMap.set(chave, {
         ...row,
         materia: "A classificar",
         assunto: "A classificar",
         observacoes: val.motivo?.slice(0, 200),
       });
     } else {
-      invalidos.delete(q.numero);
-      rowsMap.set(q.numero, row);
+      invalidos.delete(chave);
+      rowsMap.set(chave, row);
     }
   }
 }
@@ -273,27 +284,31 @@ function validarRows(
   rows: ProvaQuestaoRow[],
   totalEsperado: number,
   numerosPdf: number[],
-  avisos: string[]
+  avisos: string[],
+  opts?: { modoDuplicata?: boolean; faixa?: FaixaIdiomaOpcional | null }
 ): void {
   const numsList = rows.map((r) => r.numero);
-  const nums = new Set(numsList);
-  if (nums.size !== numsList.length) {
+  const numsLogicos = new Set(numsList);
+  if (!opts?.modoDuplicata && numsList.length !== numsLogicos.size) {
     const dup = numsList.filter((n, i) => numsList.indexOf(n) !== i);
     avisos.push(`Numeração duplicada no resultado: ${[...new Set(dup)].join(", ")}.`);
   }
 
   const pdfSet = new Set(numerosPdf);
-  const faltandoNoPdf = numerosPdf.filter((n) => !nums.has(n));
+  const faltandoNoPdf = numerosPdf.filter((n) => !numsLogicos.has(n));
   if (faltandoNoPdf.length > 0) {
     avisos.push(
       `Sem classificação para ${faltandoNoPdf.length} número(s) detectado(s) no PDF: ${faltandoNoPdf.slice(0, 12).join(", ")}${faltandoNoPdf.length > 12 ? "…" : ""}.`
     );
   }
 
-  const diffCadastro = Math.abs(rows.length - totalEsperado);
+  const linhasEsperadas = opts?.modoDuplicata && opts.faixa
+    ? totalEsperado + (opts.faixa.fim - opts.faixa.inicio + 1)
+    : totalEsperado;
+  const diffCadastro = Math.abs(rows.length - linhasEsperadas);
   if (diffCadastro > 0) {
     avisos.push(
-      `Cadastro: ${totalEsperado} questões · PDF/classificação: ${rows.length}. ${diffCadastro > 3 ? "Revise o campo «total de questões» no cadastro se o PDF estiver correto." : "Diferença pequena — confira na auditoria."}`
+      `Cadastro: ${totalEsperado} questões (aluno) · banco: ${rows.length} linha(s)${opts?.modoDuplicata ? " (EN+ES na faixa opcional)" : ""}. ${diffCadastro > 5 ? "Revise o total no cadastro ou reexecute o pipeline." : "Diferença pequena — confira na auditoria."}`
     );
   }
 
@@ -361,13 +376,16 @@ Preencha o schema estrutural completo a partir do PDF.
     incluirBlocoEspanhol: opts?.incluirBlocoEspanhol === true,
     forcarExcluirEspanhol: opts?.excluirBlocoEspanhol === true,
   });
-  const excluirEs = politicaIdioma.excluirBlocoEspanhol;
+  const faixaIdioma =
+    politicaIdioma.modoDuplicata ? inferirFaixaIdiomaDoPdf(estrutura) : null;
 
   etapas.push(
-    `Estrutura (${estruturaExec.model}): ${estrutura.numeros.length} questões · layout ${estrutura.formato_layout ?? "?"}` +
-      (politicaIdioma.automatico
-        ? " · idioma EN/ES: mantido inglês (automático)"
-        : "")
+    `Estrutura (${estruturaExec.model}): ${estrutura.numeros.length} números únicos · layout ${estrutura.formato_layout ?? "?"}` +
+      (politicaIdioma.modoDuplicata
+        ? ` · EN/ES: faixa ${faixaIdioma?.inicio ?? 1}–${faixaIdioma?.fim ?? 5} (ambas trilhas)`
+        : politicaIdioma.forcarSomenteIngles
+          ? " · idioma: só inglês (legado)"
+          : "")
   );
 
   let numeros = [...new Set(estrutura.numeros)]
@@ -387,11 +405,18 @@ Preencha o schema estrutural completo a partir do PDF.
 
   const resumoEstrutura = resumoEstruturaParaClassificacao(estrutura);
   const taxonomia = resumoTaxonomia();
-  const loteSize = tamanhoLote(numeros.length);
-  const lotesNums = chunks(numeros, loteSize);
-  const rowsMap = new Map<number, ProvaQuestaoRow>();
-  const invalidosPosIa = new Set<number>();
+  const rowsMap = new Map<string, ProvaQuestaoRow>();
+  const invalidosPosIa = new Set<string>();
   let modelClass = modeloPipelinePrincipal();
+
+  const numerosFaixa =
+    faixaIdioma != null
+      ? numeros.filter((n) => n >= faixaIdioma.inicio && n <= faixaIdioma.fim)
+      : [];
+  const numerosComuns =
+    faixaIdioma != null
+      ? numeros.filter((n) => n < faixaIdioma.inicio || n > faixaIdioma.fim)
+      : numeros;
 
   const montarInstrucaoClass = (numsStr: string, extra = "") => `${ctxTxt}
 
@@ -399,50 +424,26 @@ ${resumoEstrutura ? `Contexto estrutural:\n${resumoEstrutura}\n` : ""}
 Classifique SOMENTE as questões: ${numsStr}
 Para cada item preencha resumo_enunciado (1 linha) antes de decidir materia/assunto.
 area_bloco do PDF tem prioridade sobre palavras do texto (Humanas != Biologia; Linguagens != Geografia salvo mapa/clima explícito).
-${excluirEs ? "Duplicata EN/ES: classifique só o bloco em INGLÊS.\n" : ""}
 ${extra}
 Taxonomia:
 ${taxonomia}`;
 
-  for (let i = 0; i < lotesNums.length; i++) {
-    const lote = lotesNums[i];
-    const classExec = await responsesComPdfSchemaComValidacao<ClassificacaoRes>({
-      fileId,
-      taskName: `classificacao-lote-${i + 1}`,
-      systemPrompt: PROMPT_SISTEMA_CLASSIFICACAO,
-      instrucao: montarInstrucaoClass(lote.join(", ")),
-      schema: schemaClassificacaoLote(),
-      validate: (data) => validarClassificacaoLote(data, lote),
-    });
-    modelClass = classExec.model;
-    aplicarQuestoesClassificadas(
-      classExec.data.questoes ?? [],
-      lote,
-      estrutura,
-      rowsMap,
-      invalidosPosIa
-    );
-    etapas.push(
-      `Lote ${i + 1}/${lotesNums.length} (${classExec.model}): ${classExec.data.questoes?.length ?? 0} itens`
-    );
-  }
-
-  if (invalidosPosIa.size > 0) {
-    const numsRetry = [...invalidosPosIa].sort((a, b) => a - b);
-    avisos.push(
-      `${numsRetry.length} questão(ões) com validação pós-IA — reclassificando em lote menor: nº ${numsRetry.slice(0, 12).join(", ")}${numsRetry.length > 12 ? "…" : ""}.`
-    );
-    const retryLotes = chunks(numsRetry, 3);
-    for (let j = 0; j < retryLotes.length; j++) {
-      const lote = retryLotes[j];
+  async function classificarLotes(
+    nums: number[],
+    variante: ProvaQuestaoRow["idiomaVariante"],
+    instrucaoExtra: string,
+    label: string
+  ): Promise<void> {
+    if (nums.length === 0) return;
+    const loteSize = tamanhoLote(nums.length);
+    const lotes = chunks(nums, loteSize);
+    for (let i = 0; i < lotes.length; i++) {
+      const lote = lotes[i];
       const classExec = await responsesComPdfSchemaComValidacao<ClassificacaoRes>({
         fileId,
-        taskName: `classificacao-retry-${j + 1}`,
+        taskName: `classificacao-${label}-${i + 1}`,
         systemPrompt: PROMPT_SISTEMA_CLASSIFICACAO,
-        instrucao: montarInstrucaoClass(
-          lote.join(", "),
-          "RETRY: a classificação anterior violou regras de bloco (ex.: Biologia em Humanas, Geografia em Linguagens). Corrija com base no PDF e no resumo_enunciado."
-        ),
+        instrucao: montarInstrucaoClass(lote.join(", "), instrucaoExtra),
         schema: schemaClassificacaoLote(),
         validate: (data) => validarClassificacaoLote(data, lote),
       });
@@ -452,19 +453,109 @@ ${taxonomia}`;
         lote,
         estrutura,
         rowsMap,
-        invalidosPosIa
+        invalidosPosIa,
+        variante
       );
-    }
-    if (invalidosPosIa.size > 0) {
-      avisos.push(
-        `${invalidosPosIa.size} questão(ões) ainda inconsistentes após retry — use Auditoria → Reclassificar com enunciado colado.`
+      etapas.push(
+        `${label} lote ${i + 1}/${lotes.length} (${classExec.model}): ${classExec.data.questoes?.length ?? 0} itens`
       );
-    } else {
-      etapas.push("Retry pós-validação: todas as inconsistências corrigidas.");
     }
   }
 
-  let rows: ProvaQuestaoRow[] = [...rowsMap.values()].sort((a, b) => a.numero - b.numero);
+  if (politicaIdioma.modoDuplicata && faixaIdioma) {
+    await classificarLotes(
+      numerosComuns,
+      "COMUM",
+      "",
+      "Comum"
+    );
+    await classificarLotes(
+      numerosFaixa,
+      "INGLES",
+      "Classifique APENAS o bloco em INGLÊS (Língua Inglesa) — ignore a versão em espanhol.\n",
+      "Inglês"
+    );
+    await classificarLotes(
+      numerosFaixa,
+      "ESPANHOL",
+      "Classifique APENAS o bloco em ESPANHOL (Língua Espanhola) — ignore a versão em inglês.\n",
+      "Espanhol"
+    );
+  } else if (politicaIdioma.forcarSomenteIngles) {
+    const faixaLegado = faixaIdioma ?? inferirFaixaIdiomaDoPdf(estrutura) ?? { inicio: 1, fim: 5 };
+    const comuns = numeros.filter((n) => n < faixaLegado.inicio || n > faixaLegado.fim);
+    const faixaNums = numeros.filter((n) => n >= faixaLegado.inicio && n <= faixaLegado.fim);
+    await classificarLotes(comuns, "COMUM", "", "Comum");
+    await classificarLotes(
+      faixaNums,
+      "INGLES",
+      "Duplicata EN/ES: classifique só o bloco em INGLÊS.\n",
+      "Inglês"
+    );
+  } else {
+    const loteSize = tamanhoLote(numeros.length);
+    const lotesNums = chunks(numeros, loteSize);
+    for (let i = 0; i < lotesNums.length; i++) {
+      const lote = lotesNums[i];
+      const classExec = await responsesComPdfSchemaComValidacao<ClassificacaoRes>({
+        fileId,
+        taskName: `classificacao-lote-${i + 1}`,
+        systemPrompt: PROMPT_SISTEMA_CLASSIFICACAO,
+        instrucao: montarInstrucaoClass(lote.join(", ")),
+        schema: schemaClassificacaoLote(),
+        validate: (data) => validarClassificacaoLote(data, lote),
+      });
+      modelClass = classExec.model;
+      aplicarQuestoesClassificadas(
+        classExec.data.questoes ?? [],
+        lote,
+        estrutura,
+        rowsMap,
+        invalidosPosIa,
+        "COMUM"
+      );
+      etapas.push(
+        `Lote ${i + 1}/${lotesNums.length} (${classExec.model}): ${classExec.data.questoes?.length ?? 0} itens`
+      );
+    }
+  }
+
+  if (invalidosPosIa.size > 0) {
+    const porVariante = new Map<string, number[]>();
+    for (const chave of invalidosPosIa) {
+      const [n, v] = chave.split(":");
+      const lista = porVariante.get(v) ?? [];
+      lista.push(parseInt(n!, 10));
+      porVariante.set(v, lista);
+    }
+    avisos.push(
+      `${invalidosPosIa.size} linha(s) com validação pós-IA — reclassificando em lote menor.`
+    );
+    for (const [v, numsRaw] of porVariante) {
+      const variante = v as ProvaQuestaoRow["idiomaVariante"];
+      const nums = [...new Set(numsRaw)].sort((a, b) => a - b);
+      const extra =
+        variante === "INGLES"
+          ? "Classifique APENAS o bloco em INGLÊS.\nRETRY: corrija bloco/matéria.\n"
+          : variante === "ESPANHOL"
+            ? "Classifique APENAS o bloco em ESPANHOL.\nRETRY: corrija bloco/matéria.\n"
+            : "RETRY: a classificação anterior violou regras de bloco. Corrija com base no PDF.\n";
+      await classificarLotes(nums, variante, extra, `Retry ${v}`);
+    }
+    if (invalidosPosIa.size > 0) {
+      avisos.push(
+        `${invalidosPosIa.size} linha(s) ainda inconsistentes após retry — use Auditoria → Reclassificar.`
+      );
+    } else {
+      etapas.push("Retry pós-validação: inconsistências corrigidas.");
+    }
+  }
+
+  let rows: ProvaQuestaoRow[] = [...rowsMap.values()].sort((a, b) => {
+    if (a.numero !== b.numero) return a.numero - b.numero;
+    const ordem = { COMUM: 0, INGLES: 1, ESPANHOL: 2 };
+    return (ordem[a.idiomaVariante ?? "COMUM"] ?? 0) - (ordem[b.idiomaVariante ?? "COMUM"] ?? 0);
+  });
 
   const alinhadas = alinharLoteTaxonomia(
     rows.map((r) => ({
@@ -478,8 +569,9 @@ ${taxonomia}`;
       observacoes: r.observacoes ?? null,
     }))
   );
-  rows = alinhadas.questoes.map((q) => ({
+  rows = alinhadas.questoes.map((q, i) => ({
     numero: q.numero,
+    idiomaVariante: rows[i]?.idiomaVariante ?? "COMUM",
     areaBloco: q.areaBloco ?? undefined,
     materia: q.materia,
     assunto: q.assunto,
@@ -496,7 +588,7 @@ ${taxonomia}`;
     let aplicados = 0;
     for (const r of rows) {
       const g = mapaG.get(r.numero);
-      if (g) {
+      if (g && (r.idiomaVariante === "COMUM" || !politicaIdioma.modoDuplicata)) {
         r.gabarito = g;
         aplicados++;
       }
@@ -504,7 +596,10 @@ ${taxonomia}`;
     etapas.push(`Gabarito oficial aplicado em ${aplicados} questão(ões) (código, não IA).`);
   }
 
-  validarRows(rows, ctx.totalEsperado, numeros, avisos);
+  validarRows(rows, ctx.totalEsperado, numeros, avisos, {
+    modoDuplicata: politicaIdioma.modoDuplicata,
+    faixa: faixaIdioma,
+  });
 
   if (estrutura.observacoes?.trim()) {
     avisos.push(`Leitura do PDF: ${estrutura.observacoes.trim().slice(0, 300)}`);
@@ -518,5 +613,7 @@ ${taxonomia}`;
     numerosDetectados: numeros,
     etapas,
     estruturaDetectada: estrutura,
+    politicaIdiomas: politicaIdioma.modoDuplicata ? "DUPLICATA_EN_ES" : "NENHUMA",
+    faixaIdioma,
   };
 }

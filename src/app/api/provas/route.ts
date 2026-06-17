@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { dataAplicacaoParaInput, formatDataAplicacao } from "@/lib/data-prova";
-import { statsQuestoesProva } from "@/lib/prova-stats";
+import { statsQuestoesProva, metaIdiomaParaUi } from "@/lib/prova-stats";
 import { resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 import { prisma } from "@/lib/prisma";
 
@@ -14,7 +14,7 @@ export async function GET() {
     where: { publicada: true },
     orderBy: [{ ano: "desc" }, { nome: "asc" }],
     include: {
-      questoes: { select: { numero: true } },
+      questoes: { select: { numero: true, idiomaVariante: true } },
     },
   });
 
@@ -65,8 +65,12 @@ export async function GET() {
       const stats = statsQuestoesProva(p.questoes, p.totalQuestoes, {
         dia: p.dia,
         banca: p.banca,
+        politicaIdiomas: p.politicaIdiomas,
+        idiomaQuestaoInicio: p.idiomaQuestaoInicio,
+        idiomaQuestaoFim: p.idiomaQuestaoFim,
       });
       const tentativas = tentativasPorProvaId.get(p.id) ?? [];
+      const idiomaMeta = metaIdiomaParaUi(p);
       return {
         id: p.id,
         nome: p.nome,
@@ -76,6 +80,7 @@ export async function GET() {
         dia: p.dia,
         caderno: p.caderno,
         totalQuestoes: p.totalQuestoes,
+        ...idiomaMeta,
         numerosGrade: resolverNumerosGradeProva({
           totalQuestoes: p.totalQuestoes,
           dia: p.dia,

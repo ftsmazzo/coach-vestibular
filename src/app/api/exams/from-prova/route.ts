@@ -14,6 +14,7 @@ const schema = z.object({
   respostas: z.string().optional(),
   apenasErros: z.array(z.number().int().positive()).optional(),
   modoUso: z.enum(["OFICIAL", "TREINO", "REVISAO_PROVA_ANTIGA"]).optional(),
+  idiomaEstrangeiro: z.enum(["INGLES", "ESPANHOL"]).optional(),
 });
 
 export async function POST(request: Request) {
@@ -47,6 +48,12 @@ export async function POST(request: Request) {
     }
     if (msg === "PROVA_NOT_PUBLISHED") {
       return NextResponse.json({ error: "Prova não disponível" }, { status: 403 });
+    }
+    if (msg === "IDIOMA_ESTRANGEIRO_OBRIGATORIO") {
+      return NextResponse.json(
+        { error: "Selecione qual língua estrangeira você fez (inglês ou espanhol)" },
+        { status: 400 }
+      );
     }
     if (msg === "GABARITO_ALUNO_OBRIGATORIO") {
       return NextResponse.json(

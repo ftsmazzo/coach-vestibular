@@ -43,6 +43,8 @@ interface ProvaOption {
   numerosGrade?: number[];
   gabaritoCompleto: boolean;
   questoesCount: number;
+  exigeEscolhaIdioma?: boolean;
+  faixaIdioma?: { inicio: number; fim: number } | null;
   minhasTentativas?: number;
   tentativas: TentativaResumo[];
 }
@@ -64,6 +66,7 @@ export default function NovoSimuladoPage() {
   const [listaErros, setListaErros] = useState("");
   const [modo, setModo] = useState<"foto" | "gabarito" | "sequencia" | "erros">("foto");
   const [modoUso, setModoUso] = useState<ModoUsoRegistro>("OFICIAL");
+  const [idiomaEstrangeiro, setIdiomaEstrangeiro] = useState<"INGLES" | "ESPANHOL">("INGLES");
   const [arquivosFoto, setArquivosFoto] = useState<File[]>([]);
   const [extraindo, setExtraindo] = useState(false);
   const [gradeRevisao, setGradeRevisao] = useState<LinhaRevisaoGabarito[] | null>(null);
@@ -148,6 +151,7 @@ export default function NovoSimuladoPage() {
     setLidasIa(undefined);
     setArquivosFoto([]);
     setGabaritoAluno("");
+    setIdiomaEstrangeiro("INGLES");
   }, [modo, provaId]);
 
   useEffect(() => {
@@ -235,6 +239,10 @@ export default function NovoSimuladoPage() {
       setError("Selecione qual registro deseja substituir.");
       return;
     }
+    if (prova?.exigeEscolhaIdioma && !idiomaEstrangeiro) {
+      setError("Informe qual língua estrangeira você fez (inglês ou espanhol).");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -244,6 +252,9 @@ export default function NovoSimuladoPage() {
       data,
       modoUso,
     };
+    if (prova?.exigeEscolhaIdioma) {
+      body.idiomaEstrangeiro = idiomaEstrangeiro;
+    }
     if (checkIn != null) body.checkInScore = checkIn;
     if (modoRegistro === "substituir" && substituirExamId) {
       body.substituirExamId = substituirExamId;
@@ -461,6 +472,44 @@ export default function NovoSimuladoPage() {
               <ModoUsoSelector value={modoUso} onChange={setModoUso} />
             </div>
           </Card>
+
+          {prova?.exigeEscolhaIdioma && (
+            <Card>
+              <Label>Língua estrangeira que você fez</Label>
+              <p className="mt-1 text-xs text-slate-500">
+                No caderno há blocos de inglês e espanhol com a mesma numeração
+                {prova.faixaIdioma
+                  ? ` (questões ${prova.faixaIdioma.inicio}–${prova.faixaIdioma.fim})`
+                  : " (início da prova)"}
+                . Escolha a trilha que você respondeu — o gabarito e o diagnóstico usam a versão
+                correta.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIdiomaEstrangeiro("INGLES")}
+                  className={`min-h-11 rounded-xl px-4 py-2.5 text-sm font-medium ${
+                    idiomaEstrangeiro === "INGLES"
+                      ? "bg-teal-600 text-white"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  Inglês
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIdiomaEstrangeiro("ESPANHOL")}
+                  className={`min-h-11 rounded-xl px-4 py-2.5 text-sm font-medium ${
+                    idiomaEstrangeiro === "ESPANHOL"
+                      ? "bg-teal-600 text-white"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  Espanhol
+                </button>
+              </div>
+            </Card>
+          )}
 
           <Card className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">

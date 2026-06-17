@@ -71,6 +71,19 @@ enum StatusSugestaoClassificacao {
   REJEITADA
 }
 
+/// Variante de uma questão no banco — COMUM (6+) ou trilha EN/ES na faixa opcional
+enum IdiomaVarianteQuestao {
+  COMUM
+  INGLES
+  ESPANHOL
+}
+
+/// Prova com blocos de língua estrangeira na mesma numeração (ENEM, UFMS, UFU…)
+enum PoliticaIdiomasProva {
+  NENHUMA
+  DUPLICATA_EN_ES
+}
+
 /// Prova cadastrada pelo admin — banco de questões (uma linha por questão)
 model Prova {
   id              String    @id @default(cuid())
@@ -82,6 +95,10 @@ model Prova {
   caderno         String?
   descricao       String?
   totalQuestoes   Int
+  /// Duplicata inglês/espanhol na mesma numeração (ex.: questões 1–5)
+  politicaIdiomas     PoliticaIdiomasProva @default(NENHUMA)
+  idiomaQuestaoInicio Int?
+  idiomaQuestaoFim    Int?
   publicada       Boolean   @default(false)
   gabaritoCompleto Boolean  @default(false)
   /// Texto completo da última extração (PDF/cola) — para auditoria sem reenviar arquivo
@@ -103,6 +120,7 @@ model ProvaQuestao {
   id                  String  @id @default(cuid())
   provaId             String
   numero              Int
+  idiomaVariante      IdiomaVarianteQuestao @default(COMUM)
   areaBloco           String?
   materia             String
   assunto             String
@@ -117,7 +135,7 @@ model ProvaQuestao {
   tentativas QuestionAttempt[]
   sugestoes  SugestaoClassificacao[]
 
-  @@unique([provaId, numero])
+  @@unique([provaId, numero, idiomaVariante])
   @@index([provaId, materia])
 }
 
@@ -235,6 +253,8 @@ model Exam {
   checkInScore   Int?
   recoveryMode   Boolean          @default(false)
   modoUso        ModoUsoRegistro  @default(OFICIAL)
+  /// Trilha EN ou ES nas questões de idioma opcional (1–5 etc.)
+  idiomaEstrangeiro IdiomaVarianteQuestao?
   createdAt      DateTime         @default(now())
 
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)

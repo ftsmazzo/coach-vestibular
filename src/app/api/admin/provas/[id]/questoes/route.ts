@@ -74,8 +74,10 @@ export async function POST(
 
   for (const q of list) {
     await prisma.provaQuestao.upsert({
-      where: { provaId_numero: { provaId, numero: q.numero } },
-      create: { provaId, ...q, gabarito: q.gabarito?.toUpperCase() },
+      where: {
+        provaId_numero_idiomaVariante: { provaId, numero: q.numero, idiomaVariante: "COMUM" },
+      },
+      create: { provaId, ...q, idiomaVariante: "COMUM", gabarito: q.gabarito?.toUpperCase() },
       update: { ...q, gabarito: q.gabarito?.toUpperCase() ?? null },
     });
   }

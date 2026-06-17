@@ -35,6 +35,9 @@ export async function GET(
   const stats = statsQuestoesProva(prova.questoes, prova.totalQuestoes, {
     dia: prova.dia,
     banca: prova.banca,
+    politicaIdiomas: prova.politicaIdiomas,
+    idiomaQuestaoInicio: prova.idiomaQuestaoInicio,
+    idiomaQuestaoFim: prova.idiomaQuestaoFim,
   });
   const { textoFonte, ...provaSemTexto } = prova;
   return NextResponse.json({

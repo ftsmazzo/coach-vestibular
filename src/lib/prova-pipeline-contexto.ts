@@ -79,19 +79,19 @@ export function resumoEstruturaParaClassificacao(estrutura: EstruturaProvaDetect
   return partes.join("\n");
 }
 
-/** Preferir inglês em duplicata EN/ES: automático quando o PDF indica. */
+/** Preferir duplicata EN/ES completa quando o PDF indica; «somente inglês» é opt-in legado. */
 export function resolverPoliticaIdiomas(
   estrutura: EstruturaProvaDetectada,
-  opts?: { incluirBlocoEspanhol?: boolean; forcarExcluirEspanhol?: boolean }
-): { excluirBlocoEspanhol: boolean; automatico: boolean } {
-  if (opts?.incluirBlocoEspanhol === true) {
-    return { excluirBlocoEspanhol: false, automatico: false };
-  }
-  if (opts?.forcarExcluirEspanhol === true) {
-    return { excluirBlocoEspanhol: true, automatico: false };
-  }
+  opts?: { forcarSomenteIngles?: boolean; incluirBlocoEspanhol?: boolean; forcarExcluirEspanhol?: boolean }
+): { modoDuplicata: boolean; forcarSomenteIngles: boolean; automatico: boolean } {
   const dup = estrutura.idiomas_estrangeiros === "duplicata_ingles_espanhol";
-  return { excluirBlocoEspanhol: dup, automatico: dup };
+  if (opts?.forcarSomenteIngles === true || opts?.forcarExcluirEspanhol === true) {
+    return { modoDuplicata: false, forcarSomenteIngles: true, automatico: false };
+  }
+  if (opts?.incluirBlocoEspanhol === true && dup) {
+    return { modoDuplicata: true, forcarSomenteIngles: false, automatico: false };
+  }
+  return { modoDuplicata: dup, forcarSomenteIngles: false, automatico: dup };
 }
 
 /** Mínimo de questões para aceitar estrutura — escala com tamanho da prova. */

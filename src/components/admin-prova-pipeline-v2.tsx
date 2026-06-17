@@ -37,7 +37,7 @@ export function AdminProvaPipelineV2({
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [carregando, setCarregando] = useState(false);
   const [importandoCsv, setImportandoCsv] = useState(false);
-  const [incluirBlocoEspanhol, setIncluirBlocoEspanhol] = useState(false);
+  const [somenteIngles, setSomenteIngles] = useState(false);
   const [preview, setPreview] = useState<{
     rows: PreviewRow[];
     avisos: string[];
@@ -54,13 +54,13 @@ export function AdminProvaPipelineV2({
       fd.append("substituir", "true");
       const temGabarito = gabaritoLote.trim().length > 0;
       fd.append("incluirGabarito", String(temGabarito || incluirGabarito));
-      fd.append("incluirBlocoEspanhol", String(incluirBlocoEspanhol));
+      fd.append("excluirBlocoEspanhol", String(somenteIngles));
       if (temGabarito) {
         fd.append("gabarito", gabaritoLote.trim());
       }
       return fd;
     },
-    [pdfFile, incluirGabarito, incluirBlocoEspanhol, gabaritoLote]
+    [pdfFile, incluirGabarito, somenteIngles, gabaritoLote]
   );
 
   const classificarPdf = useCallback(
@@ -181,12 +181,13 @@ export function AdminProvaPipelineV2({
         <input
           type="checkbox"
           className="mt-0.5"
-          checked={incluirBlocoEspanhol}
-          onChange={(e) => setIncluirBlocoEspanhol(e.target.checked)}
+          checked={somenteIngles}
+          onChange={(e) => setSomenteIngles(e.target.checked)}
         />
         <span>
-          Incluir bloco em espanhol quando o PDF tiver inglês e espanhol com a mesma numeração (padrão:
-          mantém só inglês, detectado automaticamente).
+          <strong>Somente inglês (legado)</strong> — ignora o bloco em espanhol. O padrão é gravar
+          <strong> inglês e espanhol</strong> na faixa opcional (questões 1–5 etc.) quando o PDF
+          tiver duplicata.
         </span>
       </label>
 

@@ -1,7 +1,9 @@
+import type { IdiomaVarianteQuestao } from "@/generated/prisma/client";
 import type { QuestaoExtraida } from "@/lib/ai-extract-prova";
 import type { EtapaExtracao } from "@/lib/prova-extracao-pipeline";
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
 import { prisma } from "@/lib/prisma";
+import { chaveQuestaoVariante } from "@/lib/prova-idioma";
 import {
   alinharLoteTaxonomia,
   normalizarLabelAssunto,
@@ -12,9 +14,21 @@ import { normalizarAreaBloco } from "@/lib/areas-bloco";
 function truncarEnunciado(t?: string | null): string | null {
   if (!t?.trim()) return null;
   const s = t.trim();
-  // Enunciado completo é base para classificação/pós-correção (auditoria e reclassificar).
-  // Mantemos um limite alto para não cortar "comando + alternativas" em questões longas.
   return s.length > 6000 ? `${s.slice(0, 6000)}…` : s;
+}
+
+function varianteRow(r: ProvaQuestaoRow): IdiomaVarianteQuestao {
+  return (r.idiomaVariante ?? "COMUM") as IdiomaVarianteQuestao;
+}
+
+function varianteExtraida(q: QuestaoExtraida & { idiomaVariante?: IdiomaVarianteQuestao }): IdiomaVarianteQuestao {
+  return (q.idiomaVariante ?? "COMUM") as IdiomaVarianteQuestao;
+}
+
+function whereVariante(provaId: string, numero: number, variante: IdiomaVarianteQuestao) {
+  return {
+    provaId_numero_idiomaVariante: { provaId, numero, idiomaVariante: variante },
+  };
 }
 
 function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
@@ -22,15 +36,16 @@ function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
     const materia = normalizarLabelMateria(r.materia);
     return {
       numero: r.numero,
+      idiomaVariante: varianteRow(r),
       areaBloco: normalizarAreaBloco(r.areaBloco, materia) ?? undefined,
       materia,
-    assunto: normalizarLabelAssunto(materia, r.assunto),
-    conhecimentoExigido: r.conhecimentoExigido?.trim() || undefined,
-    nivelDificuldade: r.nivelDificuldade?.trim() || undefined,
-    observacoes: r.observacoes?.trim() || undefined,
-    enunciado: r.enunciado?.trim() || undefined,
-    gabarito:
-      r.gabarito?.trim().toUpperCase().replace(/[^A-E]/g, "").slice(0, 1) || undefined,
+      assunto: normalizarLabelAssunto(materia, r.assunto),
+      conhecimentoExigido: r.conhecimentoExigido?.trim() || undefined,
+      nivelDificuldade: r.nivelDificuldade?.trim() || undefined,
+      observacoes: r.observacoes?.trim() || undefined,
+      enunciado: r.enunciado?.trim() || undefined,
+      gabarito:
+        r.gabarito?.trim().toUpperCase().replace(/[^A-E]/g, "").slice(0, 1) || undefined,
     };
   });
 
@@ -74,6 +89,7 @@ export async function persistirQuestoesClassificadas(
         data: normalizadas.map((r) => ({
           provaId,
           numero: r.numero,
+          idiomaVariante: varianteRow(r),
           areaBloco: r.areaBloco ?? null,
           materia: r.materia,
           assunto: r.assunto,
@@ -90,11 +106,13 @@ export async function persistirQuestoesClassificadas(
 
   let n = 0;
   for (const r of normalizadas) {
+    const variante = varianteRow(r);
     await prisma.provaQuestao.upsert({
-      where: { provaId_numero: { provaId, numero: r.numero } },
+      where: whereVariante(provaId, r.numero, variante),
       create: {
         provaId,
         numero: r.numero,
+        idiomaVariante: variante,
         areaBloco: r.areaBloco ?? null,
         materia: r.materia,
         assunto: r.assunto,
@@ -122,15 +140,18 @@ export async function persistirQuestoesClassificadas(
 
 export async function upsertQuestoesExtraidas(
   provaId: string,
-  questoes: QuestaoExtraida[]
+  questoes: (QuestaoExtraida & { idiomaVariante?: IdiomaVarianteQuestao })[],
+  idiomaVariantePadrao: IdiomaVarianteQuestao = "COMUM"
 ): Promise<number> {
   let n = 0;
   for (const q of questoes) {
+    const variante = q.idiomaVariante ?? idiomaVariantePadrao;
     await prisma.provaQuestao.upsert({
-      where: { provaId_numero: { provaId, numero: q.numero } },
+      where: whereVariante(provaId, q.numero, variante),
       create: {
         provaId,
         numero: q.numero,
+        idiomaVariante: variante,
         areaBloco: q.areaBloco ?? null,
         materia: q.materia,
         assunto: q.assunto,
@@ -191,11 +212,13 @@ export async function atualizarQuestoesPorEtapa(
       update.enunciado = enunciado;
     }
 
+    const variante = varianteExtraida(q);
     await prisma.provaQuestao.upsert({
-      where: { provaId_numero: { provaId, numero: q.numero } },
+      where: whereVariante(provaId, q.numero, variante),
       create: {
         provaId,
         numero: q.numero,
+        idiomaVariante: variante,
         areaBloco: (update.areaBloco as string | null) ?? q.areaBloco ?? null,
         materia: (update.materia as string) ?? q.materia,
         assunto: (update.assunto as string) ?? q.assunto,
@@ -222,6 +245,7 @@ export async function substituirQuestoesExtraidas(
     data: questoes.map((q) => ({
       provaId,
       numero: q.numero,
+      idiomaVariante: varianteExtraida(q),
       areaBloco: q.areaBloco ?? null,
       materia: q.materia,
       assunto: q.assunto,
@@ -232,4 +256,9 @@ export async function substituirQuestoesExtraidas(
       gabarito: null,
     })),
   });
+}
+
+/** Chave estável para preservar observações humanas no re-pipeline. */
+export function chaveObservacaoQuestao(r: { numero: number; idiomaVariante?: string }): string {
+  return chaveQuestaoVariante(r.numero, r.idiomaVariante ?? "COMUM");
 }

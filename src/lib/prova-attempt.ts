@@ -6,7 +6,12 @@ import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-ca
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
 import { normalizarMapaGabarito, normalizarNumerosInformados, resolverNumerosGradeProva } from "./prova-numeracao";
 import { parseDataAplicacao } from "./data-prova";
-import type { ModoUsoRegistro } from "@/generated/prisma/client";
+import type { IdiomaVarianteQuestao, ModoUsoRegistro } from "@/generated/prisma/client";
+import {
+  questoesParaTentativa,
+  questaoPorNumeroETentativa,
+  temDuplicataEnEs,
+} from "./prova-idioma";
 import {
   historicalAttemptsDaJornada,
   mergeHistoricalAttempts,
@@ -33,6 +38,8 @@ export interface RegistrarTentativaInput {
   apenasErros?: number[];
   /** Como esta atividade entra na jornada (peso no plano global) */
   modoUso?: ModoUsoRegistro;
+  /** Trilha EN ou ES na faixa opcional (ex.: questões 1–5) */
+  idiomaEstrangeiro?: IdiomaVarianteQuestao;
 }
 
 type AttemptWithMeta = AttemptInput & {
@@ -122,17 +129,30 @@ function buildAttemptsFromProva(
 }
 
 function respostasPorNumeroFromInput(
-  questoes: Array<{ numero: number }>,
+  numerosGrade: number[],
   input: RegistrarTentativaInput
 ): Map<number, string> {
   if (input.gabaritoAluno?.trim()) {
-    const numeros = questoes.map((q) => q.numero);
-    return normalizarMapaGabarito(parseGabaritoLote(input.gabaritoAluno), numeros);
+    return normalizarMapaGabarito(parseGabaritoLote(input.gabaritoAluno), numerosGrade);
   }
   if (input.respostas?.trim()) {
-    return sequenciaParaMapaPorNumero(questoes, input.respostas);
+    return sequenciaParaMapaPorNumero(
+      numerosGrade.map((numero) => ({ numero })),
+      input.respostas
+    );
   }
   return new Map();
+}
+
+function resolverIdiomaTentativa(
+  prova: { politicaIdiomas: string; idiomaQuestaoInicio: number | null; idiomaQuestaoFim: number | null },
+  input: RegistrarTentativaInput
+): IdiomaVarianteQuestao | null {
+  if (!temDuplicataEnEs(prova)) return null;
+  if (input.idiomaEstrangeiro === "ESPANHOL" || input.idiomaEstrangeiro === "INGLES") {
+    return input.idiomaEstrangeiro;
+  }
+  return "INGLES";
 }
 
 export async function registrarTentativaProva(input: RegistrarTentativaInput) {
@@ -176,12 +196,19 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     throw new Error("GABARITO_ALUNO_OBRIGATORIO");
   }
 
-  const respostasPorNumero = respostasPorNumeroFromInput(prova.questoes, input);
+  if (temDuplicataEnEs(prova) && !input.idiomaEstrangeiro) {
+    throw new Error("IDIOMA_ESTRANGEIRO_OBRIGATORIO");
+  }
+
+  const idiomaEstrangeiro = resolverIdiomaTentativa(prova, input);
+  const questoesEfetivas = questoesParaTentativa(prova.questoes, prova, idiomaEstrangeiro);
+
+  const respostasPorNumero = respostasPorNumeroFromInput(numerosEsperados, input);
   const errosNormalizados = input.apenasErros?.length
     ? normalizarNumerosInformados(input.apenasErros, numerosEsperados)
     : input.apenasErros;
   const { attempts: rawAttempts, analiseCompleta, avisos } = buildAttemptsFromProva(
-    prova.questoes,
+    questoesEfetivas,
     respostasPorNumero,
     errosNormalizados
   );
@@ -218,7 +245,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
   );
 
   const questoesPedagogicas = rawAttempts.map((a) => {
-    const q = prova.questoes.find((pq) => pq.numero === a.numero)!;
+    const q = questoesEfetivas.find((pq) => pq.numero === a.numero)!;
     return {
       numero: a.numero,
       correto: a.correto,
@@ -280,9 +307,10 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
       checkInScore: input.checkInScore,
       recoveryMode: diagnosis.recoveryMode,
       modoUso,
+      idiomaEstrangeiro: idiomaEstrangeiro ?? undefined,
       questionAttempts: {
         create: rawAttempts.map((a) => {
-          const q = prova.questoes.find((pq) => pq.numero === a.numero)!;
+          const q = questoesEfetivas.find((pq) => pq.numero === a.numero)!;
           const { materiaId, temaId } = mapMateriaAssuntoToTaxonomy(q.materia, q.assunto);
           const ext = a as AttemptWithMeta;
           return {
@@ -525,7 +553,8 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
 
   const rawAttempts: AttemptInput[] = exam.questionAttempts.map((a) => {
     const pq =
-      a.provaQuestao ?? prova.questoes.find((q) => q.numero === a.numero);
+      a.provaQuestao ??
+      questaoPorNumeroETentativa(prova.questoes, a.numero, prova, exam.idiomaEstrangeiro);
     const mat = a.materiaCorrigida || pq?.materia;
     const ass = a.assuntoCorrigido || pq?.assunto;
     const mapped = (mat && ass) ? mapMateriaAssuntoToTaxonomy(mat, ass) : undefined;
@@ -541,7 +570,8 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
 
   const questoesPedagogicas = exam.questionAttempts.map((a) => {
     const q =
-      a.provaQuestao ?? prova.questoes.find((pq) => pq.numero === a.numero)!;
+      a.provaQuestao ??
+      questaoPorNumeroETentativa(prova.questoes, a.numero, prova, exam.idiomaEstrangeiro)!;
     return {
       numero: a.numero,
       correto: a.correto,
@@ -615,8 +645,19 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
 }
 
 export async function refreshProvaGabaritoFlag(provaId: string) {
-  const questoes = await prisma.provaQuestao.findMany({ where: { provaId } });
-  const completo = syncProvaGabaritoStatus(questoes);
+  const prova = await prisma.prova.findUnique({
+    where: { id: provaId },
+    include: { questoes: true },
+  });
+  if (!prova) return false;
+  const completo = syncProvaGabaritoStatus(prova.questoes, {
+    politicaIdiomas: prova.politicaIdiomas,
+    idiomaQuestaoInicio: prova.idiomaQuestaoInicio,
+    idiomaQuestaoFim: prova.idiomaQuestaoFim,
+    totalQuestoes: prova.totalQuestoes,
+    dia: prova.dia,
+    banca: prova.banca,
+  });
   await prisma.prova.update({
     where: { id: provaId },
     data: { gabaritoCompleto: completo },

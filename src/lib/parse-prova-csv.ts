@@ -1,5 +1,6 @@
 export interface ProvaQuestaoRow {
   numero: number;
+  idiomaVariante?: "COMUM" | "INGLES" | "ESPANHOL";
   areaBloco?: string;
   materia: string;
   assunto: string;

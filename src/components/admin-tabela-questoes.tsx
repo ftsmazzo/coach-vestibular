@@ -12,6 +12,7 @@ import {
 export interface QuestaoRow {
   id: string;
   numero: number;
+  idiomaVariante?: string;
   areaBloco: string | null;
   materia: string;
   assunto: string;
@@ -206,7 +207,14 @@ export function AdminTabelaQuestoes({
                       alertaSet.has(q.numero) ? "bg-amber-50" : ""
                     }`}
                   >
-                    <td className="p-2 font-medium">{q.numero}</td>
+                    <td className="p-2 font-medium">
+                      {q.numero}
+                      {q.idiomaVariante && q.idiomaVariante !== "COMUM" && (
+                        <span className="ml-1 text-[10px] font-normal text-slate-500">
+                          {q.idiomaVariante === "INGLES" ? "EN" : "ES"}
+                        </span>
+                      )}
+                    </td>
                     <td className="p-2 max-w-[8rem] truncate" title={q.areaBloco ?? ""}>
                       {q.areaBloco ?? "—"}
                     </td>

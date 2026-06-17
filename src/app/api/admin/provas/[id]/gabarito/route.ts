@@ -3,13 +3,17 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
+import { faixaIdiomaProva, numeroNaFaixaIdioma } from "@/lib/prova-idioma";
 
-/** Atualização em lote do gabarito por número da questão */
+/** Atualização em lote do gabarito por número da questão (e variante EN/ES quando aplicável). */
 const schema = z.object({
   itens: z.array(
     z.object({
       numero: z.number().int().positive(),
-      gabarito: z.string().regex(/^[A-Ea-e]$/),
+      gabarito: z.string().regex(/^[A-Ea-e]$/).optional(),
+      ingles: z.string().regex(/^[A-Ea-e]$/).optional(),
+      espanhol: z.string().regex(/^[A-Ea-e]$/).optional(),
+      idiomaVariante: z.enum(["COMUM", "INGLES", "ESPANHOL"]).optional(),
     })
   ),
 });
@@ -22,17 +26,47 @@ export async function PATCH(
   if (auth.error) return auth.error;
 
   const { id: provaId } = await params;
+  const prova = await prisma.prova.findUnique({ where: { id: provaId } });
+  if (!prova) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
+
+  const faixa = faixaIdiomaProva(prova);
   const { itens } = schema.parse(await request.json());
+  let updated = 0;
 
   for (const item of itens) {
+    const naFaixa = faixa && numeroNaFaixaIdioma(item.numero, faixa);
+
+    if (naFaixa && (item.ingles || item.espanhol)) {
+      if (item.ingles) {
+        await prisma.provaQuestao.updateMany({
+          where: { provaId, numero: item.numero, idiomaVariante: "INGLES" },
+          data: { gabarito: item.ingles.toUpperCase() },
+        });
+        updated++;
+      }
+      if (item.espanhol) {
+        await prisma.provaQuestao.updateMany({
+          where: { provaId, numero: item.numero, idiomaVariante: "ESPANHOL" },
+          data: { gabarito: item.espanhol.toUpperCase() },
+        });
+        updated++;
+      }
+      continue;
+    }
+
+    const letra = item.gabarito?.toUpperCase();
+    if (!letra) continue;
+
+    const variante = item.idiomaVariante ?? (naFaixa ? "INGLES" : "COMUM");
     await prisma.provaQuestao.updateMany({
-      where: { provaId, numero: item.numero },
-      data: { gabarito: item.gabarito.toUpperCase() },
+      where: { provaId, numero: item.numero, idiomaVariante: variante },
+      data: { gabarito: letra },
     });
+    updated++;
   }
 
   const completo = await refreshProvaGabaritoFlag(provaId);
-  return NextResponse.json({ ok: true, gabaritoCompleto: completo, updated: itens.length });
+  return NextResponse.json({ ok: true, gabaritoCompleto: completo, updated });
 }
 
 /** Remove todos os gabaritos da prova (ex.: limpar preenchimento incorreto da IA) */

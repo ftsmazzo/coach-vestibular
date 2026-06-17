@@ -9,6 +9,7 @@ import { upsertQuestoesExtraidas } from "@/lib/prova-questoes-persist";
 
 const bodySchema = z.object({
   numero: z.number().int().positive(),
+  idiomaVariante: z.enum(["COMUM", "INGLES", "ESPANHOL"]).optional(),
   texto: z.string().min(15, "Cole o enunciado completo da questão"),
   /** Orientação humana para a IA (persiste no banco se salvarOrientacao for true). */
   observacoes: z.string().max(2000).optional(),
@@ -28,13 +29,15 @@ export async function POST(
     return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
   }
 
-  const { numero, texto, observacoes, salvarOrientacao } = bodySchema.parse(
+  const { numero, idiomaVariante = "COMUM", texto, observacoes, salvarOrientacao } = bodySchema.parse(
     await request.json()
   );
   const enunciado = texto.trim();
 
   const existente = await prisma.provaQuestao.findUnique({
-    where: { provaId_numero: { provaId, numero } },
+    where: {
+      provaId_numero_idiomaVariante: { provaId, numero, idiomaVariante },
+    },
   });
 
   const orientacaoHumana =
@@ -65,11 +68,13 @@ export async function POST(
       );
     }
 
-    await upsertQuestoesExtraidas(provaId, [salva]);
+    await upsertQuestoesExtraidas(provaId, [{ ...salva, idiomaVariante }]);
     await refreshProvaGabaritoFlag(provaId);
 
     const atualizada = await prisma.provaQuestao.findUnique({
-      where: { provaId_numero: { provaId, numero } },
+      where: {
+        provaId_numero_idiomaVariante: { provaId, numero, idiomaVariante },
+      },
     });
 
     return NextResponse.json({

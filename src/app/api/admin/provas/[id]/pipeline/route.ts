@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 import { executarPipelineProvaV2 } from "@/lib/prova-pipeline-v2";
-import { persistirQuestoesClassificadas } from "@/lib/prova-questoes-persist";
+import { persistirQuestoesClassificadas, chaveObservacaoQuestao } from "@/lib/prova-questoes-persist";
 
 export const maxDuration = 600;
 
@@ -117,24 +117,45 @@ export async function POST(
     if (aplicar) {
       const antigas = await prisma.provaQuestao.findMany({
         where: { provaId },
-        select: { numero: true, observacoes: true },
+        select: { numero: true, idiomaVariante: true, observacoes: true },
       });
       const obsHumana = new Map(
         antigas
           .filter((a) => a.observacoes?.trim())
-          .map((a) => [a.numero, a.observacoes!.trim()])
+          .map((a) => [chaveObservacaoQuestao(a), a.observacoes!.trim()])
       );
       const rowsComHints =
         obsHumana.size > 0
           ? resultado.rows.map((r) => ({
               ...r,
-              observacoes: obsHumana.get(r.numero) ?? r.observacoes,
+              observacoes: obsHumana.get(chaveObservacaoQuestao(r)) ?? r.observacoes,
             }))
           : resultado.rows;
 
       gravadas = await persistirQuestoesClassificadas(provaId, rowsComHints, {
         substituir,
       });
+
+      if (resultado.politicaIdiomas === "DUPLICATA_EN_ES" && resultado.faixaIdioma) {
+        await prisma.prova.update({
+          where: { id: provaId },
+          data: {
+            politicaIdiomas: "DUPLICATA_EN_ES",
+            idiomaQuestaoInicio: resultado.faixaIdioma.inicio,
+            idiomaQuestaoFim: resultado.faixaIdioma.fim,
+          },
+        });
+      } else if (resultado.politicaIdiomas === "NENHUMA") {
+        await prisma.prova.update({
+          where: { id: provaId },
+          data: {
+            politicaIdiomas: "NENHUMA",
+            idiomaQuestaoInicio: null,
+            idiomaQuestaoFim: null,
+          },
+        });
+      }
+
       await refreshProvaGabaritoFlag(provaId);
     }
 

@@ -1,4 +1,7 @@
 import { taxonomy } from "./taxonomy";
+import type { MetaPoliticaIdiomas } from "./prova-idioma";
+import { variantesExigidasPorNumero } from "./prova-idioma";
+import { resolverNumerosGradeProva } from "./prova-numeracao";
 
 /** Mapeia texto de matéria/assunto da prova para ids da taxonomia (diagnóstico) */
 export function mapMateriaAssuntoToTaxonomy(materia: string, assunto: string) {
@@ -55,8 +58,28 @@ export function mapMateriaAssuntoToTaxonomy(materia: string, assunto: string) {
 }
 
 export function syncProvaGabaritoStatus(
-  questoes: Array<{ gabarito: string | null }>
+  questoes: Array<{ numero: number; idiomaVariante?: string; gabarito: string | null }>,
+  meta?: MetaPoliticaIdiomas & { totalQuestoes?: number; dia?: number | null; banca?: string }
 ): boolean {
   if (questoes.length === 0) return false;
-  return questoes.every((q) => q.gabarito && /^[A-Ea-e]$/.test(q.gabarito));
+
+  const numeros =
+    meta?.totalQuestoes != null
+      ? resolverNumerosGradeProva({
+          totalQuestoes: meta.totalQuestoes,
+          dia: meta.dia,
+          banca: meta.banca,
+          numerosCadastrados: questoes.map((q) => q.numero),
+        })
+      : [...new Set(questoes.map((q) => q.numero))].sort((a, b) => a - b);
+
+  for (const numero of numeros) {
+    for (const variante of variantesExigidasPorNumero(numero, meta ?? {})) {
+      const q = questoes.find(
+        (x) => x.numero === numero && (x.idiomaVariante ?? "COMUM") === variante
+      );
+      if (!q?.gabarito || !/^[A-Ea-e]$/.test(q.gabarito)) return false;
+    }
+  }
+  return numeros.length > 0;
 }

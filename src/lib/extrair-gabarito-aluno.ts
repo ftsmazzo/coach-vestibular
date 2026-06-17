@@ -83,15 +83,78 @@ export type LinhaRevisaoGabarito = {
   numero: number;
   letra: string;
   confianca: ConfiancaExtracao;
+  /** Gabarito oficial — trilha inglês (admin, faixa opcional) */
+  letraEn?: string;
+  /** Gabarito oficial — trilha espanhol (admin, faixa opcional) */
+  letraEs?: string;
 };
+
+/** Converte grid admin (incl. dual EN/ES) para payload da API de gabarito. */
+export function itensGabaritoOficialFromGrade(
+  linhas: LinhaRevisaoGabarito[],
+  faixaIdioma?: { inicio: number; fim: number } | null
+): Array<{ numero: number; gabarito?: string; ingles?: string; espanhol?: string }> {
+  const itens: Array<{ numero: number; gabarito?: string; ingles?: string; espanhol?: string }> = [];
+  for (const l of linhas) {
+    const dual =
+      faixaIdioma && l.numero >= faixaIdioma.inicio && l.numero <= faixaIdioma.fim;
+    if (dual) {
+      if (l.letraEn || l.letraEs) {
+        itens.push({
+          numero: l.numero,
+          ...(l.letraEn ? { ingles: l.letraEn.toUpperCase() } : {}),
+          ...(l.letraEs ? { espanhol: l.letraEs.toUpperCase() } : {}),
+        });
+      }
+    } else if (l.letra) {
+      itens.push({ numero: l.numero, gabarito: l.letra.toUpperCase() });
+    }
+  }
+  return itens;
+}
 
 /** Grade de revisão a partir do gabarito oficial já gravado no banco (admin). */
 export function gradeFromQuestoesGabarito(
   numeros: number[],
-  questoes: { numero: number; gabarito: string | null }[]
+  questoes: { numero: number; gabarito: string | null; idiomaVariante?: string }[],
+  faixaIdioma?: { inicio: number; fim: number } | null
 ): LinhaRevisaoGabarito[] {
+  if (faixaIdioma) {
+    return numeros.map((n) => {
+      const naFaixa = n >= faixaIdioma.inicio && n <= faixaIdioma.fim;
+      if (naFaixa) {
+        const en = questoes.find(
+          (q) => q.numero === n && (q.idiomaVariante ?? "COMUM") === "INGLES"
+        );
+        const es = questoes.find(
+          (q) => q.numero === n && (q.idiomaVariante ?? "COMUM") === "ESPANHOL"
+        );
+        return {
+          numero: n,
+          letra: "",
+          letraEn: en?.gabarito?.toUpperCase() ?? "",
+          letraEs: es?.gabarito?.toUpperCase() ?? "",
+          confianca: "alta" as const,
+        };
+      }
+      const comum = questoes.find(
+        (q) => q.numero === n && (q.idiomaVariante ?? "COMUM") === "COMUM"
+      );
+      return {
+        numero: n,
+        letra: comum?.gabarito?.toUpperCase() ?? "",
+        confianca: "alta" as const,
+      };
+    });
+  }
+
   const extraidas: RespostaExtraida[] = questoes
     .filter((q) => q.gabarito && /^[A-E]$/i.test(q.gabarito))
+    .filter(
+      (q, _i, arr) =>
+        arr.filter((x) => x.numero === q.numero).length === 1 ||
+        (q.idiomaVariante ?? "COMUM") === "COMUM"
+    )
     .map((q) => ({
       numero: q.numero,
       letra: q.gabarito!.toUpperCase(),

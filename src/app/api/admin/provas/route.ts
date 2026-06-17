@@ -12,7 +12,7 @@ export async function GET() {
   const provas = await prisma.prova.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      questoes: { select: { numero: true } },
+      questoes: { select: { numero: true, idiomaVariante: true } },
       _count: { select: { questoes: true, tentativas: true } },
     },
   });
@@ -22,6 +22,9 @@ export async function GET() {
       const stats = statsQuestoesProva(p.questoes, p.totalQuestoes, {
         dia: p.dia,
         banca: p.banca,
+        politicaIdiomas: p.politicaIdiomas,
+        idiomaQuestaoInicio: p.idiomaQuestaoInicio,
+        idiomaQuestaoFim: p.idiomaQuestaoFim,
       });
       return {
         id: p.id,
