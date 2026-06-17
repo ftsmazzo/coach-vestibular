@@ -5,6 +5,7 @@ import {
   type JsonSchemaFormat,
 } from "@/lib/openai-responses-client";
 import { normalizarNumerosGabaritoExtraido } from "@/lib/prova-numeracao";
+import { GABARITO_ANULADA, gabaritoEhAnulada } from "@/lib/gabarito-anulada";
 
 export type ConfiancaExtracao = "alta" | "media" | "baixa";
 
@@ -87,6 +88,10 @@ export type LinhaRevisaoGabarito = {
   letraEn?: string;
   /** Gabarito oficial — trilha espanhol (admin, faixa opcional) */
   letraEs?: string;
+  /** Questão anulada pela banca (gabarito *) */
+  anulada?: boolean;
+  anuladaEn?: boolean;
+  anuladaEs?: boolean;
 };
 
 /** Converte grid admin (incl. dual EN/ES) para payload da API de gabarito. */
@@ -99,13 +104,31 @@ export function itensGabaritoOficialFromGrade(
     const dual =
       faixaIdioma && l.numero >= faixaIdioma.inicio && l.numero <= faixaIdioma.fim;
     if (dual) {
-      if (l.letraEn || l.letraEs) {
+      const temEn = l.letraEn || l.anuladaEn;
+      const temEs = l.letraEs || l.anuladaEs;
+      if (temEn || temEs) {
         itens.push({
           numero: l.numero,
-          ...(l.letraEn ? { ingles: l.letraEn.toUpperCase() } : {}),
-          ...(l.letraEs ? { espanhol: l.letraEs.toUpperCase() } : {}),
+          ...(temEn
+            ? {
+                ingles:
+                  l.anuladaEn || l.letraEn === GABARITO_ANULADA
+                    ? GABARITO_ANULADA
+                    : l.letraEn!.toUpperCase(),
+              }
+            : {}),
+          ...(temEs
+            ? {
+                espanhol:
+                  l.anuladaEs || l.letraEs === GABARITO_ANULADA
+                    ? GABARITO_ANULADA
+                    : l.letraEs!.toUpperCase(),
+              }
+            : {}),
         });
       }
+    } else if (l.anulada || l.letra === GABARITO_ANULADA) {
+      itens.push({ numero: l.numero, gabarito: GABARITO_ANULADA });
     } else if (l.letra) {
       itens.push({ numero: l.numero, gabarito: l.letra.toUpperCase() });
     }
@@ -132,8 +155,10 @@ export function gradeFromQuestoesGabarito(
         return {
           numero: n,
           letra: "",
-          letraEn: en?.gabarito?.toUpperCase() ?? "",
-          letraEs: es?.gabarito?.toUpperCase() ?? "",
+          letraEn: en?.gabarito ? (gabaritoEhAnulada(en.gabarito) ? GABARITO_ANULADA : en.gabarito.toUpperCase()) : "",
+          letraEs: es?.gabarito ? (gabaritoEhAnulada(es.gabarito) ? GABARITO_ANULADA : es.gabarito.toUpperCase()) : "",
+          anuladaEn: gabaritoEhAnulada(en?.gabarito),
+          anuladaEs: gabaritoEhAnulada(es?.gabarito),
           confianca: "alta" as const,
         };
       }
@@ -142,14 +167,19 @@ export function gradeFromQuestoesGabarito(
       );
       return {
         numero: n,
-        letra: comum?.gabarito?.toUpperCase() ?? "",
+        letra: comum?.gabarito
+          ? gabaritoEhAnulada(comum.gabarito)
+            ? GABARITO_ANULADA
+            : comum.gabarito.toUpperCase()
+          : "",
+        anulada: gabaritoEhAnulada(comum?.gabarito),
         confianca: "alta" as const,
       };
     });
   }
 
   const extraidas: RespostaExtraida[] = questoes
-    .filter((q) => q.gabarito && /^[A-E]$/i.test(q.gabarito))
+    .filter((q) => q.gabarito && (/^[A-E]$/i.test(q.gabarito) || gabaritoEhAnulada(q.gabarito)))
     .filter(
       (q, _i, arr) =>
         arr.filter((x) => x.numero === q.numero).length === 1 ||
@@ -157,7 +187,7 @@ export function gradeFromQuestoesGabarito(
     )
     .map((q) => ({
       numero: q.numero,
-      letra: q.gabarito!.toUpperCase(),
+      letra: gabaritoEhAnulada(q.gabarito!) ? GABARITO_ANULADA : q.gabarito!.toUpperCase(),
       confianca: "alta" as const,
     }));
   return buildGradeRevisao(numeros, extraidas);
@@ -170,6 +200,9 @@ export function buildGradeRevisao(
   const map = new Map(extraidas.map((r) => [r.numero, r]));
   return numeros.map((n) => {
     const ex = map.get(n);
+    if (ex && gabaritoEhAnulada(ex.letra)) {
+      return { numero: n, letra: GABARITO_ANULADA, anulada: true, confianca: ex.confianca };
+    }
     return ex
       ? { numero: ex.numero, letra: ex.letra, confianca: ex.confianca }
       : {
@@ -205,9 +238,10 @@ ${contexto}
 Tarefa:
 1. Para cada questão visível, extraia o NÚMERO e a alternativa CORRETA oficial (A, B, C, D ou E).
 2. Em tabelas ENEM/vestibular, leia a coluna de gabarito ou a letra indicada como resposta certa.
-3. Se não tiver certeza, use confianca "baixa" ou omita a questão — não invente.
-4. NÃO interprete marcações de aluno — só o gabarito oficial publicado.
-5. Coloque avisos curtos em português (ex.: página cortada, foto escura).
+3. Questões ANULADAS (símbolo *, «ANULADA», «N/A»): use letra "*" — não deixe em branco.
+4. Se não tiver certeza, use confianca "baixa" ou omita a questão — não invente.
+5. NÃO interprete marcações de aluno — só o gabarito oficial publicado.
+6. Coloque avisos curtos em português (ex.: página cortada, foto escura, questões anuladas detectadas).
 
 Retorne JSON conforme o schema.`;
   }
@@ -252,7 +286,7 @@ export async function extrairGabaritoDeArquivo(opts: {
 
   const systemPrompt =
     modo === "oficial"
-      ? "Você extrai o gabarito OFICIAL de provas vestibulares a partir de fotos/PDFs. Seja conservador: só inclua questões visíveis. Letras sempre A–E maiúsculas."
+      ? "Você extrai o gabarito OFICIAL de provas vestibulares a partir de fotos/PDFs. Seja conservador: só inclua questões visíveis. Letras A–E maiúsculas; questões anuladas use *."
       : "Você extrai respostas de provas vestibulares a partir de fotos/PDFs. Seja conservador: só inclua questões visíveis. Letras sempre A–E maiúsculas.";
   const mime = opts.mimeType.toLowerCase();
   let data: ExtracaoIaPayload;
@@ -279,17 +313,20 @@ export async function extrairGabaritoDeArquivo(opts: {
   }
 
   const respostasRaw = Array.isArray(data.respostas) ? data.respostas : [];
+  const letraValida = (letra: string) =>
+    /^[A-E]$/.test(letra) || (modo === "oficial" && letra === GABARITO_ANULADA);
+
   let respostas = respostasRaw
     .filter(
       (r) =>
         Number.isInteger(r.numero) &&
         r.numero >= minN &&
         r.numero <= maxN &&
-        /^[A-E]$/.test(r.letra)
+        letraValida(String(r.letra).toUpperCase())
     )
     .map((r) => ({
       numero: r.numero,
-      letra: r.letra.toUpperCase(),
+      letra: String(r.letra).toUpperCase() === GABARITO_ANULADA ? GABARITO_ANULADA : String(r.letra).toUpperCase(),
       confianca: r.confianca,
     }));
 

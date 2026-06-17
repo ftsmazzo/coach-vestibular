@@ -908,6 +908,7 @@ export default function AdminProvaDetailPage() {
             avisos={avisosExtracaoGabarito}
             lidas={lidasIaGabarito}
             faixaIdiomaDual={faixaIdiomaDual}
+            permitirMarcarAnulada
           />
         ) : (
           <p className="text-sm text-slate-500">Defina o total de questões da prova para exibir o grid.</p>

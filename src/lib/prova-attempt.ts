@@ -7,6 +7,7 @@ import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
 import { normalizarMapaGabarito, normalizarNumerosInformados, resolverNumerosGradeProva } from "./prova-numeracao";
 import { parseDataAplicacao } from "./data-prova";
 import type { IdiomaVarianteQuestao, ModoUsoRegistro } from "@/generated/prisma/client";
+import { gabaritoEhAnulada } from "./gabarito-anulada";
 import {
   questoesParaTentativa,
   questaoPorNumeroETentativa,
@@ -68,6 +69,10 @@ function buildAttemptsFromProva(
 
   const attempts = questoes
     .map((q) => {
+      if (gabaritoEhAnulada(q.gabarito)) {
+        return null;
+      }
+
       const respostaAluno = respostasPorNumero.get(q.numero)?.toUpperCase();
 
       if (modoGabaritoAluno && !respostaAluno && !erroSet?.has(q.numero)) {
@@ -108,8 +113,15 @@ function buildAttemptsFromProva(
     })
     .filter((a): a is AttemptWithMeta => a !== null);
 
-  const gabaritoOficialCount = questoes.filter((q) => q.gabarito).length;
+  const anuladas = questoes.filter((q) => gabaritoEhAnulada(q.gabarito)).length;
+  const gabaritoOficialCount = questoes.filter((q) => q.gabarito && !gabaritoEhAnulada(q.gabarito)).length;
   const analiseCompleta = comRespostaAluno > 0 || Boolean(erroSet && errosConfirmados > 0);
+
+  if (anuladas > 0) {
+    avisos.push(
+      `${anuladas} questão(ões) anulada(s) pela banca — não entram no cálculo de acertos nem no diagnóstico.`
+    );
+  }
 
   if (erroSet && comRespostaAluno === 0) {
     avisos.push(

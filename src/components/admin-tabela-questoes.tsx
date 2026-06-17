@@ -226,7 +226,15 @@ export function AdminTabelaQuestoes({
                       {q.conhecimentoExigido ?? "—"}
                     </td>
                     <td className="p-2">{q.nivelDificuldade ?? "—"}</td>
-                    <td className="p-2 font-mono font-bold">{q.gabarito ?? "—"}</td>
+                    <td className="p-2 font-mono font-bold">
+                      {q.gabarito === "*" ? (
+                        <span className="text-slate-500" title="Anulada pela banca">
+                          *
+                        </span>
+                      ) : (
+                        (q.gabarito ?? "—")
+                      )}
+                    </td>
                     <td className="p-2 text-right">
                       <Button
                         type="button"

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConfiancaExtracao, LinhaRevisaoGabarito } from "@/lib/extrair-gabarito-aluno";
+import { GABARITO_ANULADA } from "@/lib/gabarito-anulada";
 
 export type { LinhaRevisaoGabarito };
 
@@ -14,8 +14,9 @@ function classeConfianca(confianca: ConfiancaExtracao, temLetra: boolean): strin
 }
 
 function linhaPreenchida(linha: LinhaRevisaoGabarito, dual: boolean): boolean {
+  if (linha.anulada) return true;
   if (dual && linha.letraEn !== undefined) {
-    return Boolean(linha.letraEn || linha.letraEs);
+    return Boolean(linha.letraEn || linha.letraEs || linha.anuladaEn || linha.anuladaEs);
   }
   return Boolean(linha.letra);
 }
@@ -26,6 +27,7 @@ export function GabaritoRevisaoGrid({
   avisos = [],
   lidas,
   faixaIdiomaDual,
+  permitirMarcarAnulada = false,
 }: {
   linhas: LinhaRevisaoGabarito[];
   onChange: (linhas: LinhaRevisaoGabarito[]) => void;
@@ -33,6 +35,8 @@ export function GabaritoRevisaoGrid({
   lidas?: number;
   /** Admin: questões 1–5 (ou faixa) com gabarito EN e ES separados */
   faixaIdiomaDual?: { inicio: number; fim: number } | null;
+  /** Admin: gabarito oficial — marcar questão anulada (*) */
+  permitirMarcarAnulada?: boolean;
 }) {
   const preenchidas = linhas.filter((l) =>
     linhaPreenchida(l, Boolean(faixaIdiomaDual && l.numero >= faixaIdiomaDual.inicio && l.numero <= faixaIdiomaDual.fim))
@@ -42,9 +46,48 @@ export function GabaritoRevisaoGrid({
     onChange(
       linhas.map((l) =>
         l.numero === numero
-          ? { ...l, letra: letra.toUpperCase(), confianca: letra ? "alta" : l.confianca }
+          ? { ...l, letra: letra.toUpperCase(), anulada: false, confianca: letra ? "alta" : l.confianca }
           : l
       )
+    );
+  }
+
+  function toggleAnulada(numero: number) {
+    onChange(
+      linhas.map((l) => {
+        if (l.numero !== numero) return l;
+        const virarAnulada = !l.anulada;
+        return {
+          ...l,
+          anulada: virarAnulada,
+          letra: virarAnulada ? GABARITO_ANULADA : "",
+          confianca: "alta" as const,
+        };
+      })
+    );
+  }
+
+  function toggleAnuladaDual(numero: number, trilha: "En" | "Es") {
+    onChange(
+      linhas.map((l) => {
+        if (l.numero !== numero) return l;
+        if (trilha === "En") {
+          const virar = !l.anuladaEn;
+          return {
+            ...l,
+            anuladaEn: virar,
+            letraEn: virar ? GABARITO_ANULADA : "",
+            confianca: "alta" as const,
+          };
+        }
+        const virar = !l.anuladaEs;
+        return {
+          ...l,
+          anuladaEs: virar,
+          letraEs: virar ? GABARITO_ANULADA : "",
+          confianca: "alta" as const,
+        };
+      })
     );
   }
 
@@ -53,10 +96,12 @@ export function GabaritoRevisaoGrid({
       linhas.map((l) => {
         if (l.numero !== numero) return l;
         const key = trilha === "En" ? "letraEn" : "letraEs";
+        const flag = trilha === "En" ? "anuladaEn" : "anuladaEs";
         const atual = l[key] ?? "";
         return {
           ...l,
           [key]: atual === letra.toUpperCase() ? "" : letra.toUpperCase(),
+          [flag]: false,
           confianca: "alta" as const,
         };
       })
@@ -99,6 +144,9 @@ export function GabaritoRevisaoGrid({
               separadamente.
             </span>
           )}
+          {permitirMarcarAnulada && (
+            <span> Questões com * na banca: toque em «Anulada».</span>
+          )}
         </p>
       </div>
 
@@ -119,47 +167,91 @@ export function GabaritoRevisaoGrid({
               linha.numero <= faixaIdiomaDual.fim;
 
             if (dual) {
-              const temAlguma = Boolean(linha.letraEn || linha.letraEs);
+              const temAlguma = linhaPreenchida(linha, true);
               return (
                 <li
                   key={linha.numero}
-                  className={`space-y-2 px-2 py-3 sm:px-3 ${classeConfianca(linha.confianca, temAlguma)}`}
+                  className={`space-y-2 px-2 py-3 sm:px-3 ${
+                    linha.anuladaEn || linha.anuladaEs
+                      ? "bg-slate-100 ring-1 ring-slate-200"
+                      : classeConfianca(linha.confianca, temAlguma)
+                  }`}
                 >
                   <span className="text-sm font-semibold tabular-nums text-slate-800">
                     {linha.numero}
                   </span>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="w-14 shrink-0 text-xs font-medium text-slate-600">Inglês</span>
-                    <div className="flex flex-wrap gap-1">
-                      {renderBotoes(linha.letraEn ?? "", (L) => atualizarDual(linha.numero, "En", L), `${linha.numero}-en`)}
-                    </div>
+                    {linha.anuladaEn ? (
+                      <span className="text-xs font-semibold text-slate-600">ANULADA (*)</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {renderBotoes(linha.letraEn ?? "", (L) => atualizarDual(linha.numero, "En", L), `${linha.numero}-en`)}
+                      </div>
+                    )}
+                    {permitirMarcarAnulada && (
+                      <button
+                        type="button"
+                        onClick={() => toggleAnuladaDual(linha.numero, "En")}
+                        className="rounded-lg bg-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-300"
+                      >
+                        {linha.anuladaEn ? "Desfazer" : "Anulada"}
+                      </button>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="w-14 shrink-0 text-xs font-medium text-slate-600">Espanhol</span>
-                    <div className="flex flex-wrap gap-1">
-                      {renderBotoes(linha.letraEs ?? "", (L) => atualizarDual(linha.numero, "Es", L), `${linha.numero}-es`)}
-                    </div>
+                    {linha.anuladaEs ? (
+                      <span className="text-xs font-semibold text-slate-600">ANULADA (*)</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {renderBotoes(linha.letraEs ?? "", (L) => atualizarDual(linha.numero, "Es", L), `${linha.numero}-es`)}
+                      </div>
+                    )}
+                    {permitirMarcarAnulada && (
+                      <button
+                        type="button"
+                        onClick={() => toggleAnuladaDual(linha.numero, "Es")}
+                        className="rounded-lg bg-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-300"
+                      >
+                        {linha.anuladaEs ? "Desfazer" : "Anulada"}
+                      </button>
+                    )}
                   </div>
                 </li>
               );
             }
 
-            const temLetra = Boolean(linha.letra);
+            const temLetra = linhaPreenchida(linha, false);
             return (
               <li
                 key={linha.numero}
-                className={`flex flex-wrap items-center gap-2 px-2 py-2 sm:gap-3 sm:px-3 ${classeConfianca(
-                  linha.confianca,
-                  temLetra
-                )}`}
+                className={`flex flex-wrap items-center gap-2 px-2 py-2 sm:gap-3 sm:px-3 ${
+                  linha.anulada
+                    ? "bg-slate-100 ring-1 ring-slate-200"
+                    : classeConfianca(linha.confianca, temLetra)
+                }`}
               >
                 <span className="w-10 shrink-0 text-sm font-semibold tabular-nums text-slate-800">
                   {linha.numero}
                 </span>
-                <div className="flex flex-1 flex-wrap gap-1">
-                  {renderBotoes(linha.letra, (L) => atualizar(linha.numero, L), String(linha.numero))}
-                </div>
-                {!temLetra && (
+                {linha.anulada ? (
+                  <span className="text-sm font-semibold text-slate-600">ANULADA (*)</span>
+                ) : (
+                  <div className="flex flex-1 flex-wrap gap-1">
+                    {renderBotoes(linha.letra, (L) => atualizar(linha.numero, L), String(linha.numero))}
+                  </div>
+                )}
+                {permitirMarcarAnulada && (
+                  <button
+                    type="button"
+                    onClick={() => toggleAnulada(linha.numero)}
+                    className="rounded-lg bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-300 sm:ml-auto"
+                  >
+                    {linha.anulada ? "Desfazer" : "Anulada"}
+                  </button>
+                )}
+                {!temLetra && !permitirMarcarAnulada && (
                   <span className="text-[10px] text-amber-700 sm:ml-auto">vazio</span>
                 )}
               </li>

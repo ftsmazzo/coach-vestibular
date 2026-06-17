@@ -1,3 +1,5 @@
+import { normalizarGabaritoOficial } from "@/lib/gabarito-anulada";
+
 export interface ProvaQuestaoRow {
   numero: number;
   idiomaVariante?: "COMUM" | "INGLES" | "ESPANHOL";
@@ -170,8 +172,8 @@ export function parseProvaQuestoesCsv(
 
     let gabarito: string | undefined;
     if (incluirGabarito && iGabarito >= 0) {
-      const letra = cols[iGabarito]?.toUpperCase().replace(/[^A-E]/g, "").slice(0, 1);
-      if (letra && /^[A-E]$/.test(letra)) gabarito = letra;
+      const norm = normalizarGabaritoOficial(cols[iGabarito]);
+      if (norm) gabarito = norm;
     }
 
     rows.push({

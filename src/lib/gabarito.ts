@@ -1,4 +1,5 @@
 import { taxonomy, TipoErroId } from "./taxonomy";
+import { normalizarGabaritoOficial } from "./gabarito-anulada";
 
 export interface QuestaoInput {
   numero: number;
@@ -33,13 +34,22 @@ export function parseListaErros(texto: string): number[] {
 
 /**
  * Gabarito do aluno ou oficial em lote — uma linha por questão.
- * Ex.: 1,C | 2, A | 3;B | 12.D
+ * Ex.: 1,C | 2, A | 3;B | 12.D | 15,* (anulada)
  */
 export function parseGabaritoLote(texto: string): Map<number, string> {
   const map = new Map<number, string>();
   for (const linha of texto.split(/\r?\n/)) {
     const trimmed = linha.trim();
     if (!trimmed) continue;
+
+    const matchAnulada =
+      trimmed.match(/^(\d{1,3})\s*[,;\s]+\s*(\*|anulad[ao]?)\b/i) ??
+      trimmed.match(/^(\d{1,3})\s*[\.\):\-–]\s*(\*|anulad[ao]?)\b/i);
+    if (matchAnulada) {
+      const numero = parseInt(matchAnulada[1], 10);
+      if (numero > 0) map.set(numero, "*");
+      continue;
+    }
 
     const match =
       trimmed.match(/^(\d{1,3})\s*[,;\s]+\s*([A-Ea-e])\b/i) ??

@@ -5,14 +5,16 @@ import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 import { faixaIdiomaProva, numeroNaFaixaIdioma } from "@/lib/prova-idioma";
 
+const GABARITO_LETRA_OU_ANULADA = /^(\*|[A-Ea-e])$/;
+
 /** Atualização em lote do gabarito por número da questão (e variante EN/ES quando aplicável). */
 const schema = z.object({
   itens: z.array(
     z.object({
       numero: z.number().int().positive(),
-      gabarito: z.string().regex(/^[A-Ea-e]$/).optional(),
-      ingles: z.string().regex(/^[A-Ea-e]$/).optional(),
-      espanhol: z.string().regex(/^[A-Ea-e]$/).optional(),
+      gabarito: z.string().regex(GABARITO_LETRA_OU_ANULADA).optional(),
+      ingles: z.string().regex(GABARITO_LETRA_OU_ANULADA).optional(),
+      espanhol: z.string().regex(GABARITO_LETRA_OU_ANULADA).optional(),
       idiomaVariante: z.enum(["COMUM", "INGLES", "ESPANHOL"]).optional(),
     })
   ),
