@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatDataAplicacao } from "@/lib/data-prova";
-import { CatalogoProvasGrid, type ProvaCatalogoItem } from "@/components/catalogo-provas-grid";
+import { montarCatalogoAtividades } from "@/lib/catalogo-atividades";
+import { CatalogoProvasGrid } from "@/components/catalogo-provas-grid";
 import { Card, LinkButton } from "@/components/ui";
 
 export default async function AtividadesPage() {
@@ -29,36 +29,20 @@ export default async function AtividadesPage() {
     }),
   ]);
 
-  const ultimaPorProvaId = new Map<
-    string,
-    { id: string; dataLabel: string; pctAcerto: number }
-  >();
-  const contagemPorProvaId = new Map<string, number>();
-
-  for (const e of meusExams) {
-    if (!e.provaId) continue;
-    contagemPorProvaId.set(e.provaId, (contagemPorProvaId.get(e.provaId) ?? 0) + 1);
-    if (!ultimaPorProvaId.has(e.provaId)) {
-      const total = e.questionAttempts.length;
-      const acertos = e.questionAttempts.filter((q) => q.correto).length;
-      ultimaPorProvaId.set(e.provaId, {
-        id: e.id,
-        dataLabel: formatDataAplicacao(e.data),
-        pctAcerto: total > 0 ? Math.round((acertos / total) * 100) : 0,
-      });
-    }
-  }
-
-  const provas: ProvaCatalogoItem[] = provasRaw.map((p) => ({
-    id: p.id,
-    nome: p.nome,
-    tipo: p.tipo,
-    banca: p.banca,
-    ano: p.ano,
-    minhasTentativas: contagemPorProvaId.get(p.id) ?? 0,
-    temCaderno: Boolean(p.cadernoStoragePath),
-    ultimaTentativa: ultimaPorProvaId.get(p.id) ?? null,
-  }));
+  const itens = montarCatalogoAtividades(
+    provasRaw.map((p) => ({
+      id: p.id,
+      nome: p.nome,
+      banca: p.banca,
+      ano: p.ano,
+      dia: p.dia,
+      tipo: p.tipo,
+      totalQuestoes: p.totalQuestoes,
+      caderno: p.caderno,
+      cadernoStoragePath: p.cadernoStoragePath,
+    })),
+    meusExams
+  );
 
   const metaLabel = [user?.vestibularAlvo, user?.metaProva].filter(Boolean).join(" · ");
 
@@ -67,9 +51,9 @@ export default async function AtividadesPage() {
       <div>
         <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Atividades</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-600 sm:text-base">
-          Catálogo de provas e simulados com questões classificadas (matéria e assunto). Abra{" "}
-          <strong>Análise</strong> para o diagnóstico e micro-plano (sua lente) ou{" "}
-          <strong>Dados</strong> para os números da última tentativa.
+          Catálogo de provas e simulados com questões classificadas (matéria e assunto). Quando você
+          registra <strong>dia 1 e dia 2</strong> do mesmo ENEM/simulado, aparece{" "}
+          <strong>uma atividade de 180 questões</strong> com análise unificada.
         </p>
       </div>
 
@@ -82,7 +66,7 @@ export default async function AtividadesPage() {
         </p>
       )}
 
-      <CatalogoProvasGrid provas={provas} />
+      <CatalogoProvasGrid itens={itens} />
 
       <Card className="border-dashed border-slate-200 bg-slate-50/80">
         <p className="text-sm text-slate-600">

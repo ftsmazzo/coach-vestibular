@@ -159,6 +159,32 @@ function modoDominante(a: ModoUsoRegistro, b: ModoUsoRegistro): ModoUsoRegistro 
   return pesoModoUso(a) >= pesoModoUso(b) ? a : b;
 }
 
+export const CONJUNTO_EXAM_ID_PREFIX = "conjunto~";
+
+/** ID sintético para rota de prova unificada dia 1 + dia 2. */
+export function formatConjuntoExamId(examIdDia1: string, examIdDia2: string): string {
+  return `${CONJUNTO_EXAM_ID_PREFIX}${examIdDia1}~${examIdDia2}`;
+}
+
+export function parseConjuntoExamId(id: string): [string, string] | null {
+  if (id.startsWith("conjunto:")) {
+    const parts = id.slice("conjunto:".length).split("+");
+    if (parts.length === 2 && parts[0] && parts[1]) return [parts[0], parts[1]];
+  }
+  if (!id.startsWith(CONJUNTO_EXAM_ID_PREFIX)) return null;
+  const parts = id.slice(CONJUNTO_EXAM_ID_PREFIX.length).split("~");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  return [parts[0], parts[1]];
+}
+
+export function isConjuntoExamId(id: string): boolean {
+  return parseConjuntoExamId(id) != null;
+}
+
+export function rotuloConjuntoCompleto(p1: ProvaMultidiaMeta, totalQuestoes: number): string {
+  return nomeConjuntoMultidia(p1, totalQuestoes);
+}
+
 function nomeConjuntoMultidia(p1: ProvaMultidiaMeta, totalQuestoes: number): string {
   if (ehProvaEnemLike(p1)) {
     const inst = prefixoEdicaoCaderno(p1.caderno);
@@ -208,7 +234,7 @@ function mergeParMultidia<T extends ExamParaAgrupamento>(d1: T, d2: T): UnidadeR
   const totalQuestoes = p1.totalQuestoes + p2.totalQuestoes;
   const data = d1.data > d2.data ? d1.data : d2.data;
   return {
-    id: `conjunto:${d1.id}+${d2.id}`,
+    id: formatConjuntoExamId(d1.id, d2.id),
     examIds: [d1.id, d2.id],
     conjuntoMultidia: true,
     data,

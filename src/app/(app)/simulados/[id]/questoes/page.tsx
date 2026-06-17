@@ -1,7 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { loadConjuntoExamView } from "@/lib/conjunto-exam-view";
 import { prisma } from "@/lib/prisma";
 import { formatDataAplicacao } from "@/lib/data-prova";
+import { parseConjuntoExamId } from "@/lib/prova-multidia";
 import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
 import { PageBackLink } from "@/components/page-back-link";
 import { TabelaQuestoesRegistro } from "@/components/tabela-questoes-registro";
@@ -19,6 +21,75 @@ export default async function SimuladoQuestoesPage({
   if (!session) redirect("/login");
 
   const { id } = await params;
+  const conjuntoIds = parseConjuntoExamId(id);
+
+  if (conjuntoIds) {
+    const [examIdDia1, examIdDia2] = conjuntoIds;
+    const conjunto = await loadConjuntoExamView(session.userId, examIdDia1, examIdDia2);
+    if (!conjunto) notFound();
+
+    const total = conjunto.questionAttempts.length;
+    const acertos = conjunto.acertos;
+    const semGabaritoAluno = conjunto.questionAttempts.every((q) => !q.respostaAluno);
+
+    return (
+      <div className="space-y-6">
+        <header className="space-y-2">
+          <PageBackLink href={`/simulados/${id}`}>Análise da prova</PageBackLink>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Questões e erros</h1>
+            <Badge tone="success">180 questões (2 dias)</Badge>
+          </div>
+          <p className="text-sm font-medium text-slate-700">{conjunto.nome}</p>
+          <p className="text-sm text-slate-600">
+            {conjunto.dataLabel} · {total > 0 ? Math.round((acertos / total) * 100) : 0}% ·{" "}
+            {acertos}/{total} acertos
+          </p>
+        </header>
+
+        <Card className="border-teal-100 bg-teal-50/40">
+          <p className="text-sm text-teal-900">
+            Classificação de erros continua por dia — use os links abaixo se quiser detalhar causa
+            em cada registro.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <LinkButton href={`/simulados/${examIdDia1}/questoes`} variant="secondary" className="text-sm">
+              Erros do dia 1
+            </LinkButton>
+            <LinkButton href={`/simulados/${examIdDia2}/questoes`} variant="secondary" className="text-sm">
+              Erros do dia 2
+            </LinkButton>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className="mb-1 font-semibold">Todas as questões (1–{total})</h2>
+          <TabelaQuestoesRegistro
+            examId={examIdDia1}
+            linhas={conjunto.questionAttempts.map((q) => ({
+              numero: q.numero,
+              respostaAluno: q.respostaAluno,
+              gabarito: q.provaQuestao?.gabarito ?? null,
+              materia: q.provaQuestao ? q.provaQuestao.materia : getMateriaLabel(q.materiaId),
+              assunto: q.provaQuestao
+                ? q.provaQuestao.assunto
+                : getTemaLabel(q.materiaId, q.temaId),
+              conhecimento: q.provaQuestao?.conhecimentoExigido ?? null,
+              nivelDificuldade: q.provaQuestao?.nivelDificuldade ?? null,
+              correto: q.correto,
+              podeSugerir: Boolean(q.provaQuestaoId && q.provaQuestao),
+            }))}
+          />
+          {semGabaritoAluno && (
+            <p className="mt-3 text-xs text-amber-700">
+              Um dos registros não incluiu gabarito completo.
+            </p>
+          )}
+        </Card>
+      </div>
+    );
+  }
+
   const exam = await prisma.exam.findFirst({
     where: { id, userId: session.userId },
     include: {

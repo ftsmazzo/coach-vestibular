@@ -58,16 +58,14 @@ export async function JornadaResumoCard({
 
       {j.registrosNaLista > j.totalRegistros && (
         <p className="mt-2 text-[11px] leading-snug text-teal-900">
-          {j.registrosNaLista} registros na lista → {j.totalRegistros} na jornada
+          Você tem {j.registrosNaLista} registros, mas a jornada conta {j.totalRegistros} — ENEM/simulado
+          de 2 dias vira uma prova só quando dia 1 e dia 2 estão registrados.
           {j.provasCompletasMultidia > 0 && (
             <>
               {" "}
-              ({j.provasCompletasMultidia} prova{j.provasCompletasMultidia !== 1 ? "s" : ""} de 2
-              dias unificada{j.provasCompletasMultidia !== 1 ? "s" : ""}
-              {j.nomesCompletosMultidia[0] ? `: ${j.nomesCompletosMultidia[0]}` : ""})
+              Ex.: {j.nomesCompletosMultidia[0]}
             </>
           )}
-          .
         </p>
       )}
 

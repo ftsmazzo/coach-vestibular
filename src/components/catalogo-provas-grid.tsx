@@ -1,30 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ProvaTipo } from "@/generated/prisma/client";
+import type { ItemCatalogoAtividades } from "@/lib/catalogo-atividades";
 import { abreviarNomeProva } from "@/lib/prova-label";
 import { tipoAtividadeFromProvaTipo } from "@/lib/prova-tipo";
 import { AtividadeCard, AtividadeCardRegistrar } from "@/components/atividade-card";
 import { touchChipClass } from "@/components/ui";
 
-export type ProvaCatalogoItem = {
-  id: string;
-  nome: string;
-  tipo: ProvaTipo;
-  banca: string;
-  ano: number | null;
-  minhasTentativas: number;
-  temCaderno: boolean;
-  ultimaTentativa: {
-    id: string;
-    dataLabel: string;
-    pctAcerto: number;
-  } | null;
-};
-
 type FiltroAtividades = "todas" | "pendentes" | "realizadas";
 
-function subtituloProva(p: ProvaCatalogoItem): string {
+function subtituloSingle(p: Extract<ItemCatalogoAtividades, { kind: "single" }>): string {
   const ano = p.ano != null ? String(p.ano) : "";
   const partes = [p.banca, ano].filter(Boolean);
   if (p.ultimaTentativa) {
@@ -36,30 +21,60 @@ function subtituloProva(p: ProvaCatalogoItem): string {
   return partes.join(" · ") || "Disponível no catálogo";
 }
 
-function CardRealizada({ p }: { p: ProvaCatalogoItem }) {
+function subtituloConjunto(p: Extract<ItemCatalogoAtividades, { kind: "conjunto" }>): string {
+  const ano = p.ano != null ? String(p.ano) : "";
+  const partes = [p.banca, ano].filter(Boolean);
+  const u = p.ultimaTentativa;
+  return `${partes.join(" · ")} · ${u.dataLabel} · ${u.pctAcerto}% · ${u.totalQuestoes} questões (2 dias)`;
+}
+
+function CardRealizadaSingle({ p }: { p: Extract<ItemCatalogoAtividades, { kind: "single" }> }) {
   const titulo = abreviarNomeProva(p.nome, 42);
   const tipo = tipoAtividadeFromProvaTipo(p.tipo);
-  const subtitulo = subtituloProva(p);
-  const lenteHref = `/provas/${p.id}/lente`;
-  const cadernoHref = p.temCaderno ? `/api/provas/${p.id}/caderno` : null;
   const examId = p.ultimaTentativa!.id;
 
   return (
     <AtividadeCard
       titulo={titulo}
-      subtitulo={subtitulo}
+      subtitulo={subtituloSingle(p)}
       tipoAtividade={tipo}
       pct={p.ultimaTentativa!.pctAcerto}
-      analiseHref={lenteHref}
+      analiseHref={`/provas/${p.id}/lente`}
       dadosHref={`/simulados/${examId}`}
       terceiroHref={`/quests?provaId=${p.id}`}
       terceiroLabel="Quests"
-      cadernoHref={cadernoHref}
+      cadernoHref={p.temCaderno ? `/api/provas/${p.id}/caderno` : null}
     />
   );
 }
 
-function CardPendente({ p }: { p: ProvaCatalogoItem }) {
+function CardRealizadaConjunto({ p }: { p: Extract<ItemCatalogoAtividades, { kind: "conjunto" }> }) {
+  const titulo = abreviarNomeProva(p.nome, 48);
+  const tipo = tipoAtividadeFromProvaTipo(p.tipo);
+  const conjuntoHref = `/simulados/${p.ultimaTentativa.id}`;
+
+  return (
+    <AtividadeCard
+      titulo={titulo}
+      subtitulo={subtituloConjunto(p)}
+      tipoAtividade={tipo}
+      pct={p.ultimaTentativa.pctAcerto}
+      analiseHref={conjuntoHref}
+      dadosHref={conjuntoHref}
+      terceiroHref={`/quests?provaId=${p.provaIds[0]}`}
+      terceiroLabel="Quests"
+      cadernoHref={p.temCaderno ? `/api/provas/${p.provaIds[0]}/caderno` : null}
+    />
+  );
+}
+
+function CardRealizada({ p }: { p: ItemCatalogoAtividades }) {
+  if (p.kind === "conjunto") return <CardRealizadaConjunto p={p} />;
+  if (!p.ultimaTentativa) return null;
+  return <CardRealizadaSingle p={p} />;
+}
+
+function CardPendente({ p }: { p: Extract<ItemCatalogoAtividades, { kind: "single" }> }) {
   const titulo = abreviarNomeProva(p.nome, 42);
   const tipo = tipoAtividadeFromProvaTipo(p.tipo);
   const ano = p.ano != null ? String(p.ano) : "";
@@ -85,20 +100,20 @@ function SecaoGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>;
 }
 
-export function CatalogoProvasGrid({ provas }: { provas: ProvaCatalogoItem[] }) {
+export function CatalogoProvasGrid({ itens }: { itens: ItemCatalogoAtividades[] }) {
   const [filtro, setFiltro] = useState<FiltroAtividades>("todas");
 
   const { pendentes, realizadas } = useMemo(() => {
-    const pend: ProvaCatalogoItem[] = [];
-    const real: ProvaCatalogoItem[] = [];
-    for (const p of provas) {
-      if (p.ultimaTentativa) real.push(p);
-      else pend.push(p);
+    const pend: Extract<ItemCatalogoAtividades, { kind: "single" }>[] = [];
+    const real: ItemCatalogoAtividades[] = [];
+    for (const p of itens) {
+      if (p.kind === "conjunto" || p.ultimaTentativa) real.push(p);
+      else if (p.kind === "single") pend.push(p);
     }
     return { pendentes: pend, realizadas: real };
-  }, [provas]);
+  }, [itens]);
 
-  if (provas.length === 0) {
+  if (itens.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-600">
         Nenhuma prova disponível no catálogo por enquanto.
@@ -113,7 +128,7 @@ export function CatalogoProvasGrid({ provas }: { provas: ProvaCatalogoItem[] }) 
     <div className="space-y-5">
       <div className="flex flex-wrap gap-2">
         <button type="button" className={touchChipClass(filtro === "todas")} onClick={() => setFiltro("todas")}>
-          Todas ({provas.length})
+          Todas ({itens.length})
         </button>
         <button
           type="button"

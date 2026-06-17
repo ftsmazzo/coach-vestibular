@@ -2,9 +2,11 @@ import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { XpToastFromUrl } from "@/components/xp-toast-from-url";
 import { getSession } from "@/lib/auth";
+import { loadConjuntoExamView } from "@/lib/conjunto-exam-view";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { prisma } from "@/lib/prisma";
 import { labelModoUso, descricaoModoUso } from "@/lib/modo-uso";
+import { parseConjuntoExamId } from "@/lib/prova-multidia";
 import { categoriaDoRegistro, labelCategoriaRegistro } from "@/lib/prova-tipo";
 import { Card, Badge, LinkButton } from "@/components/ui";
 import { ExamGraficos } from "@/components/exam-graficos";
@@ -19,6 +21,91 @@ export default async function SimuladoDetailPage({
   if (!session) redirect("/login");
 
   const { id } = await params;
+  const conjuntoIds = parseConjuntoExamId(id);
+
+  if (conjuntoIds) {
+    const [examIdDia1, examIdDia2] = conjuntoIds;
+    const conjunto = await loadConjuntoExamView(session.userId, examIdDia1, examIdDia2);
+    if (!conjunto) notFound();
+
+    const total = conjunto.questionAttempts.length;
+    const acertos = conjunto.acertos;
+    const errosCount = total - acertos;
+    const graficos = montarExamGraficos(conjunto.questionAttempts);
+    const semGabaritoAluno =
+      total > 0 && conjunto.questionAttempts.every((q) => !q.respostaAluno);
+
+    return (
+      <div className="space-y-6">
+        <Suspense fallback={null}>
+          <XpToastFromUrl />
+        </Suspense>
+
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">{conjunto.nome}</h1>
+            <Badge tone="success">Prova completa (2 dias)</Badge>
+            <Badge tone="neutral">{labelModoUso(conjunto.modoUso)}</Badge>
+          </div>
+          <p className="mt-1 text-sm text-slate-600">
+            Aplicada em {conjunto.dataLabel} ·{" "}
+            {total > 0 ? Math.round((acertos / total) * 100) : 0}% · {total} questões ·{" "}
+            {conjunto.banca}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Dia 1 + dia 2 unificados — mesma análise usada na jornada e no plano.
+          </p>
+        </div>
+
+        {total > 0 ? (
+          <section className="space-y-1">
+            <h2 className="text-lg font-semibold text-slate-900">Os números desta prova</h2>
+            <p className="text-xs text-slate-500">
+              Matérias, causas de erro e conhecimentos — prova completa de {total} questões.
+            </p>
+            <div className="pt-2">
+              <ExamGraficos data={graficos} />
+            </div>
+            {semGabaritoAluno && (
+              <p className="pt-2 text-xs text-amber-700">
+                Um dos registros não incluiu gabarito completo — o acerto por questão pode ficar
+                limitado.
+              </p>
+            )}
+          </section>
+        ) : (
+          <Card>
+            <p className="text-sm text-slate-600">Este registro não tem questões para analisar.</p>
+          </Card>
+        )}
+
+        <Card className="border-teal-200 bg-teal-50/40">
+          <h2 className="font-semibold text-teal-950">Questões 1–{total}</h2>
+          <p className="mt-2 text-sm text-teal-900">
+            Veja questão a questão (sua resposta × gabarito) e classifique
+            {errosCount > 0 ? ` os ${errosCount} erro(s)` : " seus erros"} da prova completa.
+          </p>
+          <LinkButton href={`/simulados/${id}/questoes`} className="mt-4 w-full sm:w-auto">
+            Abrir questões e erros
+          </LinkButton>
+        </Card>
+
+        <div className="flex flex-wrap gap-2">
+          <LinkButton href={`/simulados/${examIdDia1}`} variant="secondary">
+            Ver só dia 1
+          </LinkButton>
+          <LinkButton href={`/simulados/${examIdDia2}`} variant="secondary">
+            Ver só dia 2
+          </LinkButton>
+        </div>
+
+        <LinkButton href="/plano" variant="secondary">
+          Ver plano da semana
+        </LinkButton>
+      </div>
+    );
+  }
+
   const exam = await prisma.exam.findFirst({
     where: { id, userId: session.userId },
     include: {
