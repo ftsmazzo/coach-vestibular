@@ -8,6 +8,10 @@ import { pesoModoUso } from "@/lib/modo-uso";
 import { pesoBancaParaMeta } from "@/lib/meta-vestibular";
 import { prisma } from "@/lib/prisma";
 import { getTipoErroLabel } from "@/lib/taxonomy";
+import {
+  agruparUnidadesJornada,
+  PROVA_SELECT_MULTIDIA,
+} from "@/lib/prova-multidia";
 import { calcularComportamentoCluster } from "@/lib/comportamento-longitudinal";
 import type { ComportamentoLongitudinal } from "@/lib/comportamento-longitudinal";
 import {
@@ -90,6 +94,9 @@ export async function coletarEventosErro(
       data: true,
       modoUso: true,
       banca: true,
+      nome: true,
+      provaId: true,
+      prova: { select: PROVA_SELECT_MULTIDIA },
       questionAttempts: {
         where: { correto: false },
         select: {
@@ -107,14 +114,28 @@ export async function coletarEventosErro(
     },
   });
 
+  const unidades = opts?.provaId ? exams.map((e) => ({
+    id: e.id,
+    examIds: [e.id],
+    conjuntoMultidia: false,
+    data: e.data,
+    modoUso: e.modoUso,
+    banca: e.banca,
+    nome: e.nome,
+    provaId: e.provaId,
+    totalQuestoes: e.questionAttempts.length,
+    questionAttempts: e.questionAttempts,
+    exames: [e],
+  })) : agruparUnidadesJornada(exams);
+
   const eventos: EventoErroPedagogico[] = [];
 
-  for (const exam of exams) {
+  for (const unidade of unidades) {
     const pesoBase =
-      pesoModoUso(exam.modoUso) *
-      pesoBancaParaMeta(exam.banca, user?.metaProva, user?.vestibularAlvo);
+      pesoModoUso(unidade.modoUso) *
+      pesoBancaParaMeta(unidade.banca, user?.metaProva, user?.vestibularAlvo);
 
-    for (const a of exam.questionAttempts) {
+    for (const a of unidade.questionAttempts) {
       const raw = a.provaQuestao?.conhecimentoExigido?.trim();
       if (!raw || raw.length < 8) continue;
 
@@ -122,8 +143,8 @@ export async function coletarEventosErro(
       const assunto = a.provaQuestao?.assunto?.trim() || null;
 
       eventos.push({
-        examId: exam.id,
-        examData: exam.data,
+        examId: unidade.id,
+        examData: unidade.data,
         numero: a.numero,
         peso: pesoBase,
         conhecimentoBruto: raw,
@@ -322,13 +343,14 @@ export async function buildDiagnosticoMotor(
   userId: string,
   opts?: { provaId?: string }
 ): Promise<DiagnosticoMotor> {
-  const [eventos, journey, totalExames] = await Promise.all([
+  const [eventos, journey] = await Promise.all([
     coletarEventosErro(userId, opts),
     aggregateJourneyLearning(userId, "todos"),
-    prisma.exam.count({
-      where: { userId, ...(opts?.provaId ? { provaId: opts.provaId } : {}) },
-    }),
   ]);
+
+  const totalExames = opts?.provaId
+    ? await prisma.exam.count({ where: { userId, provaId: opts.provaId } })
+    : journey.totalRegistros;
 
   if (eventos.length === 0) {
     return {

@@ -5,6 +5,10 @@ import { pesoBancaParaMeta } from "@/lib/meta-vestibular";
 import { prisma } from "@/lib/prisma";
 import { getTipoErroLabel } from "@/lib/taxonomy";
 import {
+  agruparUnidadesJornada,
+  PROVA_SELECT_MULTIDIA,
+} from "@/lib/prova-multidia";
+import {
   agruparPorTipoCognitivo,
   inferirTipoCognitivo,
   materiaCoincide,
@@ -102,10 +106,15 @@ export async function aggregateKnowledgeGaps(
     prisma.exam.findMany({
       where: { userId },
       orderBy: { data: "desc" },
-      take: 20,
+      take: 24,
       select: {
+        id: true,
+        data: true,
         modoUso: true,
         banca: true,
+        nome: true,
+        provaId: true,
+        prova: { select: PROVA_SELECT_MULTIDIA },
         questionAttempts: {
           where: { correto: false },
           select: {
@@ -121,6 +130,8 @@ export async function aggregateKnowledgeGaps(
     }),
   ]);
 
+  const unidades = agruparUnidadesJornada(exams);
+
   const mapaDeficit = mapaDeficitMaterias(journey.materiasMedia);
 
   const map = new Map<
@@ -128,12 +139,12 @@ export async function aggregateKnowledgeGaps(
     LacunaConhecimento & { _causas: Map<ErrorType, number> }
   >();
 
-  for (const exam of exams) {
+  for (const unidade of unidades) {
     const pesoExam =
-      pesoModoUso(exam.modoUso) *
-      pesoBancaParaMeta(exam.banca, user?.metaProva, user?.vestibularAlvo);
+      pesoModoUso(unidade.modoUso) *
+      pesoBancaParaMeta(unidade.banca, user?.metaProva, user?.vestibularAlvo);
 
-    for (const a of exam.questionAttempts) {
+    for (const a of unidade.questionAttempts) {
       const raw = a.provaQuestao?.conhecimentoExigido?.trim();
       if (!raw || raw.length < 8) continue;
 

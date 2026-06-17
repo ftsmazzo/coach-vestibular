@@ -1,4 +1,9 @@
 import type { ModoUsoRegistro, ProvaTipo } from "@/generated/prisma/client";
+import {
+  agruparUnidadesJornada,
+  PROVA_SELECT_MULTIDIA,
+  type UnidadeRegistroJornada,
+} from "@/lib/prova-multidia";
 import { prisma } from "@/lib/prisma";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { pctAcertoRegistro } from "@/lib/exam-stats";
@@ -121,19 +126,44 @@ export async function buildHistoricoProva(
   };
 }
 
-/** Exams recentes de toda a jornada (para recorrência no diagnóstico). */
-export async function examsRecentesJornada(userId: string, limit = 8, excludeExamId?: string) {
-  return prisma.exam.findMany({
-    where: {
-      userId,
-      ...(excludeExamId ? { id: { not: excludeExamId } } : {}),
-    },
+const includeJornadaMultidia = {
+  questionAttempts: { include: { provaQuestao: true } },
+  prova: { select: PROVA_SELECT_MULTIDIA },
+} as const;
+
+/** Unidades recentes — dia 1 + dia 2 da mesma edição contam como um registro. */
+export async function unidadesRecentesJornada(
+  userId: string,
+  limit = 8,
+  excludeExamId?: string
+): Promise<UnidadeRegistroJornada[]> {
+  const take = Math.max(limit * 2, 16);
+  const exams = await prisma.exam.findMany({
+    where: { userId },
     orderBy: { data: "desc" },
-    take: limit,
-    include: {
-      questionAttempts: { include: { provaQuestao: true } },
-    },
+    take,
+    include: includeJornadaMultidia,
   });
+
+  let unidades = agruparUnidadesJornada(exams);
+  if (excludeExamId) {
+    unidades = unidades.filter((u) => !u.examIds.includes(excludeExamId));
+  }
+  return unidades.slice(0, limit);
+}
+
+/** @deprecated Prefer unidadesRecentesJornada — mantido para compatibilidade interna. */
+export async function examsRecentesJornada(userId: string, limit = 8, excludeExamId?: string) {
+  const unidades = await unidadesRecentesJornada(userId, limit, excludeExamId);
+  return unidades.map((u) => ({
+    ...u.exames[0]!,
+    id: u.examIds[0]!,
+    data: u.data,
+    modoUso: u.modoUso,
+    banca: u.banca,
+    nome: u.nome,
+    questionAttempts: u.questionAttempts,
+  }));
 }
 
 export function pesoExam(exam: { modoUso: ModoUsoRegistro }) {

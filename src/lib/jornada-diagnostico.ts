@@ -5,6 +5,11 @@ import { pesoBancaParaMeta } from "@/lib/meta-vestibular";
 import { pesoModoUso } from "@/lib/modo-uso";
 import { mapMateriaAssuntoToTaxonomy } from "@/lib/prova-catalog";
 import { historicalAttemptsDaJornada } from "@/lib/jornada-plano";
+import {
+  agruparUnidadesJornada,
+  PROVA_SELECT_MULTIDIA,
+  type UnidadeRegistroJornada,
+} from "@/lib/prova-multidia";
 
 function attemptsFromExam(
   exam: {
@@ -32,9 +37,44 @@ function attemptsFromExam(
   });
 }
 
+function attemptsFromUnidade(
+  u: UnidadeRegistroJornada<{
+    questionAttempts: Parameters<typeof attemptsFromExam>[0]["questionAttempts"];
+  }>
+): AttemptInput[] {
+  return attemptsFromExam({ questionAttempts: u.questionAttempts });
+}
+
 /** Monta lista ponderada: cada questão entra N vezes conforme peso do registro (oficial pesa mais). */
 export function attemptsPonderadosJornada(
   exams: Array<{
+    id?: string;
+    modoUso: Parameters<typeof pesoModoUso>[0];
+    banca: string | null;
+    provaId?: string | null;
+    prova?: Parameters<typeof agruparUnidadesJornada>[0][0]["prova"];
+    questionAttempts: Parameters<typeof attemptsFromExam>[0]["questionAttempts"];
+  }>,
+  metaProva?: string | null,
+  vestibularAlvo?: string | null
+): AttemptInput[] {
+  const unidades = agruparUnidadesJornada(
+    exams.map((e, i) => ({
+      id: e.id ?? e.provaId ?? `legacy-${i}`,
+      data: new Date(0),
+      modoUso: e.modoUso,
+      banca: e.banca,
+      nome: "",
+      provaId: e.provaId ?? null,
+      prova: e.prova ?? null,
+      questionAttempts: e.questionAttempts,
+    }))
+  );
+  return attemptsPonderadosUnidadesJornada(unidades, metaProva, vestibularAlvo);
+}
+
+export function attemptsPonderadosUnidadesJornada(
+  unidades: Array<{
     modoUso: Parameters<typeof pesoModoUso>[0];
     banca: string | null;
     questionAttempts: Parameters<typeof attemptsFromExam>[0]["questionAttempts"];
@@ -43,10 +83,10 @@ export function attemptsPonderadosJornada(
   vestibularAlvo?: string | null
 ): AttemptInput[] {
   const out: AttemptInput[] = [];
-  for (const exam of exams) {
-    const base = pesoModoUso(exam.modoUso) * pesoBancaParaMeta(exam.banca, metaProva, vestibularAlvo);
+  for (const u of unidades) {
+    const base = pesoModoUso(u.modoUso) * pesoBancaParaMeta(u.banca, metaProva, vestibularAlvo);
     const rep = Math.min(3, Math.max(1, Math.round(base)));
-    const batch = attemptsFromExam(exam);
+    const batch = attemptsFromUnidade(u as UnidadeRegistroJornada);
     for (let i = 0; i < rep; i++) out.push(...batch);
   }
   return out;
@@ -62,23 +102,27 @@ export async function buildDiagnosisFromJornada(userId: string): Promise<Diagnos
   const exams = await prisma.exam.findMany({
     where: { userId },
     orderBy: { data: "desc" },
-    take: 12,
+    take: 24,
     include: {
       questionAttempts: { include: { provaQuestao: true } },
-      prova: { select: { tipo: true } },
+      prova: { select: PROVA_SELECT_MULTIDIA },
     },
   });
 
-  if (exams.length === 0) {
+  const unidades = agruparUnidadesJornada(exams).slice(0, 12);
+
+  if (unidades.length === 0) {
     return buildDiagnosis([], [], { examLabel: "sua jornada" });
   }
 
-  const weighted = attemptsPonderadosJornada(
-    exams,
+  const weighted = attemptsPonderadosUnidadesJornada(
+    unidades,
     user?.metaProva,
     user?.vestibularAlvo
   );
   const historical = await historicalAttemptsDaJornada(userId);
+
+  const conjuntos = unidades.filter((u) => u.conjuntoMultidia).length;
 
   let diagnosis = await buildDiagnosis(weighted, historical, {
     examLabel: "sua jornada completa",
@@ -88,8 +132,9 @@ export async function buildDiagnosisFromJornada(userId: string): Promise<Diagnos
   diagnosis = {
     ...diagnosis,
     mensagem:
-      `Plano baseado na sua jornada (${exams.length} registro${exams.length !== 1 ? "s" : ""}) — ` +
-      `oficiais, simulados e listas entram com pesos diferentes. ` +
+      `Plano baseado na sua jornada (${unidades.length} registro${unidades.length !== 1 ? "s" : ""}` +
+      (conjuntos > 0 ? `, ${conjuntos} prova${conjuntos !== 1 ? "s" : ""} de 2 dias unificada${conjuntos !== 1 ? "s" : ""}` : "") +
+      `) — oficiais, simulados e listas entram com pesos diferentes. ` +
       diagnosis.mensagem,
   };
 

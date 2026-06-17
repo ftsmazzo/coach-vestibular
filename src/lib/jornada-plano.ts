@@ -2,7 +2,7 @@ import type { AttemptInput } from "@/lib/diagnosis";
 import type { StudyPlanItem } from "@/lib/study-plan";
 import { buildResumoJornada } from "@/lib/jornada";
 import { PESO_BANCA_ALINHADA_META } from "@/lib/meta-vestibular";
-import { examsRecentesJornada } from "@/lib/jornada-historico";
+import { unidadesRecentesJornada } from "@/lib/jornada-historico";
 import { mapMateriaAssuntoToTaxonomy } from "@/lib/prova-catalog";
 
 /** Histórico de attempts de vários registros (jornada) para recorrência de temas. */
@@ -10,9 +10,9 @@ export async function historicalAttemptsDaJornada(
   userId: string,
   excludeExamId?: string
 ): Promise<AttemptInput[][]> {
-  const exams = await examsRecentesJornada(userId, 8, excludeExamId);
-  return exams.map((e) =>
-    e.questionAttempts.map((a) => {
+  const unidades = await unidadesRecentesJornada(userId, 8, excludeExamId);
+  return unidades.map((u) =>
+    u.questionAttempts.map((a) => {
       const mat = a.materiaCorrigida || a.provaQuestao?.materia;
       const ass = a.assuntoCorrigido || a.provaQuestao?.assunto;
       const mapped = mat && ass ? mapMateriaAssuntoToTaxonomy(mat, ass) : undefined;

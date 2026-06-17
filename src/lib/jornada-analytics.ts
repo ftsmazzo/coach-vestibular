@@ -20,6 +20,11 @@ import {
 } from "@/lib/prova-tipo";
 import { type KpiExecucao, type PontoExecucao, serieKpiExecucoes, ultimoKpi } from "@/lib/kpi-evolucao";
 import { getMateriaLabel } from "@/lib/taxonomy";
+import {
+  agruparUnidadesJornada,
+  PROVA_SELECT_MULTIDIA,
+  unidadeComoExam,
+} from "@/lib/prova-multidia";
 
 export interface MateriaMediaJornada {
   materiaId: string;
@@ -203,12 +208,13 @@ export async function buildJornadaDashboardAnalytics(
     orderBy: { data: "desc" },
     include: {
       questionAttempts: { include: { provaQuestao: true } },
-      prova: { select: { tipo: true } },
+      prova: { select: { ...PROVA_SELECT_MULTIDIA, tipo: true } },
     },
   });
 
   const { registroPassaFiltro } = await import("@/lib/prova-tipo");
-  const filtrados = exams.filter((e) => registroPassaFiltro(e, filtro));
+  const unidades = agruparUnidadesJornada(exams);
+  const filtradas = unidades.filter((u) => u.exames.some((e) => registroPassaFiltro(e, filtro)));
 
   const materiaAcc = new Map<
     string,
@@ -221,12 +227,12 @@ export async function buildJornadaDashboardAnalytics(
 
   const seriesPorProva: MateriaSerieProva[] = [];
 
-  for (const exam of [...filtrados].reverse()) {
-    const peso = pesoExam(exam, user?.metaProva, user?.vestibularAlvo);
+  for (const unidade of [...filtradas].reverse()) {
+    const peso = pesoExam({ modoUso: unidade.modoUso }, user?.metaProva, user?.vestibularAlvo);
     const materiasPct: Record<string, number | null> = {};
-    const presentes = journeyOnly ? [] : materiasNoExame(exam.questionAttempts);
+    const presentes = journeyOnly ? [] : materiasNoExame(unidade.questionAttempts);
 
-    for (const q of exam.questionAttempts) {
+    for (const q of unidade.questionAttempts) {
       const mat = materiaIdDeAttempt(q);
       if (!mat) continue;
 
@@ -253,16 +259,16 @@ export async function buildJornadaDashboardAnalytics(
 
     if (!journeyOnly) {
       for (const mid of presentes) {
-        const stats = pctMateriaNoExame(exam.questionAttempts, mid);
+        const stats = pctMateriaNoExame(unidade.questionAttempts, mid);
         materiasPct[mid] = stats?.pct ?? null;
       }
 
       seriesPorProva.push({
-        examId: exam.id,
-        nome: exam.nome,
-        nomeCurto: abreviarNomeProva(exam.nome),
-        dataLabel: formatDataAplicacao(exam.data),
-        pctGeral: pctAcertoRegistro(exam.questionAttempts),
+        examId: unidade.id,
+        nome: unidade.nome,
+        nomeCurto: abreviarNomeProva(unidade.nome),
+        dataLabel: formatDataAplicacao(unidade.data),
+        pctGeral: pctAcertoRegistro(unidade.questionAttempts),
         materias: materiasPct,
         materiasPresentes: presentes,
       });
@@ -308,9 +314,10 @@ export async function buildJornadaDashboardAnalytics(
   let evolucaoVestibulares: EvolucaoVestibularesKpi | null = null;
 
   if (!journeyOnly) {
-    const oficiais = [...filtrados]
-      .filter((e) => categoriaDoRegistro(e) === "prova_oficial")
-      .sort((a, b) => a.data.getTime() - b.data.getTime());
+    const oficiais = [...filtradas]
+      .filter((u) => u.exames.some((e) => categoriaDoRegistro(e) === "prova_oficial"))
+      .sort((a, b) => a.data.getTime() - b.data.getTime())
+      .map((u) => unidadeComoExam(u));
 
     comparativoVestibulares = buildComparativoDuasExecucoes(oficiais);
 
@@ -334,20 +341,23 @@ export async function buildJornadaDashboardAnalytics(
     }
   }
 
-  const registrosRecentes: RegistroDashboardCard[] = filtrados.slice(0, 8).map((e) => ({
-    id: e.id,
-    nome: e.nome,
-    dataLabel: formatDataAplicacao(e.data),
-    pct: pctAcertoRegistro(e.questionAttempts),
-    modoUso: e.modoUso,
-    categoria: categoriaDoRegistro(e),
-    tipoAtividade: tipoAtividadeVisual(e),
-    provaId: e.provaId,
-  }));
+  const registrosRecentes: RegistroDashboardCard[] = filtradas.slice(0, 8).map((u) => {
+    const e = unidadeComoExam(u);
+    return {
+      id: u.id,
+      nome: u.nome,
+      dataLabel: formatDataAplicacao(u.data),
+      pct: pctAcertoRegistro(u.questionAttempts),
+      modoUso: u.modoUso,
+      categoria: categoriaDoRegistro(e),
+      tipoAtividade: tipoAtividadeVisual(e),
+      provaId: u.provaId,
+    };
+  });
 
   return {
     pctGlobalPonderado: somaPeso > 0 ? Math.round((somaPesoAcerto / somaPeso) * 100) : 0,
-    totalRegistros: filtrados.length,
+    totalRegistros: filtradas.length,
     materiasMedia,
     areasBloco,
     seriesPorProva,

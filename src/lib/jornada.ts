@@ -12,6 +12,10 @@ import {
   textoMetaAluno,
 } from "@/lib/meta-vestibular";
 import { getMateriaLabel } from "@/lib/taxonomy";
+import {
+  agruparUnidadesJornada,
+  PROVA_SELECT_MULTIDIA,
+} from "@/lib/prova-multidia";
 
 export interface ResumoJornada {
   totalRegistros: number;
@@ -52,9 +56,14 @@ export async function buildResumoJornada(userId: string): Promise<ResumoJornada>
 
   const exams = await prisma.exam.findMany({
     where: { userId },
-    include: { questionAttempts: true },
+    include: {
+      questionAttempts: true,
+      prova: { select: PROVA_SELECT_MULTIDIA },
+    },
     orderBy: { data: "desc" },
   });
+
+  const unidades = agruparUnidadesJornada(exams);
 
   let acertos = 0;
   let erros = 0;
@@ -71,18 +80,15 @@ export async function buildResumoJornada(userId: string): Promise<ResumoJornada>
     { erros: number; total: number; pesoErros: number }
   >();
 
-  for (const exam of exams) {
+  for (const unidade of unidades) {
     const peso =
-      pesoModoUso(exam.modoUso) *
-      pesoBancaParaMeta(exam.banca, user?.metaProva, user?.vestibularAlvo);
-    const modoStats = porModo.get(exam.modoUso) ?? { registros: 0, acertos: 0, total: 0 };
+      pesoModoUso(unidade.modoUso) *
+      pesoBancaParaMeta(unidade.banca, user?.metaProva, user?.vestibularAlvo);
+    const modoStats = porModo.get(unidade.modoUso) ?? { registros: 0, acertos: 0, total: 0 };
     modoStats.registros++;
-    porModo.set(exam.modoUso, modoStats);
+    porModo.set(unidade.modoUso, modoStats);
 
-    for (const q of exam.questionAttempts) {
-      const totalQ = exam.questionAttempts.length;
-      if (totalQ === 0) continue;
-
+    for (const q of unidade.questionAttempts) {
       if (q.correto) {
         acertos++;
         modoStats.acertos++;
@@ -136,7 +142,7 @@ export async function buildResumoJornada(userId: string): Promise<ResumoJornada>
   const totalQuestoes = acertos + erros;
 
   return {
-    totalRegistros: exams.length,
+    totalRegistros: unidades.length,
     totalQuestoes,
     acertos,
     erros,
@@ -159,20 +165,23 @@ export async function buildResumoGlobalJornada(
     orderBy: { data: "desc" },
     include: {
       questionAttempts: { include: { provaQuestao: true } },
-      prova: { select: { tipo: true } },
+      prova: { select: { ...PROVA_SELECT_MULTIDIA, tipo: true } },
     },
   });
 
-  const filtrados = exams.filter((e) => registroPassaFiltro(e, filtro));
-  if (filtrados.length === 0) return null;
+  const unidades = agruparUnidadesJornada(exams).filter((u) =>
+    u.exames.some((e) => registroPassaFiltro(e, filtro))
+  );
+  if (unidades.length === 0) return null;
 
-  const questoes = filtrados.flatMap((exam) =>
-    exam.questionAttempts.map((a) => {
-      const pq = a.provaQuestao;
+  const questoes = unidades.flatMap((unidade) =>
+    unidade.questionAttempts.map((a) => {
+      const pq = (a as { provaQuestao?: { materia?: string; assunto?: string; conhecimentoExigido?: string | null; nivelDificuldade?: string | null } }).provaQuestao;
+      const materiaId = (a as { materiaId?: string | null }).materiaId;
       return {
         numero: a.numero,
-        correto: a.correto,
-        materia: pq?.materia?.trim() || getMateriaLabel(a.materiaId ?? "geral"),
+        correto: (a as { correto: boolean }).correto,
+        materia: pq?.materia?.trim() || getMateriaLabel(materiaId ?? "geral"),
         assunto: pq?.assunto?.trim() || "Geral",
         conhecimentoExigido: pq?.conhecimentoExigido,
         nivelDificuldade: pq?.nivelDificuldade,
