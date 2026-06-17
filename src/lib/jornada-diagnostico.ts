@@ -8,19 +8,20 @@ import { historicalAttemptsDaJornada } from "@/lib/jornada-plano";
 import {
   agruparUnidadesJornada,
   PROVA_SELECT_MULTIDIA,
-  type UnidadeRegistroJornada,
 } from "@/lib/prova-multidia";
+
+type QuestionAttemptsJornada = Array<{
+  numero: number;
+  correto: boolean;
+  materiaId: string | null;
+  temaId: string | null;
+  tipoErro: string | null;
+  provaQuestao?: { materia: string; assunto: string } | null;
+}>;
 
 function attemptsFromExam(
   exam: {
-    questionAttempts: Array<{
-      numero: number;
-      correto: boolean;
-      materiaId: string | null;
-      temaId: string | null;
-      tipoErro: string | null;
-      provaQuestao?: { materia: string; assunto: string } | null;
-    }>;
+    questionAttempts: QuestionAttemptsJornada;
   }
 ): AttemptInput[] {
   return exam.questionAttempts.map((a) => {
@@ -37,14 +38,6 @@ function attemptsFromExam(
   });
 }
 
-function attemptsFromUnidade(
-  u: UnidadeRegistroJornada<{
-    questionAttempts: Parameters<typeof attemptsFromExam>[0]["questionAttempts"];
-  }>
-): AttemptInput[] {
-  return attemptsFromExam({ questionAttempts: u.questionAttempts });
-}
-
 /** Monta lista ponderada: cada questão entra N vezes conforme peso do registro (oficial pesa mais). */
 export function attemptsPonderadosJornada(
   exams: Array<{
@@ -53,7 +46,7 @@ export function attemptsPonderadosJornada(
     banca: string | null;
     provaId?: string | null;
     prova?: Parameters<typeof agruparUnidadesJornada>[0][0]["prova"];
-    questionAttempts: Parameters<typeof attemptsFromExam>[0]["questionAttempts"];
+    questionAttempts: QuestionAttemptsJornada;
   }>,
   metaProva?: string | null,
   vestibularAlvo?: string | null
@@ -77,7 +70,7 @@ export function attemptsPonderadosUnidadesJornada(
   unidades: Array<{
     modoUso: Parameters<typeof pesoModoUso>[0];
     banca: string | null;
-    questionAttempts: Parameters<typeof attemptsFromExam>[0]["questionAttempts"];
+    questionAttempts: QuestionAttemptsJornada;
   }>,
   metaProva?: string | null,
   vestibularAlvo?: string | null
@@ -86,7 +79,7 @@ export function attemptsPonderadosUnidadesJornada(
   for (const u of unidades) {
     const base = pesoModoUso(u.modoUso) * pesoBancaParaMeta(u.banca, metaProva, vestibularAlvo);
     const rep = Math.min(3, Math.max(1, Math.round(base)));
-    const batch = attemptsFromUnidade(u as UnidadeRegistroJornada);
+    const batch = attemptsFromExam({ questionAttempts: u.questionAttempts });
     for (let i = 0; i < rep; i++) out.push(...batch);
   }
   return out;
