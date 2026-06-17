@@ -176,12 +176,11 @@ export async function buildResumoGlobalJornada(
 
   const questoes = unidades.flatMap((unidade) =>
     unidade.questionAttempts.map((a) => {
-      const pq = (a as { provaQuestao?: { materia?: string; assunto?: string; conhecimentoExigido?: string | null; nivelDificuldade?: string | null } }).provaQuestao;
-      const materiaId = (a as { materiaId?: string | null }).materiaId;
+      const pq = a.provaQuestao;
       return {
         numero: a.numero,
-        correto: (a as { correto: boolean }).correto,
-        materia: pq?.materia?.trim() || getMateriaLabel(materiaId ?? "geral"),
+        correto: a.correto,
+        materia: pq?.materia?.trim() || getMateriaLabel(a.materiaId ?? "geral"),
         assunto: pq?.assunto?.trim() || "Geral",
         conhecimentoExigido: pq?.conhecimentoExigido,
         nivelDificuldade: pq?.nivelDificuldade,

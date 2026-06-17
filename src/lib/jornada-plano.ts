@@ -21,8 +21,8 @@ export async function historicalAttemptsDaJornada(
         correto: a.correto,
         materiaId: a.materiaId ?? mapped?.materiaId,
         temaId: a.temaId ?? mapped?.temaId,
-        tipoErro: a.tipoErro,
-        observacao: a.observacao,
+        tipoErro: a.tipoErro as AttemptInput["tipoErro"],
+        observacao: a.observacao ?? undefined,
       };
     })
   );

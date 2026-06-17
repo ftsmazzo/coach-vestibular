@@ -26,6 +26,24 @@ export const PROVA_SELECT_MULTIDIA = {
   caderno: true,
 } as const;
 
+export type QuestionAttemptMultidia = {
+  numero: number;
+  correto: boolean;
+  materiaId?: string | null;
+  temaId?: string | null;
+  tipoErro?: string | null;
+  observacao?: string | null;
+  materiaCorrigida?: string | null;
+  assuntoCorrigido?: string | null;
+  respostaAluno?: string | null;
+  provaQuestao?: {
+    materia: string;
+    assunto: string;
+    conhecimentoExigido?: string | null;
+    nivelDificuldade?: string | null;
+  } | null;
+};
+
 export type ExamParaMultidia = {
   id: string;
   data: Date;
@@ -34,7 +52,7 @@ export type ExamParaMultidia = {
   nome: string;
   provaId: string | null;
   prova?: ProvaMultidiaMeta | null;
-  questionAttempts: Array<{ numero: number } & Record<string, unknown>>;
+  questionAttempts: QuestionAttemptMultidia[];
 };
 
 export type UnidadeRegistroJornada<T extends ExamParaMultidia = ExamParaMultidia> = {
