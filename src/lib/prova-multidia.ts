@@ -44,7 +44,8 @@ export type QuestionAttemptMultidia = {
   } | null;
 };
 
-export type ExamParaMultidia = {
+/** Entrada mínima para parear dia 1 + dia 2 (aceita selects parciais do Prisma). */
+export type ExamParaAgrupamento<Q extends { numero: number } = QuestionAttemptMultidia> = {
   id: string;
   data: Date;
   modoUso: ModoUsoRegistro;
@@ -52,10 +53,12 @@ export type ExamParaMultidia = {
   nome: string;
   provaId: string | null;
   prova?: ProvaMultidiaMeta | null;
-  questionAttempts: QuestionAttemptMultidia[];
+  questionAttempts: Q[];
 };
 
-export type UnidadeRegistroJornada<T extends ExamParaMultidia = ExamParaMultidia> = {
+export type ExamParaMultidia = ExamParaAgrupamento<QuestionAttemptMultidia>;
+
+export type UnidadeRegistroJornada<T extends ExamParaAgrupamento = ExamParaMultidia> = {
   id: string;
   examIds: string[];
   conjuntoMultidia: boolean;
@@ -105,7 +108,7 @@ function nomeConjuntoMultidia(p1: ProvaMultidiaMeta, totalQuestoes: number): str
   return `${base} (completa — ${totalQuestoes} questões)`;
 }
 
-function toUnidade<T extends ExamParaMultidia>(exam: T, conjunto: boolean): UnidadeRegistroJornada<T> {
+function toUnidade<T extends ExamParaAgrupamento>(exam: T, conjunto: boolean): UnidadeRegistroJornada<T> {
   return {
     id: exam.id,
     examIds: [exam.id],
@@ -121,7 +124,7 @@ function toUnidade<T extends ExamParaMultidia>(exam: T, conjunto: boolean): Unid
   };
 }
 
-function mergeParMultidia<T extends ExamParaMultidia>(d1: T, d2: T): UnidadeRegistroJornada<T> {
+function mergeParMultidia<T extends ExamParaAgrupamento>(d1: T, d2: T): UnidadeRegistroJornada<T> {
   const p1 = d1.prova!;
   const p2 = d2.prova!;
   const attempts = [
@@ -155,7 +158,7 @@ function mergeParMultidia<T extends ExamParaMultidia>(d1: T, d2: T): UnidadeRegi
  * Agrupa registros dia 1 + dia 2 da mesma edição em uma unidade (ex.: ENEM 180q).
  * Dias sem par permanecem isolados.
  */
-export function agruparUnidadesJornada<T extends ExamParaMultidia>(
+export function agruparUnidadesJornada<T extends ExamParaAgrupamento>(
   exams: T[]
 ): UnidadeRegistroJornada<T>[] {
   const singles: UnidadeRegistroJornada<T>[] = [];
@@ -199,7 +202,7 @@ export function agruparUnidadesJornada<T extends ExamParaMultidia>(
 }
 
 /** Exam sintético para funções que esperam shape de Exam (analytics, comparativos). */
-export function unidadeComoExam<T extends ExamParaMultidia>(
+export function unidadeComoExam<T extends ExamParaAgrupamento>(
   u: UnidadeRegistroJornada<T>
 ): T & { provaId: string | null } {
   const base = u.exames[0]!;
