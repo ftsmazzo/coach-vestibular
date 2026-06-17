@@ -86,4 +86,54 @@ describe("agruparUnidadesJornada", () => {
     ];
     expect(agruparUnidadesJornada(exams)).toHaveLength(1);
   });
+
+  it("une SIMULADO ENEM HEXAG com datas diferentes no caderno", () => {
+    const d1 = {
+      id: "p1",
+      banca: "SIMULADO ENEM",
+      ano: 2026,
+      dia: 1,
+      tipo: "SIMULADO" as const,
+      totalQuestoes: 90,
+      caderno: "HEXAG 06/06",
+      nome: "SIMULADO ENEM — 2026 — Dia 1 — HEXAG 06/06",
+    };
+    const d2 = {
+      id: "p2",
+      banca: "SIMULADO ENEM",
+      ano: 2026,
+      dia: 2,
+      tipo: "SIMULADO" as const,
+      totalQuestoes: 90,
+      caderno: "HEXAG 13/06",
+      nome: "SIMULADO ENEM — 2026 — Dia 2 — HEXAG 13/06",
+    };
+    const exams = [
+      {
+        id: "e2",
+        data: new Date("2026-06-13"),
+        modoUso: "OFICIAL" as const,
+        banca: "SIMULADO ENEM",
+        nome: d2.nome,
+        provaId: d2.id,
+        prova: d2,
+        questionAttempts: [91, 100].map((numero) => ({ numero, correto: true })),
+      },
+      {
+        id: "e1",
+        data: new Date("2026-06-06"),
+        modoUso: "OFICIAL" as const,
+        banca: "SIMULADO ENEM",
+        nome: d1.nome,
+        provaId: d1.id,
+        prova: d1,
+        questionAttempts: [1, 10].map((numero) => ({ numero, correto: true })),
+      },
+    ];
+    const unidades = agruparUnidadesJornada(exams);
+    expect(unidades).toHaveLength(1);
+    expect(unidades[0]!.conjuntoMultidia).toBe(true);
+    expect(unidades[0]!.nome).toContain("HEXAG");
+    expect(unidades[0]!.nome).toContain("180");
+  });
 });

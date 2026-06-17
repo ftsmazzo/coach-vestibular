@@ -107,7 +107,19 @@ function provaComDiaEfetivo(
   return dia != null ? { ...prova, dia } : prova;
 }
 
-/** Chave de agrupamento: mesma banca + ano + tipo (+ caderno) com dia 1 e 2. */
+function ehProvaEnemLike(prova: ProvaMultidiaMeta): boolean {
+  const bancaU = prova.banca.trim().toUpperCase();
+  const nomeU = (prova.nome ?? "").toUpperCase();
+  return bancaU.includes("ENEM") || nomeU.includes("ENEM");
+}
+
+/** Instituição/evento no caderno (ex.: "HEXAG 13/06" → "HEXAG"). */
+function prefixoEdicaoCaderno(caderno: string | null | undefined): string {
+  if (!caderno?.trim()) return "";
+  return caderno.trim().split(/\s+/)[0]!.toUpperCase();
+}
+
+/** Chave de agrupamento: mesma edição dia 1 + dia 2 (ignora data no caderno). */
 export function chaveConjuntoMultidia(
   prova: ProvaMultidiaMeta,
   numeros?: number[]
@@ -116,13 +128,16 @@ export function chaveConjuntoMultidia(
   if (dia !== 1 && dia !== 2) return null;
 
   const ano = prova.ano ?? 0;
+
+  if (ehProvaEnemLike(prova)) {
+    // SIMULADO ENEM — 2026 — Dia N — HEXAG dd/mm → uma edição só
+    const inst = prefixoEdicaoCaderno(prova.caderno);
+    return inst ? `ENEM|${ano}|${inst}` : `ENEM|${ano}`;
+  }
+
   const bancaU = prova.banca.trim().toUpperCase();
-  // ENEM: caderno muda entre dias (azul/amarelo) — não usar na chave
-  const incluirCaderno = !bancaU.includes("ENEM");
-  const caderno = incluirCaderno ? (prova.caderno ?? "").trim().toUpperCase() : "";
-  // ENEM: tipo pode divergir entre cadastros — agrupa só por banca+ano
-  const tipoChave = bancaU.includes("ENEM") ? "MULTIDIA" : prova.tipo;
-  return `${bancaU}|${tipoChave}|${ano}|${caderno}`;
+  const inst = prefixoEdicaoCaderno(prova.caderno);
+  return `${bancaU}|${prova.tipo}|${ano}|${inst}`;
 }
 
 /** Alinha numeração ao slot global (ex.: dia 2 → 91–180). */
@@ -145,10 +160,16 @@ function modoDominante(a: ModoUsoRegistro, b: ModoUsoRegistro): ModoUsoRegistro 
 }
 
 function nomeConjuntoMultidia(p1: ProvaMultidiaMeta, totalQuestoes: number): string {
+  if (ehProvaEnemLike(p1)) {
+    const inst = prefixoEdicaoCaderno(p1.caderno);
+    const ano = p1.ano != null ? String(p1.ano) : "";
+    const base = ["ENEM", ano, inst].filter(Boolean).join(" — ");
+    return `${base} (completa — ${totalQuestoes} questões)`;
+  }
   const base = buildProvaNome({
     banca: p1.banca,
     ano: p1.ano,
-    caderno: p1.caderno,
+    caderno: prefixoEdicaoCaderno(p1.caderno) || p1.caderno,
   });
   return `${base} (completa — ${totalQuestoes} questões)`;
 }
