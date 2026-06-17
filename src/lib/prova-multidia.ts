@@ -45,7 +45,7 @@ export type QuestionAttemptMultidia = {
 };
 
 /** Entrada mínima para parear dia 1 + dia 2 (aceita selects parciais do Prisma). */
-export type ExamParaAgrupamento<Q extends { numero: number } = QuestionAttemptMultidia> = {
+export type ExamParaAgrupamento<Q extends { numero: number } = { numero: number }> = {
   id: string;
   data: Date;
   modoUso: ModoUsoRegistro;
@@ -58,7 +58,7 @@ export type ExamParaAgrupamento<Q extends { numero: number } = QuestionAttemptMu
 
 export type ExamParaMultidia = ExamParaAgrupamento<QuestionAttemptMultidia>;
 
-export type UnidadeRegistroJornada<T extends ExamParaAgrupamento = ExamParaMultidia> = {
+export type UnidadeRegistroJornada<T extends ExamParaAgrupamento = ExamParaAgrupamento> = {
   id: string;
   examIds: string[];
   conjuntoMultidia: boolean;

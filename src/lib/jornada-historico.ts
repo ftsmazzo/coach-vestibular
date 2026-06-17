@@ -2,6 +2,7 @@ import type { ModoUsoRegistro, ProvaTipo } from "@/generated/prisma/client";
 import {
   agruparUnidadesJornada,
   PROVA_SELECT_MULTIDIA,
+  type ExamParaMultidia,
   type UnidadeRegistroJornada,
 } from "@/lib/prova-multidia";
 import { prisma } from "@/lib/prisma";
@@ -136,7 +137,7 @@ export async function unidadesRecentesJornada(
   userId: string,
   limit = 8,
   excludeExamId?: string
-): Promise<UnidadeRegistroJornada[]> {
+): Promise<UnidadeRegistroJornada<ExamParaMultidia>[]> {
   const take = Math.max(limit * 2, 16);
   const exams = await prisma.exam.findMany({
     where: { userId },
