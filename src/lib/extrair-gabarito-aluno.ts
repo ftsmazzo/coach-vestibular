@@ -4,6 +4,7 @@ import {
   uploadFileBuffer,
   type JsonSchemaFormat,
 } from "@/lib/openai-responses-client";
+import { normalizarNumerosGabaritoExtraido } from "@/lib/prova-numeracao";
 
 export type ConfiancaExtracao = "alta" | "media" | "baixa";
 
@@ -86,7 +87,7 @@ export type LinhaRevisaoGabarito = {
 
 /** Grade de revisão a partir do gabarito oficial já gravado no banco (admin). */
 export function gradeFromQuestoesGabarito(
-  totalQuestoes: number,
+  numeros: number[],
   questoes: { numero: number; gabarito: string | null }[]
 ): LinhaRevisaoGabarito[] {
   const extraidas: RespostaExtraida[] = questoes
@@ -96,42 +97,42 @@ export function gradeFromQuestoesGabarito(
       letra: q.gabarito!.toUpperCase(),
       confianca: "alta" as const,
     }));
-  return buildGradeRevisao(totalQuestoes, extraidas);
+  return buildGradeRevisao(numeros, extraidas);
 }
 
 export function buildGradeRevisao(
-  totalQuestoes: number,
+  numeros: number[],
   extraidas: RespostaExtraida[]
 ): LinhaRevisaoGabarito[] {
   const map = new Map(extraidas.map((r) => [r.numero, r]));
-  const grade: LinhaRevisaoGabarito[] = [];
-  for (let n = 1; n <= totalQuestoes; n++) {
+  return numeros.map((n) => {
     const ex = map.get(n);
-    grade.push(
-      ex
-        ? { numero: ex.numero, letra: ex.letra, confianca: ex.confianca }
-        : {
-            numero: n,
-            letra: "",
-            confianca: "baixa",
-          }
-    );
-  }
-  return grade;
+    return ex
+      ? { numero: ex.numero, letra: ex.letra, confianca: ex.confianca }
+      : {
+          numero: n,
+          letra: "",
+          confianca: "baixa" as const,
+        };
+  });
 }
 
 export type GabaritoExtracaoModo = "aluno" | "oficial";
 
 function montarInstrucao(opts: {
   nomeProva: string;
-  totalQuestoes: number;
+  numerosEsperados: number[];
   banca: string;
   modo: GabaritoExtracaoModo;
 }): string {
+  const inicio = opts.numerosEsperados[0] ?? 1;
+  const fim = opts.numerosEsperados[opts.numerosEsperados.length - 1] ?? inicio;
+  const total = opts.numerosEsperados.length;
   const contexto = `Contexto da prova no app:
 - Nome: ${opts.nomeProva}
 - Banca: ${opts.banca}
-- Total de questões esperado: ${opts.totalQuestoes} (numere de 1 a ${opts.totalQuestoes})`;
+- Total de questões: ${total}
+- Numere cada questão de ${inicio} a ${fim} (use exatamente essa numeração do ENEM/cadastro, não reinicie em 1).`;
 
   if (opts.modo === "oficial") {
     return `Analise o anexo: é o GABARITO OFICIAL da prova (tabela publicada pela banca, folha de respostas modelo, PDF do INEP/cursinho com respostas corretas, ou lista número→letra).
@@ -170,11 +171,18 @@ export async function extrairGabaritoDeArquivo(opts: {
   totalQuestoes: number;
   banca: string;
   modo?: GabaritoExtracaoModo;
+  numerosEsperados?: number[];
 }): Promise<ExtracaoGabaritoAlunoResult> {
   const modo = opts.modo ?? "aluno";
+  const numerosEsperados =
+    opts.numerosEsperados ??
+    Array.from({ length: opts.totalQuestoes }, (_, i) => i + 1);
+  const minN = numerosEsperados[0] ?? 1;
+  const maxN = numerosEsperados[numerosEsperados.length - 1] ?? opts.totalQuestoes;
+
   const instrucao = montarInstrucao({
     nomeProva: opts.nomeProva,
-    totalQuestoes: opts.totalQuestoes,
+    numerosEsperados,
     banca: opts.banca,
     modo,
   });
@@ -208,12 +216,12 @@ export async function extrairGabaritoDeArquivo(opts: {
   }
 
   const respostasRaw = Array.isArray(data.respostas) ? data.respostas : [];
-  const respostas = respostasRaw
+  let respostas = respostasRaw
     .filter(
       (r) =>
         Number.isInteger(r.numero) &&
-        r.numero >= 1 &&
-        r.numero <= opts.totalQuestoes &&
+        r.numero >= minN &&
+        r.numero <= maxN &&
         /^[A-E]$/.test(r.letra)
     )
     .map((r) => ({
@@ -222,8 +230,29 @@ export async function extrairGabaritoDeArquivo(opts: {
       confianca: r.confianca,
     }));
 
+  // IA costuma reler ENEM dia 2 como 1–90; alinha à faixa 91–180 do cadastro.
+  if (respostas.length === 0) {
+    respostas = respostasRaw
+      .filter(
+        (r) =>
+          Number.isInteger(r.numero) &&
+          r.numero >= 1 &&
+          r.numero <= opts.totalQuestoes &&
+          /^[A-E]$/.test(r.letra)
+      )
+      .map((r) => ({
+        numero: r.numero,
+        letra: r.letra.toUpperCase(),
+        confianca: r.confianca,
+      }));
+  }
+
+  const normalizado = normalizarNumerosGabaritoExtraido(respostas, numerosEsperados);
+  respostas = normalizado.respostas;
+
   const avisos = Array.isArray(data.avisos) ? [...data.avisos] : [];
-  const minimoSugerido = Math.min(3, Math.max(1, Math.ceil(opts.totalQuestoes * 0.08)));
+  if (normalizado.aviso) avisos.push(normalizado.aviso);
+  const minimoSugerido = Math.min(3, Math.max(1, Math.ceil(numerosEsperados.length * 0.08)));
   if (respostas.length < minimoSugerido) {
     avisos.push(
       `Leitura parcial (${respostas.length} resposta(s) detectada(s)). Revise manualmente as questões em branco e, se preciso, tente outra foto mais nítida.`

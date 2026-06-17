@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GabaritoRevisaoGrid } from "@/components/gabarito-revisao-grid";
 import { ModoUsoSelector } from "@/components/modo-uso-selector";
 import { ProvaSubNav } from "@/components/prova-sub-nav";
@@ -14,6 +14,7 @@ import {
   type LinhaRevisaoGabarito,
 } from "@/lib/extrair-gabarito-aluno";
 import { parseListaErros } from "@/lib/gabarito";
+import { resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 import { modoUsoPadraoParaProva } from "@/lib/modo-uso";
 import { formatProvaLabel } from "@/lib/prova-label";
 
@@ -32,8 +33,10 @@ interface ProvaOption {
   banca: string;
   tipo?: ProvaTipo;
   ano?: number | null;
+  dia?: number | null;
   caderno?: string | null;
   totalQuestoes: number;
+  numerosGrade?: number[];
   gabaritoCompleto: boolean;
   questoesCount: number;
   minhasTentativas?: number;
@@ -91,6 +94,15 @@ export default function NovoSimuladoPage() {
   }, [provaIdInicial]);
 
   const prova = provas.find((p) => p.id === provaId);
+  const numerosGrade = useMemo(() => {
+    if (!prova) return [];
+    if (prova.numerosGrade?.length) return prova.numerosGrade;
+    return resolverNumerosGradeProva({
+      totalQuestoes: prova.totalQuestoes,
+      dia: prova.dia,
+      banca: prova.banca,
+    });
+  }, [prova]);
   const tentativas = prova?.tentativas ?? [];
   const jaRegistrou = tentativas.length > 0;
 
@@ -154,7 +166,7 @@ export default function NovoSimuladoPage() {
       return;
     }
 
-    setGradeRevisao(buildGradeRevisao(prova.totalQuestoes, data.respostas ?? []));
+    setGradeRevisao(buildGradeRevisao(numerosGrade, data.respostas ?? []));
     setAvisosExtracao(Array.isArray(data.avisos) ? data.avisos : []);
     setLidasIa(typeof data.lidas === "number" ? data.lidas : undefined);
   }

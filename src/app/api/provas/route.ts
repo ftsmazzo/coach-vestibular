@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { dataAplicacaoParaInput, formatDataAplicacao } from "@/lib/data-prova";
 import { statsQuestoesProva } from "@/lib/prova-stats";
+import { resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 import { prisma } from "@/lib/prisma";
 
 /** Provas publicadas + resumo das tentativas do aluno logado */
@@ -69,8 +70,15 @@ export async function GET() {
         banca: p.banca,
         tipo: p.tipo,
         ano: p.ano,
+        dia: p.dia,
         caderno: p.caderno,
         totalQuestoes: p.totalQuestoes,
+        numerosGrade: resolverNumerosGradeProva({
+          totalQuestoes: p.totalQuestoes,
+          dia: p.dia,
+          banca: p.banca,
+          numerosCadastrados: p.questoes.map((q) => q.numero),
+        }),
         gabaritoCompleto: p.gabaritoCompleto,
         questoesCount: stats.cadastradas,
         bancoIncompleto: stats.incompleto,

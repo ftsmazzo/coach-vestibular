@@ -5,6 +5,7 @@ import {
   mesclarRespostasExtraidas,
 } from "@/lib/extrair-gabarito-aluno";
 import { prisma } from "@/lib/prisma";
+import { resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 
 const MAX_MB = 12;
 const MAX_ARQUIVOS = 4;
@@ -24,6 +25,7 @@ export async function POST(
       id: true,
       nome: true,
       banca: true,
+      dia: true,
       totalQuestoes: true,
       publicada: true,
       questoes: { select: { numero: true } },
@@ -42,6 +44,13 @@ export async function POST(
       { status: 400 }
     );
   }
+
+  const numerosEsperados = resolverNumerosGradeProva({
+    totalQuestoes: prova.totalQuestoes,
+    dia: prova.dia,
+    banca: prova.banca,
+    numerosCadastrados: prova.questoes.map((q) => q.numero),
+  });
 
   if (!process.env.OPENAI_API_KEY?.trim()) {
     return NextResponse.json(
@@ -99,6 +108,7 @@ export async function POST(
           nomeProva: prova.nome,
           totalQuestoes: prova.totalQuestoes,
           banca: prova.banca,
+          numerosEsperados,
         });
         porArquivo.push(resultado);
         if (files.length > 1) {

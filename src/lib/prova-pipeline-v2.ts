@@ -8,6 +8,7 @@ import {
   validarEstruturaProva,
 } from "@/lib/prova-pipeline-v2-validacao";
 import { parseGabaritoLote } from "@/lib/gabarito";
+import { normalizarMapaGabarito, resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 import { gerarCsvProvaQuestoes } from "@/lib/prova-csv-export";
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
 import {
@@ -374,9 +375,13 @@ Preencha o schema estrutural completo a partir do PDF.
     .sort((a, b) => a - b);
 
   if (numeros.length === 0) {
-    numeros = Array.from({ length: ctx.totalEsperado }, (_, i) => i + 1);
+    numeros = resolverNumerosGradeProva({
+      totalQuestoes: ctx.totalEsperado,
+      dia: ctx.dia,
+      banca: ctx.banca,
+    });
     avisos.push(
-      "Nenhum número detectado no PDF — usando faixa 1.." + ctx.totalEsperado + " do cadastro."
+      `Nenhum número detectado no PDF — usando faixa ${numeros[0]}..${numeros[numeros.length - 1]} do cadastro.`
     );
   }
 
@@ -487,7 +492,7 @@ ${taxonomia}`;
   }
 
   if (opts?.incluirGabarito && opts.gabaritoTexto?.trim()) {
-    const mapaG = parseGabaritoLote(opts.gabaritoTexto);
+    const mapaG = normalizarMapaGabarito(parseGabaritoLote(opts.gabaritoTexto), numeros);
     let aplicados = 0;
     for (const r of rows) {
       const g = mapaG.get(r.numero);

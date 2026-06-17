@@ -4,6 +4,7 @@ import { aplicarPlanoCoachIA, buildDiagnosis, type AttemptInput } from "./diagno
 import { enriquecerDiagnosticoComProva } from "./diagnosis-prova";
 import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
+import { normalizarMapaGabarito } from "./prova-numeracao";
 import { parseDataAplicacao } from "./data-prova";
 import type { ModoUsoRegistro } from "@/generated/prisma/client";
 import {
@@ -125,7 +126,8 @@ function respostasPorNumeroFromInput(
   input: RegistrarTentativaInput
 ): Map<number, string> {
   if (input.gabaritoAluno?.trim()) {
-    return parseGabaritoLote(input.gabaritoAluno);
+    const numeros = questoes.map((q) => q.numero);
+    return normalizarMapaGabarito(parseGabaritoLote(input.gabaritoAluno), numeros);
   }
   if (input.respostas?.trim()) {
     return sequenciaParaMapaPorNumero(questoes, input.respostas);

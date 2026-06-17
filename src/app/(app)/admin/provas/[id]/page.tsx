@@ -17,6 +17,7 @@ import {
 } from "@/lib/extrair-gabarito-aluno";
 import { parseGabaritoLote } from "@/lib/gabarito";
 import { buildProvaNome } from "@/lib/prova-nome";
+import { normalizarMapaGabarito, resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 
 interface ProvaQuestao {
   id: string;
@@ -162,6 +163,16 @@ export default function AdminProvaDetailPage() {
     );
   }, [prova?.questoes]);
 
+  const numerosGrade = useMemo(() => {
+    if (!prova) return [];
+    return resolverNumerosGradeProva({
+      totalQuestoes: prova.totalQuestoes,
+      dia: prova.dia,
+      banca: prova.banca,
+      numerosCadastrados: prova.questoes.map((q) => q.numero),
+    });
+  }, [prova]);
+
   const load = useCallback(async () => {
     const res = await fetch(`/api/admin/provas/${id}`);
     if (res.ok) {
@@ -188,15 +199,15 @@ export default function AdminProvaDetailPage() {
   }, [load]);
 
   useEffect(() => {
-    if (!prova) return;
-    const grade = gradeFromQuestoesGabarito(prova.totalQuestoes, prova.questoes);
+    if (!prova || numerosGrade.length === 0) return;
+    const grade = gradeFromQuestoesGabarito(numerosGrade, prova.questoes);
     setGradeGabarito(grade);
     setGabaritoLote(
       respostasParaGabaritoLote(
         grade.filter((l) => l.letra).map((l) => ({ numero: l.numero, letra: l.letra }))
       )
     );
-  }, [prova]);
+  }, [prova, numerosGrade]);
 
   function atualizarGradeGabarito(linhas: LinhaRevisaoGabarito[]) {
     setGradeGabarito(linhas);
@@ -228,7 +239,7 @@ export default function AdminProvaDetailPage() {
         setMsg(data.error ?? "Não foi possível ler o gabarito");
         return;
       }
-      const grade = buildGradeRevisao(prova.totalQuestoes, data.respostas ?? []);
+      const grade = buildGradeRevisao(numerosGrade, data.respostas ?? []);
       atualizarGradeGabarito(grade);
       setAvisosExtracaoGabarito(Array.isArray(data.avisos) ? data.avisos : []);
       setLidasIaGabarito(typeof data.lidas === "number" ? data.lidas : undefined);
@@ -243,14 +254,14 @@ export default function AdminProvaDetailPage() {
   }
 
   function aplicarTextoColadoNoGrid() {
-    if (!prova) return;
-    const mapa = parseGabaritoLote(gabaritoLote);
+    if (!prova || numerosGrade.length === 0) return;
+    const mapa = normalizarMapaGabarito(parseGabaritoLote(gabaritoLote), numerosGrade);
     if (mapa.size === 0) {
-      setMsg("Nenhuma linha válida. Use o formato número,letra (ex.: 1,C).");
+      setMsg("Nenhuma linha válida. Use o formato número,letra (ex.: 91,C).");
       return;
     }
     const grade = gradeFromQuestoesGabarito(
-      prova.totalQuestoes,
+      numerosGrade,
       [...mapa.entries()].map(([numero, gabarito]) => ({ numero, gabarito }))
     );
     setGradeGabarito(grade);
@@ -478,7 +489,7 @@ export default function AdminProvaDetailPage() {
   }
 
   async function salvarGabaritoLote() {
-    const mapa = parseGabaritoLote(gabaritoLote);
+    const mapa = normalizarMapaGabarito(parseGabaritoLote(gabaritoLote), numerosGrade);
     const itens = [...mapa.entries()].map(([numero, gabarito]) => ({ numero, gabarito }));
     if (itens.length === 0) {
       setMsg("Marque ao menos uma alternativa (A–E) ou cole linhas no formato 1,C.");
