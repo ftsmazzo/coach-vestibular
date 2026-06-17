@@ -62,7 +62,10 @@ export async function GET() {
 
   return NextResponse.json(
     provas.map((p) => {
-      const stats = statsQuestoesProva(p.questoes, p.totalQuestoes);
+      const stats = statsQuestoesProva(p.questoes, p.totalQuestoes, {
+        dia: p.dia,
+        banca: p.banca,
+      });
       const tentativas = tentativasPorProvaId.get(p.id) ?? [];
       return {
         id: p.id,

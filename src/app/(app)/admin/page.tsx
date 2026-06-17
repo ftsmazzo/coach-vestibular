@@ -25,7 +25,7 @@ export default async function AdminHomePage() {
   ]);
 
   const incompletas = provas.filter((p) => {
-    const s = statsQuestoesProva(p.questoes, p.totalQuestoes);
+    const s = statsQuestoesProva(p.questoes, p.totalQuestoes, { dia: p.dia, banca: p.banca });
     return s.incompleto || !p.gabaritoCompleto;
   });
 
@@ -106,7 +106,7 @@ export default async function AdminHomePage() {
           <h2 className="font-semibold text-slate-900">Precisa de atenção</h2>
           <ul className="mt-3 space-y-2">
             {incompletas.slice(0, 8).map((p) => {
-              const s = statsQuestoesProva(p.questoes, p.totalQuestoes);
+              const s = statsQuestoesProva(p.questoes, p.totalQuestoes, { dia: p.dia, banca: p.banca });
               return (
                 <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
                   <span>

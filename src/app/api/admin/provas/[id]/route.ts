@@ -32,7 +32,10 @@ export async function GET(
     },
   });
   if (!prova) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
-  const stats = statsQuestoesProva(prova.questoes, prova.totalQuestoes);
+  const stats = statsQuestoesProva(prova.questoes, prova.totalQuestoes, {
+    dia: prova.dia,
+    banca: prova.banca,
+  });
   const { textoFonte, ...provaSemTexto } = prova;
   return NextResponse.json({
     ...provaSemTexto,
