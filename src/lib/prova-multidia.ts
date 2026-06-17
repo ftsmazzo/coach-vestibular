@@ -72,12 +72,57 @@ export type UnidadeRegistroJornada<T extends ExamParaAgrupamento = ExamParaAgrup
   exames: T[];
 };
 
+/** Inferência de dia quando o admin não preencheu o campo (comum). */
+export function inferirDiaMultidia(
+  prova: ProvaMultidiaMeta,
+  numeros?: number[]
+): 1 | 2 | null {
+  if (prova.dia === 1 || prova.dia === 2) return prova.dia;
+
+  const nome = (prova.nome ?? "").toLowerCase();
+  if (/\bdia\s*1\b/.test(nome)) return 1;
+  if (/\bdia\s*2\b/.test(nome)) return 2;
+
+  if (numeros && numeros.length > 0) {
+    const min = Math.min(...numeros);
+    const max = Math.max(...numeros);
+    const nums = resolverNumerosGradeProva({
+      totalQuestoes: prova.totalQuestoes,
+      dia: 2,
+      banca: prova.banca,
+    });
+    const inicioD2 = nums[0] ?? 91;
+    if (min >= inicioD2 || max > prova.totalQuestoes) return 2;
+    if (max <= prova.totalQuestoes && min >= 1) return 1;
+  }
+
+  return null;
+}
+
+function provaComDiaEfetivo(
+  prova: ProvaMultidiaMeta,
+  numeros?: number[]
+): ProvaMultidiaMeta {
+  const dia = inferirDiaMultidia(prova, numeros);
+  return dia != null ? { ...prova, dia } : prova;
+}
+
 /** Chave de agrupamento: mesma banca + ano + tipo (+ caderno) com dia 1 e 2. */
-export function chaveConjuntoMultidia(prova: ProvaMultidiaMeta): string | null {
-  if (prova.dia !== 1 && prova.dia !== 2) return null;
+export function chaveConjuntoMultidia(
+  prova: ProvaMultidiaMeta,
+  numeros?: number[]
+): string | null {
+  const dia = inferirDiaMultidia(prova, numeros);
+  if (dia !== 1 && dia !== 2) return null;
+
   const ano = prova.ano ?? 0;
-  const caderno = (prova.caderno ?? "").trim().toUpperCase();
-  return `${prova.banca.trim().toUpperCase()}|${prova.tipo}|${ano}|${caderno}`;
+  const bancaU = prova.banca.trim().toUpperCase();
+  // ENEM: caderno muda entre dias (azul/amarelo) — não usar na chave
+  const incluirCaderno = !bancaU.includes("ENEM");
+  const caderno = incluirCaderno ? (prova.caderno ?? "").trim().toUpperCase() : "";
+  // ENEM: tipo pode divergir entre cadastros — agrupa só por banca+ano
+  const tipoChave = bancaU.includes("ENEM") ? "MULTIDIA" : prova.tipo;
+  return `${bancaU}|${tipoChave}|${ano}|${caderno}`;
 }
 
 /** Alinha numeração ao slot global (ex.: dia 2 → 91–180). */
@@ -125,8 +170,10 @@ function toUnidade<T extends ExamParaAgrupamento>(exam: T, conjunto: boolean): U
 }
 
 function mergeParMultidia<T extends ExamParaAgrupamento>(d1: T, d2: T): UnidadeRegistroJornada<T> {
-  const p1 = d1.prova!;
-  const p2 = d2.prova!;
+  const nums1 = d1.questionAttempts.map((a) => a.numero);
+  const nums2 = d2.questionAttempts.map((a) => a.numero);
+  const p1 = provaComDiaEfetivo(d1.prova!, nums1);
+  const p2 = provaComDiaEfetivo(d2.prova!, nums2);
   const attempts = [
     ...d1.questionAttempts.map((a) => ({
       ...a,
@@ -170,14 +217,17 @@ export function agruparUnidadesJornada<T extends ExamParaAgrupamento>(
       singles.push(toUnidade(exam, false));
       continue;
     }
-    const chave = chaveConjuntoMultidia(prova);
+    const numeros = exam.questionAttempts.map((a) => a.numero);
+    const chave = chaveConjuntoMultidia(prova, numeros);
     if (!chave) {
       singles.push(toUnidade(exam, false));
       continue;
     }
+    const dia = inferirDiaMultidia(prova, numeros);
     const bucket = byChave.get(chave) ?? { dia1: [], dia2: [] };
-    if (prova.dia === 1) bucket.dia1.push(exam);
-    else bucket.dia2.push(exam);
+    if (dia === 1) bucket.dia1.push(exam);
+    else if (dia === 2) bucket.dia2.push(exam);
+    else singles.push(toUnidade(exam, false));
     byChave.set(chave, bucket);
   }
 
@@ -199,6 +249,27 @@ export function agruparUnidadesJornada<T extends ExamParaAgrupamento>(
   }
 
   return [...merged, ...singles].sort((a, b) => b.data.getTime() - a.data.getTime());
+}
+
+export type ResumoMultidiaJornada = {
+  unidades: UnidadeRegistroJornada[];
+  registrosNaLista: number;
+  provasCompletasMultidia: number;
+  nomesCompletos: string[];
+};
+
+/** Conta pareamentos dia 1+2 para exibir na UI e no resumo da jornada. */
+export function resumoMultidiaJornada<T extends ExamParaAgrupamento>(
+  exams: T[]
+): ResumoMultidiaJornada {
+  const unidades = agruparUnidadesJornada(exams);
+  const completas = unidades.filter((u) => u.conjuntoMultidia);
+  return {
+    unidades,
+    registrosNaLista: exams.length,
+    provasCompletasMultidia: completas.length,
+    nomesCompletos: completas.map((u) => u.nome),
+  };
 }
 
 /** Exam sintético para funções que esperam shape de Exam (analytics, comparativos). */

@@ -64,4 +64,26 @@ describe("agruparUnidadesJornada", () => {
     expect(normalizarNumeroMultidia(1, provaD2)).toBe(91);
     expect(normalizarNumeroMultidia(90, provaD2)).toBe(180);
   });
+
+  it("une ENEM sem campo dia mas com numeração 91–180", () => {
+    const semDia1 = { ...provaD1, dia: null, nome: "ENEM 2024" };
+    const semDia2 = { ...provaD2, dia: null, nome: "ENEM 2024" };
+    const exams = [
+      mkExam("e2", semDia2 as typeof provaD1, "2024-11-10", [91, 100]),
+      mkExam("e1", semDia1 as typeof provaD1, "2024-11-09", [1, 10]),
+    ];
+    const unidades = agruparUnidadesJornada(exams);
+    expect(unidades).toHaveLength(1);
+    expect(unidades[0]!.conjuntoMultidia).toBe(true);
+  });
+
+  it("une ENEM com cadernos diferentes (azul/amarelo)", () => {
+    const azul = { ...provaD1, caderno: "Azul" };
+    const amarelo = { ...provaD2, caderno: "Amarelo" };
+    const exams = [
+      mkExam("e2", amarelo, "2024-11-10", [91, 92]),
+      mkExam("e1", azul, "2024-11-09", [1, 2]),
+    ];
+    expect(agruparUnidadesJornada(exams)).toHaveLength(1);
+  });
 });

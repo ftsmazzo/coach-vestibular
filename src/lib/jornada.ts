@@ -15,10 +15,16 @@ import { getMateriaLabel } from "@/lib/taxonomy";
 import {
   agruparUnidadesJornada,
   PROVA_SELECT_MULTIDIA,
+  resumoMultidiaJornada,
 } from "@/lib/prova-multidia";
 
 export interface ResumoJornada {
   totalRegistros: number;
+  /** Registros brutos na lista (dia 1 e dia 2 separados) */
+  registrosNaLista: number;
+  /** Pares dia 1+2 unificados (ex.: 1 ENEM completo) */
+  provasCompletasMultidia: number;
+  nomesCompletosMultidia: string[];
   totalQuestoes: number;
   acertos: number;
   erros: number;
@@ -63,7 +69,8 @@ export async function buildResumoJornada(userId: string): Promise<ResumoJornada>
     orderBy: { data: "desc" },
   });
 
-  const unidades = agruparUnidadesJornada(exams);
+  const multidia = resumoMultidiaJornada(exams);
+  const unidades = multidia.unidades;
 
   let acertos = 0;
   let erros = 0;
@@ -143,6 +150,9 @@ export async function buildResumoJornada(userId: string): Promise<ResumoJornada>
 
   return {
     totalRegistros: unidades.length,
+    registrosNaLista: multidia.registrosNaLista,
+    provasCompletasMultidia: multidia.provasCompletasMultidia,
+    nomesCompletosMultidia: multidia.nomesCompletos,
     totalQuestoes,
     acertos,
     erros,

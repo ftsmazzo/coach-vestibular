@@ -51,10 +51,32 @@ export async function JornadaResumoCard({
           </div>
           <div className="rounded-lg bg-white/90 px-2 py-1.5 ring-1 ring-teal-100">
             <p className="font-bold text-slate-900">{j.totalRegistros}</p>
-            <p className="text-slate-500">registros</p>
+            <p className="text-slate-500">registros jornada</p>
           </div>
         </div>
       </div>
+
+      {j.registrosNaLista > j.totalRegistros && (
+        <p className="mt-2 text-[11px] leading-snug text-teal-900">
+          {j.registrosNaLista} registros na lista → {j.totalRegistros} na jornada
+          {j.provasCompletasMultidia > 0 && (
+            <>
+              {" "}
+              ({j.provasCompletasMultidia} prova{j.provasCompletasMultidia !== 1 ? "s" : ""} de 2
+              dias unificada{j.provasCompletasMultidia !== 1 ? "s" : ""}
+              {j.nomesCompletosMultidia[0] ? `: ${j.nomesCompletosMultidia[0]}` : ""})
+            </>
+          )}
+          .
+        </p>
+      )}
+
+      {j.provasCompletasMultidia === 0 && j.registrosNaLista >= 2 && (
+        <p className="mt-2 text-[11px] text-amber-800">
+          Dica: ENEM dia 1 + dia 2 da mesma edição entram juntos quando o cadastro tem ano/banca
+          iguais (ou numeração 1–90 e 91–180).
+        </p>
+      )}
 
       {j.porModoUso.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5 border-t border-teal-100 pt-3">
