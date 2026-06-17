@@ -272,8 +272,8 @@ export function agruparUnidadesJornada<T extends ExamParaAgrupamento>(
   return [...merged, ...singles].sort((a, b) => b.data.getTime() - a.data.getTime());
 }
 
-export type ResumoMultidiaJornada = {
-  unidades: UnidadeRegistroJornada[];
+export type ResumoMultidiaJornada<T extends ExamParaAgrupamento = ExamParaAgrupamento> = {
+  unidades: UnidadeRegistroJornada<T>[];
   registrosNaLista: number;
   provasCompletasMultidia: number;
   nomesCompletos: string[];
@@ -282,7 +282,7 @@ export type ResumoMultidiaJornada = {
 /** Conta pareamentos dia 1+2 para exibir na UI e no resumo da jornada. */
 export function resumoMultidiaJornada<T extends ExamParaAgrupamento>(
   exams: T[]
-): ResumoMultidiaJornada {
+): ResumoMultidiaJornada<T> {
   const unidades = agruparUnidadesJornada(exams);
   const completas = unidades.filter((u) => u.conjuntoMultidia);
   return {
