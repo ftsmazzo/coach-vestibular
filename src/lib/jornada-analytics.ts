@@ -228,7 +228,11 @@ export async function buildJornadaDashboardAnalytics(
   const seriesPorProva: MateriaSerieProva[] = [];
 
   for (const unidade of [...filtradas].reverse()) {
-    const peso = pesoExam({ modoUso: unidade.modoUso }, user?.metaProva, user?.vestibularAlvo);
+    const peso = pesoExam(
+      { modoUso: unidade.modoUso, banca: unidade.banca },
+      user?.metaProva,
+      user?.vestibularAlvo
+    );
     const materiasPct: Record<string, number | null> = {};
     const presentes = journeyOnly ? [] : materiasNoExame(unidade.questionAttempts);
 
