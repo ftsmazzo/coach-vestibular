@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { taxonomy } from "@/lib/taxonomy";
 import { Card, Button, Badge } from "./ui";
 
 interface Attempt {
@@ -25,14 +26,21 @@ interface AnaliseErrosProps {
   attempts: Attempt[];
 }
 
+const STUDENT_ERROR_LABELS: Record<string, string> = {
+  CONCEITO_TEORICO: "Não sabia a matéria / Falta de Conceito",
+  CALCULO_BOBEIRA: "Erro de Cálculo ou Distração",
+  INTERPRETACAO_ENUNCIADO: "Interpretação do Enunciado",
+  DUVIDA_CRUCIAL: "Fiquei entre duas e escolhi a errada",
+  CHUTE_TOTAL: "Chute total (Não fazia ideia)",
+  FALTA_TEMPO: "Não deu tempo de fazer",
+};
+
 const ERROR_OPTIONS = [
   { value: "", label: "Selecione o tipo de erro..." },
-  { value: "CONCEITO_TEORICO", label: "Não sabia a matéria / Falta de Conceito" },
-  { value: "CALCULO_BOBEIRA", label: "Erro de Cálculo ou Distração" },
-  { value: "INTERPRETACAO_ENUNCIADO", label: "Falta de Atenção no Enunciado / Pegadinha" },
-  { value: "DUVIDA_CRUCIAL", label: "Fiquei entre duas e escolhi a errada" },
-  { value: "CHUTE_TOTAL", label: "Chute total (Não fazia ideia)" },
-  { value: "FALTA_TEMPO", label: "Não deu tempo de fazer" },
+  ...taxonomy.tiposErro.map((t) => ({
+    value: t.id,
+    label: STUDENT_ERROR_LABELS[t.id] ?? t.label,
+  })),
 ];
 
 export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
