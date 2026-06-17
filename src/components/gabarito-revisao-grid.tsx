@@ -1,6 +1,7 @@
 "use client";
 
 import { GABARITO_ANULADA } from "@/lib/gabarito-anulada";
+import type { ConfiancaExtracao, LinhaRevisaoGabarito } from "@/lib/extrair-gabarito-aluno";
 
 export type { LinhaRevisaoGabarito };
 
