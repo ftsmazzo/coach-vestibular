@@ -90,3 +90,23 @@ export function normalizarMapaGabarito(
   );
   return new Map(respostas.map((r) => [r.numero, r.letra.toUpperCase()]));
 }
+
+/** Ajusta lista de números (ex.: erros informados como 1–90 → 91–180). */
+export function normalizarNumerosInformados(
+  numeros: number[],
+  numerosEsperados: number[]
+): number[] {
+  if (numeros.length === 0 || numerosEsperados.length === 0) return numeros;
+  const { respostas } = normalizarNumerosGabaritoExtraido(
+    numeros.map((numero) => ({ numero, letra: "" })),
+    numerosEsperados
+  );
+  return respostas.map((r) => r.numero);
+}
+
+export function labelFaixaNumeracao(numeros: number[]): string {
+  if (numeros.length === 0) return "";
+  const a = numeros[0]!;
+  const b = numeros[numeros.length - 1]!;
+  return a === b ? `questão ${a}` : `questões ${a} a ${b}`;
+}

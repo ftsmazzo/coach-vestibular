@@ -13,8 +13,12 @@ import {
   respostasParaGabaritoLote,
   type LinhaRevisaoGabarito,
 } from "@/lib/extrair-gabarito-aluno";
-import { parseListaErros } from "@/lib/gabarito";
-import { resolverNumerosGradeProva } from "@/lib/prova-numeracao";
+import { parseGabaritoLote, parseListaErros } from "@/lib/gabarito";
+import {
+  labelFaixaNumeracao,
+  normalizarMapaGabarito,
+  resolverNumerosGradeProva,
+} from "@/lib/prova-numeracao";
 import { modoUsoPadraoParaProva } from "@/lib/modo-uso";
 import { formatProvaLabel } from "@/lib/prova-label";
 
@@ -103,6 +107,11 @@ export default function NovoSimuladoPage() {
       banca: prova.banca,
     });
   }, [prova]);
+  const faixaNumeracao = labelFaixaNumeracao(numerosGrade);
+  const placeholderGabarito =
+    numerosGrade.length > 0
+      ? `${numerosGrade[0]},C\n${(numerosGrade[1] ?? numerosGrade[0]! + 1)},A\n${(numerosGrade[2] ?? numerosGrade[0]! + 2)},B`
+      : "1,C\n2,A\n3,B";
   const tentativas = prova?.tentativas ?? [];
   const jaRegistrou = tentativas.length > 0;
 
@@ -138,7 +147,43 @@ export default function NovoSimuladoPage() {
     setAvisosExtracao([]);
     setLidasIa(undefined);
     setArquivosFoto([]);
+    setGabaritoAluno("");
   }, [modo, provaId]);
+
+  useEffect(() => {
+    if (numerosGrade.length === 0) return;
+    if (modo === "gabarito") {
+      setGradeRevisao(buildGradeRevisao(numerosGrade, []));
+    }
+  }, [modo, provaId, numerosGrade]);
+
+  function atualizarGradeAluno(linhas: LinhaRevisaoGabarito[]) {
+    setGradeRevisao(linhas);
+    setGabaritoAluno(
+      respostasParaGabaritoLote(
+        linhas.filter((l) => l.letra).map((l) => ({ numero: l.numero, letra: l.letra }))
+      )
+    );
+  }
+
+  function aplicarTextoColadoNoGrid() {
+    if (numerosGrade.length === 0) return;
+    const mapa = normalizarMapaGabarito(parseGabaritoLote(gabaritoAluno), numerosGrade);
+    if (mapa.size === 0) {
+      setError(`Nenhuma linha válida. Use número,letra (ex.: ${numerosGrade[0]},C).`);
+      return;
+    }
+    const linhas = buildGradeRevisao(
+      numerosGrade,
+      [...mapa.entries()].map(([numero, letra]) => ({
+        numero,
+        letra,
+        confianca: "alta" as const,
+      }))
+    );
+    atualizarGradeAluno(linhas);
+    setError("");
+  }
 
   async function lerGabaritoDaFoto() {
     if (!provaId || !prova) {
@@ -166,7 +211,12 @@ export default function NovoSimuladoPage() {
       return;
     }
 
-    setGradeRevisao(buildGradeRevisao(numerosGrade, data.respostas ?? []));
+    const nums =
+      Array.isArray(data.numerosEsperados) && data.numerosEsperados.length > 0
+        ? data.numerosEsperados
+        : numerosGrade;
+    const grade = buildGradeRevisao(nums, data.respostas ?? []);
+    atualizarGradeAluno(grade);
     setAvisosExtracao(Array.isArray(data.avisos) ? data.avisos : []);
     setLidasIa(typeof data.lidas === "number" ? data.lidas : undefined);
   }
@@ -206,7 +256,7 @@ export default function NovoSimuladoPage() {
         return;
       }
       const preenchidas = gradeRevisao.filter((l) => l.letra);
-      const minimo = Math.min(3, Math.max(1, Math.ceil(prova!.totalQuestoes * 0.08)));
+      const minimo = Math.min(3, Math.max(1, Math.ceil(numerosGrade.length * 0.08)));
       if (preenchidas.length < minimo) {
         setError(
           `Marque pelo menos ${minimo} questão(ões) antes de gerar o diagnóstico (ou use outro modo).`
@@ -216,12 +266,17 @@ export default function NovoSimuladoPage() {
       }
       body.gabaritoAluno = respostasParaGabaritoLote(preenchidas);
     } else if (modo === "gabarito") {
-      if (gabaritoAluno.trim().split(/\n/).filter(Boolean).length < 1) {
-        setError("Informe ao menos uma linha no formato número,letra (ex.: 1,C).");
+      const preenchidas = gradeRevisao?.filter((l) => l.letra) ?? [];
+      if (preenchidas.length < 1 && gabaritoAluno.trim().split(/\n/).filter(Boolean).length < 1) {
+        setError(`Marque ao menos uma questão no grid ou cole linhas (ex.: ${numerosGrade[0] ?? 1},C).`);
         setLoading(false);
         return;
       }
-      body.gabaritoAluno = gabaritoAluno;
+      if (preenchidas.length > 0) {
+        body.gabaritoAluno = respostasParaGabaritoLote(preenchidas);
+      } else {
+        body.gabaritoAluno = gabaritoAluno;
+      }
     } else if (modo === "sequencia") {
       if (respostas.replace(/[^A-E]/gi, "").length < 3) {
         setError("Cole suas respostas (sequência de letras A–E).");
@@ -523,10 +578,13 @@ export default function NovoSimuladoPage() {
                 {gradeRevisao && (
                   <GabaritoRevisaoGrid
                     linhas={gradeRevisao}
-                    onChange={setGradeRevisao}
+                    onChange={atualizarGradeAluno}
                     avisos={avisosExtracao}
                     lidas={lidasIa}
                   />
+                )}
+                {faixaNumeracao && (
+                  <p className="text-xs text-slate-500">Numeração desta prova: {faixaNumeracao}.</p>
                 )}
                 {prova && !prova.gabaritoCompleto && (
                   <p className="text-xs text-amber-700">
@@ -536,22 +594,39 @@ export default function NovoSimuladoPage() {
                 )}
               </div>
             ) : modo === "gabarito" ? (
-              <div>
-                <Label>Seu gabarito — uma linha por questão</Label>
-                <Textarea
-                  className="mt-1"
-                  rows={8}
-                  placeholder={"1,C\n2,A\n3,B\n4,D"}
-                  value={gabaritoAluno}
-                  onChange={(e) => setGabaritoAluno(e.target.value)}
-                />
-                <p className="mt-2 text-xs text-slate-500">
-                  Mesmo formato do admin (número + letra). Gravamos sua marcação em cada questão e
-                  comparamos com o gabarito oficial da prova, quando existir. Os erros entram no
-                  diagnóstico com matéria e assunto do banco.
-                </p>
+              <div className="space-y-4">
+                {faixaNumeracao && (
+                  <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    Esta prova usa <strong>{faixaNumeracao}</strong>. Toque na letra ou cole o texto
+                    abaixo — se vier numerado 1–{prova?.totalQuestoes ?? "N"}, o sistema ajusta
+                    automaticamente.
+                  </p>
+                )}
+                {gradeRevisao && gradeRevisao.length > 0 ? (
+                  <GabaritoRevisaoGrid linhas={gradeRevisao} onChange={atualizarGradeAluno} />
+                ) : null}
+                <details className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2">
+                  <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                    Colar texto (opcional)
+                  </summary>
+                  <Textarea
+                    className="mt-2"
+                    rows={6}
+                    placeholder={placeholderGabarito}
+                    value={gabaritoAluno}
+                    onChange={(e) => setGabaritoAluno(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="mt-2"
+                    onClick={aplicarTextoColadoNoGrid}
+                  >
+                    Aplicar no grid
+                  </Button>
+                </details>
                 {prova && !prova.gabaritoCompleto && (
-                  <p className="mt-2 text-xs text-amber-700">
+                  <p className="text-xs text-amber-700">
                     Gabarito oficial ainda incompleto nesta prova — o percentual de acertos pode
                     ficar limitado até o admin publicar o oficial.
                   </p>
@@ -580,10 +655,20 @@ export default function NovoSimuladoPage() {
                 <Textarea
                   className="mt-1 font-sans"
                   rows={3}
-                  placeholder="3, 8, 12-15, 40"
+                  placeholder={
+                    numerosGrade.length > 0
+                      ? `${numerosGrade[0]}, ${numerosGrade[1] ?? numerosGrade[0]! + 1}, 12-15`
+                      : "3, 8, 12-15, 40"
+                  }
                   value={listaErros}
                   onChange={(e) => setListaErros(e.target.value)}
                 />
+                {faixaNumeracao && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Use os números oficiais ({faixaNumeracao}). Se listar 1–{prova?.totalQuestoes},
+                    ajustamos automaticamente.
+                  </p>
+                )}
                 <p className="mt-2 text-xs text-amber-700">
                   Não grava o que você marcou (A–E) — só quais números errou. Para análise completa
                   de acertos e erros, use «Meu gabarito».
@@ -595,16 +680,25 @@ export default function NovoSimuladoPage() {
           {error && <p className="text-sm text-rose-600">{error}</p>}
           <Button
             type="submit"
-            disabled={loading || extraindo || (modo === "foto" && !gradeRevisao)}
+            disabled={
+              loading ||
+              extraindo ||
+              (modo === "foto" && !gradeRevisao) ||
+              (modo === "gabarito" && !gradeRevisao?.some((l) => l.letra) && !gabaritoAluno.trim())
+            }
             className="w-full sm:w-auto"
           >
             {loading
               ? "Analisando..."
               : modo === "foto" && !gradeRevisao
                 ? "Revise o gabarito antes de continuar"
-                : modoRegistro === "substituir" && jaRegistrou
-                  ? "Substituir e gerar diagnóstico"
-                  : "Gerar diagnóstico e plano"}
+                : modo === "gabarito" &&
+                    !gradeRevisao?.some((l) => l.letra) &&
+                    !gabaritoAluno.trim()
+                  ? "Marque ou cole seu gabarito"
+                  : modoRegistro === "substituir" && jaRegistrou
+                    ? "Substituir e gerar diagnóstico"
+                    : "Gerar diagnóstico e plano"}
           </Button>
         </form>
       )}

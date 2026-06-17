@@ -4,7 +4,7 @@ import { aplicarPlanoCoachIA, buildDiagnosis, type AttemptInput } from "./diagno
 import { enriquecerDiagnosticoComProva } from "./diagnosis-prova";
 import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
-import { normalizarMapaGabarito } from "./prova-numeracao";
+import { normalizarMapaGabarito, normalizarNumerosInformados, resolverNumerosGradeProva } from "./prova-numeracao";
 import { parseDataAplicacao } from "./data-prova";
 import type { ModoUsoRegistro } from "@/generated/prisma/client";
 import {
@@ -145,6 +145,13 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
   if (!prova.publicada) throw new Error("PROVA_NOT_PUBLISHED");
   if (prova.questoes.length === 0) throw new Error("PROVA_EMPTY");
 
+  const numerosEsperados = resolverNumerosGradeProva({
+    totalQuestoes: prova.totalQuestoes,
+    dia: prova.dia,
+    banca: prova.banca,
+    numerosCadastrados: prova.questoes.map((q) => q.numero),
+  });
+
   if (!input.data?.trim()) throw new Error("DATA_OBRIGATORIA");
 
   if (input.substituirExamId) {
@@ -170,10 +177,13 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
   }
 
   const respostasPorNumero = respostasPorNumeroFromInput(prova.questoes, input);
+  const errosNormalizados = input.apenasErros?.length
+    ? normalizarNumerosInformados(input.apenasErros, numerosEsperados)
+    : input.apenasErros;
   const { attempts: rawAttempts, analiseCompleta, avisos } = buildAttemptsFromProva(
     prova.questoes,
     respostasPorNumero,
-    input.apenasErros
+    errosNormalizados
   );
 
   const historicalExams = await prisma.exam.findMany({

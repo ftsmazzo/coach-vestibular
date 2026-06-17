@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   normalizarMapaGabarito,
   normalizarNumerosGabaritoExtraido,
+  normalizarNumerosInformados,
   resolverNumerosGradeProva,
 } from "./prova-numeracao";
 
@@ -52,6 +53,14 @@ describe("normalizarNumerosGabaritoExtraido", () => {
     expect(deslocamento).toBe(90);
     expect(out[0]?.numero).toBe(91);
     expect(out[1]?.numero).toBe(92);
+  });
+});
+
+describe("normalizarNumerosInformados", () => {
+  it("desloca erros 1,2 para 91,92", () => {
+    const esperados = Array.from({ length: 90 }, (_, i) => 91 + i);
+    const out = normalizarNumerosInformados([1, 2], esperados);
+    expect(out).toEqual([91, 92]);
   });
 });
 

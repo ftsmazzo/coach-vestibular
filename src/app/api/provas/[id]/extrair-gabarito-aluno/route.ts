@@ -142,6 +142,7 @@ export async function POST(
       ok: true,
       provaId: prova.id,
       totalQuestoes: prova.totalQuestoes,
+      numerosEsperados,
       respostas,
       avisos: avisosGerais,
       lidas: respostas.length,
