@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card, Button, Badge } from "@/components/ui";
@@ -48,7 +48,9 @@ interface QuestsResponse {
   planoAtualizadoEm: string | null;
   recoveryMode: boolean;
   provaId?: string | null;
+  conjuntoId?: string | null;
   provaNome?: string | null;
+  lenteHref?: string | null;
 }
 
 function diaSugeridoLabel(dueDate?: string | null): string | null {
@@ -58,9 +60,11 @@ function diaSugeridoLabel(dueDate?: string | null): string | null {
   return d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
-export default function QuestsPage() {
+function QuestsPageInner() {
   const searchParams = useSearchParams();
   const provaId = searchParams.get("provaId");
+  const conjuntoId = searchParams.get("conjuntoId");
+  const escopoProva = Boolean(provaId || conjuntoId);
   const [data, setData] = useState<QuestsResponse | null>(null);
   const [mood, setMood] = useState(3);
   const [loading, setLoading] = useState(true);
@@ -68,12 +72,15 @@ export default function QuestsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const qs = provaId ? `?provaId=${encodeURIComponent(provaId)}` : "";
+    const params = new URLSearchParams();
+    if (conjuntoId) params.set("conjuntoId", conjuntoId);
+    else if (provaId) params.set("provaId", provaId);
+    const qs = params.toString() ? `?${params.toString()}` : "";
     const res = await fetch(`/api/quests${qs}`);
     const json = await res.json();
     setData(json);
     setLoading(false);
-  }, [provaId]);
+  }, [provaId, conjuntoId]);
 
   useEffect(() => {
     load();
@@ -113,6 +120,14 @@ export default function QuestsPage() {
     ...(data?.copilotoConcluidas ?? []),
     ...outras.filter((q) => q.status === "done"),
   ];
+
+  const lenteHref =
+    data?.lenteHref ??
+    (conjuntoId
+      ? `/provas/conjunto/${conjuntoId}/lente`
+      : provaId
+        ? `/provas/${provaId}/lente`
+        : null);
 
   function QuestCard({
     q,
@@ -173,9 +188,9 @@ export default function QuestsPage() {
             ? `Micro-plano de ${data.provaNome} — tarefas só desta prova.`
             : "Comece por O que fazer agora — passos da sua jornada inteira. O plano em /plano explica o porquê."}
         </p>
-        {provaId && (
+        {escopoProva && lenteHref && (
           <p className="mt-2 text-sm">
-            <Link href={`/provas/${provaId}/lente`} className="text-teal-700 hover:underline">
+            <Link href={lenteHref} className="text-teal-700 hover:underline">
               ← Voltar à lente da prova
             </Link>
             {" · "}
@@ -189,7 +204,7 @@ export default function QuestsPage() {
         )}
       </div>
 
-      {!provaId && data?.ciclo && <CicloHeader ciclo={data.ciclo} />}
+      {!escopoProva && data?.ciclo && <CicloHeader ciclo={data.ciclo} />}
 
       <Card>
         <p className="text-sm font-medium">Como você está agora? (ao concluir uma tarefa)</p>
@@ -219,7 +234,7 @@ export default function QuestsPage() {
         <p className="text-slate-500">Carregando...</p>
       ) : (
         <>
-          {pendingOutras.length > 0 && !provaId && (
+          {pendingOutras.length > 0 && !escopoProva && (
             <Card className="border-amber-200 bg-amber-50/60">
               <p className="text-sm text-amber-950">
                 Há <strong>{pendingOutras.length}</strong> tarefa(s) de planos antigos (duplicam o
@@ -236,7 +251,7 @@ export default function QuestsPage() {
             </Card>
           )}
 
-          {!provaId && (
+          {!escopoProva && (
             <section id="agora">
               <h2 className="mb-1 text-lg font-semibold text-teal-900">O que fazer agora</h2>
               <p className="mb-3 text-sm text-slate-500">
@@ -269,7 +284,7 @@ export default function QuestsPage() {
             </section>
           )}
 
-          {provaId && pendingOutras.length > 0 && (
+          {escopoProva && pendingOutras.length > 0 && (
             <section>
               <h2 className="mb-3 font-semibold">Tarefas desta prova</h2>
               <ul className="space-y-3">
@@ -280,6 +295,23 @@ export default function QuestsPage() {
                 ))}
               </ul>
             </section>
+          )}
+
+          {escopoProva && pendingOutras.length === 0 && done.length === 0 && (
+            <Card className="border-dashed border-slate-200">
+              <p className="text-sm text-slate-600">
+                Nenhuma quest desta prova ainda.{" "}
+                {lenteHref && (
+                  <>
+                    Gere o micro-plano na{" "}
+                    <Link href={lenteHref} className="font-medium text-teal-700 underline">
+                      lente da prova
+                    </Link>
+                    .
+                  </>
+                )}
+              </p>
+            </Card>
           )}
         </>
       )}
@@ -302,5 +334,13 @@ export default function QuestsPage() {
         </section>
       )}
     </div>
+  );
+}
+
+export default function QuestsPage() {
+  return (
+    <Suspense fallback={<p className="p-6 text-slate-500">Carregando quests…</p>}>
+      <QuestsPageInner />
+    </Suspense>
   );
 }

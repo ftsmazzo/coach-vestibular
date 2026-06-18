@@ -22,7 +22,11 @@ export function DashboardRegistrosGrid({ registros }: { registros: RegistroDashb
               ? `/provas/${r.provaId}/lente`
               : `/simulados/${r.id}`;
           const dadosHref = conjunto ? `/simulados/${r.id}` : `/simulados/${r.id}`;
-          const questsHref = r.provaId ? `/quests?provaId=${r.provaId}` : "/quests";
+          const questsHref = conjunto
+            ? `/quests?conjuntoId=${encodeURIComponent(r.id)}`
+            : r.provaId
+              ? `/quests?provaId=${r.provaId}`
+              : "/quests";
 
           return (
             <AtividadeCard

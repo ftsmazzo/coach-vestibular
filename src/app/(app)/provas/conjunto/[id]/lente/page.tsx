@@ -71,7 +71,7 @@ export default async function ConjuntoLentePage({
           <h2 className="mb-1 font-semibold text-slate-900">Micro-plano desta prova (180 questões)</h2>
           <p className="mb-4 text-xs text-slate-500">
             Blocos de estudo da prova completa. O passo a passo está em{" "}
-            <Link href={`/quests?provaId=${conjunto.provaIds[0]}`} className="font-medium text-teal-700 underline">
+            <Link href={`/quests?conjuntoId=${encodeURIComponent(conjuntoExamId)}`} className="font-medium text-teal-700 underline">
               Quests
             </Link>
             .
@@ -114,10 +114,7 @@ export default async function ConjuntoLentePage({
             : "Gera diagnóstico com IA, micro-plano e quests considerando as 180 questões — não só um dia."}
         </p>
         <div className="mt-4">
-          <GerarMicroPlanoConjuntoButton
-            conjuntoExamId={conjuntoExamId}
-            provaIdQuests={conjunto.provaIds[0]}
-          />
+          <GerarMicroPlanoConjuntoButton conjuntoExamId={conjuntoExamId} />
         </div>
       </Card>
 

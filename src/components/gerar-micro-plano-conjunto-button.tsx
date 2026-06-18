@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 
-export function GerarMicroPlanoConjuntoButton({
-  conjuntoExamId,
-  provaIdQuests,
-}: {
-  conjuntoExamId: string;
-  provaIdQuests: string;
-}) {
+export function GerarMicroPlanoConjuntoButton({ conjuntoExamId }: { conjuntoExamId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
@@ -32,6 +26,8 @@ export function GerarMicroPlanoConjuntoButton({
     router.refresh();
   }
 
+  const questsHref = `/quests?conjuntoId=${encodeURIComponent(conjuntoExamId)}`;
+
   return (
     <div className="space-y-3">
       <Button type="button" onClick={gerar} disabled={loading} className="w-full sm:w-auto">
@@ -40,8 +36,8 @@ export function GerarMicroPlanoConjuntoButton({
       {msg && <p className="text-sm font-medium text-teal-800">{msg}</p>}
       <p className="text-xs text-teal-800">
         Depois de gerar, abra{" "}
-        <Link href={`/quests?provaId=${provaIdQuests}`} className="font-medium underline">
-          Quests desta prova
+        <Link href={questsHref} className="font-medium underline">
+          Quests desta prova (180q)
         </Link>
         .
       </p>

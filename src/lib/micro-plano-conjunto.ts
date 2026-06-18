@@ -12,6 +12,12 @@ export type ConjuntoPlanMeta = {
   provaIds: [string, string];
 };
 
+export const PREFIXO_QUEST_CONJUNTO_LEN = 24;
+
+export function prefixoQuestConjunto(nomeConjunto: string): string {
+  return `[${nomeConjunto.slice(0, PREFIXO_QUEST_CONJUNTO_LEN)}]`;
+}
+
 function extractConjuntoMeta(narrativeJson: string | null): ConjuntoPlanMeta | null {
   if (!narrativeJson) return null;
   try {
@@ -99,7 +105,7 @@ export async function gerarMicroPlanoConjunto(userId: string, conjuntoExamId: st
 
   const { gerarProvaIAConjunto } = await import("@/lib/prova-ia");
   const ia = await gerarProvaIAConjunto(userId, examIdDia1, examIdDia2, conjunto.nome);
-  const prefixoQuest = `[${conjunto.nome.slice(0, 24)}]`;
+  const prefixoQuest = prefixoQuestConjunto(conjunto.nome);
 
   if (ia) {
     const weekStart = new Date();
@@ -258,3 +264,48 @@ export async function getLeituraCoachConjunto(userId: string, conjuntoExamId: st
     pctReferencia: pct,
   };
 }
+
+/** Quests do micro-plano da prova completa (180 questões). */
+export async function getQuestsConjunto(userId: string, conjuntoExamId: string) {
+  const ids = parseConjuntoExamId(conjuntoExamId);
+  if (!ids) {
+    return {
+      quests: [],
+      plan: null,
+      items: [] as StudyPlanItem[],
+      nomeConjunto: null,
+      lenteHref: null,
+    };
+  }
+
+  const [micro, conjunto] = await Promise.all([
+    getMicroPlanoConjunto(userId, conjuntoExamId),
+    loadConjuntoExamView(userId, ids[0], ids[1]),
+  ]);
+
+  const nomeConjunto = conjunto?.nome ?? "Prova completa (180 questões)";
+  const prefix = prefixoQuestConjunto(nomeConjunto);
+  const titulosPlano = new Set(
+    micro.items
+      .filter((i) => i.geraQuest !== false && i.duracaoMin > 0)
+      .map((i) => `${prefix} ${i.titulo}`)
+  );
+
+  const todas = await prisma.quest.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const quests = todas.filter(
+    (q) => titulosPlano.has(q.titulo) || q.titulo.startsWith(prefix)
+  );
+
+  return {
+    quests,
+    plan: micro.plan,
+    items: micro.items,
+    nomeConjunto,
+    lenteHref: `/provas/conjunto/${conjuntoExamId}/lente`,
+  };
+}
+

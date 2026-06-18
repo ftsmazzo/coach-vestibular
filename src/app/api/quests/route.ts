@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getQuestsDaProva, getQuestsDoPlanoAtual } from "@/lib/plano-atual";
+import { prefixoQuestConjunto } from "@/lib/micro-plano-conjunto";
 import {
   getOQueFazerAgora,
   isQuestCopiloto,
@@ -18,14 +19,25 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
   const provaId = new URL(request.url).searchParams.get("provaId");
+  const conjuntoId = new URL(request.url).searchParams.get("conjuntoId");
 
   let quests;
   let plan: { createdAt: Date; recoveryMode: boolean } | null = null;
   let items: StudyPlanItem[] = [];
   let provaNome: string | null = null;
+  let lenteHref: string | null = null;
   let prefix = "";
 
-  if (provaId) {
+  if (conjuntoId) {
+    const { getQuestsConjunto } = await import("@/lib/micro-plano-conjunto");
+    const daConjunto = await getQuestsConjunto(session.userId, conjuntoId);
+    quests = daConjunto.quests;
+    plan = daConjunto.plan;
+    items = daConjunto.items;
+    provaNome = daConjunto.nomeConjunto;
+    lenteHref = daConjunto.lenteHref;
+    prefix = daConjunto.nomeConjunto ? prefixoQuestConjunto(daConjunto.nomeConjunto) : "";
+  } else if (provaId) {
     const daProva = await getQuestsDaProva(session.userId, provaId);
     quests = daProva.quests;
     plan = daProva.plan;
@@ -41,7 +53,7 @@ export async function GET(request: Request) {
 
   let oQueFazerAgora: Awaited<ReturnType<typeof getOQueFazerAgora>> = [];
   let ciclo: Awaited<ReturnType<typeof import("@/lib/ciclo").getCicloResumo>> = null;
-  if (!provaId) {
+  if (!provaId && !conjuntoId) {
     const { buildJourneyInsight } = await import("@/lib/journey-insight");
     await buildJourneyInsight(session.userId);
     oQueFazerAgora = await getOQueFazerAgora(session.userId);
@@ -49,7 +61,7 @@ export async function GET(request: Request) {
     ciclo = await getCicloResumo(session.userId);
   }
 
-  const copilotoConcluidas = provaId
+  const copilotoConcluidas = provaId || conjuntoId
     ? []
     : (
         await prisma.quest.findMany({
@@ -129,7 +141,9 @@ export async function GET(request: Request) {
     planoAtualizadoEm: plan?.createdAt ?? null,
     recoveryMode: plan?.recoveryMode ?? false,
     provaId: provaId ?? null,
+    conjuntoId: conjuntoId ?? null,
     provaNome,
+    lenteHref,
   });
 }
 

@@ -63,7 +63,7 @@ function CardRealizadaConjunto({ p }: { p: Extract<ItemCatalogoAtividades, { kin
       pct={p.ultimaTentativa.pctAcerto}
       analiseHref={lenteHref}
       dadosHref={dadosHref}
-      terceiroHref={`/quests?provaId=${p.provaIds[0]}`}
+      terceiroHref={`/quests?conjuntoId=${encodeURIComponent(conjuntoId)}`}
       terceiroLabel="Quests"
       cadernoHref={p.temCaderno ? `/api/provas/${p.provaIds[0]}/caderno` : null}
     />
