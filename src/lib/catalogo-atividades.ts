@@ -10,7 +10,8 @@ import {
   type ProvaMultidiaMeta,
 } from "@/lib/prova-multidia";
 
-type ProvaCatalogoRow = ProvaMultidiaMeta & {
+type ProvaCatalogoRow = Omit<ProvaMultidiaMeta, "nome"> & {
+  nome: string;
   tipo: ProvaTipo;
   cadernoStoragePath?: string | null;
 };
