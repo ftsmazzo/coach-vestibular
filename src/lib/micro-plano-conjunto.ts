@@ -3,7 +3,7 @@ import { loadConjuntoExamView } from "@/lib/conjunto-exam-view";
 import { aplicarPlanoCoachIA } from "@/lib/diagnosis";
 import { buildDiagnosisForConjunto, attemptsPonderadosJornada } from "@/lib/jornada-diagnostico";
 import { prisma } from "@/lib/prisma";
-import { parseConjuntoExamId } from "@/lib/prova-multidia";
+import { parseConjuntoExamId, PROVA_SELECT_MULTIDIA } from "@/lib/prova-multidia";
 import { generateStudyPlan, planToQuests, type StudyPlanItem } from "@/lib/study-plan";
 
 export type ConjuntoPlanMeta = {
@@ -150,7 +150,7 @@ export async function gerarMicroPlanoConjunto(userId: string, conjuntoExamId: st
     where: { userId, id: { in: [examIdDia1, examIdDia2] } },
     include: {
       questionAttempts: { include: { provaQuestao: true } },
-      prova: { select: { id: true, banca: true, dia: true, nome: true, tipo: true } },
+      prova: { select: PROVA_SELECT_MULTIDIA },
     },
   });
   const attempts = attemptsPonderadosJornada(exams);
