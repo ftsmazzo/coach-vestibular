@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { RegistroDashboardCard } from "@/lib/jornada-analytics";
 import { abreviarNomeProva } from "@/lib/prova-label";
+import { isConjuntoExamId } from "@/lib/prova-multidia";
 import { AtividadeCard } from "@/components/atividade-card";
 
 export function DashboardRegistrosGrid({ registros }: { registros: RegistroDashboardCard[] }) {
@@ -14,8 +15,13 @@ export function DashboardRegistrosGrid({ registros }: { registros: RegistroDashb
       </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {registros.map((r) => {
-          const analiseHref = `/simulados/${r.id}`;
-          const dadosHref = r.provaId ? `/provas/${r.provaId}/lente` : analiseHref;
+          const conjunto = isConjuntoExamId(r.id);
+          const analiseHref = conjunto
+            ? `/provas/conjunto/${r.id}/lente`
+            : r.provaId
+              ? `/provas/${r.provaId}/lente`
+              : `/simulados/${r.id}`;
+          const dadosHref = conjunto ? `/simulados/${r.id}` : `/simulados/${r.id}`;
           const questsHref = r.provaId ? `/quests?provaId=${r.provaId}` : "/quests";
 
           return (

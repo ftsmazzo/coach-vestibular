@@ -85,9 +85,14 @@ export default async function SimuladoDetailPage({
             Veja questão a questão (sua resposta × gabarito) e classifique
             {errosCount > 0 ? ` os ${errosCount} erro(s)` : " seus erros"} da prova completa.
           </p>
-          <LinkButton href={`/simulados/${id}/questoes`} className="mt-4 w-full sm:w-auto">
-            Abrir questões e erros
-          </LinkButton>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <LinkButton href={`/simulados/${id}/questoes`} className="w-full sm:w-auto">
+              Abrir questões e erros
+            </LinkButton>
+            <LinkButton href={`/provas/conjunto/${id}/lente`} variant="secondary" className="w-full sm:w-auto">
+              Lente + micro-plano (180q)
+            </LinkButton>
+          </div>
         </Card>
 
         <div className="flex flex-wrap gap-2">

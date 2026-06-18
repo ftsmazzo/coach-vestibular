@@ -6,7 +6,7 @@
 import { prisma } from "@/lib/prisma";
 import { responsesComSchema } from "@/lib/openai-responses-client";
 import { buildDiagnosticoMotor } from "@/lib/diagnostic-motor";
-import { buildDiagnosisForProva } from "@/lib/jornada-diagnostico";
+import { buildDiagnosisForProva, buildDiagnosisForConjunto } from "@/lib/jornada-diagnostico";
 import { buildHistoricoProva } from "@/lib/jornada-historico";
 import { getMateriaLabel } from "@/lib/taxonomy";
 import { formatarPassos } from "@/lib/copiloto-passos";
@@ -337,6 +337,81 @@ export async function gerarProvaIA(
     return montarGerado(input, ia);
   } catch (e) {
     console.error("prova-ia falhou, usando template:", e);
+    return null;
+  }
+}
+
+/** IA para prova completa dia 1 + dia 2 (180 questões). */
+export async function gerarProvaIAConjunto(
+  userId: string,
+  examIdDia1: string,
+  examIdDia2: string,
+  nomeConjunto: string
+): Promise<ProvaGerado | null> {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) return null;
+
+  const [diagnosis, motor, user, conjunto] = await Promise.all([
+    buildDiagnosisForConjunto(userId, examIdDia1, examIdDia2),
+    buildDiagnosticoMotor(userId, { examIds: [examIdDia1, examIdDia2] }),
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+    prisma.exam.findFirst({
+      where: { id: examIdDia1, userId },
+      include: {
+        prova: true,
+        questionAttempts: { select: { correto: true } },
+      },
+    }),
+  ]);
+
+  if (!diagnosis || !conjunto?.prova) return null;
+
+  const total = conjunto.questionAttempts?.length ?? 0;
+  const acertos = conjunto.questionAttempts?.filter((q) => q.correto).length ?? 0;
+  const pct = total > 0 ? Math.round((acertos / total) * 100) : null;
+
+  const input: ProvaInput = {
+    prova: {
+      nome: nomeConjunto,
+      banca: conjunto.prova.banca,
+      tipo: conjunto.prova.tipo,
+      ano: conjunto.prova.ano ?? null,
+    },
+    aluno: { nome: (user?.name ?? "").split(/\s+/)[0] || "estudante" },
+    tentativas: 1,
+    melhorPct: pct,
+    ultimaPct: pct,
+    evolucao: pct != null ? [{ data: "completa", pct }] : [],
+    materias: (diagnosis.materiaScores ?? [])
+      .map((m) => ({
+        nome: m.materiaLabel ?? getMateriaLabel(m.materiaId),
+        pct: Math.round(m.taxaAcerto * 100),
+      }))
+      .sort((a, b) => a.pct - b.pct),
+    clusters: motor.clusters.slice(0, 3).map((c) => ({
+      label: c.label,
+      materias: c.materias.map((m) => m.nome).join(", ") || "—",
+      erros: c.erros,
+      causaDominante: c.causaDominante?.label ?? null,
+    })),
+  };
+
+  try {
+    const instrucao =
+      buildInstrucao(input) +
+      "\n\nIMPORTANTE: esta é a prova COMPLETA (dia 1 + dia 2, ~180 questões). " +
+      "O micro-plano e as quests devem considerar o desempenho nas 180 questões, não só um dia.";
+
+    const ia = await responsesComSchema<IAOutput>({
+      instrucao,
+      systemPrompt: SYSTEM,
+      schema: IA_SCHEMA,
+      content: [],
+    });
+    if (!ia?.quests?.length || !ia.missao?.titulo) return null;
+    return montarGerado(input, ia);
+  } catch (e) {
+    console.error("prova-ia conjunto falhou, usando template:", e);
     return null;
   }
 }

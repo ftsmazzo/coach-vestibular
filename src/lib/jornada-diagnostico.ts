@@ -193,3 +193,29 @@ export async function buildDiagnosisForProva(
     modoUso: exams[0]!.modoUso,
   });
 }
+
+/** Diagnóstico da prova completa dia 1 + dia 2 (180 questões). */
+export async function buildDiagnosisForConjunto(
+  userId: string,
+  examIdDia1: string,
+  examIdDia2: string
+): Promise<DiagnosisResult | null> {
+  const exams = await prisma.exam.findMany({
+    where: { userId, id: { in: [examIdDia1, examIdDia2] } },
+    include: {
+      questionAttempts: { include: { provaQuestao: true } },
+      prova: { select: PROVA_SELECT_MULTIDIA },
+    },
+  });
+  if (exams.length < 2) return null;
+
+  const weighted = attemptsPonderadosJornada(exams);
+  const unidade = agruparUnidadesJornada(exams).find((u) => u.conjuntoMultidia);
+  const label = unidade?.nome ?? exams[0]!.nome;
+
+  return buildDiagnosis(weighted, [], {
+    examLabel: label,
+    provaTipo: exams[0]!.prova?.tipo,
+    modoUso: exams[0]!.modoUso,
+  });
+}

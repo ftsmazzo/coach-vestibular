@@ -16,7 +16,11 @@ export async function getMicroPlanoProva(userId: string, provaId: string) {
   let narrative: CopilotoNarrativa | null = null;
   if (plan.narrativeJson) {
     try {
-      narrative = JSON.parse(plan.narrativeJson) as CopilotoNarrativa;
+      const parsed = JSON.parse(plan.narrativeJson) as CopilotoNarrativa & { _conjunto?: unknown };
+      if (parsed._conjunto) {
+        return { plan: null, items: [] as StudyPlanItem[], narrative: null };
+      }
+      narrative = parsed as CopilotoNarrativa;
     } catch {
       narrative = null;
     }

@@ -78,7 +78,7 @@ function materiaCoincide(a: string, b: string): boolean {
 
 export async function coletarEventosErro(
   userId: string,
-  opts?: { provaId?: string }
+  opts?: { provaId?: string; examIds?: string[] }
 ): Promise<EventoErroPedagogico[]> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -86,9 +86,13 @@ export async function coletarEventosErro(
   });
 
   const exams = await prisma.exam.findMany({
-    where: { userId, ...(opts?.provaId ? { provaId: opts.provaId } : {}) },
+    where: {
+      userId,
+      ...(opts?.examIds?.length ? { id: { in: opts.examIds } } : {}),
+      ...(opts?.provaId && !opts?.examIds?.length ? { provaId: opts.provaId } : {}),
+    },
     orderBy: { data: "desc" },
-    take: 24,
+    take: opts?.examIds?.length ? opts.examIds.length : 24,
     select: {
       id: true,
       data: true,
@@ -114,19 +118,22 @@ export async function coletarEventosErro(
     },
   });
 
-  const unidades = opts?.provaId ? exams.map((e) => ({
-    id: e.id,
-    examIds: [e.id],
-    conjuntoMultidia: false,
-    data: e.data,
-    modoUso: e.modoUso,
-    banca: e.banca,
-    nome: e.nome,
-    provaId: e.provaId,
-    totalQuestoes: e.questionAttempts.length,
-    questionAttempts: e.questionAttempts,
-    exames: [e],
-  })) : agruparUnidadesJornada(exams);
+  const unidades =
+    opts?.provaId && !opts?.examIds?.length
+      ? exams.map((e) => ({
+          id: e.id,
+          examIds: [e.id],
+          conjuntoMultidia: false,
+          data: e.data,
+          modoUso: e.modoUso,
+          banca: e.banca,
+          nome: e.nome,
+          provaId: e.provaId,
+          totalQuestoes: e.questionAttempts.length,
+          questionAttempts: e.questionAttempts,
+          exames: [e],
+        }))
+      : agruparUnidadesJornada(exams);
 
   const eventos: EventoErroPedagogico[] = [];
 
@@ -341,14 +348,16 @@ export { narrativaCopiloto as narrativaDiagnostico } from "@/lib/narrativa-copil
 
 export async function buildDiagnosticoMotor(
   userId: string,
-  opts?: { provaId?: string }
+  opts?: { provaId?: string; examIds?: string[] }
 ): Promise<DiagnosticoMotor> {
   const [eventos, journey] = await Promise.all([
     coletarEventosErro(userId, opts),
     aggregateJourneyLearning(userId, "todos"),
   ]);
 
-  const totalExames = opts?.provaId
+  const totalExames = opts?.examIds?.length
+    ? 1
+    : opts?.provaId
     ? await prisma.exam.count({ where: { userId, provaId: opts.provaId } })
     : journey.totalRegistros;
 

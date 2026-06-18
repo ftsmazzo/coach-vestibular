@@ -51,7 +51,9 @@ function CardRealizadaSingle({ p }: { p: Extract<ItemCatalogoAtividades, { kind:
 function CardRealizadaConjunto({ p }: { p: Extract<ItemCatalogoAtividades, { kind: "conjunto" }> }) {
   const titulo = abreviarNomeProva(p.nome, 48);
   const tipo = tipoAtividadeFromProvaTipo(p.tipo);
-  const conjuntoHref = `/simulados/${p.ultimaTentativa.id}`;
+  const conjuntoId = p.ultimaTentativa.id;
+  const lenteHref = `/provas/conjunto/${conjuntoId}/lente`;
+  const dadosHref = `/simulados/${conjuntoId}`;
 
   return (
     <AtividadeCard
@@ -59,8 +61,8 @@ function CardRealizadaConjunto({ p }: { p: Extract<ItemCatalogoAtividades, { kin
       subtitulo={subtituloConjunto(p)}
       tipoAtividade={tipo}
       pct={p.ultimaTentativa.pctAcerto}
-      analiseHref={conjuntoHref}
-      dadosHref={conjuntoHref}
+      analiseHref={lenteHref}
+      dadosHref={dadosHref}
       terceiroHref={`/quests?provaId=${p.provaIds[0]}`}
       terceiroLabel="Quests"
       cadernoHref={p.temCaderno ? `/api/provas/${p.provaIds[0]}/caderno` : null}
