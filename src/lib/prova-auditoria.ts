@@ -21,8 +21,7 @@ import {
   assuntoPertenceMateria,
   encontrarMateriaDoAssunto,
 } from "./taxonomia-validacao";
-import { varianteInconsistenteComMateria } from "./prova-idioma";
-import { compararQuestoesPorNumeroEOrdem } from "./prova-idioma-par";
+import { varianteInconsistenteComMateria, compararQuestoesPorNumeroEOrdem } from "./prova-idioma";
 
 const MARCA_CONFERIDO = "[CONFERIDO]";
 

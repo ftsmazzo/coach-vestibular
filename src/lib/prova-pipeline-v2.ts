@@ -24,11 +24,11 @@ import {
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import {
   chaveQuestaoVariante,
+  compararQuestoesPorNumeroEOrdem,
   inferirFaixaIdiomaDoPdf,
   inferirOrdemIdiomasDoPdf,
   type FaixaIdiomaOpcional,
 } from "@/lib/prova-idioma";
-import { compararQuestoesPorNumeroEOrdem } from "@/lib/prova-idioma-par";
 import {
   areaBlocoPorNumero,
   validarItemClassificado,

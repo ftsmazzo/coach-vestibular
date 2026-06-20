@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   compararQuestoesPorNumeroEOrdem,
+  inferirOrdemIdiomasDoPdf,
+  materiaParaVarianteIdioma,
   ordemVariantesFaixa,
-} from "./prova-idioma-par";
-import { materiaParaVarianteIdioma, inferirOrdemIdiomasDoPdf } from "./prova-idioma";
+} from "./prova-idioma";
 
-describe("prova-idioma-par", () => {
+describe("prova-idioma EN/ES", () => {
   it("ordemVariantesFaixa respeita espanhol primeiro", () => {
     expect(ordemVariantesFaixa("ESPANHOL_PRIMEIRO")).toEqual(["ESPANHOL", "INGLES"]);
     expect(ordemVariantesFaixa("INGLES_PRIMEIRO")).toEqual(["INGLES", "ESPANHOL"]);

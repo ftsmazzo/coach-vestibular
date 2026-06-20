@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import { prisma } from "@/lib/prisma";
-import { resolverQuestaoIdAposMateriaIdioma } from "@/lib/prova-idioma-par";
+import { resolverQuestaoIdAposMateriaIdioma } from "@/lib/prova-idioma-par-server";
 import {
   normalizarLabelAssunto,
   normalizarLabelMateria,

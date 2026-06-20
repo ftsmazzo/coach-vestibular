@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { buildProvaNome } from "@/lib/prova-nome";
 import { statsQuestoesProva } from "@/lib/prova-stats";
 import { prisma } from "@/lib/prisma";
-import { compararQuestoesPorNumeroEOrdem } from "@/lib/prova-idioma-par";
+import { compararQuestoesPorNumeroEOrdem } from "@/lib/prova-idioma";
 
 export async function GET(
   _request: Request,
