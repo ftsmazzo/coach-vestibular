@@ -7,6 +7,7 @@ export type MetaPoliticaIdiomas = {
   politicaIdiomas?: PoliticaIdiomasProva | string;
   idiomaQuestaoInicio?: number | null;
   idiomaQuestaoFim?: number | null;
+  ordemIdiomasFaixa?: "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO" | null;
 };
 
 export type QuestaoComVariante = {
@@ -58,6 +59,31 @@ export function inferirFaixaIdiomaDoPdf(estrutura: EstruturaProvaDetectada): Fai
   }
 
   return { inicio: 1, fim: 5 };
+}
+
+/** Ordem física dos blocos EN/ES no PDF (espanhol antes do inglês em alguns vestibulares). */
+export function inferirOrdemIdiomasDoPdf(
+  estrutura: EstruturaProvaDetectada
+): "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO" {
+  if (estrutura.idiomas_estrangeiros !== "duplicata_ingles_espanhol") {
+    return "INGLES_PRIMEIRO";
+  }
+  const blocos = estrutura.blocos ?? [];
+  const norm = (s: string) =>
+    s
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
+  let idxIng = -1;
+  let idxEsp = -1;
+  blocos.forEach((b, i) => {
+    const t = norm(b.titulo);
+    if (/ingles|ingl/.test(t)) idxIng = i;
+    if (/espanhol|espan/.test(t)) idxEsp = i;
+  });
+  if (idxEsp >= 0 && idxIng >= 0 && idxEsp < idxIng) return "ESPANHOL_PRIMEIRO";
+  return "INGLES_PRIMEIRO";
 }
 
 export function varianteParaNumero(
@@ -130,4 +156,27 @@ export function labelVarianteQuestao(variante: IdiomaVarianteQuestao | string): 
 
 export function labelIdiomaEstrangeiroEscolha(variante: IdiomaVarianteQuestao): string {
   return variante === "ESPANHOL" ? "Espanhol" : "Inglês";
+}
+
+/** Matéria cadastrada → trilha EN/ES (null se não for língua estrangeira). */
+export function materiaParaVarianteIdioma(materia: string): IdiomaVarianteQuestao | null {
+  const m = materia.trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+  if (m === "ingles" || m === "lingua inglesa" || m === "lingua estrangeira: ingles") {
+    return "INGLES";
+  }
+  if (m === "espanhol" || m === "lingua espanhola" || m === "lingua estrangeira: espanhol") {
+    return "ESPANHOL";
+  }
+  if (m.includes("ingles") && !m.includes("espanhol")) return "INGLES";
+  if (m.includes("espanhol")) return "ESPANHOL";
+  return null;
+}
+
+export function varianteInconsistenteComMateria(
+  materia: string,
+  variante: IdiomaVarianteQuestao | string
+): boolean {
+  const esperada = materiaParaVarianteIdioma(materia);
+  if (!esperada) return false;
+  return (variante ?? "COMUM") !== esperada;
 }

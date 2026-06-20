@@ -5,6 +5,7 @@ import { Button, Card } from "@/components/ui";
 
 interface AlertaAuditoria {
   numero: number;
+  idiomaVariante?: string;
   severidade: "alta" | "media";
   motivos: string[];
   atual: {
@@ -23,8 +24,8 @@ interface Props {
   textoFonteColado?: string;
   orientacoesSalvas?: Record<number, string>;
   onQuestoesAtualizadas?: () => void;
-  onAlertasChange?: (numeros: number[]) => void;
-  onEditarQuestao?: (numero: number) => void;
+  onAlertasChange?: (chaves: string[]) => void;
+  onEditarQuestao?: (numero: number, idiomaVariante?: string) => void;
   /** Incrementa após salvar questão — reexecuta auditoria se já rodou antes. */
   atualizarAuditoria?: number;
 }
@@ -41,7 +42,10 @@ export function AdminAuditoriaProva({
   const [auditing, setAuditing] = useState(false);
   const [resultado, setResultado] = useState<ResultadoAuditoria | null>(null);
   const [msg, setMsg] = useState("");
-  const [reclassificarNumero, setReclassificarNumero] = useState<number | null>(null);
+  const [reclassificarAlvo, setReclassificarAlvo] = useState<{
+    numero: number;
+    idiomaVariante?: string;
+  } | null>(null);
   const [textoReclassificar, setTextoReclassificar] = useState("");
   const [orientacaoReclassificar, setOrientacaoReclassificar] = useState("");
   const [reclassificando, setReclassificando] = useState(false);
@@ -69,7 +73,7 @@ export function AdminAuditoriaProva({
   const auditar = useCallback(async () => {
     setAuditing(true);
     setMsg("");
-    setReclassificarNumero(null);
+    setReclassificarAlvo(null);
     try {
       const res = await fetch(`/api/admin/provas/${provaId}/auditar`, {
         method: "POST",
@@ -87,9 +91,12 @@ export function AdminAuditoriaProva({
         return;
       }
       const alertas = data.alertas ?? [];
-      const nums = alertas.map((a: { numero: number }) => a.numero);
+      const chaves = alertas.map(
+        (a: { numero: number; idiomaVariante?: string }) =>
+          `${a.numero}:${a.idiomaVariante ?? "COMUM"}`
+      );
       setResultado({ suspeitas: data.suspeitas, alertas });
-      onAlertasChange?.(nums);
+      onAlertasChange?.(chaves);
       setMsg(
         data.suspeitas === 0
           ? "Nenhuma inconsistência grave encontrada."
@@ -110,7 +117,7 @@ export function AdminAuditoriaProva({
   }, [atualizarAuditoria]);
 
   function abrirReclassificar(a: AlertaAuditoria) {
-    setReclassificarNumero(a.numero);
+    setReclassificarAlvo({ numero: a.numero, idiomaVariante: a.idiomaVariante });
     setTextoReclassificar("");
     setOrientacaoReclassificar(
       orientacoesSalvas[a.numero]?.trim() ||
@@ -118,11 +125,16 @@ export function AdminAuditoriaProva({
     );
   }
 
+  function chaveAlerta(a: AlertaAuditoria): string {
+    return `${a.numero}:${a.idiomaVariante ?? "COMUM"}`;
+  }
+
   async function confirmarReclassificar() {
-    if (reclassificarNumero == null) return;
+    if (reclassificarAlvo == null) return;
+    const { numero, idiomaVariante } = reclassificarAlvo;
     const texto = textoReclassificar.trim();
     if (!texto) {
-      setMsg(`Cole o enunciado da questão ${reclassificarNumero}.`);
+      setMsg(`Cole o enunciado da questão ${numero}.`);
       return;
     }
     setReclassificando(true);
@@ -132,7 +144,8 @@ export function AdminAuditoriaProva({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          numero: reclassificarNumero,
+          numero,
+          idiomaVariante: idiomaVariante ?? "COMUM",
           texto,
           observacoes: orientacaoReclassificar.trim() || undefined,
           salvarOrientacao: true,
@@ -143,11 +156,13 @@ export function AdminAuditoriaProva({
         setMsg(data.error ?? "Erro ao reclassificar");
         return;
       }
-      setReclassificarNumero(null);
+      setReclassificarAlvo(null);
       onQuestoesAtualizadas?.();
-      setMsg(
-        `Questão ${data.numero} atualizada: ${data.materia} — ${data.assunto}.`
-      );
+      const rotulo =
+        idiomaVariante && idiomaVariante !== "COMUM"
+          ? `${data.numero} (${idiomaVariante === "INGLES" ? "EN" : "ES"})`
+          : `${data.numero}`;
+      setMsg(`Questão ${rotulo} atualizada: ${data.materia} — ${data.assunto}.`);
       await auditar();
     } catch {
       setMsg("Erro de rede ao reclassificar.");
@@ -191,8 +206,15 @@ export function AdminAuditoriaProva({
             </thead>
             <tbody>
               {resultado.alertas.map((a) => (
-                <tr key={a.numero} className="border-b border-slate-100">
-                  <td className="p-2 font-medium">{a.numero}</td>
+                <tr key={chaveAlerta(a)} className="border-b border-slate-100">
+                  <td className="p-2 font-medium">
+                    {a.numero}
+                    {a.idiomaVariante && a.idiomaVariante !== "COMUM" && (
+                      <span className="ml-1 text-[10px] font-normal text-slate-500">
+                        {a.idiomaVariante === "INGLES" ? "EN" : "ES"}
+                      </span>
+                    )}
+                  </td>
                   <td className="p-2 text-slate-700">
                     {a.atual.materia} — {a.atual.assunto}
                   </td>
@@ -205,7 +227,7 @@ export function AdminAuditoriaProva({
                       type="button"
                       variant="secondary"
                       className="mr-1 px-2 py-1 text-xs"
-                      onClick={() => onEditarQuestao?.(a.numero)}
+                      onClick={() => onEditarQuestao?.(a.numero, a.idiomaVariante)}
                     >
                       Editar
                     </Button>
@@ -214,12 +236,18 @@ export function AdminAuditoriaProva({
                       variant="ghost"
                       className="px-2 py-1 text-xs"
                       onClick={() =>
-                        reclassificarNumero === a.numero
-                          ? setReclassificarNumero(null)
+                        reclassificarAlvo?.numero === a.numero &&
+                        (reclassificarAlvo?.idiomaVariante ?? "COMUM") ===
+                          (a.idiomaVariante ?? "COMUM")
+                          ? setReclassificarAlvo(null)
                           : abrirReclassificar(a)
                       }
                     >
-                      {reclassificarNumero === a.numero ? "Fechar IA" : "IA"}
+                      {reclassificarAlvo?.numero === a.numero &&
+                      (reclassificarAlvo?.idiomaVariante ?? "COMUM") ===
+                        (a.idiomaVariante ?? "COMUM")
+                        ? "Fechar IA"
+                        : "IA"}
                     </Button>
                   </td>
                 </tr>
@@ -229,10 +257,17 @@ export function AdminAuditoriaProva({
         </div>
       )}
 
-      {reclassificarNumero != null && (
+      {reclassificarAlvo != null && (
         <div className="mt-4 rounded-xl border border-violet-300 bg-white p-4">
           <p className="mb-2 text-sm font-medium text-slate-800">
-            Reclassificar questão {reclassificarNumero} com IA
+            Reclassificar questão {reclassificarAlvo.numero}
+            {reclassificarAlvo.idiomaVariante &&
+              reclassificarAlvo.idiomaVariante !== "COMUM" && (
+                <span className="ml-1 text-slate-500">
+                  ({reclassificarAlvo.idiomaVariante === "INGLES" ? "Inglês" : "Espanhol"})
+                </span>
+              )}{" "}
+            com IA
           </p>
           <textarea
             className="mb-2 w-full rounded-lg border p-2 text-sm"

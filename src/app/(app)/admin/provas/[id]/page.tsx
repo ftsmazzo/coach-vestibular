@@ -50,6 +50,7 @@ interface Prova {
   politicaIdiomas?: string;
   idiomaQuestaoInicio?: number | null;
   idiomaQuestaoFim?: number | null;
+  ordemIdiomasFaixa?: "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO";
   questoesCadastradas?: number;
   questoesFaltando?: number[];
   bancoIncompleto?: boolean;
@@ -148,8 +149,11 @@ export default function AdminProvaDetailPage() {
   const [textoFaltantes, setTextoFaltantes] = useState("");
   const [extraindo, setExtraindo] = useState(false);
   const [msg, setMsg] = useState("");
-  const [numerosAlerta, setNumerosAlerta] = useState<number[]>([]);
-  const [editarQuestaoNumero, setEditarQuestaoNumero] = useState<number | null>(null);
+  const [alertaChaves, setAlertaChaves] = useState<string[]>([]);
+  const [editarQuestaoAlvo, setEditarQuestaoAlvo] = useState<{
+    numero: number;
+    idiomaVariante?: string;
+  } | null>(null);
   const [atualizarAuditoria, setAtualizarAuditoria] = useState(0);
   const [meta, setMeta] = useState({
     banca: "",
@@ -158,6 +162,7 @@ export default function AdminProvaDetailPage() {
     caderno: "",
     totalQuestoes: "",
     descricao: "",
+    ordemIdiomasFaixa: "INGLES_PRIMEIRO" as "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO",
   });
 
   const orientacoesSalvas = useMemo(() => {
@@ -193,6 +198,7 @@ export default function AdminProvaDetailPage() {
         caderno: data.caderno ?? "",
         totalQuestoes: String(data.totalQuestoes),
         descricao: data.descricao ?? "",
+        ordemIdiomasFaixa: data.ordemIdiomasFaixa ?? "INGLES_PRIMEIRO",
       });
     }
   }, [id]);
@@ -289,6 +295,9 @@ export default function AdminProvaDetailPage() {
           ? parseInt(meta.totalQuestoes, 10)
           : undefined,
         descricao: meta.descricao || null,
+        ...(temDuplicataEnEs(prova ?? undefined)
+          ? { ordemIdiomasFaixa: meta.ordemIdiomasFaixa }
+          : {}),
       }),
     });
     setMsg(res.ok ? "Dados da prova salvos." : "Erro ao salvar prova");
@@ -650,6 +659,29 @@ export default function AdminProvaDetailPage() {
               onChange={(e) => setMeta({ ...meta, descricao: e.target.value })}
             />
           </div>
+          {temDuplicataEnEs(prova) && (
+            <div className="sm:col-span-2">
+              <Label>Ordem no caderno (faixa EN/ES)</Label>
+              <select
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                value={meta.ordemIdiomasFaixa}
+                onChange={(e) =>
+                  setMeta({
+                    ...meta,
+                    ordemIdiomasFaixa: e.target.value as "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO",
+                  })
+                }
+              >
+                <option value="INGLES_PRIMEIRO">Inglês antes do Espanhol (padrão ENEM)</option>
+                <option value="ESPANHOL_PRIMEIRO">Espanhol antes do Inglês</option>
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                Afeta a ordem na tabela e na auditoria. O gabarito de cada trilha (EN/ES) continua
+                separado — ao corrigir matéria na faixa 1–5, conteúdo e gabarito trocam de linha
+                automaticamente.
+              </p>
+            </div>
+          )}
         </div>
         <Button className="mt-3" type="button" onClick={salvarMetadados}>
           Salvar registro da prova
@@ -779,9 +811,9 @@ export default function AdminProvaDetailPage() {
         <AdminTabelaQuestoes
           provaId={prova.id}
           questoes={prova.questoes}
-          numerosAlerta={numerosAlerta}
-          abrirEdicaoNumero={editarQuestaoNumero}
-          onEdicaoAberta={() => setEditarQuestaoNumero(null)}
+          alertaChaves={alertaChaves}
+          abrirEdicao={editarQuestaoAlvo}
+          onEdicaoAberta={() => setEditarQuestaoAlvo(null)}
           onAtualizado={aoAtualizarQuestoes}
           onMensagem={setMsg}
         />
@@ -793,8 +825,10 @@ export default function AdminProvaDetailPage() {
           textoFonteColado={textoProva}
           orientacoesSalvas={orientacoesSalvas}
           onQuestoesAtualizadas={aoAtualizarQuestoes}
-          onAlertasChange={setNumerosAlerta}
-          onEditarQuestao={(numero) => setEditarQuestaoNumero(numero)}
+          onAlertasChange={setAlertaChaves}
+          onEditarQuestao={(numero, idiomaVariante) =>
+            setEditarQuestaoAlvo({ numero, idiomaVariante })
+          }
           atualizarAuditoria={atualizarAuditoria}
         />
       )}

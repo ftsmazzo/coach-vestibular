@@ -84,6 +84,12 @@ enum PoliticaIdiomasProva {
   DUPLICATA_EN_ES
 }
 
+/// Ordem física dos blocos EN/ES no caderno (questão 1 pode ser ES antes de EN)
+enum OrdemIdiomasFaixa {
+  INGLES_PRIMEIRO
+  ESPANHOL_PRIMEIRO
+}
+
 /// Prova cadastrada pelo admin — banco de questões (uma linha por questão)
 model Prova {
   id              String    @id @default(cuid())
@@ -99,6 +105,8 @@ model Prova {
   politicaIdiomas     PoliticaIdiomasProva @default(NENHUMA)
   idiomaQuestaoInicio Int?
   idiomaQuestaoFim    Int?
+  /// Ordem no caderno: inglês antes do espanhol ou o contrário (só faixa 1–5)
+  ordemIdiomasFaixa   OrdemIdiomasFaixa @default(INGLES_PRIMEIRO)
   publicada       Boolean   @default(false)
   gabaritoCompleto Boolean  @default(false)
   /// Texto completo da última extração (PDF/cola) — para auditoria sem reenviar arquivo

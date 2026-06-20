@@ -25,8 +25,10 @@ import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import {
   chaveQuestaoVariante,
   inferirFaixaIdiomaDoPdf,
+  inferirOrdemIdiomasDoPdf,
   type FaixaIdiomaOpcional,
 } from "@/lib/prova-idioma";
+import { compararQuestoesPorNumeroEOrdem } from "@/lib/prova-idioma-par";
 import {
   areaBlocoPorNumero,
   validarItemClassificado,
@@ -51,6 +53,7 @@ export interface PipelineV2Result {
   estruturaDetectada?: EstruturaProvaDetectada;
   politicaIdiomas?: "NENHUMA" | "DUPLICATA_EN_ES";
   faixaIdioma?: FaixaIdiomaOpcional | null;
+  ordemIdiomasFaixa?: "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO";
 }
 
 const SCHEMA_ESTRUTURA = {
@@ -378,11 +381,14 @@ Preencha o schema estrutural completo a partir do PDF.
   });
   const faixaIdioma =
     politicaIdioma.modoDuplicata ? inferirFaixaIdiomaDoPdf(estrutura) : null;
+  const ordemIdiomasFaixa = politicaIdioma.modoDuplicata
+    ? inferirOrdemIdiomasDoPdf(estrutura)
+    : "INGLES_PRIMEIRO";
 
   etapas.push(
     `Estrutura (${estruturaExec.model}): ${estrutura.numeros.length} números únicos · layout ${estrutura.formato_layout ?? "?"}` +
       (politicaIdioma.modoDuplicata
-        ? ` · EN/ES: faixa ${faixaIdioma?.inicio ?? 1}–${faixaIdioma?.fim ?? 5} (ambas trilhas)`
+        ? ` · EN/ES: faixa ${faixaIdioma?.inicio ?? 1}–${faixaIdioma?.fim ?? 5} (ambas trilhas · ${ordemIdiomasFaixa === "ESPANHOL_PRIMEIRO" ? "ES antes EN" : "EN antes ES"})`
         : politicaIdioma.forcarSomenteIngles
           ? " · idioma: só inglês (legado)"
           : "")
@@ -551,11 +557,9 @@ ${taxonomia}`;
     }
   }
 
-  let rows: ProvaQuestaoRow[] = [...rowsMap.values()].sort((a, b) => {
-    if (a.numero !== b.numero) return a.numero - b.numero;
-    const ordem = { COMUM: 0, INGLES: 1, ESPANHOL: 2 };
-    return (ordem[a.idiomaVariante ?? "COMUM"] ?? 0) - (ordem[b.idiomaVariante ?? "COMUM"] ?? 0);
-  });
+  let rows: ProvaQuestaoRow[] = [...rowsMap.values()].sort((a, b) =>
+    compararQuestoesPorNumeroEOrdem(a, b, ordemIdiomasFaixa)
+  );
 
   const alinhadas = alinharLoteTaxonomia(
     rows.map((r) => ({
@@ -569,16 +573,18 @@ ${taxonomia}`;
       observacoes: r.observacoes ?? null,
     }))
   );
-  rows = alinhadas.questoes.map((q, i) => ({
-    numero: q.numero,
-    idiomaVariante: rows[i]?.idiomaVariante ?? "COMUM",
-    areaBloco: q.areaBloco ?? undefined,
-    materia: q.materia,
-    assunto: q.assunto,
-    conhecimentoExigido: q.conhecimentoExigido ?? undefined,
-    nivelDificuldade: q.nivelDificuldade ?? undefined,
-    observacoes: q.observacoes ?? undefined,
-  }));
+  rows = alinhadas.questoes.map((q, i) => {
+    const orig = rows[i]!;
+    return {
+      ...orig,
+      areaBloco: q.areaBloco ?? undefined,
+      materia: q.materia,
+      assunto: q.assunto,
+      conhecimentoExigido: q.conhecimentoExigido ?? undefined,
+      nivelDificuldade: q.nivelDificuldade ?? undefined,
+      observacoes: q.observacoes ?? undefined,
+    };
+  });
   if (alinhadas.corrigidas > 0) {
     avisos.push(`${alinhadas.corrigidas} par(es) matéria/assunto alinhados à taxonomia.`);
   }
@@ -615,5 +621,6 @@ ${taxonomia}`;
     estruturaDetectada: estrutura,
     politicaIdiomas: politicaIdioma.modoDuplicata ? "DUPLICATA_EN_ES" : "NENHUMA",
     faixaIdioma,
+    ordemIdiomasFaixa: politicaIdioma.modoDuplicata ? ordemIdiomasFaixa : undefined,
   };
 }

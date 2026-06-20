@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { buildProvaNome } from "@/lib/prova-nome";
 import { statsQuestoesProva } from "@/lib/prova-stats";
 import { prisma } from "@/lib/prisma";
+import { compararQuestoesPorNumeroEOrdem } from "@/lib/prova-idioma-par";
 
 export async function GET(
   _request: Request,
@@ -32,16 +33,20 @@ export async function GET(
     },
   });
   if (!prova) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
-  const stats = statsQuestoesProva(prova.questoes, prova.totalQuestoes, {
+  const questoesOrdenadas = [...prova.questoes].sort((a, b) =>
+    compararQuestoesPorNumeroEOrdem(a, b, prova.ordemIdiomasFaixa)
+  );
+  const stats = statsQuestoesProva(questoesOrdenadas, prova.totalQuestoes, {
     dia: prova.dia,
     banca: prova.banca,
     politicaIdiomas: prova.politicaIdiomas,
     idiomaQuestaoInicio: prova.idiomaQuestaoInicio,
     idiomaQuestaoFim: prova.idiomaQuestaoFim,
   });
-  const { textoFonte, ...provaSemTexto } = prova;
+  const { textoFonte, questoes: _q, ...provaSemTexto } = prova;
   return NextResponse.json({
     ...provaSemTexto,
+    questoes: questoesOrdenadas,
     temTextoFonte: Boolean(textoFonte?.trim()),
     tamanhoTextoFonte: textoFonte?.length ?? 0,
     questoesCadastradas: stats.cadastradas,
@@ -61,6 +66,7 @@ const patchSchema = z.object({
   descricao: z.string().optional().nullable(),
   totalQuestoes: z.number().int().positive().optional(),
   publicada: z.boolean().optional(),
+  ordemIdiomasFaixa: z.enum(["INGLES_PRIMEIRO", "ESPANHOL_PRIMEIRO"]).optional(),
 });
 
 export async function PATCH(

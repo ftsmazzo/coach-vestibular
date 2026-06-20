@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import { prisma } from "@/lib/prisma";
+import { resolverQuestaoIdAposMateriaIdioma } from "@/lib/prova-idioma-par";
 import {
   normalizarLabelAssunto,
   normalizarLabelMateria,
@@ -28,6 +29,11 @@ export async function PATCH(
   const { id: provaId, questaoId } = await params;
   const body = patchSchema.parse(await request.json());
 
+  const prova = await prisma.prova.findUnique({ where: { id: provaId } });
+  if (!prova) {
+    return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
+  }
+
   const existente = await prisma.provaQuestao.findFirst({
     where: { id: questaoId, provaId },
   });
@@ -47,8 +53,13 @@ export async function PATCH(
       ? normalizarAreaBloco(body.areaBloco, materia)
       : existente.areaBloco;
 
+  const questaoIdEfetivo =
+    body.materia != null
+      ? await resolverQuestaoIdAposMateriaIdioma(prova, questaoId, provaId, materia)
+      : questaoId;
+
   const atualizada = await prisma.provaQuestao.update({
-    where: { id: questaoId },
+    where: { id: questaoIdEfetivo },
     data: {
       ...(body.areaBloco !== undefined ? { areaBloco } : {}),
       materia,

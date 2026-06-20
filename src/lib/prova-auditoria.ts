@@ -21,6 +21,8 @@ import {
   assuntoPertenceMateria,
   encontrarMateriaDoAssunto,
 } from "./taxonomia-validacao";
+import { varianteInconsistenteComMateria } from "./prova-idioma";
+import { compararQuestoesPorNumeroEOrdem } from "./prova-idioma-par";
 
 const MARCA_CONFERIDO = "[CONFERIDO]";
 
@@ -40,6 +42,7 @@ export function marcarObservacoesConferidas(
 
 export interface QuestaoAuditoriaInput {
   numero: number;
+  idiomaVariante?: string | null;
   materia: string;
   assunto: string;
   conhecimentoExigido?: string | null;
@@ -59,6 +62,7 @@ export interface ClassificacaoResumo {
 
 export interface AlertaAuditoria {
   numero: number;
+  idiomaVariante?: string;
   severidade: "alta" | "media";
   motivos: string[];
   atual: ClassificacaoResumo;
@@ -251,9 +255,12 @@ function resumo(q: QuestaoAuditoriaInput): ClassificacaoResumo {
 
 export function auditarClassificacaoQuestoes(
   questoes: QuestaoAuditoriaInput[],
-  textoFonte?: string | null
+  textoFonte?: string | null,
+  ordemIdiomasFaixa?: "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO" | null
 ): AlertaAuditoria[] {
-  const sorted = [...questoes].sort((a, b) => a.numero - b.numero);
+  const sorted = [...questoes].sort((a, b) =>
+    compararQuestoesPorNumeroEOrdem(a, b, ordemIdiomasFaixa)
+  );
   const alertas: AlertaAuditoria[] = [];
 
   let trechos = new Map<number, string>();
@@ -297,6 +304,16 @@ export function auditarClassificacaoQuestoes(
 
     for (const m of motivosRegrasEstruturais(q, textoQ, conferida)) {
       if (!motivos.includes(m)) motivos.push(m);
+    }
+
+    if (
+      q.idiomaVariante &&
+      q.idiomaVariante !== "COMUM" &&
+      varianteInconsistenteComMateria(q.materia, q.idiomaVariante)
+    ) {
+      motivos.push(
+        `Matéria «${q.materia}» não corresponde à trilha ${q.idiomaVariante === "INGLES" ? "Inglês" : "Espanhol"} — troque a matéria ou use Editar para alinhar conteúdo e gabarito.`
+      );
     }
 
     if (!conferida) {
@@ -355,6 +372,7 @@ export function auditarClassificacaoQuestoes(
 
     alertas.push({
       numero: q.numero,
+      idiomaVariante: q.idiomaVariante && q.idiomaVariante !== "COMUM" ? q.idiomaVariante : undefined,
       severidade:
         motivos.some(
           (m) =>

@@ -143,6 +143,7 @@ export async function POST(
             politicaIdiomas: "DUPLICATA_EN_ES",
             idiomaQuestaoInicio: resultado.faixaIdioma.inicio,
             idiomaQuestaoFim: resultado.faixaIdioma.fim,
+            ordemIdiomasFaixa: resultado.ordemIdiomasFaixa ?? "INGLES_PRIMEIRO",
           },
         });
       } else if (resultado.politicaIdiomas === "NENHUMA") {

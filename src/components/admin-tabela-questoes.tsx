@@ -36,12 +36,17 @@ type FormEdicao = {
 interface Props {
   provaId: string;
   questoes: QuestaoRow[];
-  numerosAlerta?: number[];
+  /** Chaves `numero:variante` com alerta da auditoria. */
+  alertaChaves?: string[];
   /** Abre o modal de edição desta questão (ex.: vindo da auditoria). */
-  abrirEdicaoNumero?: number | null;
+  abrirEdicao?: { numero: number; idiomaVariante?: string } | null;
   onEdicaoAberta?: () => void;
   onAtualizado: () => void;
   onMensagem?: (msg: string) => void;
+}
+
+function chaveAlerta(q: Pick<QuestaoRow, "numero" | "idiomaVariante">): string {
+  return `${q.numero}:${q.idiomaVariante ?? "COMUM"}`;
 }
 
 function formDeQuestao(q: QuestaoRow): FormEdicao {
@@ -62,13 +67,13 @@ function formDeQuestao(q: QuestaoRow): FormEdicao {
 export function AdminTabelaQuestoes({
   provaId,
   questoes,
-  numerosAlerta = [],
-  abrirEdicaoNumero = null,
+  alertaChaves = [],
+  abrirEdicao = null,
   onEdicaoAberta,
   onAtualizado,
   onMensagem,
 }: Props) {
-  const alertaSet = useMemo(() => new Set(numerosAlerta), [numerosAlerta]);
+  const alertaSet = useMemo(() => new Set(alertaChaves), [alertaChaves]);
   const [editando, setEditando] = useState<QuestaoRow | null>(null);
   const [form, setForm] = useState<FormEdicao | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -80,18 +85,22 @@ export function AdminTabelaQuestoes({
 
   const lista =
     filtro === "alerta"
-      ? questoes.filter((q) => alertaSet.has(q.numero))
+      ? questoes.filter((q) => alertaSet.has(chaveAlerta(q)))
       : questoes;
 
   useEffect(() => {
-    if (abrirEdicaoNumero == null) return;
-    const q = questoes.find((x) => x.numero === abrirEdicaoNumero);
+    if (abrirEdicao == null) return;
+    const variante = abrirEdicao.idiomaVariante ?? "COMUM";
+    const q =
+      questoes.find(
+        (x) => x.numero === abrirEdicao.numero && (x.idiomaVariante ?? "COMUM") === variante
+      ) ?? questoes.find((x) => x.numero === abrirEdicao.numero);
     if (q) {
       setEditando(q);
       setForm(formDeQuestao(q));
       onEdicaoAberta?.();
     }
-  }, [abrirEdicaoNumero, questoes, onEdicaoAberta]);
+  }, [abrirEdicao, questoes, onEdicaoAberta]);
 
   function abrirModal(q: QuestaoRow) {
     setEditando(q);
@@ -158,7 +167,7 @@ export function AdminTabelaQuestoes({
               (uma questão por vez). Linha em destaque = alerta da auditoria.
             </p>
           </div>
-          {numerosAlerta.length > 0 && (
+          {alertaChaves.length > 0 && (
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -172,7 +181,7 @@ export function AdminTabelaQuestoes({
                 variant={filtro === "alerta" ? "primary" : "secondary"}
                 onClick={() => setFiltro("alerta")}
               >
-                Só alertas ({numerosAlerta.length})
+                Só alertas ({alertaChaves.length})
               </Button>
             </div>
           )}
@@ -204,7 +213,7 @@ export function AdminTabelaQuestoes({
                   <tr
                     key={q.id}
                     className={`border-b border-slate-100 ${
-                      alertaSet.has(q.numero) ? "bg-amber-50" : ""
+                      alertaSet.has(chaveAlerta(q)) ? "bg-amber-50" : ""
                     }`}
                   >
                     <td className="p-2 font-medium">

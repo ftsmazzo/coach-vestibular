@@ -56,6 +56,7 @@ export async function POST(
 
   const questoesInput = prova.questoes.map((q) => ({
     numero: q.numero,
+    idiomaVariante: q.idiomaVariante,
     materia: q.materia,
     assunto: q.assunto,
     conhecimentoExigido: q.conhecimentoExigido,
@@ -81,7 +82,11 @@ export async function POST(
     }
   }
 
-  const alertas = auditarClassificacaoQuestoes(questoesInput, texto || null);
+  const alertas = auditarClassificacaoQuestoes(
+    questoesInput,
+    texto || null,
+    prova.ordemIdiomasFaixa
+  );
   const exportacao = formatarExportacaoAuditoria(prova.nome, alertas);
 
   return NextResponse.json({
