@@ -85,11 +85,13 @@ export function AtividadeCardRegistrar({
   subtitulo,
   tipoAtividade,
   registrarHref,
+  cadernoHref,
 }: {
   titulo: string;
   subtitulo: string;
   tipoAtividade: TipoAtividadeVisual;
   registrarHref: string;
+  cadernoHref?: string | null;
 }) {
   const tema = TEMA_ATIVIDADE[tipoAtividade];
 
@@ -100,11 +102,23 @@ export function AtividadeCardRegistrar({
       <div className="flex flex-1 items-start gap-2.5 p-3 pb-2">
         <PctDonut pct={null} size="sm" />
         <div className="min-w-0 flex-1">
-          <span
-            className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${tema.badgeClass}`}
-          >
-            {tema.label}
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span
+              className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none ${tema.badgeClass}`}
+            >
+              {tema.label}
+            </span>
+            {cadernoHref && (
+              <a
+                href={cadernoHref}
+                download
+                title="Baixar o caderno desta prova para fazer"
+                className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold leading-none text-white hover:bg-white/30"
+              >
+                <span aria-hidden>⬇</span> Caderno
+              </a>
+            )}
+          </div>
           <p className="mt-1.5 line-clamp-2 text-xs font-semibold leading-snug">{titulo}</p>
           <p className={`mt-0.5 text-[10px] ${tema.pctMuted}`}>{subtitulo}</p>
         </div>

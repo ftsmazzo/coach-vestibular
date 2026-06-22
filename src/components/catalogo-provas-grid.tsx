@@ -93,6 +93,7 @@ function CardPendente({ p }: { p: Extract<ItemCatalogoAtividades, { kind: "singl
         subtitulo={subtitulo}
         tipoAtividade={tipo}
         registrarHref={`/simulados/novo?provaId=${p.id}`}
+        cadernoHref={p.temCaderno ? `/api/provas/${p.id}/caderno` : null}
       />
     </div>
   );
