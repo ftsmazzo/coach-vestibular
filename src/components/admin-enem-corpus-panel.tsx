@@ -93,7 +93,7 @@ export function AdminEnemCorpusPanel() {
         body: JSON.stringify({
           limit: 700,
           soTriagem: triagemOnly,
-          modo: triagemOnly ? undefined : iaDisponivel && modo === "ia" ? "ia" : "heuristica",
+          modo: iaDisponivel && modo === "ia" ? "ia" : "heuristica",
         }),
       });
       const data = await res.json();
@@ -102,11 +102,13 @@ export function AdminEnemCorpusPanel() {
       const r = data.resultado;
       if (triagemOnly) {
         setUltimoRun(
-          `Triagem: Bio ${r.triagem.biologia} · Quím ${r.triagem.quimica} · Fís ${r.triagem.fisica} · ? ${r.triagem.indefinida}`
+          `Triagem: Bio ${r.triagem.biologia} · Quím ${r.triagem.quimica} · Fís ${r.triagem.fisica} · ? ${r.triagem.indefinida}` +
+            (r.triagemIa ? ` · +${r.triagemIa} via IA` : "")
         );
       } else {
         setUltimoRun(
-          `Bio: ${r.classified}/${r.triagem.biologia} com N2 (${r.pctClassified}%) · modo ${r.modo ?? "heuristica"}`
+          `Bio: ${r.classified}/${r.bioProcessadas ?? r.triagem.biologia} novas com N2 (${r.pctClassified}%) · triagem B ${r.triagem.biologia}` +
+            (r.triagemIa ? ` · +${r.triagemIa} triagem IA` : "")
         );
       }
       await load();
@@ -132,8 +134,8 @@ export function AdminEnemCorpusPanel() {
       <Card className="border-sky-200 bg-sky-50/60">
         <p className="text-sm text-sky-900">
           <strong>Natureza ≠ Biologia.</strong> O bloco Ciências da Natureza do ENEM mistura ~⅓ Bio, ⅓
-          Química e ⅓ Física. A fila abaixo mostra só questões triadas como Biologia sem N2 — não
-          Física/Química.
+          Química e ⅓ Física. Com IA, questões indefinidas (`?`) são triadas antes da classificação N2.
+          A fila abaixo mostra só Biologia sem N2.
         </p>
       </Card>
 
@@ -208,8 +210,8 @@ export function AdminEnemCorpusPanel() {
             Só heurística (rápido)
           </Button>
         )}
-        <Button variant="secondary" onClick={() => rodarClassificacao(true)} disabled={classificando || !stats?.total}>
-          Só triagem Bio/Quím/Fís
+        <Button variant="secondary" onClick={() => rodarClassificacao(true, "ia")} disabled={classificando || !stats?.total}>
+          {iaDisponivel ? "Triagem IA (Bio/Quím/Fís)" : "Só triagem heurística"}
         </Button>
         <Button variant="secondary" onClick={load} disabled={loading}>
           Atualizar
@@ -219,9 +221,9 @@ export function AdminEnemCorpusPanel() {
       {ultimoRun && (
         <p className="text-sm text-slate-600">
           Última execução: <strong>{ultimoRun}</strong>
-          {ultimoRun.startsWith("Triagem:") && (
+          {ultimoRun.startsWith("Triagem:") && !iaDisponivel && (
             <span className="block text-amber-800">
-              Você rodou só triagem — clique em &quot;Triagem + classificar Biologia&quot; para atribuir N2.
+              Triagem heurística — configure OPENAI_API_KEY para triagem IA nos itens indefinidos.
             </span>
           )}
         </p>

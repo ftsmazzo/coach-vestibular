@@ -11,7 +11,15 @@ import {
   agregarBenchmark,
   classificarPorKeywords,
 } from "@/lib/enem-classificar/heuristica";
-import { triarMateriaNatureza } from "@/lib/enem-classificar/triagem-natureza";
+import {
+  mesclarTriagem,
+  precisaTriagemIA,
+  triarLoteIA,
+} from "@/lib/enem-classificar/triagem-ia";
+import {
+  triarMateriaNatureza,
+  type TriagemNatureza,
+} from "@/lib/enem-classificar/triagem-natureza";
 import { CLASSIFICACAO_CONFIANCA_MIN } from "@/lib/enem-corpus-stats";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
 
@@ -33,11 +41,14 @@ export type ClassificarCorpusResultado = {
   pctClassified: number;
   topEscopos: Array<{ escopoId: string; count: number }>;
   triagem: { biologia: number; quimica: number; fisica: number; indefinida: number };
+  triagemIa: number;
+  bioProcessadas: number;
   modo: "heuristica" | "ia";
 };
 
 const LIMITE_MAX = 700;
 const LOTE_IA = 8;
+const LOTE_TRIAGEM_IA = 10;
 
 function persistirResultado(
   prisma: PrismaClient,
@@ -69,6 +80,13 @@ function persistirResultado(
   });
 }
 
+function contarTriagem(triagem: ClassificarCorpusResultado["triagem"], materia: TriagemNatureza["materia"]) {
+  if (materia === "Biologia") triagem.biologia++;
+  else if (materia === "Química") triagem.quimica++;
+  else if (materia === "Física") triagem.fisica++;
+  else triagem.indefinida++;
+}
+
 export async function classificarCorpusEnem(
   prisma: PrismaClient,
   opts: ClassificarCorpusOpts = {}
@@ -91,37 +109,79 @@ export async function classificarCorpusEnem(
       fonteId: true,
       enunciadoMd: true,
       introducaoAlternativas: true,
+      conhecimentoEscopoId: true,
+      classificacaoConfianca: true,
     },
     orderBy: [{ ano: "desc" }, { numero: "asc" }],
     take: limit,
   });
 
-  const triagem = { biologia: 0, quimica: 0, fisica: 0, indefinida: 0 };
-  const bioParaClassificar: Array<{
+  type Item = {
     id: string;
     fonteId: string;
     texto: string;
-  }> = [];
+    triHeur: TriagemNatureza;
+    triFinal: TriagemNatureza;
+    conhecimentoEscopoId: string | null;
+    classificacaoConfianca: number | null;
+  };
 
-  for (const q of questoes) {
+  const itens: Item[] = questoes.map((q) => {
     const texto = [q.enunciadoMd, q.introducaoAlternativas].filter(Boolean).join("\n");
-    const tri = triarMateriaNatureza(texto);
+    const triHeur = triarMateriaNatureza(texto);
+    return {
+      id: q.id,
+      fonteId: q.fonteId,
+      texto,
+      triHeur,
+      triFinal: triHeur,
+      conhecimentoEscopoId: q.conhecimentoEscopoId,
+      classificacaoConfianca: q.classificacaoConfianca,
+    };
+  });
 
-    if (tri.materia === "Biologia") triagem.biologia++;
-    else if (tri.materia === "Química") triagem.quimica++;
-    else if (tri.materia === "Física") triagem.fisica++;
-    else triagem.indefinida++;
+  let triagemIa = 0;
+
+  if (modo === "ia") {
+    const filaIa = itens.filter((q) => precisaTriagemIA(q.triHeur));
+
+    for (let i = 0; i < filaIa.length; i += LOTE_TRIAGEM_IA) {
+      const lote = filaIa.slice(i, i + LOTE_TRIAGEM_IA);
+      const mapa = await triarLoteIA(
+        lote.map((q) => ({ fonteId: q.fonteId, texto: q.texto }))
+      );
+
+      for (const q of lote) {
+        const ia = mapa.get(q.fonteId);
+        const antes = q.triHeur.materia;
+        q.triFinal = mesclarTriagem(q.triHeur, ia);
+        if (!antes && q.triFinal.materia) triagemIa++;
+        else if (q.triHeur.motivo.startsWith("empate") && q.triFinal.materia) triagemIa++;
+      }
+    }
+  }
+
+  const triagem = { biologia: 0, quimica: 0, fisica: 0, indefinida: 0 };
+  const bioParaClassificar: Array<{ id: string; fonteId: string; texto: string }> = [];
+
+  for (const q of itens) {
+    contarTriagem(triagem, q.triFinal.materia);
 
     if (persistir) {
       await prisma.enemQuestaoCorpus.update({
         where: { id: q.id },
-        data: { materia: tri.materia },
+        data: { materia: q.triFinal.materia },
       });
     }
 
-    if (!opts.soTriagem && tri.materia === "Biologia") {
-      bioParaClassificar.push({ id: q.id, fonteId: q.fonteId, texto });
-    } else if (persistir && tri.materia !== "Biologia") {
+    if (!opts.soTriagem && q.triFinal.materia === "Biologia") {
+      const jaTemN2 =
+        q.conhecimentoEscopoId != null &&
+        (q.classificacaoConfianca ?? 0) >= confiancaMinima;
+      if (!jaTemN2) {
+        bioParaClassificar.push({ id: q.id, fonteId: q.fonteId, texto: q.texto });
+      }
+    } else if (persistir && q.triFinal.materia !== "Biologia") {
       await prisma.enemQuestaoCorpus.update({
         where: { id: q.id },
         data: {
@@ -184,9 +244,15 @@ export async function classificarCorpusEnem(
     unclassified: bench.unclassified,
     review: bench.review,
     pctClassified:
-      triagem.biologia > 0 ? Math.round((bench.classified / triagem.biologia) * 100) : 0,
+      bioParaClassificar.length > 0
+        ? Math.round((bench.classified / bioParaClassificar.length) * 100)
+        : triagem.biologia > 0
+          ? 100
+          : 0,
     topEscopos: bench.topEscopos,
     triagem,
+    triagemIa,
+    bioProcessadas: bioParaClassificar.length,
     modo,
   };
 }
