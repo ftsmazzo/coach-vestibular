@@ -8,7 +8,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { Prisma, PrismaClient } from "../src/generated/prisma/client";
 import { iterarQuestoesAno, listarProvasEnem } from "../src/lib/enem-dev/client";
 import { mapearQuestaoEstrutural } from "../src/lib/enem-dev/estrutural";
 
@@ -88,9 +88,10 @@ async function main() {
           titulo: row.titulo,
           enunciadoMd: row.enunciadoMd,
           introducaoAlternativas: row.introducaoAlternativas,
-          alternativas: row.alternativas,
+          alternativas: row.alternativas as Prisma.InputJsonValue,
           gabarito: row.gabarito,
-          arquivos: row.arquivos,
+          arquivos:
+            row.arquivos === null ? Prisma.JsonNull : (row.arquivos as Prisma.InputJsonValue),
           areaBloco: row.areaBloco,
           fonte: "enem.dev",
           fonteId: row.fonteId,
