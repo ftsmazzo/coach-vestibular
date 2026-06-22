@@ -8,20 +8,33 @@ function normalizarTexto(s: string): string {
     .replace(/\s+/g, " ");
 }
 
+function tokensDeTexto(s: string, minLen = 3): string[] {
+  return s
+    .split(/[\s—,()/]+/)
+    .map((w) => normalizarTexto(w))
+    .filter((w) => w.length >= minLen);
+}
+
 export type ClassificarHeuristicaOpts = {
   confiancaMinima: number;
-  /** Restringe candidatos a um assunto (ex.: piloto ecologia) */
   assuntoId?: string;
 };
 
 const DEFAULT_OPTS: ClassificarHeuristicaOpts = {
-  confiancaMinima: 0.35,
+  confiancaMinima: 0.28,
 };
 
-/**
- * Classificador v0 — match por keywords do catálogo.
- * IA escolhe só IDs; abaixo do limiar → unclassified (nunca força o mais próximo).
- */
+function termosDoEscopo(entry: EscopoIndexEntry): string[] {
+  const base = [
+    ...entry.keywords,
+    ...tokensDeTexto(entry.escopoLabel, 4),
+    ...tokensDeTexto(entry.dominioLabel, 4),
+    ...tokensDeTexto(entry.assuntoLabel, 4),
+  ];
+  return [...new Set(base.map(normalizarTexto))].filter((t) => t.length >= 3);
+}
+
+/** Classificador v1 — score ≥ 1 com candidato líder → N2 (review se empate). */
 export function classificarPorKeywords(
   enunciado: string,
   escopos: Map<string, EscopoIndexEntry>,
@@ -41,39 +54,27 @@ export function classificarPorKeywords(
     };
   }
 
-  let melhor: { entry: EscopoIndexEntry; score: number; hits: string[] } | null = null;
-  let segundoScore = 0;
+  const candidatos: Array<{ entry: EscopoIndexEntry; score: number; hits: string[] }> = [];
 
   for (const entry of escopos.values()) {
     if (opts.assuntoId && entry.assuntoId !== opts.assuntoId) continue;
 
-    const termos = [
-      ...entry.keywords,
-      ...entry.escopoLabel.split(/[\s—,()]+/).filter((w) => w.length > 4),
-    ];
     const hits: string[] = [];
     let score = 0;
 
-    for (const termo of termos) {
-      const t = normalizarTexto(termo);
-      if (t.length < 4) continue;
-      if (texto.includes(t)) {
+    for (const termo of termosDoEscopo(entry)) {
+      if (texto.includes(termo)) {
         hits.push(termo);
-        score += t.length >= 8 ? 2 : 1;
+        score += termo.length >= 8 ? 2 : 1;
       }
     }
 
-    if (score === 0) continue;
-
-    if (!melhor || score > melhor.score) {
-      segundoScore = melhor?.score ?? 0;
-      melhor = { entry, score, hits };
-    } else if (score > segundoScore) {
-      segundoScore = score;
-    }
+    if (score > 0) candidatos.push({ entry, score, hits });
   }
 
-  if (!melhor) {
+  candidatos.sort((a, b) => b.score - a.score);
+
+  if (candidatos.length === 0) {
     return {
       status: "unclassified",
       confianca: 0,
@@ -82,49 +83,45 @@ export function classificarPorKeywords(
       dominioId: null,
       escopoId: null,
       conceitoCanonic: null,
-      motivo: "nenhum N2 com keyword match",
+      motivo: "nenhum N2 com match",
     };
   }
 
-  const maxScore = melhor.score;
-  const confianca = maxScore > 0 ? (maxScore - segundoScore * 0.5) / (maxScore + 2) : 0;
-  const confiancaNorm = Math.min(1, Math.max(0, confianca));
+  const melhor = candidatos[0]!;
+  const segundoScore = candidatos[1]?.score ?? 0;
+  const confianca = Math.min(0.95, 0.35 + melhor.score * 0.12 - segundoScore * 0.08);
 
-  if (confiancaNorm < opts.confiancaMinima) {
-    return {
-      status: "unclassified",
-      confianca: confiancaNorm,
-      materiaId: melhor.entry.materiaId,
-      assuntoId: melhor.entry.assuntoId,
-      dominioId: melhor.entry.dominioId,
-      escopoId: null,
-      conceitoCanonic: null,
-      motivo: `confiança ${confiancaNorm.toFixed(2)} < ${opts.confiancaMinima}`,
-    };
-  }
+  const base = {
+    materiaId: melhor.entry.materiaId,
+    assuntoId: melhor.entry.assuntoId,
+    dominioId: melhor.entry.dominioId,
+    conceitoCanonic: melhor.entry.conceitoCanonic ?? null,
+    confianca,
+  };
 
-  if (segundoScore >= maxScore * 0.85) {
+  if (segundoScore === 0 || melhor.score >= segundoScore + 2) {
     return {
-      status: "review",
-      confianca: confiancaNorm,
-      materiaId: melhor.entry.materiaId,
-      assuntoId: melhor.entry.assuntoId,
-      dominioId: melhor.entry.dominioId,
+      status: "classified",
       escopoId: melhor.entry.escopoId,
-      conceitoCanonic: melhor.entry.conceitoCanonic ?? null,
-      motivo: `empate entre candidatos (hits: ${melhor.hits.join(", ")})`,
+      ...base,
+      motivo: `match: ${melhor.hits.slice(0, 4).join(", ")}`,
+    };
+  }
+
+  if (melhor.score >= 1 && confianca >= opts.confiancaMinima) {
+    return {
+      status: segundoScore >= melhor.score ? "review" : "classified",
+      escopoId: melhor.entry.escopoId,
+      ...base,
+      motivo: `candidato: ${melhor.hits.slice(0, 3).join(", ")}`,
     };
   }
 
   return {
-    status: "classified",
-    confianca: confiancaNorm,
-    materiaId: melhor.entry.materiaId,
-    assuntoId: melhor.entry.assuntoId,
-    dominioId: melhor.entry.dominioId,
-    escopoId: melhor.entry.escopoId,
-    conceitoCanonic: melhor.entry.conceitoCanonic ?? null,
-    motivo: `keywords: ${melhor.hits.join(", ")}`,
+    status: "unclassified",
+    escopoId: null,
+    ...base,
+    motivo: `score fraco (${melhor.score} vs ${segundoScore})`,
   };
 }
 

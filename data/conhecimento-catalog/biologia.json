@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.1-alpha",
+  "catalogVersion": "1.0.2-alpha",
   "materiaId": "biologia",
   "materiaLabel": "Biologia",
   "areaEnem": "Ciências da Natureza",
@@ -24,7 +24,7 @@
             { "id": "bio.genetica.hereditariedade.mendel_dihibrido", "label": "Leis de Mendel — cruzamento dihíbrido" },
             { "id": "bio.genetica.hereditariedade.ligacao_epistasia", "label": "Linkage, epistasia e interação gênica" },
             { "id": "bio.genetica.hereditariedade.grupos_sanguineos", "label": "Grupos sanguíneos e hereditariedade" },
-            { "id": "bio.genetica.hereditariedade.ligada_ao_sexo", "label": "Herança ligada ao sexo" }
+            { "id": "bio.genetica.hereditariedade.ligada_ao_sexo", "label": "Herança ligada ao sexo", "keywords": ["ligada ao sexo", "trissomia", "sindrome de down", "cromossomo 21"] }
           ]
         },
         {
@@ -97,7 +97,7 @@
               "id": "bio.ecologia.populacoes_comunidades.biomas_brasil",
               "label": "Biomas brasileiros e hotspots",
               "conceitoCanonic": "biomas_brasil",
-              "keywords": ["bioma", "caatinga", "cerrado", "pampa", "pantanal", "mata atlântica", "amazônia", "hotspot"]
+              "keywords": ["bioma", "caatinga", "cerrado", "pampa", "pantanal", "mata atlântica", "amazônia", "hotspot", "deserto", "preguiça"]
             },
             {
               "id": "bio.ecologia.populacoes_comunidades.niveis_organizacao",
@@ -171,7 +171,7 @@
           "label": "Sistemas do corpo humano",
           "escopos": [
             { "id": "bio.fisiologia.sistemas.digestorio", "label": "Sistema digestório e nutrição" },
-            { "id": "bio.fisiologia.sistemas.circulatorio", "label": "Sistema circulatório e sangue" },
+            { "id": "bio.fisiologia.sistemas.circulatorio", "label": "Sistema circulatório e sangue", "keywords": ["circulatório", "sangue", "coração", "eletrocardiograma", "ECG", "sinal elétrico"] },
             { "id": "bio.fisiologia.sistemas.respiratorio", "label": "Sistema respiratório e trocas gasosas" },
             { "id": "bio.fisiologia.sistemas.excretor", "label": "Sistema excretor e homeostase hídrica" },
             { "id": "bio.fisiologia.sistemas.nervoso", "label": "Sistema nervoso e integração", "keywords": ["sistema nervoso", "reflexo patelar", "reflexo", "neurônio", "sinapse", "SNC"] },
@@ -205,8 +205,8 @@
           "id": "bio.evolucao.teorias",
           "label": "Teorias e evidências da evolução",
           "escopos": [
-            { "id": "bio.evolucao.teorias.selecao_natural", "label": "Seleção natural e Darwinismo" },
-            { "id": "bio.evolucao.teorias.evidencias_fosseis", "label": "Evidências — fósseis, anatomia comparada, embriologia" },
+            { "id": "bio.evolucao.teorias.selecao_natural", "label": "Seleção natural e Darwinismo", "keywords": ["seleção natural", "darwin", "darwinismo", "anfíbio", "anfibio", "anuro", "reprodução"] },
+            { "id": "bio.evolucao.teorias.evidencias_fosseis", "label": "Evidências — fósseis, anatomia comparada, embriologia", "keywords": ["fóssil", "carbono 14", "carbono-14", "datacao", "anatomia comparada", "embriologia"] },
             { "id": "bio.evolucao.teorias.neodarwinismo", "label": "Neodarwinismo e sintese evolutiva" }
           ]
         },
@@ -240,7 +240,7 @@
             {
               "id": "bio.microbiologia.diversidade.reinos_virus",
               "label": "Reinos, vírus, bactérias e fungos",
-              "keywords": ["reino", "vírus", "virio", "bactéria", "fungo", "protista", "monera", "classificação dos seres"]
+              "keywords": ["reino", "vírus", "virio", "bactéria", "fungo", "protista", "monera", "retrovirus", "retroviridae", "classificação dos seres"]
             },
             {
               "id": "bio.microbiologia.diversidade.parasitos_vetores",
@@ -276,7 +276,7 @@
           "id": "bio.botanica.reproducao",
           "label": "Reprodução e grupos botânicos",
           "escopos": [
-            { "id": "bio.botanica.reproducao.polinizacao_fruto", "label": "Polinização, fruto e semente" },
+            { "id": "bio.botanica.reproducao.polinizacao_fruto", "label": "Polinização, fruto e semente", "keywords": ["polinização", "fruto", "semente", "estaquia", "propagação vegetativa", "propagacao"] },
             { "id": "bio.botanica.reproducao.grupos_gimno_angio", "label": "Gimnospermas e angiospermas", "keywords": ["gimnosperma", "angiosperma", "transição aquático", "ambiente terrestre", "independência da água"] }
           ]
         }

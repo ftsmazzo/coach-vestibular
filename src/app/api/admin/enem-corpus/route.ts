@@ -47,7 +47,12 @@ export async function GET() {
     catalogo = null;
   }
 
-  return NextResponse.json({ stats, fila, catalogo });
+  return NextResponse.json({
+    stats,
+    fila,
+    catalogo,
+    iaDisponivel: Boolean(process.env.OPENAI_API_KEY?.trim()),
+  });
 }
 
 const classificarSchema = z.object({
@@ -55,6 +60,7 @@ const classificarSchema = z.object({
   ano: z.number().int().min(2009).max(2030).optional(),
   limit: z.number().int().min(1).max(700).optional(),
   soTriagem: z.boolean().optional(),
+  modo: z.enum(["heuristica", "ia"]).optional(),
 });
 
 export async function POST(req: Request) {

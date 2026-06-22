@@ -59,6 +59,7 @@ export function AdminEnemCorpusPanel() {
   const [classificando, setClassificando] = useState(false);
   const [ultimoRun, setUltimoRun] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [iaDisponivel, setIaDisponivel] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,6 +71,7 @@ export function AdminEnemCorpusPanel() {
       setStats(data.stats);
       setFila(data.fila);
       setCatalogo(data.catalogo);
+      setIaDisponivel(Boolean(data.iaDisponivel));
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -81,14 +83,18 @@ export function AdminEnemCorpusPanel() {
     load();
   }, [load]);
 
-  async function rodarClassificacao(triagemOnly = false) {
+  async function rodarClassificacao(triagemOnly = false, modo: "ia" | "heuristica" = "ia") {
     setClassificando(true);
     setErro(null);
     try {
       const res = await fetch("/api/admin/enem-corpus", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit: 700, soTriagem: triagemOnly }),
+        body: JSON.stringify({
+          limit: 700,
+          soTriagem: triagemOnly,
+          modo: triagemOnly ? undefined : iaDisponivel && modo === "ia" ? "ia" : "heuristica",
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Classificação falhou");
@@ -100,7 +106,7 @@ export function AdminEnemCorpusPanel() {
         );
       } else {
         setUltimoRun(
-          `Bio: ${r.classified}/${r.triagem.biologia} com N2 (${r.pctClassified}%) · triagem Bio ${r.triagem.biologia}`
+          `Bio: ${r.classified}/${r.triagem.biologia} com N2 (${r.pctClassified}%) · modo ${r.modo ?? "heuristica"}`
         );
       }
       await load();
@@ -183,9 +189,25 @@ export function AdminEnemCorpusPanel() {
       )}
 
       <div className="flex flex-wrap gap-3">
-        <Button onClick={() => rodarClassificacao(false)} disabled={classificando || !stats?.total}>
-          {classificando ? "Processando…" : "Triagem + classificar Biologia (Natureza)"}
+        <Button
+          onClick={() => rodarClassificacao(false, "ia")}
+          disabled={classificando || !stats?.total}
+        >
+          {classificando
+            ? "Processando…"
+            : iaDisponivel
+              ? "Classificar Biologia com IA (recomendado)"
+              : "Classificar Biologia (heurística)"}
         </Button>
+        {iaDisponivel && (
+          <Button
+            variant="secondary"
+            onClick={() => rodarClassificacao(false, "heuristica")}
+            disabled={classificando || !stats?.total}
+          >
+            Só heurística (rápido)
+          </Button>
+        )}
         <Button variant="secondary" onClick={() => rodarClassificacao(true)} disabled={classificando || !stats?.total}>
           Só triagem Bio/Quím/Fís
         </Button>
