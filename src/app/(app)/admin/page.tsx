@@ -11,7 +11,7 @@ export default async function AdminHomePage() {
   if (!session) redirect("/login");
   if (session.role !== "ADMIN") redirect("/dashboard");
 
-  const [provas, alunos, tentativas, publicadas, sugestoesPendentes, solicitacoesPendentes] =
+  const [provas, alunos, tentativas, publicadas, sugestoesPendentes, solicitacoesPendentes, corpusEnem] =
     await Promise.all([
     prisma.prova.findMany({
       include: { questoes: { select: { numero: true } } },
@@ -22,6 +22,7 @@ export default async function AdminHomePage() {
     prisma.prova.count({ where: { publicada: true } }),
     prisma.sugestaoClassificacao.count({ where: { status: "PENDENTE" } }),
     prisma.uploadJob.count({ where: { status: STATUS_SOLICITACAO_PENDENTE } }),
+    prisma.enemQuestaoCorpus.count(),
   ]);
 
   const incompletas = provas.filter((p) => {
@@ -60,11 +61,19 @@ export default async function AdminHomePage() {
           <p className="text-3xl font-bold text-amber-700">{incompletas.length}</p>
           <p className="text-xs text-slate-500">incompletas ou sem gabarito</p>
         </Card>
+        <Card>
+          <p className="text-sm text-slate-500">Corpus ENEM</p>
+          <p className="text-3xl font-bold text-slate-900">{corpusEnem}</p>
+          <p className="text-xs text-slate-500">questões enem.dev</p>
+        </Card>
       </div>
 
       <div className="flex flex-wrap gap-3">
         <Link href="/admin/provas">
           <Button>Banco de provas</Button>
+        </Link>
+        <Link href="/admin/enem-corpus">
+          <Button variant="secondary">Corpus ENEM &amp; catálogo</Button>
         </Link>
         <Link href="/admin/usuarios">
           <Button variant="secondary">Alunos e acesso</Button>
