@@ -27,7 +27,8 @@ const REGRAS: Regra[] = [
       /\b(inducao|eletromagnet|campo magnetico|transformador|joule)\b/,
       /\b(onda|frequencia|som|luz|optica|lente|espelho|reflexao|refracao)\b/,
       /\b(termodinamica|calor|temperatura|energia cinetica|energia potencial)\b/,
-      /\b(esfera vertical|fogao por inducao|discos opticos|laser)\b/,
+      /\b(raios?\s*cos|sievert|radiacao ionizante|dosimetria|radioatividad)\b/,
+      /\b(esfera vertical|fogao por inducao|discos opticos)\b/,
       /\b(gravitacao|pressao|empuxo)\b/,
     ],
   },
@@ -57,9 +58,16 @@ const REGRAS: Regra[] = [
       /\b(planta|animal|ser vivo|organismo|tecido|orgao)\b/,
       /\b(abelha|colmeia|ave|muscular|sangue|coracao|figado)\b/,
       /\b(leishmaniose|zoonose|epidemi|saude publica)\b/,
+      /\b(pcr\b|teste genetico|covid|coronavirus|ebola|dengue|chagas|trypanosoma|malária|malaria)\b/,
+      /\b(biorremedia|fertilizacao in vitro|espermatoz|gameta|anfibio|anuro)\b/,
+      /\b(reflexo patelar|reflexo patel|termogenina|vacuolo|antimicrobiano|biotecnolog)\b/,
+      /\b(aedes|wolbachia|picad.*serpente|veneno.*cascavel)\b/,
     ],
   },
 ];
+
+const BIO_DESEMPATE =
+  /\b(leishmania|chagas|trypanosoma|protozo|parasita|zoonose|virus|bacteria|vacina|celula|dna|ecologia|fotossintese|evolucao|anfibio|embriao|fertilizacao|biorremedia)\b/;
 
 export function triarMateriaNatureza(enunciado: string): TriagemNatureza {
   const texto = norm(enunciado);
@@ -91,6 +99,9 @@ export function triarMateriaNatureza(enunciado: string): TriagemNatureza {
   const scoreSegundo = ranked[1]?.[1] ?? 0;
 
   if (scoreTop === scoreSegundo && scoreSegundo > 0) {
+    if (BIO_DESEMPATE.test(texto)) {
+      return { materia: "Biologia", confianca: 0.45, motivo: "desempate bio" };
+    }
     return {
       materia: null,
       confianca: 0.2,
@@ -100,7 +111,7 @@ export function triarMateriaNatureza(enunciado: string): TriagemNatureza {
 
   const confianca = Math.min(1, scoreTop / (scoreTop + scoreSegundo + 1));
 
-  if (confianca < 0.35) {
+  if (confianca < 0.35 && scoreTop < 2) {
     return { materia: null, confianca, motivo: "confiança baixa na triagem" };
   }
 

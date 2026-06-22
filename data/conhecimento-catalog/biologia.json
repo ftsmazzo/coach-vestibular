@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.0-alpha",
+  "catalogVersion": "1.0.1-alpha",
   "materiaId": "biologia",
   "materiaLabel": "Biologia",
   "areaEnem": "Ciências da Natureza",
@@ -44,7 +44,7 @@
             { "id": "bio.genetica.mutacao_biotec.tipos_mutacao", "label": "Tipos de mutação e consequências" },
             { "id": "bio.genetica.mutacao_biotec.engenharia_transgenicos", "label": "Engenharia genética e transgênicos" },
             { "id": "bio.genetica.mutacao_biotec.clonagem_terapia", "label": "Clonagem e terapia gênica" },
-            { "id": "bio.genetica.mutacao_biotec.pcr_eletroforese", "label": "PCR, eletroforese e técnicas de laboratório" }
+            { "id": "bio.genetica.mutacao_biotec.pcr_eletroforese", "label": "PCR, eletroforese e técnicas de laboratório", "keywords": ["PCR", "eletroforese", "teste genético", "biologia molecular", "amplificação"] }
           ]
         }
       ]
@@ -113,7 +113,7 @@
             {
               "id": "bio.ecologia.impactos.poluicao_clima",
               "label": "Poluição, efeito estufa e mudanças climáticas",
-              "keywords": ["efeito estufa", "mudanças climáticas", "aquecimento global", "poluição", "gases de efeito estufa"]
+              "keywords": ["efeito estufa", "mudanças climáticas", "aquecimento global", "poluição", "gases de efeito estufa", "biorremediação", "biorremedia"]
             },
             {
               "id": "bio.ecologia.impactos.conservacao_ucs",
@@ -138,15 +138,15 @@
           "label": "Organização celular",
           "escopos": [
             { "id": "bio.citologia.organizacao.procarionte_eucarionte", "label": "Células procariontes e eucariontes" },
-            { "id": "bio.citologia.organizacao.organelas", "label": "Organelas e funções" },
-            { "id": "bio.citologia.organizacao.membrana_transporte", "label": "Membrana plasmática e transporte" }
+            { "id": "bio.citologia.organizacao.organelas", "label": "Organelas e funções", "keywords": ["organela", "vacúolo", "vacuolo", "pigmento", "cloroplasto", "mitocondria", "termogenina", "ATP sintase"] },
+            { "id": "bio.citologia.organizacao.membrana_transporte", "label": "Membrana plasmática e transporte", "keywords": ["membrana plasmática", "transporte celular", "osmose", "difusão"] }
           ]
         },
         {
           "id": "bio.citologia.metabolismo",
           "label": "Metabolismo energético",
           "escopos": [
-            { "id": "bio.citologia.metabolismo.respiracao_celular", "label": "Respiração celular" },
+            { "id": "bio.citologia.metabolismo.respiracao_celular", "label": "Respiração celular", "keywords": ["respiração celular", "mitocondria", "ATP", "termogenina", "cadeia respiratória"] },
             { "id": "bio.citologia.metabolismo.fotossintese", "label": "Fotossíntese", "conceitoCanonic": "fotossintese", "keywords": ["fotossíntese", "clorofila", "cloroplasto", "fase clara", "fase escura"] },
             { "id": "bio.citologia.metabolismo.fermentacao", "label": "Fermentação e vias anaeróbias" }
           ]
@@ -174,8 +174,8 @@
             { "id": "bio.fisiologia.sistemas.circulatorio", "label": "Sistema circulatório e sangue" },
             { "id": "bio.fisiologia.sistemas.respiratorio", "label": "Sistema respiratório e trocas gasosas" },
             { "id": "bio.fisiologia.sistemas.excretor", "label": "Sistema excretor e homeostase hídrica" },
-            { "id": "bio.fisiologia.sistemas.nervoso", "label": "Sistema nervoso e integração" },
-            { "id": "bio.fisiologia.sistemas.reprodutor", "label": "Sistema reprodutor humano" }
+            { "id": "bio.fisiologia.sistemas.nervoso", "label": "Sistema nervoso e integração", "keywords": ["sistema nervoso", "reflexo patelar", "reflexo", "neurônio", "sinapse", "SNC"] },
+            { "id": "bio.fisiologia.sistemas.reprodutor", "label": "Sistema reprodutor humano", "keywords": ["reprodução humana", "fertilização in vitro", "espermatozoide", "óvulo", "gameta", "gestação"] }
           ]
         },
         {
@@ -191,8 +191,8 @@
           "label": "Saúde, doenças e imunidade",
           "escopos": [
             { "id": "bio.fisiologia.saude_imunidade.imunidade_vacinas", "label": "Imunidade, antígenos e vacinas" },
-            { "id": "bio.fisiologia.saude_imunidade.doencas_infecciosas", "label": "Doenças infecciosas (vírus, bactérias)" },
-            { "id": "bio.fisiologia.saude_imunidade.saude_publica", "label": "Saúde pública e epidemiologia básica" }
+            { "id": "bio.fisiologia.saude_imunidade.doencas_infecciosas", "label": "Doenças infecciosas (vírus, bactérias)", "keywords": ["covid", "coronavírus", "ebola", "dengue", "zika", "antimicrobiano", "antibiótico", "vírus", "bactéria", "infecção", "PCR", "diagnóstico"] },
+            { "id": "bio.fisiologia.saude_imunidade.saude_publica", "label": "Saúde pública e epidemiologia básica", "keywords": ["epidemia", "endemia", "saúde pública", "aedes", "wolbachia", "vacinação em massa"] }
           ]
         }
       ]
@@ -230,6 +230,28 @@
       ]
     },
     {
+      "assuntoId": "microbiologia",
+      "assuntoLabel": "Microbiologia e Parasitologia",
+      "dominios": [
+        {
+          "id": "bio.microbiologia.diversidade",
+          "label": "Diversidade e classificação dos seres vivos",
+          "escopos": [
+            {
+              "id": "bio.microbiologia.diversidade.reinos_virus",
+              "label": "Reinos, vírus, bactérias e fungos",
+              "keywords": ["reino", "vírus", "virio", "bactéria", "fungo", "protista", "monera", "classificação dos seres"]
+            },
+            {
+              "id": "bio.microbiologia.diversidade.parasitos_vetores",
+              "label": "Parasitos, vetores e doenças tropicais",
+              "keywords": ["leishmaniose", "leishmania", "chagas", "trypanosoma", "malária", "plasmódium", "esquistossomose", "parasita", "vetor", "zoonose", "protozoário"]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "assuntoId": "botanica",
       "assuntoLabel": "Botânica",
       "dominios": [
@@ -255,7 +277,7 @@
           "label": "Reprodução e grupos botânicos",
           "escopos": [
             { "id": "bio.botanica.reproducao.polinizacao_fruto", "label": "Polinização, fruto e semente" },
-            { "id": "bio.botanica.reproducao.grupos_gimno_angio", "label": "Gimnospermas e angiospermas" }
+            { "id": "bio.botanica.reproducao.grupos_gimno_angio", "label": "Gimnospermas e angiospermas", "keywords": ["gimnosperma", "angiosperma", "transição aquático", "ambiente terrestre", "independência da água"] }
           ]
         }
       ]

@@ -196,7 +196,12 @@ export function AdminEnemCorpusPanel() {
 
       {ultimoRun && (
         <p className="text-sm text-slate-600">
-          Última classificação: <strong>{ultimoRun}</strong>
+          Última execução: <strong>{ultimoRun}</strong>
+          {ultimoRun.startsWith("Triagem:") && (
+            <span className="block text-amber-800">
+              Você rodou só triagem — clique em &quot;Triagem + classificar Biologia&quot; para atribuir N2.
+            </span>
+          )}
         </p>
       )}
 
