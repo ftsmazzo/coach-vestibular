@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.3-alpha",
+  "catalogVersion": "1.0.4-alpha",
   "materiaId": "biologia",
   "materiaLabel": "Biologia",
   "areaEnem": "Ciências da Natureza",
@@ -148,7 +148,7 @@
           "escopos": [
             { "id": "bio.citologia.metabolismo.respiracao_celular", "label": "Respiração celular", "keywords": ["respiração celular", "mitocondria", "ATP", "termogenina", "cadeia respiratória"] },
             { "id": "bio.citologia.metabolismo.fotossintese", "label": "Fotossíntese", "conceitoCanonic": "fotossintese", "keywords": ["fotossíntese", "clorofila", "cloroplasto", "fase clara", "fase escura"] },
-            { "id": "bio.citologia.metabolismo.fermentacao", "label": "Fermentação e vias anaeróbias" },
+            { "id": "bio.citologia.metabolismo.fermentacao", "label": "Fermentação e vias anaeróbias", "keywords": ["fermentação", "fermentacao", "anaeróbia", "anaerobia", "biodigestor", "biogás", "biogas", "metano", "decomposição", "decomposicao"] },
             { "id": "bio.citologia.metabolismo.enzimas", "label": "Enzimas e catalise biológica", "keywords": ["enzima", "substrato", "catalise", "tubo de ensaio", "aspartame", "edulcorante", "proteína"] }
           ]
         },
