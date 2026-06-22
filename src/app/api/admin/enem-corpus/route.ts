@@ -36,6 +36,7 @@ export async function GET(req: Request) {
     totalN2: number;
     validacao: Array<{ nivel: string; ok: boolean; mensagem: string }>;
   } | null = null;
+  let catalogoErro: string | null = null;
 
   try {
     const cat = carregarCatalogoMateria(materiaId);
@@ -52,23 +53,17 @@ export async function GET(req: Request) {
         mensagem: v.mensagem,
       })),
     };
-  } catch {
-    catalogo = null;
+  } catch (e) {
+    catalogoErro = e instanceof Error ? e.message : "Erro ao carregar catálogo";
   }
 
   return NextResponse.json({
     stats,
     fila,
     catalogo,
+    catalogoErro,
     materiaId,
-    materiasDisponiveis: MATERIAS_CORPUS_NATUREZA.filter((m) => {
-      try {
-        carregarCatalogoMateria(m);
-        return true;
-      } catch {
-        return m === "biologia";
-      }
-    }),
+    materiasDisponiveis: [...MATERIAS_CORPUS_NATUREZA],
     iaDisponivel: Boolean(process.env.OPENAI_API_KEY?.trim()),
   });
 }

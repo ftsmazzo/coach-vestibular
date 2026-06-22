@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.1-alpha",
+  "catalogVersion": "1.0.2-alpha",
   "materiaId": "fisica",
   "materiaLabel": "Física",
   "areaEnem": "Ciências da Natureza",
@@ -24,7 +24,7 @@
             { "id": "fis.mecanica.cinematica.mruv", "label": "Movimento retilíneo uniformemente variado (MRUV)", "keywords": ["mruv", "aceleração", "aceleracao", "equação de torricelli", "torricelli", "queda livre", "frenagem"] },
             { "id": "fis.mecanica.cinematica.lancamentos", "label": "Lançamentos e composição de movimentos", "keywords": ["lançamento", "lancamento", "projétil", "projetil", "horizontal", "oblíquo", "obliquo", "composição de movimentos"] },
             { "id": "fis.mecanica.cinematica.graficos", "label": "Gráficos de movimento", "keywords": ["gráfico de velocidade", "grafico de velocidade", "gráfico de aceleração", "inclinação do gráfico", "área sob a curva", "s x t", "v x t"] },
-            { "id": "fis.mecanica.cinematica.relacao_velocidades", "label": "Velocidade linear e angular (rodas e polias)", "keywords": ["velocidade linear", "velocidade angular", "aro", "roda", "pneu", "polegadas", "automóvel", "automóvel", "2πr", "f=1/t", "ponto periférico", "periférico"] }
+            { "id": "fis.mecanica.cinematica.relacao_velocidades", "label": "Velocidade linear e angular (rodas e polias)", "keywords": ["velocidade linear", "velocidade angular", "aro", "roda", "pneu", "polegadas", "automóvel", "automóvel", "2πr", "f=1/t", "ponto periférico", "periférico", "velocímetro", "velocimetro", "diâmetro", "diametro", "centro de massa", "troca de aro", "melhoria estética"] }
           ]
         },
         {

@@ -63,11 +63,6 @@ const DISCIPLINA_LABEL: Record<string, string> = {
 
 export function AdminEnemCorpusPanel() {
   const [materiaId, setMateriaId] = useState<MateriaCorpusId>("fisica");
-  const [materiasDisponiveis, setMateriasDisponiveis] = useState<MateriaCorpusId[]>([
-    "biologia",
-    "quimica",
-    "fisica",
-  ]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [fila, setFila] = useState<FilaItem[]>([]);
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null);
@@ -75,11 +70,15 @@ export function AdminEnemCorpusPanel() {
   const [classificando, setClassificando] = useState(false);
   const [ultimoRun, setUltimoRun] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [catalogoErro, setCatalogoErro] = useState<string | null>(null);
   const [iaDisponivel, setIaDisponivel] = useState(false);
+
+  const materiaLabel = MATERIA_TAB.find((t) => t.id === materiaId)?.label ?? materiaId;
 
   const load = useCallback(async () => {
     setLoading(true);
     setErro(null);
+    setCatalogoErro(null);
     try {
       const res = await fetch(`/api/admin/enem-corpus?materiaId=${materiaId}`);
       if (!res.ok) throw new Error("Falha ao carregar corpus");
@@ -87,10 +86,8 @@ export function AdminEnemCorpusPanel() {
       setStats(data.stats);
       setFila(data.fila);
       setCatalogo(data.catalogo);
+      setCatalogoErro(data.catalogoErro ?? null);
       setIaDisponivel(Boolean(data.iaDisponivel));
-      if (Array.isArray(data.materiasDisponiveis)) {
-        setMateriasDisponiveis(data.materiasDisponiveis);
-      }
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -123,7 +120,7 @@ export function AdminEnemCorpusPanel() {
       if (!res.ok) throw new Error(data.error ?? "Classificação falhou");
       setStats(data.stats);
       const r = data.resultado;
-      const mat = catalogo?.materia ?? materiaId;
+      const matNome = catalogo?.materia ?? materiaLabel;
       if (opts.triagemOnly) {
         setUltimoRun(
           `Triagem: Bio ${r.triagem.biologia} · Quím ${r.triagem.quimica} · Fís ${r.triagem.fisica} · ? ${r.triagem.indefinida}` +
@@ -131,7 +128,7 @@ export function AdminEnemCorpusPanel() {
         );
       } else {
         setUltimoRun(
-          `${mat}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · triadas ${r.triagem[materiaId === "biologia" ? "biologia" : materiaId === "quimica" ? "quimica" : "fisica"]}` +
+          `${matNome}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · triadas ${r.triagem[materiaId === "biologia" ? "biologia" : materiaId === "quimica" ? "quimica" : "fisica"]}` +
             (r.triagemIa ? ` · triagem IA +${r.triagemIa}` : "")
         );
       }
@@ -145,6 +142,7 @@ export function AdminEnemCorpusPanel() {
 
   const mat = stats?.materiaAtiva;
   const catalogoOk = catalogo?.validacao.every((v) => v.ok) ?? false;
+  const podeClassificar = Boolean(catalogo) && !classificando && (stats?.total ?? 0) > 0;
 
   if (loading && !stats) {
     return <p className="text-slate-500">Carregando corpus ENEM…</p>;
@@ -159,20 +157,15 @@ export function AdminEnemCorpusPanel() {
       )}
 
       <div className="flex flex-wrap gap-2">
-        {MATERIA_TAB.map((t) => {
-          const disponivel = materiasDisponiveis.includes(t.id);
-          return (
-            <Button
-              key={t.id}
-              variant={materiaId === t.id ? "primary" : "secondary"}
-              disabled={!disponivel}
-              onClick={() => setMateriaId(t.id)}
-            >
-              {t.label}
-              {!disponivel && " (em breve)"}
-            </Button>
-          );
-        })}
+        {MATERIA_TAB.map((t) => (
+          <Button
+            key={t.id}
+            variant={materiaId === t.id ? "primary" : "secondary"}
+            onClick={() => setMateriaId(t.id)}
+          >
+            {t.label}
+          </Button>
+        ))}
       </div>
 
       <Card className="border-sky-200 bg-sky-50/60">
@@ -214,6 +207,15 @@ export function AdminEnemCorpusPanel() {
         </Card>
       </div>
 
+      {catalogoErro && (
+        <Card className="border-red-200 bg-red-50/80">
+          <p className="text-sm text-red-800">
+            Catálogo {materiaLabel} não carregou: {catalogoErro}. Verifique deploy{" "}
+            <code className="text-xs">data/conhecimento-catalog/{materiaId}.json</code>
+          </p>
+        </Card>
+      )}
+
       {!catalogoOk && catalogo && (
         <Card className="border-amber-200 bg-amber-50/80">
           <p className="text-sm text-amber-900">
@@ -226,19 +228,19 @@ export function AdminEnemCorpusPanel() {
       <div className="flex flex-wrap gap-3">
         <Button
           onClick={() => rodarClassificacao({ modo: "ia" })}
-          disabled={classificando || !stats?.total || !catalogoOk}
+          disabled={!podeClassificar}
         >
           {classificando
             ? "Processando…"
             : iaDisponivel
-              ? `Classificar ${catalogo?.materia ?? "matéria"} com IA`
-              : `Classificar ${catalogo?.materia ?? "matéria"} (heurística)`}
+              ? `Classificar ${materiaLabel} com IA`
+              : `Classificar ${materiaLabel} (heurística)`}
         </Button>
         {iaDisponivel && (
           <Button
             variant="secondary"
             onClick={() => rodarClassificacao({ modo: "heuristica" })}
-            disabled={classificando || !stats?.total || !catalogoOk}
+            disabled={!podeClassificar}
           >
             Só heurística (rápido)
           </Button>
