@@ -62,10 +62,11 @@ const DISCIPLINA_LABEL: Record<string, string> = {
 };
 
 export function AdminEnemCorpusPanel() {
-  const [materiaId, setMateriaId] = useState<MateriaCorpusId>("quimica");
+  const [materiaId, setMateriaId] = useState<MateriaCorpusId>("fisica");
   const [materiasDisponiveis, setMateriasDisponiveis] = useState<MateriaCorpusId[]>([
     "biologia",
     "quimica",
+    "fisica",
   ]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [fila, setFila] = useState<FilaItem[]>([]);
@@ -339,8 +340,8 @@ export function AdminEnemCorpusPanel() {
       </Card>
 
       <p className="text-xs text-slate-500">
-        Scripts: <code>npm run catalog:validate quimica</code>,{" "}
-        <code>npm run enem:benchmark -- --materia=quimica</code>
+        Scripts: <code>npm run catalog:validate fisica</code>,{" "}
+        <code>npm run enem:benchmark -- --materia=fisica</code>
       </p>
     </div>
   );

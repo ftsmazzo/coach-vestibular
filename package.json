@@ -17,6 +17,7 @@
     "enem:benchmark": "npx tsx scripts/benchmark-enem-materia.ts",
     "catalog:validate": "npx tsx scripts/validate-catalog.ts biologia",
     "catalog:validate:quimica": "npx tsx scripts/validate-catalog.ts quimica",
+    "catalog:validate:fisica": "npx tsx scripts/validate-catalog.ts fisica",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
   },
