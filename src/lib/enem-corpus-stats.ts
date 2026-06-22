@@ -1,7 +1,22 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import {
+  labelMateriaCorpus,
+  prefixoCatalogoMateria,
+  type MateriaCorpusId,
+} from "@/lib/conhecimento-catalog";
 
 export const ENEM_CORPUS_MINIMO = Number(process.env.ENEM_CORPUS_MIN ?? "2500");
 export const CLASSIFICACAO_CONFIANCA_MIN = 0.35;
+
+export type MateriaCorpusStats = {
+  materiaId: MateriaCorpusId;
+  materiaLabel: string;
+  triadas: number;
+  classificadas: number;
+  pctClassificadas: number;
+  fila: number;
+  topEscopos: Array<{ escopoId: string; count: number }>;
+};
 
 export type EnemCorpusStats = {
   total: number;
@@ -9,23 +24,76 @@ export type EnemCorpusStats = {
   metaCorpus: number;
   pctImport: number;
   ultimaImportacao: string | null;
-  /** N2 em qualquer matéria (hoje só catálogo Bio) */
   classificadas: number;
   pctClassificadas: number;
   filaRevisao: number;
   natureza: {
     total: number;
     triagem: { biologia: number; quimica: number; fisica: number; indefinida: number };
-    bioClassificadas: number;
-    pctBioClassificadas: number;
-    bioFila: number;
   };
+  materiaAtiva: MateriaCorpusStats;
   porDisciplina: Array<{ disciplina: string; count: number }>;
   porAno: Array<{ ano: number; count: number }>;
-  topEscopos: Array<{ escopoId: string; count: number }>;
 };
 
-export async function obterStatsCorpusEnem(prisma: PrismaClient): Promise<EnemCorpusStats> {
+async function statsMateria(
+  prisma: PrismaClient,
+  materiaId: MateriaCorpusId
+): Promise<MateriaCorpusStats> {
+  const materiaLabel = labelMateriaCorpus(materiaId);
+  const prefixo = prefixoCatalogoMateria(materiaId);
+
+  const [triadas, classificadas, fila, topEscoposRaw] = await Promise.all([
+    prisma.enemQuestaoCorpus.count({ where: { materia: materiaLabel } }),
+    prisma.enemQuestaoCorpus.count({
+      where: {
+        materia: materiaLabel,
+        conhecimentoEscopoId: { not: null, startsWith: `${prefixo}.` },
+        classificacaoConfianca: { gte: CLASSIFICACAO_CONFIANCA_MIN },
+      },
+    }),
+    prisma.enemQuestaoCorpus.count({
+      where: {
+        materia: materiaLabel,
+        OR: [
+          { conhecimentoEscopoId: null },
+          { classificacaoConfianca: { lt: CLASSIFICACAO_CONFIANCA_MIN } },
+          { NOT: { conhecimentoEscopoId: { startsWith: `${prefixo}.` } } },
+        ],
+      },
+    }),
+    prisma.enemQuestaoCorpus.groupBy({
+      by: ["conhecimentoEscopoId"],
+      where: {
+        materia: materiaLabel,
+        conhecimentoEscopoId: { startsWith: `${prefixo}.` },
+      },
+      _count: { _all: true },
+      orderBy: { _count: { conhecimentoEscopoId: "desc" } },
+      take: 10,
+    }),
+  ]);
+
+  return {
+    materiaId,
+    materiaLabel,
+    triadas,
+    classificadas,
+    pctClassificadas: triadas > 0 ? Math.round((classificadas / triadas) * 100) : 0,
+    fila,
+    topEscopos: topEscoposRaw
+      .filter((t) => t.conhecimentoEscopoId)
+      .map((t) => ({
+        escopoId: t.conhecimentoEscopoId!,
+        count: t._count._all,
+      })),
+  };
+}
+
+export async function obterStatsCorpusEnem(
+  prisma: PrismaClient,
+  materiaId: MateriaCorpusId = "biologia"
+): Promise<EnemCorpusStats> {
   const [
     total,
     ultima,
@@ -36,11 +104,9 @@ export async function obterStatsCorpusEnem(prisma: PrismaClient): Promise<EnemCo
     triQuim,
     triFis,
     triIndef,
-    bioClassificadas,
-    bioFila,
+    materiaAtiva,
     porDisciplina,
     porAno,
-    topEscoposRaw,
   ] = await Promise.all([
     prisma.enemQuestaoCorpus.count(),
     prisma.enemQuestaoCorpus.findFirst({
@@ -68,22 +134,7 @@ export async function obterStatsCorpusEnem(prisma: PrismaClient): Promise<EnemCo
     prisma.enemQuestaoCorpus.count({
       where: { disciplina: "ciencias_natureza", materia: null },
     }),
-    prisma.enemQuestaoCorpus.count({
-      where: {
-        materia: "Biologia",
-        conhecimentoEscopoId: { not: null },
-        classificacaoConfianca: { gte: CLASSIFICACAO_CONFIANCA_MIN },
-      },
-    }),
-    prisma.enemQuestaoCorpus.count({
-      where: {
-        materia: "Biologia",
-        OR: [
-          { conhecimentoEscopoId: null },
-          { classificacaoConfianca: { lt: CLASSIFICACAO_CONFIANCA_MIN } },
-        ],
-      },
-    }),
+    statsMateria(prisma, materiaId),
     prisma.enemQuestaoCorpus.groupBy({
       by: ["disciplina"],
       _count: { _all: true },
@@ -93,13 +144,6 @@ export async function obterStatsCorpusEnem(prisma: PrismaClient): Promise<EnemCo
       by: ["ano"],
       _count: { _all: true },
       orderBy: { ano: "desc" },
-    }),
-    prisma.enemQuestaoCorpus.groupBy({
-      by: ["conhecimentoEscopoId"],
-      where: { conhecimentoEscopoId: { not: null } },
-      _count: { _all: true },
-      orderBy: { _count: { conhecimentoEscopoId: "desc" } },
-      take: 10,
     }),
   ]);
 
@@ -122,21 +166,13 @@ export async function obterStatsCorpusEnem(prisma: PrismaClient): Promise<EnemCo
         fisica: triFis,
         indefinida: triIndef,
       },
-      bioClassificadas,
-      pctBioClassificadas: triBio > 0 ? Math.round((bioClassificadas / triBio) * 100) : 0,
-      bioFila,
     },
+    materiaAtiva: materiaAtiva,
     porDisciplina: porDisciplina.map((d) => ({
       disciplina: d.disciplina,
       count: d._count._all,
     })),
     porAno: porAno.map((a) => ({ ano: a.ano, count: a._count._all })),
-    topEscopos: topEscoposRaw
-      .filter((t) => t.conhecimentoEscopoId)
-      .map((t) => ({
-        escopoId: t.conhecimentoEscopoId!,
-        count: t._count._all,
-      })),
   };
 }
 
@@ -153,17 +189,22 @@ export type FilaEnemItem = {
   trecho: string | null;
 };
 
-/** Fila só de Biologia sem N2 — não mistura Física/Química do bloco Natureza. */
+/** Fila da matéria alvo sem N2 válido. */
 export async function listarFilaRevisaoEnem(
   prisma: PrismaClient,
+  materiaId: MateriaCorpusId = "biologia",
   limit = 20
 ): Promise<FilaEnemItem[]> {
+  const materiaLabel = labelMateriaCorpus(materiaId);
+  const prefixo = prefixoCatalogoMateria(materiaId);
+
   const rows = await prisma.enemQuestaoCorpus.findMany({
     where: {
-      materia: "Biologia",
+      materia: materiaLabel,
       OR: [
         { conhecimentoEscopoId: null },
         { classificacaoConfianca: { lt: CLASSIFICACAO_CONFIANCA_MIN } },
+        { NOT: { conhecimentoEscopoId: { startsWith: `${prefixo}.` } } },
       ],
     },
     orderBy: [{ ano: "desc" }, { numero: "asc" }],

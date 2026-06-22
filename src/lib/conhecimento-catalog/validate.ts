@@ -3,7 +3,7 @@ import type {
   ResultadoValidacao,
   ValidacaoNivel,
 } from "./types";
-import { indexarEscopos } from "./load";
+import { indexarEscopos, prefixoCatalogoMateria } from "./load";
 
 function resultado(nivel: ValidacaoNivel, ok: boolean, mensagem: string): ResultadoValidacao {
   return { nivel, ok, mensagem };
@@ -42,10 +42,11 @@ export function validarE0(catalog: MateriaCatalogo): ResultadoValidacao[] {
     )
   );
 
+  const prefixo = prefixoCatalogoMateria(catalog.materiaId);
   for (const escopo of escopos.values()) {
-    if (!escopo.escopoId.startsWith(`${catalog.materiaId === "biologia" ? "bio" : catalog.materiaId}.`)) {
+    if (!escopo.escopoId.startsWith(`${prefixo}.`)) {
       results.push(
-        resultado("E0", false, `Prefixo inválido: ${escopo.escopoId}`)
+        resultado("E0", false, `Prefixo inválido: ${escopo.escopoId} (esperado ${prefixo}.)`)
       );
     }
   }

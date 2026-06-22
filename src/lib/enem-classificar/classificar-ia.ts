@@ -48,13 +48,14 @@ function montarListaN2(escopos: Map<string, EscopoIndexEntry>): string {
 
 function resultadoDeIa(
   row: IaLoteRes["classificacoes"][number],
-  escopos: Map<string, EscopoIndexEntry>
+  escopos: Map<string, EscopoIndexEntry>,
+  materiaId: string
 ): ResultadoClassificacao {
   if (!row.escopoId) {
     return {
       status: "unclassified",
       confianca: row.confianca,
-      materiaId: "biologia",
+      materiaId: materiaId,
       assuntoId: null,
       dominioId: null,
       escopoId: null,
@@ -94,10 +95,14 @@ function resultadoDeIa(
 /** Classifica lote via OpenAI — catálogo fechado (só IDs listados). */
 export async function classificarLoteIA(
   items: Array<{ fonteId: string; texto: string }>,
-  escopos: Map<string, EscopoIndexEntry>
+  escopos: Map<string, EscopoIndexEntry>,
+  opts?: { materiaId?: string; materiaLabel?: string }
 ): Promise<Map<string, ResultadoClassificacao>> {
   const map = new Map<string, ResultadoClassificacao>();
   if (items.length === 0) return map;
+
+  const materiaLabel = opts?.materiaLabel ?? "Biologia";
+  const materiaId = opts?.materiaId ?? "biologia";
 
   const blocos = items
     .map(
@@ -108,14 +113,14 @@ export async function classificarLoteIA(
 
   const data = await responsesComSchema<IaLoteRes>({
     systemPrompt:
-      "Você classifica questões do ENEM de Biologia. Escolha EXATAMENTE um escopoId da lista. Use null SOMENTE se nenhum N2 for minimamente plausível. Prefira o melhor encaixe parcial a null. NUNCA invente IDs.",
+      `Você classifica questões do ENEM de ${materiaLabel}. Escolha EXATAMENTE um escopoId da lista. Use null SOMENTE se nenhum N2 for minimamente plausível. Prefira o melhor encaixe parcial a null. NUNCA invente IDs.`,
     instrucao: `Catálogo N2 (escolha um ID ou null):\n${montarListaN2(escopos)}\n\nClassifique cada questão:\n${blocos}`,
     schema: SCHEMA,
     content: [],
   });
 
   for (const row of data.classificacoes) {
-    map.set(row.fonteId, resultadoDeIa(row, escopos));
+    map.set(row.fonteId, resultadoDeIa(row, escopos, materiaId));
   }
 
   for (const q of items) {
@@ -123,7 +128,7 @@ export async function classificarLoteIA(
       map.set(q.fonteId, {
         status: "unclassified",
         confianca: 0,
-        materiaId: null,
+        materiaId,
         assuntoId: null,
         dominioId: null,
         escopoId: null,

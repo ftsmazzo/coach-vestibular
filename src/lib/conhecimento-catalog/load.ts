@@ -8,6 +8,31 @@ import type {
 
 const CATALOG_DIR = join(process.cwd(), "data", "conhecimento-catalog");
 
+/** Prefixo de IDs N2 por matéria (bio., quim., fis., …). */
+export const PREFIXO_MATERIA: Record<string, string> = {
+  biologia: "bio",
+  quimica: "quim",
+  fisica: "fis",
+};
+
+export function prefixoCatalogoMateria(materiaId: string): string {
+  return PREFIXO_MATERIA[materiaId] ?? materiaId;
+}
+
+/** Rótulo persistido em EnemQuestaoCorpus.materia (triagem Natureza). */
+export const MATERIA_CORPUS_LABEL: Record<string, string> = {
+  biologia: "Biologia",
+  quimica: "Química",
+  fisica: "Física",
+};
+
+export function labelMateriaCorpus(materiaId: string): string {
+  return MATERIA_CORPUS_LABEL[materiaId] ?? materiaId;
+}
+
+export const MATERIAS_CORPUS_NATUREZA = ["biologia", "quimica", "fisica"] as const;
+export type MateriaCorpusId = (typeof MATERIAS_CORPUS_NATUREZA)[number];
+
 function readJson<T>(fileName: string): T {
   const raw = readFileSync(join(CATALOG_DIR, fileName), "utf-8");
   return JSON.parse(raw) as T;

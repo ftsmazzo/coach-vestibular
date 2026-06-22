@@ -2,6 +2,9 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import {
   carregarCatalogoMateria,
   indexarEscopos,
+  labelMateriaCorpus,
+  prefixoCatalogoMateria,
+  type MateriaCorpusId,
 } from "@/lib/conhecimento-catalog";
 import {
   classificarLoteIA,
@@ -24,11 +27,15 @@ import { CLASSIFICACAO_CONFIANCA_MIN } from "@/lib/enem-corpus-stats";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
 
 export type ClassificarCorpusOpts = {
+  /** Matéria alvo dentro de Natureza (biologia | quimica | fisica) */
+  materiaId?: MateriaCorpusId;
   assuntoId?: string;
   ano?: number;
   limit?: number;
   persistir?: boolean;
   soTriagem?: boolean;
+  /** Reexecuta triagem Bio/Quím/Fís (default: false — usa triagem já persistida) */
+  retriagem?: boolean;
   /** heuristica (rápido) ou ia (OpenAI — recomendado) */
   modo?: "heuristica" | "ia";
 };
@@ -42,7 +49,8 @@ export type ClassificarCorpusResultado = {
   topEscopos: Array<{ escopoId: string; count: number }>;
   triagem: { biologia: number; quimica: number; fisica: number; indefinida: number };
   triagemIa: number;
-  bioProcessadas: number;
+  materiaProcessadas: number;
+  materiaId: MateriaCorpusId;
   modo: "heuristica" | "ia";
 };
 
@@ -54,7 +62,8 @@ function persistirResultado(
   prisma: PrismaClient,
   id: string,
   resultado: ResultadoClassificacao,
-  versao: string
+  versao: string,
+  materiaLabel: string
 ) {
   const temN2 =
     (resultado.status === "classified" || resultado.status === "review") &&
@@ -64,7 +73,7 @@ function persistirResultado(
     where: { id },
     data: temN2
       ? {
-          materia: "Biologia",
+          materia: materiaLabel,
           assunto: resultado.assuntoId,
           conhecimentoDominioId: resultado.dominioId,
           conhecimentoEscopoId: resultado.escopoId,
@@ -75,7 +84,7 @@ function persistirResultado(
           conhecimentoEscopoId: null,
           conhecimentoDominioId: null,
           classificacaoConfianca: resultado.confianca || null,
-          classificacaoVersao: "heuristica-v1",
+          classificacaoVersao: versao,
         },
   });
 }
@@ -91,11 +100,15 @@ export async function classificarCorpusEnem(
   prisma: PrismaClient,
   opts: ClassificarCorpusOpts = {}
 ): Promise<ClassificarCorpusResultado> {
-  const catalog = carregarCatalogoMateria("biologia");
+  const materiaId = opts.materiaId ?? "biologia";
+  const materiaLabel = labelMateriaCorpus(materiaId);
+  const prefixoN2 = prefixoCatalogoMateria(materiaId);
+  const catalog = carregarCatalogoMateria(materiaId);
   const escopos = indexarEscopos(catalog);
   const confiancaMinima = catalog.regras?.confiancaMinima ?? CLASSIFICACAO_CONFIANCA_MIN;
   const limit = Math.min(opts.limit ?? 700, LIMITE_MAX);
   const persistir = opts.persistir ?? true;
+  const retriagem = opts.retriagem ?? false;
   const modo =
     opts.modo === "ia" && iaClassificacaoDisponivel() ? "ia" : "heuristica";
 
@@ -109,6 +122,7 @@ export async function classificarCorpusEnem(
       fonteId: true,
       enunciadoMd: true,
       introducaoAlternativas: true,
+      materia: true,
       conhecimentoEscopoId: true,
       classificacaoConfianca: true,
     },
@@ -120,6 +134,7 @@ export async function classificarCorpusEnem(
     id: string;
     fonteId: string;
     texto: string;
+    materiaDb: string | null;
     triHeur: TriagemNatureza;
     triFinal: TriagemNatureza;
     conhecimentoEscopoId: string | null;
@@ -133,6 +148,7 @@ export async function classificarCorpusEnem(
       id: q.id,
       fonteId: q.fonteId,
       texto,
+      materiaDb: q.materia,
       triHeur,
       triFinal: triHeur,
       conhecimentoEscopoId: q.conhecimentoEscopoId,
@@ -142,46 +158,63 @@ export async function classificarCorpusEnem(
 
   let triagemIa = 0;
 
-  if (modo === "ia") {
-    const filaIa = itens.filter((q) => precisaTriagemIA(q.triHeur));
+  if (retriagem) {
+    if (modo === "ia") {
+      const filaIa = itens.filter((q) => precisaTriagemIA(q.triHeur));
 
-    for (let i = 0; i < filaIa.length; i += LOTE_TRIAGEM_IA) {
-      const lote = filaIa.slice(i, i + LOTE_TRIAGEM_IA);
-      const mapa = await triarLoteIA(
-        lote.map((q) => ({ fonteId: q.fonteId, texto: q.texto }))
-      );
+      for (let i = 0; i < filaIa.length; i += LOTE_TRIAGEM_IA) {
+        const lote = filaIa.slice(i, i + LOTE_TRIAGEM_IA);
+        const mapa = await triarLoteIA(
+          lote.map((q) => ({ fonteId: q.fonteId, texto: q.texto }))
+        );
 
-      for (const q of lote) {
-        const ia = mapa.get(q.fonteId);
-        const antes = q.triHeur.materia;
-        q.triFinal = mesclarTriagem(q.triHeur, ia);
-        if (!antes && q.triFinal.materia) triagemIa++;
-        else if (q.triHeur.motivo.startsWith("empate") && q.triFinal.materia) triagemIa++;
+        for (const q of lote) {
+          const ia = mapa.get(q.fonteId);
+          const antes = q.triHeur.materia;
+          q.triFinal = mesclarTriagem(q.triHeur, ia);
+          if (!antes && q.triFinal.materia) triagemIa++;
+          else if (q.triHeur.motivo.startsWith("empate") && q.triFinal.materia) triagemIa++;
+        }
       }
+    }
+
+    if (persistir) {
+      for (const q of itens) {
+        await prisma.enemQuestaoCorpus.update({
+          where: { id: q.id },
+          data: { materia: q.triFinal.materia },
+        });
+      }
+    }
+  } else {
+    for (const q of itens) {
+      q.triFinal = {
+        materia:
+          q.materiaDb === "Biologia" || q.materiaDb === "Química" || q.materiaDb === "Física"
+            ? q.materiaDb
+            : null,
+        confianca: q.materiaDb ? 1 : 0,
+        motivo: q.materiaDb ? "persistida" : "sem triagem",
+      };
     }
   }
 
   const triagem = { biologia: 0, quimica: 0, fisica: 0, indefinida: 0 };
-  const bioParaClassificar: Array<{ id: string; fonteId: string; texto: string }> = [];
+  const materiaParaClassificar: Array<{ id: string; fonteId: string; texto: string }> = [];
 
   for (const q of itens) {
     contarTriagem(triagem, q.triFinal.materia);
 
-    if (persistir) {
-      await prisma.enemQuestaoCorpus.update({
-        where: { id: q.id },
-        data: { materia: q.triFinal.materia },
-      });
-    }
+    const ehAlvo = q.triFinal.materia === materiaLabel;
 
-    if (!opts.soTriagem && q.triFinal.materia === "Biologia") {
+    if (!opts.soTriagem && ehAlvo) {
       const jaTemN2 =
-        q.conhecimentoEscopoId != null &&
+        q.conhecimentoEscopoId?.startsWith(`${prefixoN2}.`) === true &&
         (q.classificacaoConfianca ?? 0) >= confiancaMinima;
       if (!jaTemN2) {
-        bioParaClassificar.push({ id: q.id, fonteId: q.fonteId, texto: q.texto });
+        materiaParaClassificar.push({ id: q.id, fonteId: q.fonteId, texto: q.texto });
       }
-    } else if (persistir && q.triFinal.materia !== "Biologia") {
+    } else if (persistir && retriagem && !opts.soTriagem && q.triFinal.materia !== materiaLabel) {
       await prisma.enemQuestaoCorpus.update({
         where: { id: q.id },
         data: {
@@ -195,14 +228,16 @@ export async function classificarCorpusEnem(
   }
 
   const resultados: Array<{ fonteId: string; resultado: ResultadoClassificacao }> = [];
+  const versaoClass = modo === "ia" ? "ia-v1" : "heuristica-v1";
 
-  if (!opts.soTriagem && bioParaClassificar.length > 0) {
+  if (!opts.soTriagem && materiaParaClassificar.length > 0) {
     if (modo === "ia") {
-      for (let i = 0; i < bioParaClassificar.length; i += LOTE_IA) {
-        const lote = bioParaClassificar.slice(i, i + LOTE_IA);
+      for (let i = 0; i < materiaParaClassificar.length; i += LOTE_IA) {
+        const lote = materiaParaClassificar.slice(i, i + LOTE_IA);
         const mapa = await classificarLoteIA(
           lote.map((q) => ({ fonteId: q.fonteId, texto: q.texto })),
-          escopos
+          escopos,
+          { materiaId, materiaLabel: catalog.materiaLabel }
         );
         for (const q of lote) {
           let resultado = mapa.get(q.fonteId)!;
@@ -222,17 +257,21 @@ export async function classificarCorpusEnem(
           }
 
           resultados.push({ fonteId: q.fonteId, resultado });
-          if (persistir) await persistirResultado(prisma, q.id, resultado, "ia-v1");
+          if (persistir) {
+            await persistirResultado(prisma, q.id, resultado, versaoClass, materiaLabel);
+          }
         }
       }
     } else {
-      for (const q of bioParaClassificar) {
+      for (const q of materiaParaClassificar) {
         const resultado = classificarPorKeywords(q.texto, escopos, {
           confiancaMinima,
           assuntoId: opts.assuntoId,
         });
         resultados.push({ fonteId: q.fonteId, resultado });
-        if (persistir) await persistirResultado(prisma, q.id, resultado, "heuristica-v1");
+        if (persistir) {
+          await persistirResultado(prisma, q.id, resultado, versaoClass, materiaLabel);
+        }
       }
     }
   }
@@ -244,15 +283,16 @@ export async function classificarCorpusEnem(
     unclassified: bench.unclassified,
     review: bench.review,
     pctClassified:
-      bioParaClassificar.length > 0
-        ? Math.round((bench.classified / bioParaClassificar.length) * 100)
-        : triagem.biologia > 0
+      materiaParaClassificar.length > 0
+        ? Math.round((bench.classified / materiaParaClassificar.length) * 100)
+        : triagem[materiaId === "biologia" ? "biologia" : materiaId === "quimica" ? "quimica" : "fisica"] > 0
           ? 100
           : 0,
     topEscopos: bench.topEscopos,
     triagem,
     triagemIa,
-    bioProcessadas: bioParaClassificar.length,
+    materiaProcessadas: materiaParaClassificar.length,
+    materiaId,
     modo,
   };
 }

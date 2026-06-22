@@ -14,7 +14,9 @@
     "db:limpar-demo": "npx tsx scripts/limpar-demo-aluno.ts",
     "enem:import": "npx tsx scripts/import-enem-corpus.ts",
     "enem:benchmark-bio": "npx tsx scripts/benchmark-enem-biologia.ts",
-    "catalog:validate": "npx tsx scripts/validate-catalog.ts",
+    "enem:benchmark": "npx tsx scripts/benchmark-enem-materia.ts",
+    "catalog:validate": "npx tsx scripts/validate-catalog.ts biologia",
+    "catalog:validate:quimica": "npx tsx scripts/validate-catalog.ts quimica",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
   },

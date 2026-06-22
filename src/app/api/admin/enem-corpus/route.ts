@@ -8,17 +8,26 @@ import {
 } from "@/lib/enem-corpus-stats";
 import {
   carregarCatalogoMateria,
+  MATERIAS_CORPUS_NATUREZA,
   validarCatalogo,
+  type MateriaCorpusId,
 } from "@/lib/conhecimento-catalog";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+function parseMateriaId(raw: string | null): MateriaCorpusId {
+  if (raw === "quimica" || raw === "fisica" || raw === "biologia") return raw;
+  return "biologia";
+}
+
+export async function GET(req: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
+  const materiaId = parseMateriaId(new URL(req.url).searchParams.get("materiaId"));
+
   const [stats, fila] = await Promise.all([
-    obterStatsCorpusEnem(prisma),
-    listarFilaRevisaoEnem(prisma, 15),
+    obterStatsCorpusEnem(prisma, materiaId),
+    listarFilaRevisaoEnem(prisma, materiaId, 15),
   ]);
 
   let catalogo: {
@@ -29,7 +38,7 @@ export async function GET() {
   } | null = null;
 
   try {
-    const cat = carregarCatalogoMateria("biologia");
+    const cat = carregarCatalogoMateria(materiaId);
     const escopos = cat.assuntos.flatMap((a) =>
       a.dominios.flatMap((d) => d.escopos.filter((e) => !e.deprecated))
     );
@@ -51,15 +60,26 @@ export async function GET() {
     stats,
     fila,
     catalogo,
+    materiaId,
+    materiasDisponiveis: MATERIAS_CORPUS_NATUREZA.filter((m) => {
+      try {
+        carregarCatalogoMateria(m);
+        return true;
+      } catch {
+        return m === "biologia";
+      }
+    }),
     iaDisponivel: Boolean(process.env.OPENAI_API_KEY?.trim()),
   });
 }
 
 const classificarSchema = z.object({
+  materiaId: z.enum(["biologia", "quimica", "fisica"]).optional(),
   assuntoId: z.string().optional(),
   ano: z.number().int().min(2009).max(2030).optional(),
   limit: z.number().int().min(1).max(700).optional(),
   soTriagem: z.boolean().optional(),
+  retriagem: z.boolean().optional(),
   modo: z.enum(["heuristica", "ia"]).optional(),
 });
 
@@ -72,6 +92,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
   }
 
+  const materiaId = body.data.materiaId ?? "biologia";
+
+  try {
+    carregarCatalogoMateria(materiaId);
+  } catch {
+    return NextResponse.json(
+      { error: `Catálogo ${materiaId} não encontrado.` },
+      { status: 404 }
+    );
+  }
+
   const total = await prisma.enemQuestaoCorpus.count();
   if (total === 0) {
     return NextResponse.json(
@@ -82,10 +113,11 @@ export async function POST(req: Request) {
 
   const resultado = await classificarCorpusEnem(prisma, {
     ...body.data,
+    materiaId,
     persistir: true,
   });
 
-  const stats = await obterStatsCorpusEnem(prisma);
+  const stats = await obterStatsCorpusEnem(prisma, materiaId);
 
-  return NextResponse.json({ resultado, stats });
+  return NextResponse.json({ resultado, stats, materiaId });
 }

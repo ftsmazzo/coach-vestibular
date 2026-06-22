@@ -4,25 +4,30 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Badge, Button, Card } from "@/components/ui";
 
+type MateriaCorpusId = "biologia" | "quimica" | "fisica";
+
+type MateriaStats = {
+  materiaId: MateriaCorpusId;
+  materiaLabel: string;
+  triadas: number;
+  classificadas: number;
+  pctClassificadas: number;
+  fila: number;
+  topEscopos: Array<{ escopoId: string; count: number }>;
+};
+
 type Stats = {
   total: number;
   importCompleto: boolean;
   metaCorpus: number;
   pctImport: number;
-  ultimaImportacao: string | null;
-  classificadas: number;
-  pctClassificadas: number;
-  filaRevisao: number;
   natureza: {
     total: number;
     triagem: { biologia: number; quimica: number; fisica: number; indefinida: number };
-    bioClassificadas: number;
-    pctBioClassificadas: number;
-    bioFila: number;
   };
+  materiaAtiva: MateriaStats;
   porDisciplina: Array<{ disciplina: string; count: number }>;
   porAno: Array<{ ano: number; count: number }>;
-  topEscopos: Array<{ escopoId: string; count: number }>;
 };
 
 type FilaItem = {
@@ -33,7 +38,6 @@ type FilaItem = {
   materia: string | null;
   escopoId: string | null;
   confianca: number | null;
-  assunto: string | null;
   trecho: string | null;
 };
 
@@ -44,6 +48,12 @@ type Catalogo = {
   validacao: Array<{ nivel: string; ok: boolean; mensagem: string }>;
 };
 
+const MATERIA_TAB: Array<{ id: MateriaCorpusId; label: string }> = [
+  { id: "biologia", label: "Biologia" },
+  { id: "quimica", label: "Química" },
+  { id: "fisica", label: "Física" },
+];
+
 const DISCIPLINA_LABEL: Record<string, string> = {
   linguagens: "Linguagens",
   ciencias_humanas: "Humanas",
@@ -52,6 +62,11 @@ const DISCIPLINA_LABEL: Record<string, string> = {
 };
 
 export function AdminEnemCorpusPanel() {
+  const [materiaId, setMateriaId] = useState<MateriaCorpusId>("quimica");
+  const [materiasDisponiveis, setMateriasDisponiveis] = useState<MateriaCorpusId[]>([
+    "biologia",
+    "quimica",
+  ]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [fila, setFila] = useState<FilaItem[]>([]);
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null);
@@ -65,25 +80,30 @@ export function AdminEnemCorpusPanel() {
     setLoading(true);
     setErro(null);
     try {
-      const res = await fetch("/api/admin/enem-corpus");
+      const res = await fetch(`/api/admin/enem-corpus?materiaId=${materiaId}`);
       if (!res.ok) throw new Error("Falha ao carregar corpus");
       const data = await res.json();
       setStats(data.stats);
       setFila(data.fila);
       setCatalogo(data.catalogo);
       setIaDisponivel(Boolean(data.iaDisponivel));
+      if (Array.isArray(data.materiasDisponiveis)) {
+        setMateriasDisponiveis(data.materiasDisponiveis);
+      }
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [materiaId]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  async function rodarClassificacao(triagemOnly = false, modo: "ia" | "heuristica" = "ia") {
+  async function rodarClassificacao(
+    opts: { triagemOnly?: boolean; retriagem?: boolean; modo?: "ia" | "heuristica" } = {}
+  ) {
     setClassificando(true);
     setErro(null);
     try {
@@ -91,24 +111,27 @@ export function AdminEnemCorpusPanel() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          materiaId,
           limit: 700,
-          soTriagem: triagemOnly,
-          modo: iaDisponivel && modo === "ia" ? "ia" : "heuristica",
+          soTriagem: opts.triagemOnly ?? false,
+          retriagem: opts.retriagem ?? false,
+          modo: iaDisponivel && (opts.modo ?? "ia") === "ia" ? "ia" : "heuristica",
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Classificação falhou");
       setStats(data.stats);
       const r = data.resultado;
-      if (triagemOnly) {
+      const mat = catalogo?.materia ?? materiaId;
+      if (opts.triagemOnly) {
         setUltimoRun(
           `Triagem: Bio ${r.triagem.biologia} · Quím ${r.triagem.quimica} · Fís ${r.triagem.fisica} · ? ${r.triagem.indefinida}` +
             (r.triagemIa ? ` · +${r.triagemIa} via IA` : "")
         );
       } else {
         setUltimoRun(
-          `Bio: ${r.classified}/${r.bioProcessadas ?? r.triagem.biologia} novas com N2 (${r.pctClassified}%) · triagem B ${r.triagem.biologia}` +
-            (r.triagemIa ? ` · +${r.triagemIa} triagem IA` : "")
+          `${mat}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · triadas ${r.triagem[materiaId === "biologia" ? "biologia" : materiaId === "quimica" ? "quimica" : "fisica"]}` +
+            (r.triagemIa ? ` · triagem IA +${r.triagemIa}` : "")
         );
       }
       await load();
@@ -118,6 +141,9 @@ export function AdminEnemCorpusPanel() {
       setClassificando(false);
     }
   }
+
+  const mat = stats?.materiaAtiva;
+  const catalogoOk = catalogo?.validacao.every((v) => v.ok) ?? false;
 
   if (loading && !stats) {
     return <p className="text-slate-500">Carregando corpus ENEM…</p>;
@@ -131,11 +157,27 @@ export function AdminEnemCorpusPanel() {
         </Card>
       )}
 
+      <div className="flex flex-wrap gap-2">
+        {MATERIA_TAB.map((t) => {
+          const disponivel = materiasDisponiveis.includes(t.id);
+          return (
+            <Button
+              key={t.id}
+              variant={materiaId === t.id ? "primary" : "secondary"}
+              disabled={!disponivel}
+              onClick={() => setMateriaId(t.id)}
+            >
+              {t.label}
+              {!disponivel && " (em breve)"}
+            </Button>
+          );
+        })}
+      </div>
+
       <Card className="border-sky-200 bg-sky-50/60">
         <p className="text-sm text-sky-900">
-          <strong>Natureza ≠ Biologia.</strong> O bloco Ciências da Natureza do ENEM mistura ~⅓ Bio, ⅓
-          Química e ⅓ Física. Com IA, questões indefinidas (`?`) são triadas antes da classificação N2.
-          A fila abaixo mostra só Biologia sem N2.
+          <strong>Natureza ≠ uma matéria.</strong> Triagem Bio/Quím/Fís já feita (~619). Cada aba
+          classifica só a matéria selecionada — não sobrescreve N2 de outras matérias.
         </p>
       </Card>
 
@@ -144,21 +186,20 @@ export function AdminEnemCorpusPanel() {
           <p className="text-sm text-slate-500">Questões no corpus</p>
           <p className="text-3xl font-bold text-slate-900">{stats?.total ?? 0}</p>
           <p className="text-xs text-slate-500">
-            {stats?.importCompleto ? "Import completo" : `${stats?.pctImport ?? 0}% da meta (~${stats?.metaCorpus})`}
+            {stats?.importCompleto ? "Import completo" : `${stats?.pctImport ?? 0}% da meta`}
           </p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-500">Bio com N2</p>
-          <p className="text-3xl font-bold text-teal-700">{stats?.natureza?.bioClassificadas ?? 0}</p>
+          <p className="text-sm text-slate-500">{mat?.materiaLabel ?? "Matéria"} com N2</p>
+          <p className="text-3xl font-bold text-teal-700">{mat?.classificadas ?? 0}</p>
           <p className="text-xs text-slate-500">
-            {stats?.natureza?.pctBioClassificadas ?? 0}% das {stats?.natureza?.triagem.biologia ?? 0}{" "}
-            triadas Bio
+            {mat?.pctClassificadas ?? 0}% das {mat?.triadas ?? 0} triadas
           </p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-500">Fila Bio (sem N2)</p>
-          <p className="text-3xl font-bold text-amber-700">{stats?.natureza?.bioFila ?? 0}</p>
-          <p className="text-xs text-slate-500">buracos no catálogo Bio</p>
+          <p className="text-sm text-slate-500">Fila {mat?.materiaLabel ?? ""} (sem N2)</p>
+          <p className="text-3xl font-bold text-amber-700">{mat?.fila ?? 0}</p>
+          <p className="text-xs text-slate-500">buracos no catálogo</p>
         </Card>
         <Card>
           <p className="text-sm text-slate-500">Triagem Natureza</p>
@@ -167,67 +208,53 @@ export function AdminEnemCorpusPanel() {
             {stats?.natureza?.triagem.fisica ?? 0}
           </p>
           <p className="text-xs text-slate-500">
-            ? {stats?.natureza?.triagem.indefinida ?? 0} · total Natureza {stats?.natureza?.total ?? 0}
+            ? {stats?.natureza?.triagem.indefinida ?? 0} · total {stats?.natureza?.total ?? 0}
           </p>
         </Card>
       </div>
 
-      {!stats?.importCompleto && stats && stats.total > 0 && (
-        <Card className="border-sky-200 bg-sky-50/60">
-          <p className="text-sm text-sky-900">
-            Import ENEM em andamento em background (~1h na primeira vez). Atualize esta página para
-            acompanhar.
-          </p>
-        </Card>
-      )}
-
-      {stats?.total === 0 && (
+      {!catalogoOk && catalogo && (
         <Card className="border-amber-200 bg-amber-50/80">
           <p className="text-sm text-amber-900">
-            Corpus vazio. O import roda automaticamente no deploy. Aguarde ou verifique logs{" "}
-            <code className="text-xs">/tmp/enem-import.log</code> no container.
+            Catálogo {catalogo.materia} com falhas de validação — corrija antes de classificar em
+            produção.
           </p>
         </Card>
       )}
 
       <div className="flex flex-wrap gap-3">
         <Button
-          onClick={() => rodarClassificacao(false, "ia")}
-          disabled={classificando || !stats?.total}
+          onClick={() => rodarClassificacao({ modo: "ia" })}
+          disabled={classificando || !stats?.total || !catalogoOk}
         >
           {classificando
             ? "Processando…"
             : iaDisponivel
-              ? "Classificar Biologia com IA (recomendado)"
-              : "Classificar Biologia (heurística)"}
+              ? `Classificar ${catalogo?.materia ?? "matéria"} com IA`
+              : `Classificar ${catalogo?.materia ?? "matéria"} (heurística)`}
         </Button>
         {iaDisponivel && (
           <Button
             variant="secondary"
-            onClick={() => rodarClassificacao(false, "heuristica")}
-            disabled={classificando || !stats?.total}
+            onClick={() => rodarClassificacao({ modo: "heuristica" })}
+            disabled={classificando || !stats?.total || !catalogoOk}
           >
             Só heurística (rápido)
           </Button>
         )}
-        <Button variant="secondary" onClick={() => rodarClassificacao(true, "ia")} disabled={classificando || !stats?.total}>
-          {iaDisponivel ? "Triagem IA (Bio/Quím/Fís)" : "Só triagem heurística"}
+        <Button
+          variant="secondary"
+          onClick={() => rodarClassificacao({ triagemOnly: true, retriagem: true, modo: "ia" })}
+          disabled={classificando || !stats?.total}
+        >
+          Retriagem Natureza (IA)
         </Button>
         <Button variant="secondary" onClick={load} disabled={loading}>
           Atualizar
         </Button>
       </div>
 
-      {ultimoRun && (
-        <p className="text-sm text-slate-600">
-          Última execução: <strong>{ultimoRun}</strong>
-          {ultimoRun.startsWith("Triagem:") && !iaDisponivel && (
-            <span className="block text-amber-800">
-              Triagem heurística — configure OPENAI_API_KEY para triagem IA nos itens indefinidos.
-            </span>
-          )}
-        </p>
-      )}
+      {ultimoRun && <p className="text-sm text-slate-600">Última execução: <strong>{ultimoRun}</strong></p>}
 
       {catalogo && (
         <Card>
@@ -245,11 +272,11 @@ export function AdminEnemCorpusPanel() {
         </Card>
       )}
 
-      {stats && stats.topEscopos.length > 0 && (
+      {mat && mat.topEscopos.length > 0 && (
         <Card>
-          <h2 className="font-semibold text-slate-900">Top N2 classificados</h2>
+          <h2 className="font-semibold text-slate-900">Top N2 — {mat.materiaLabel}</h2>
           <ul className="mt-3 space-y-1 font-mono text-sm text-slate-700">
-            {stats.topEscopos.map((t) => (
+            {mat.topEscopos.map((t) => (
               <li key={t.escopoId}>
                 {t.count}× {t.escopoId}
               </li>
@@ -262,7 +289,7 @@ export function AdminEnemCorpusPanel() {
         <Card>
           <h2 className="font-semibold text-slate-900">Por disciplina ENEM</h2>
           <ul className="mt-3 space-y-2 text-sm">
-            {stats?.porDisciplina.map((d) => (
+            {stats?.porDisciplina?.map((d) => (
               <li key={d.disciplina} className="flex justify-between">
                 <span>{DISCIPLINA_LABEL[d.disciplina] ?? d.disciplina}</span>
                 <span className="font-medium">{d.count}</span>
@@ -273,7 +300,7 @@ export function AdminEnemCorpusPanel() {
         <Card>
           <h2 className="font-semibold text-slate-900">Por ano</h2>
           <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto text-sm">
-            {stats?.porAno.map((a) => (
+            {stats?.porAno?.map((a) => (
               <li key={a.ano} className="flex justify-between">
                 <span>ENEM {a.ano}</span>
                 <span className="font-medium">{a.count}</span>
@@ -284,12 +311,11 @@ export function AdminEnemCorpusPanel() {
       </div>
 
       <Card>
-        <h2 className="font-semibold text-slate-900">Fila Biologia (sem N2 — amostra)</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Só questões triadas como Biologia. Indica buracos no catálogo ou confiança baixa no match.
-        </p>
+        <h2 className="font-semibold text-slate-900">
+          Fila {mat?.materiaLabel ?? "matéria"} (sem N2 — amostra)
+        </h2>
         {fila.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-500">Nenhum item na fila ou corpus ainda vazio.</p>
+          <p className="mt-4 text-sm text-slate-500">Nenhum item na fila.</p>
         ) : (
           <ul className="mt-4 space-y-3">
             {fila.map((f) => (
@@ -302,9 +328,7 @@ export function AdminEnemCorpusPanel() {
                     <Badge tone="neutral">unclassified</Badge>
                   )}
                   {f.confianca != null && (
-                    <span className="text-xs text-slate-500">
-                      conf. {(f.confianca * 100).toFixed(0)}%
-                    </span>
+                    <span className="text-xs text-slate-500">conf. {(f.confianca * 100).toFixed(0)}%</span>
                   )}
                 </div>
                 {f.trecho && <p className="mt-2 text-slate-600">{f.trecho}</p>}
@@ -315,8 +339,8 @@ export function AdminEnemCorpusPanel() {
       </Card>
 
       <p className="text-xs text-slate-500">
-        Import automático no deploy · Scripts: <code>npm run enem:import</code>,{" "}
-        <code>npm run enem:benchmark-bio</code>
+        Scripts: <code>npm run catalog:validate quimica</code>,{" "}
+        <code>npm run enem:benchmark -- --materia=quimica</code>
       </p>
     </div>
   );
