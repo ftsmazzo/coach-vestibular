@@ -450,3 +450,60 @@ model UploadJob {
 
   @@index([status, createdAt])
 }
+
+/// Disciplina oficial do ENEM (campo `discipline` da API enem.dev)
+enum EnemDisciplina {
+  linguagens
+  ciencias_humanas
+  ciencias_natureza
+  matematica
+}
+
+/// Idioma da questão no corpus ENEM (faixa 1–5 ou comum)
+enum EnemIdiomaCorpus {
+  COMUM
+  ingles
+  espanhol
+}
+
+/// Snapshot estrutural de questão ENEM (enem.dev 2009–2023) — sem classificação pedagógica Coach
+model EnemQuestaoCorpus {
+  id        String @id @default(cuid())
+  ano       Int
+  numero    Int
+  idioma    EnemIdiomaCorpus @default(COMUM)
+  dia       Int
+  disciplina EnemDisciplina
+
+  titulo                   String?
+  enunciadoMd              String? @db.Text
+  introducaoAlternativas   String? @db.Text
+  alternativas             Json
+  gabarito                 String
+  arquivos                 Json?
+
+  /// Chave estável para upsert: "{ano}:{numero}:{idioma}"
+  fonteId    String @unique
+  fonte      String @default("enem.dev")
+  importadoEm DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  /// Área derivada da disciplina ENEM (estrutural, não taxonomia Coach)
+  areaBloco String?
+
+  /// Fase 2 — classificação pedagógica (N1/N2/N3 Coach)
+  materia                 String?
+  assunto                 String?
+  conhecimentoDominioId   String?
+  conhecimentoEscopoId    String?
+  conhecimentoExigido     String?
+  classificacaoVersao     String?
+  classificacaoConfianca  Float?
+
+  /// Vínculo opcional com questão publicada no banco admin
+  provaQuestaoId String? @unique
+
+  @@unique([ano, numero, idioma])
+  @@index([ano, disciplina])
+  @@index([conhecimentoEscopoId])
+}

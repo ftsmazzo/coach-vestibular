@@ -1,0 +1,211 @@
+{
+  "version": "0.1-draft",
+  "materiaId": "biologia",
+  "materiaLabel": "Biologia",
+  "notas": "N1 = domínio (abrangente). N2 = escopo (agrega lacunas/quests). N3 = conhecimentoExigido por questão.",
+  "assuntos": [
+    {
+      "assuntoId": "genetica",
+      "assuntoLabel": "Genética",
+      "dominios": [
+        {
+          "id": "bio.genetica.hereditariedade",
+          "label": "Hereditariedade e cruzamentos",
+          "escopos": [
+            { "id": "bio.genetica.hereditariedade.mendel_monohibrido", "label": "Leis de Mendel — cruzamento monohíbrido" },
+            { "id": "bio.genetica.hereditariedade.mendel_dihibrido", "label": "Leis de Mendel — cruzamento dihíbrido" },
+            { "id": "bio.genetica.hereditariedade.ligacao_epistasia", "label": "Linkage, epistasia e interação gênica" },
+            { "id": "bio.genetica.hereditariedade.grupos_sanguineos", "label": "Grupos sanguíneos e hereditariedade" },
+            { "id": "bio.genetica.hereditariedade.ligada_ao_sexo", "label": "Herança ligada ao sexo" }
+          ]
+        },
+        {
+          "id": "bio.genetica.molecular",
+          "label": "Genética molecular e expressão",
+          "escopos": [
+            { "id": "bio.genetica.molecular.dna_replicacao", "label": "DNA — estrutura e replicação" },
+            { "id": "bio.genetica.molecular.dogma_central", "label": "Transcrição, tradução e dogma central" },
+            { "id": "bio.genetica.molecular.codigo_genetico", "label": "Código genético e síntese proteica" },
+            { "id": "bio.genetica.molecular.regulacao_genica", "label": "Regulação da expressão gênica" }
+          ]
+        },
+        {
+          "id": "bio.genetica.mutacao_biotec",
+          "label": "Mutação e biotecnologia",
+          "escopos": [
+            { "id": "bio.genetica.mutacao_biotec.tipos_mutacao", "label": "Tipos de mutação e consequências" },
+            { "id": "bio.genetica.mutacao_biotec.engenharia_transgenicos", "label": "Engenharia genética e transgênicos" },
+            { "id": "bio.genetica.mutacao_biotec.clonagem_terapia", "label": "Clonagem e terapia gênica" },
+            { "id": "bio.genetica.mutacao_biotec.pcr_eletroforese", "label": "PCR, eletroforese e técnicas de laboratório" }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "ecologia",
+      "assuntoLabel": "Ecologia",
+      "dominios": [
+        {
+          "id": "bio.ecologia.ecossistemas",
+          "label": "Ecossistemas e relações ecológicas",
+          "escopos": [
+            { "id": "bio.ecologia.ecossistemas.cadeia_alimentar", "label": "Cadeia alimentar e fluxo de energia" },
+            { "id": "bio.ecologia.ecossistemas.piramide_trofica", "label": "Pirâmide ecológica e relações tróficas" },
+            { "id": "bio.ecologia.ecossistemas.ciclos_biogeoquimicos", "label": "Ciclos biogeoquímicos (água, carbono, nitrogênio)" },
+            { "id": "bio.ecologia.ecossistemas.sucessao", "label": "Sucessão ecológica" },
+            { "id": "bio.ecologia.ecossistemas.relacoes_interspecificas", "label": "Relações interespecíficas (predação, mutualismo, parasitismo)" }
+          ]
+        },
+        {
+          "id": "bio.ecologia.populacoes_comunidades",
+          "label": "Populações, comunidades e biomas",
+          "escopos": [
+            { "id": "bio.ecologia.populacoes_comunidades.crescimento_populacional", "label": "Crescimento populacional e dinâmica" },
+            { "id": "bio.ecologia.populacoes_comunidades.biomas_brasil", "label": "Biomas brasileiros e hotspots" },
+            { "id": "bio.ecologia.populacoes_comunidades.niveis_organizacao", "label": "Níveis de organização ecológica" }
+          ]
+        },
+        {
+          "id": "bio.ecologia.impactos",
+          "label": "Impactos humanos e conservação",
+          "escopos": [
+            { "id": "bio.ecologia.impactos.poluicao_clima", "label": "Poluição, efeito estufa e mudanças climáticas" },
+            { "id": "bio.ecologia.impactos.conservacao_ucs", "label": "Conservação e unidades de conservação" },
+            { "id": "bio.ecologia.impactos.desmatamento_biodiversidade", "label": "Desmatamento e perda de biodiversidade" }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "citologia",
+      "assuntoLabel": "Citologia",
+      "dominios": [
+        {
+          "id": "bio.citologia.organizacao",
+          "label": "Organização celular",
+          "escopos": [
+            { "id": "bio.citologia.organizacao.procarionte_eucarionte", "label": "Células procariontes e eucariontes" },
+            { "id": "bio.citologia.organizacao.organelas", "label": "Organelas e funções" },
+            { "id": "bio.citologia.organizacao.membrana_transporte", "label": "Membrana plasmática e transporte" }
+          ]
+        },
+        {
+          "id": "bio.citologia.metabolismo",
+          "label": "Metabolismo energético",
+          "escopos": [
+            { "id": "bio.citologia.metabolismo.respiracao_celular", "label": "Respiração celular" },
+            { "id": "bio.citologia.metabolismo.fotossintese", "label": "Fotossíntese" },
+            { "id": "bio.citologia.metabolismo.fermentacao", "label": "Fermentação e vias anaeróbias" }
+          ]
+        },
+        {
+          "id": "bio.citologia.ciclo_celular",
+          "label": "Ciclo celular e divisão",
+          "escopos": [
+            { "id": "bio.citologia.ciclo_celular.mitose", "label": "Mitose e crescimento" },
+            { "id": "bio.citologia.ciclo_celular.meiose", "label": "Meiose e gametogênese" },
+            { "id": "bio.citologia.ciclo_celular.regulacao", "label": "Regulação do ciclo celular" }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "fisiologia_humana",
+      "assuntoLabel": "Fisiologia Humana",
+      "dominios": [
+        {
+          "id": "bio.fisiologia.sistemas",
+          "label": "Sistemas do corpo humano",
+          "escopos": [
+            { "id": "bio.fisiologia.sistemas.digestorio", "label": "Sistema digestório e nutrição" },
+            { "id": "bio.fisiologia.sistemas.circulatorio", "label": "Sistema circulatório e sangue" },
+            { "id": "bio.fisiologia.sistemas.respiratorio", "label": "Sistema respiratório e trocas gasosas" },
+            { "id": "bio.fisiologia.sistemas.excretor", "label": "Sistema excretor e homeostase hídrica" },
+            { "id": "bio.fisiologia.sistemas.nervoso", "label": "Sistema nervoso e integração" },
+            { "id": "bio.fisiologia.sistemas.reprodutor", "label": "Sistema reprodutor humano" }
+          ]
+        },
+        {
+          "id": "bio.fisiologia.endocrino",
+          "label": "Regulação hormonal",
+          "escopos": [
+            { "id": "bio.fisiologia.endocrino.hormonios_feedback", "label": "Hormônios e feedback" },
+            { "id": "bio.fisiologia.endocrino.diabetes_metabolismo", "label": "Diabetes e regulação da glicose" }
+          ]
+        },
+        {
+          "id": "bio.fisiologia.saude_imunidade",
+          "label": "Saúde, doenças e imunidade",
+          "escopos": [
+            { "id": "bio.fisiologia.saude_imunidade.imunidade_vacinas", "label": "Imunidade, antígenos e vacinas" },
+            { "id": "bio.fisiologia.saude_imunidade.doencas_infecciosas", "label": "Doenças infecciosas (vírus, bactérias)" },
+            { "id": "bio.fisiologia.saude_imunidade.saude_publica", "label": "Saúde pública e epidemiologia básica" }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "evolucao",
+      "assuntoLabel": "Evolução",
+      "dominios": [
+        {
+          "id": "bio.evolucao.teorias",
+          "label": "Teorias e evidências da evolução",
+          "escopos": [
+            { "id": "bio.evolucao.teorias.selecao_natural", "label": "Seleção natural e Darwinismo" },
+            { "id": "bio.evolucao.teorias.evidencias_fosseis", "label": "Evidências — fósseis, anatomia comparada, embriologia" },
+            { "id": "bio.evolucao.teorias.neodarwinismo", "label": "Neodarwinismo e sintese evolutiva" }
+          ]
+        },
+        {
+          "id": "bio.evolucao.mecanismos",
+          "label": "Mecanismos evolutivos",
+          "escopos": [
+            { "id": "bio.evolucao.mecanismos.variacao_mutacao", "label": "Variação, mutação e recombinação" },
+            { "id": "bio.evolucao.mecanismos.especiacao", "label": "Especiação e isolamento reprodutivo" },
+            { "id": "bio.evolucao.mecanismos.resistencia_antibioticos", "label": "Seleção artificial e resistência a antibióticos" }
+          ]
+        },
+        {
+          "id": "bio.evolucao.origem_vida",
+          "label": "Origem da vida e evolução humana",
+          "escopos": [
+            { "id": "bio.evolucao.origem_vida.teorias_abiogenese", "label": "Origem da vida e teorias históricas" },
+            { "id": "bio.evolucao.origem_vida.evolucao_humana", "label": "Evolução humana e primatas" }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "botanica",
+      "assuntoLabel": "Botânica",
+      "dominios": [
+        {
+          "id": "bio.botanica.morfologia",
+          "label": "Morfologia e anatomia vegetal",
+          "escopos": [
+            { "id": "bio.botanica.morfologia.tecidos_vegetais", "label": "Tecidos vegetais" },
+            { "id": "bio.botanica.morfologia.orgaos_vegetais", "label": "Órgãos vegetais (raiz, caule, folha)" }
+          ]
+        },
+        {
+          "id": "bio.botanica.fisiologia_vegetal",
+          "label": "Fisiologia vegetal",
+          "escopos": [
+            { "id": "bio.botanica.fisiologia_vegetal.fotossintese_fatores", "label": "Fotossíntese e fatores limitantes" },
+            { "id": "bio.botanica.fisiologia_vegetal.transpiracao_seiva", "label": "Transpiração e transporte de seiva" },
+            { "id": "bio.botanica.fisiologia_vegetal.hormonios_vegetais", "label": "Hormônios vegetais e tropismos" }
+          ]
+        },
+        {
+          "id": "bio.botanica.reproducao",
+          "label": "Reprodução e grupos botânicos",
+          "escopos": [
+            { "id": "bio.botanica.reproducao.polinizacao_fruto", "label": "Polinização, fruto e semente" },
+            { "id": "bio.botanica.reproducao.grupos_gimno_angio", "label": "Gimnospermas e angiospermas" }
+          ]
+        }
+      ]
+    }
+  ]
+}

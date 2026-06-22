@@ -29,5 +29,9 @@ else
   echo "==> Seed ignorado (use RUN_SEED=true apenas no primeiro deploy)."
 fi
 
+echo "==> Corpus ENEM (enem.dev) — sync em background se necessário..."
+npx tsx scripts/import-enem-corpus.ts --if-empty >> /tmp/enem-import.log 2>&1 &
+echo "==> Import ENEM rodando em background (log: /tmp/enem-import.log). App sobe sem aguardar."
+
 echo "==> Iniciando Next.js na porta ${PORT:-3000}..."
 exec npm run start

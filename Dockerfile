@@ -36,6 +36,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/src/generated ./src/generated
+COPY --from=builder /app/src/lib/enem-dev ./src/lib/enem-dev
 
 RUN chmod +x scripts/docker-entrypoint.sh
 
