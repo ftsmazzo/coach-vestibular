@@ -53,7 +53,8 @@ export async function GET() {
 const classificarSchema = z.object({
   assuntoId: z.string().optional(),
   ano: z.number().int().min(2009).max(2030).optional(),
-  limit: z.number().int().min(1).max(500).optional(),
+  limit: z.number().int().min(1).max(700).optional(),
+  soTriagem: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {

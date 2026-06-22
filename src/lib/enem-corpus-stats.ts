@@ -9,9 +9,17 @@ export type EnemCorpusStats = {
   metaCorpus: number;
   pctImport: number;
   ultimaImportacao: string | null;
+  /** N2 em qualquer matéria (hoje só catálogo Bio) */
   classificadas: number;
   pctClassificadas: number;
   filaRevisao: number;
+  natureza: {
+    total: number;
+    triagem: { biologia: number; quimica: number; fisica: number; indefinida: number };
+    bioClassificadas: number;
+    pctBioClassificadas: number;
+    bioFila: number;
+  };
   porDisciplina: Array<{ disciplina: string; count: number }>;
   porAno: Array<{ ano: number; count: number }>;
   topEscopos: Array<{ escopoId: string; count: number }>;
@@ -23,6 +31,13 @@ export async function obterStatsCorpusEnem(prisma: PrismaClient): Promise<EnemCo
     ultima,
     classificadas,
     filaRevisao,
+    naturezaTotal,
+    triBio,
+    triQuim,
+    triFis,
+    triIndef,
+    bioClassificadas,
+    bioFila,
     porDisciplina,
     porAno,
     topEscoposRaw,
@@ -43,7 +58,29 @@ export async function obterStatsCorpusEnem(prisma: PrismaClient): Promise<EnemCo
         OR: [
           { conhecimentoEscopoId: null },
           { classificacaoConfianca: { lt: CLASSIFICACAO_CONFIANCA_MIN } },
-          { classificacaoConfianca: null, conhecimentoEscopoId: { not: null } },
+        ],
+      },
+    }),
+    prisma.enemQuestaoCorpus.count({ where: { disciplina: "ciencias_natureza" } }),
+    prisma.enemQuestaoCorpus.count({ where: { materia: "Biologia" } }),
+    prisma.enemQuestaoCorpus.count({ where: { materia: "Química" } }),
+    prisma.enemQuestaoCorpus.count({ where: { materia: "Física" } }),
+    prisma.enemQuestaoCorpus.count({
+      where: { disciplina: "ciencias_natureza", materia: null },
+    }),
+    prisma.enemQuestaoCorpus.count({
+      where: {
+        materia: "Biologia",
+        conhecimentoEscopoId: { not: null },
+        classificacaoConfianca: { gte: CLASSIFICACAO_CONFIANCA_MIN },
+      },
+    }),
+    prisma.enemQuestaoCorpus.count({
+      where: {
+        materia: "Biologia",
+        OR: [
+          { conhecimentoEscopoId: null },
+          { classificacaoConfianca: { lt: CLASSIFICACAO_CONFIANCA_MIN } },
         ],
       },
     }),
@@ -77,6 +114,18 @@ export async function obterStatsCorpusEnem(prisma: PrismaClient): Promise<EnemCo
     classificadas,
     pctClassificadas: total > 0 ? Math.round((classificadas / total) * 100) : 0,
     filaRevisao,
+    natureza: {
+      total: naturezaTotal,
+      triagem: {
+        biologia: triBio,
+        quimica: triQuim,
+        fisica: triFis,
+        indefinida: triIndef,
+      },
+      bioClassificadas,
+      pctBioClassificadas: triBio > 0 ? Math.round((bioClassificadas / triBio) * 100) : 0,
+      bioFila,
+    },
     porDisciplina: porDisciplina.map((d) => ({
       disciplina: d.disciplina,
       count: d._count._all,
@@ -97,19 +146,21 @@ export type FilaEnemItem = {
   ano: number;
   numero: number;
   disciplina: string;
+  materia: string | null;
   escopoId: string | null;
   confianca: number | null;
   assunto: string | null;
   trecho: string | null;
 };
 
+/** Fila só de Biologia sem N2 — não mistura Física/Química do bloco Natureza. */
 export async function listarFilaRevisaoEnem(
   prisma: PrismaClient,
   limit = 20
 ): Promise<FilaEnemItem[]> {
   const rows = await prisma.enemQuestaoCorpus.findMany({
     where: {
-      disciplina: "ciencias_natureza",
+      materia: "Biologia",
       OR: [
         { conhecimentoEscopoId: null },
         { classificacaoConfianca: { lt: CLASSIFICACAO_CONFIANCA_MIN } },
@@ -123,6 +174,7 @@ export async function listarFilaRevisaoEnem(
       ano: true,
       numero: true,
       disciplina: true,
+      materia: true,
       conhecimentoEscopoId: true,
       classificacaoConfianca: true,
       assunto: true,
@@ -139,6 +191,7 @@ export async function listarFilaRevisaoEnem(
       ano: r.ano,
       numero: r.numero,
       disciplina: r.disciplina,
+      materia: r.materia,
       escopoId: r.conhecimentoEscopoId,
       confianca: r.classificacaoConfianca,
       assunto: r.assunto,

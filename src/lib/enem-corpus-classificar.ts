@@ -7,13 +7,17 @@ import {
   agregarBenchmark,
   classificarPorKeywords,
 } from "@/lib/enem-classificar/heuristica";
+import { triarMateriaNatureza } from "@/lib/enem-classificar/triagem-natureza";
 import { CLASSIFICACAO_CONFIANCA_MIN } from "@/lib/enem-corpus-stats";
 
 export type ClassificarCorpusOpts = {
+  /** Se definido, restringe N2 a um assunto (modo piloto). Omitir = todos os assuntos Bio. */
   assuntoId?: string;
   ano?: number;
   limit?: number;
   persistir?: boolean;
+  /** Só triagem Bio/Química/Física, sem N2 */
+  soTriagem?: boolean;
 };
 
 export type ClassificarCorpusResultado = {
@@ -23,11 +27,12 @@ export type ClassificarCorpusResultado = {
   review: number;
   pctClassified: number;
   topEscopos: Array<{ escopoId: string; count: number }>;
+  triagem: { biologia: number; quimica: number; fisica: number; indefinida: number };
 };
 
-const LIMITE_MAX = 500;
+const LIMITE_MAX = 700;
 
-/** Classificação heurística piloto — só persiste quando status === classified. */
+/** Triagem Natureza → matéria; em Biologia, classifica N2 (catálogo fechado). */
 export async function classificarCorpusEnem(
   prisma: PrismaClient,
   opts: ClassificarCorpusOpts = {}
@@ -35,8 +40,7 @@ export async function classificarCorpusEnem(
   const catalog = carregarCatalogoMateria("biologia");
   const escopos = indexarEscopos(catalog);
   const confiancaMinima = catalog.regras?.confiancaMinima ?? CLASSIFICACAO_CONFIANCA_MIN;
-  const assuntoId = opts.assuntoId ?? "ecologia";
-  const limit = Math.min(opts.limit ?? 200, LIMITE_MAX);
+  const limit = Math.min(opts.limit ?? 700, LIMITE_MAX);
   const persistir = opts.persistir ?? true;
 
   const questoes = await prisma.enemQuestaoCorpus.findMany({
@@ -47,6 +51,7 @@ export async function classificarCorpusEnem(
     select: {
       id: true,
       fonteId: true,
+      numero: true,
       enunciadoMd: true,
       introducaoAlternativas: true,
     },
@@ -56,12 +61,45 @@ export async function classificarCorpusEnem(
 
   const resultados: Array<{ fonteId: string; resultado: ReturnType<typeof classificarPorKeywords> }> =
     [];
+  const triagem = { biologia: 0, quimica: 0, fisica: 0, indefinida: 0 };
 
   for (const q of questoes) {
     const texto = [q.enunciadoMd, q.introducaoAlternativas].filter(Boolean).join("\n");
+    const tri = triarMateriaNatureza(texto);
+
+    if (tri.materia === "Biologia") triagem.biologia++;
+    else if (tri.materia === "Química") triagem.quimica++;
+    else if (tri.materia === "Física") triagem.fisica++;
+    else triagem.indefinida++;
+
+    if (persistir) {
+      await prisma.enemQuestaoCorpus.update({
+        where: { id: q.id },
+        data: {
+          materia: tri.materia,
+          classificacaoVersao: "heuristica-v0.2",
+        },
+      });
+    }
+
+    if (opts.soTriagem || tri.materia !== "Biologia") {
+      if (persistir && tri.materia !== "Biologia") {
+        await prisma.enemQuestaoCorpus.update({
+          where: { id: q.id },
+          data: {
+            conhecimentoEscopoId: null,
+            conhecimentoDominioId: null,
+            assunto: null,
+            classificacaoConfianca: null,
+          },
+        });
+      }
+      continue;
+    }
+
     const resultado = classificarPorKeywords(texto, escopos, {
       confiancaMinima,
-      assuntoId,
+      assuntoId: opts.assuntoId,
     });
     resultados.push({ fonteId: q.fonteId, resultado });
 
@@ -74,17 +112,15 @@ export async function classificarCorpusEnem(
           conhecimentoDominioId: resultado.dominioId,
           conhecimentoEscopoId: resultado.escopoId,
           classificacaoConfianca: resultado.confianca,
-          classificacaoVersao: "heuristica-v0.1",
         },
       });
-    } else if (persistir && resultado.status === "unclassified") {
+    } else if (persistir) {
       await prisma.enemQuestaoCorpus.update({
         where: { id: q.id },
         data: {
           conhecimentoEscopoId: null,
           conhecimentoDominioId: null,
           classificacaoConfianca: resultado.confianca || null,
-          classificacaoVersao: "heuristica-v0.1",
         },
       });
     }
@@ -92,11 +128,13 @@ export async function classificarCorpusEnem(
 
   const bench = agregarBenchmark(resultados);
   return {
-    processadas: bench.total,
+    processadas: questoes.length,
     classified: bench.classified,
     unclassified: bench.unclassified,
     review: bench.review,
-    pctClassified: bench.pctClassified,
+    pctClassified:
+      triagem.biologia > 0 ? Math.round((bench.classified / triagem.biologia) * 100) : 0,
     topEscopos: bench.topEscopos,
+    triagem,
   };
 }

@@ -13,6 +13,13 @@ type Stats = {
   classificadas: number;
   pctClassificadas: number;
   filaRevisao: number;
+  natureza: {
+    total: number;
+    triagem: { biologia: number; quimica: number; fisica: number; indefinida: number };
+    bioClassificadas: number;
+    pctBioClassificadas: number;
+    bioFila: number;
+  };
   porDisciplina: Array<{ disciplina: string; count: number }>;
   porAno: Array<{ ano: number; count: number }>;
   topEscopos: Array<{ escopoId: string; count: number }>;
@@ -23,6 +30,7 @@ type FilaItem = {
   fonteId: string;
   ano: number;
   numero: number;
+  materia: string | null;
   escopoId: string | null;
   confianca: number | null;
   assunto: string | null;
@@ -73,21 +81,28 @@ export function AdminEnemCorpusPanel() {
     load();
   }, [load]);
 
-  async function rodarClassificacao() {
+  async function rodarClassificacao(triagemOnly = false) {
     setClassificando(true);
     setErro(null);
     try {
       const res = await fetch("/api/admin/enem-corpus", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assuntoId: "ecologia", limit: 200 }),
+        body: JSON.stringify({ limit: 700, soTriagem: triagemOnly }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Classificação falhou");
       setStats(data.stats);
-      setUltimoRun(
-        `${data.resultado.classified}/${data.resultado.processadas} classificadas (${data.resultado.pctClassified}%)`
-      );
+      const r = data.resultado;
+      if (triagemOnly) {
+        setUltimoRun(
+          `Triagem: Bio ${r.triagem.biologia} · Quím ${r.triagem.quimica} · Fís ${r.triagem.fisica} · ? ${r.triagem.indefinida}`
+        );
+      } else {
+        setUltimoRun(
+          `Bio: ${r.classified}/${r.triagem.biologia} com N2 (${r.pctClassified}%) · triagem Bio ${r.triagem.biologia}`
+        );
+      }
       await load();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro");
@@ -108,6 +123,14 @@ export function AdminEnemCorpusPanel() {
         </Card>
       )}
 
+      <Card className="border-sky-200 bg-sky-50/60">
+        <p className="text-sm text-sky-900">
+          <strong>Natureza ≠ Biologia.</strong> O bloco Ciências da Natureza do ENEM mistura ~⅓ Bio, ⅓
+          Química e ⅓ Física. A fila abaixo mostra só questões triadas como Biologia sem N2 — não
+          Física/Química.
+        </p>
+      </Card>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <p className="text-sm text-slate-500">Questões no corpus</p>
@@ -117,19 +140,27 @@ export function AdminEnemCorpusPanel() {
           </p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-500">Classificadas (N2)</p>
-          <p className="text-3xl font-bold text-teal-700">{stats?.classificadas ?? 0}</p>
-          <p className="text-xs text-slate-500">{stats?.pctClassificadas ?? 0}% do corpus</p>
+          <p className="text-sm text-slate-500">Bio com N2</p>
+          <p className="text-3xl font-bold text-teal-700">{stats?.natureza?.bioClassificadas ?? 0}</p>
+          <p className="text-xs text-slate-500">
+            {stats?.natureza?.pctBioClassificadas ?? 0}% das {stats?.natureza?.triagem.biologia ?? 0}{" "}
+            triadas Bio
+          </p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-500">Fila revisão</p>
-          <p className="text-3xl font-bold text-amber-700">{stats?.filaRevisao ?? 0}</p>
-          <p className="text-xs text-slate-500">sem N2 ou confiança baixa</p>
+          <p className="text-sm text-slate-500">Fila Bio (sem N2)</p>
+          <p className="text-3xl font-bold text-amber-700">{stats?.natureza?.bioFila ?? 0}</p>
+          <p className="text-xs text-slate-500">buracos no catálogo Bio</p>
         </Card>
         <Card>
-          <p className="text-sm text-slate-500">Catálogo Biologia</p>
-          <p className="text-3xl font-bold text-slate-900">{catalogo?.totalN2 ?? "—"}</p>
-          <p className="text-xs text-slate-500">N2 · {catalogo?.versao ?? "—"}</p>
+          <p className="text-sm text-slate-500">Triagem Natureza</p>
+          <p className="text-lg font-bold text-slate-900">
+            B {stats?.natureza?.triagem.biologia ?? 0} · Q {stats?.natureza?.triagem.quimica ?? 0} · F{" "}
+            {stats?.natureza?.triagem.fisica ?? 0}
+          </p>
+          <p className="text-xs text-slate-500">
+            ? {stats?.natureza?.triagem.indefinida ?? 0} · total Natureza {stats?.natureza?.total ?? 0}
+          </p>
         </Card>
       </div>
 
@@ -152,8 +183,11 @@ export function AdminEnemCorpusPanel() {
       )}
 
       <div className="flex flex-wrap gap-3">
-        <Button onClick={rodarClassificacao} disabled={classificando || !stats?.total}>
-          {classificando ? "Classificando…" : "Classificar piloto Ecologia (200 questões)"}
+        <Button onClick={() => rodarClassificacao(false)} disabled={classificando || !stats?.total}>
+          {classificando ? "Processando…" : "Triagem + classificar Biologia (Natureza)"}
+        </Button>
+        <Button variant="secondary" onClick={() => rodarClassificacao(true)} disabled={classificando || !stats?.total}>
+          Só triagem Bio/Quím/Fís
         </Button>
         <Button variant="secondary" onClick={load} disabled={loading}>
           Atualizar
@@ -168,7 +202,9 @@ export function AdminEnemCorpusPanel() {
 
       {catalogo && (
         <Card>
-          <h2 className="font-semibold text-slate-900">Validação catálogo ({catalogo.materia})</h2>
+          <h2 className="font-semibold text-slate-900">
+            Catálogo {catalogo.materia} — {catalogo.totalN2} N2 ({catalogo.versao})
+          </h2>
           <ul className="mt-3 space-y-1 text-sm">
             {catalogo.validacao.map((v) => (
               <li key={`${v.nivel}-${v.mensagem}`} className="flex gap-2">
@@ -219,9 +255,9 @@ export function AdminEnemCorpusPanel() {
       </div>
 
       <Card>
-        <h2 className="font-semibold text-slate-900">Fila de revisão (Natureza — amostra)</h2>
+        <h2 className="font-semibold text-slate-900">Fila Biologia (sem N2 — amostra)</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Questões sem N2 ou com confiança abaixo do limiar — indicam buracos no catálogo.
+          Só questões triadas como Biologia. Indica buracos no catálogo ou confiança baixa no match.
         </p>
         {fila.length === 0 ? (
           <p className="mt-4 text-sm text-slate-500">Nenhum item na fila ou corpus ainda vazio.</p>
