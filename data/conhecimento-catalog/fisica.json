@@ -129,7 +129,7 @@
           "id": "fis.ondulatoria.eletromagnetica",
           "label": "Ondas eletromagnéticas",
           "escopos": [
-            { "id": "fis.ondulatoria.eletromagnetica.espectro", "label": "Espectro eletromagnético", "keywords": ["espectro eletromagnético", "eletromagnetico", "micro-ondas", "microondas", "raio-x", "raio x", "ultravioleta", "infravermelho", "detector de movimento", "sensor", "polariza", "radiação eletromagnética", "sintonizar", "estação de rádio", "estacao de radio", "canal de tv", "televisão", "televisao", "emissão ou recepção de ondas", "desligamento de todos os aparelhos", "avião", "aviao", "passageiros"] },
+            { "id": "fis.ondulatoria.eletromagnetica.espectro", "label": "Espectro eletromagnético", "keywords": ["espectro eletromagnético", "eletromagnetico", "micro-ondas", "microondas", "raio-x", "raio x", "ultravioleta", "infravermelho", "detector de movimento", "sensor", "polariza", "radiação eletromagnética", "sintonizar", "estação de rádio", "estacao de radio", "canal de tv", "televisão", "televisao", "emissão ou recepção de ondas", "desligamento de todos os aparelhos", "avião", "aviao", "passageiros"] }
           ]
         }
       ]
