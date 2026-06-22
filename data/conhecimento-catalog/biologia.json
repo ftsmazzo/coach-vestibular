@@ -1,8 +1,16 @@
 {
-  "version": "0.1-draft",
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "1.0.0-alpha",
   "materiaId": "biologia",
   "materiaLabel": "Biologia",
-  "notas": "N1 = domínio (abrangente). N2 = escopo (agrega lacunas/quests). N3 = conhecimentoExigido por questão.",
+  "areaEnem": "Ciências da Natureza",
+  "notas": "N0=área ENEM (metadado). Assunto=taxonomia Coach. N1=domínio. N2=escopo (agrega lacunas/quests). N3=conhecimentoExigido livre por questão.",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "maxN2PorMateria": 80,
+    "confiancaMinima": 0.35
+  },
   "assuntos": [
     {
       "assuntoId": "genetica",
@@ -49,29 +57,74 @@
           "id": "bio.ecologia.ecossistemas",
           "label": "Ecossistemas e relações ecológicas",
           "escopos": [
-            { "id": "bio.ecologia.ecossistemas.cadeia_alimentar", "label": "Cadeia alimentar e fluxo de energia" },
-            { "id": "bio.ecologia.ecossistemas.piramide_trofica", "label": "Pirâmide ecológica e relações tróficas" },
-            { "id": "bio.ecologia.ecossistemas.ciclos_biogeoquimicos", "label": "Ciclos biogeoquímicos (água, carbono, nitrogênio)" },
-            { "id": "bio.ecologia.ecossistemas.sucessao", "label": "Sucessão ecológica" },
-            { "id": "bio.ecologia.ecossistemas.relacoes_interspecificas", "label": "Relações interespecíficas (predação, mutualismo, parasitismo)" }
+            {
+              "id": "bio.ecologia.ecossistemas.cadeia_alimentar",
+              "label": "Cadeia alimentar e fluxo de energia",
+              "keywords": ["cadeia alimentar", "teia alimentar", "níveis tróficos", "decompositor", "consumidor", "produtor", "fluxo de energia"]
+            },
+            {
+              "id": "bio.ecologia.ecossistemas.piramide_trofica",
+              "label": "Pirâmide ecológica e relações tróficas",
+              "keywords": ["pirâmide ecológica", "pirâmide trófica", "biomassa", "relaciones tróficas", "nível trófico"]
+            },
+            {
+              "id": "bio.ecologia.ecossistemas.ciclos_biogeoquimicos",
+              "label": "Ciclos biogeoquímicos (água, carbono, nitrogênio)",
+              "keywords": ["ciclo do carbono", "ciclo do nitrogênio", "ciclo da água", "biogeoquímico", "fixação de nitrogênio"]
+            },
+            {
+              "id": "bio.ecologia.ecossistemas.sucessao",
+              "label": "Sucessão ecológica",
+              "keywords": ["sucessão ecológica", "comunidade clímax", "comunidade pioneira", "ecossistema em recuperação"]
+            },
+            {
+              "id": "bio.ecologia.ecossistemas.relacoes_interspecificas",
+              "label": "Relações interespecíficas (predação, mutualismo, parasitismo)",
+              "keywords": ["mutualismo", "predação", "parasitismo", "comensalismo", "amensalismo", "simbiose"]
+            }
           ]
         },
         {
           "id": "bio.ecologia.populacoes_comunidades",
           "label": "Populações, comunidades e biomas",
           "escopos": [
-            { "id": "bio.ecologia.populacoes_comunidades.crescimento_populacional", "label": "Crescimento populacional e dinâmica" },
-            { "id": "bio.ecologia.populacoes_comunidades.biomas_brasil", "label": "Biomas brasileiros e hotspots" },
-            { "id": "bio.ecologia.populacoes_comunidades.niveis_organizacao", "label": "Níveis de organização ecológica" }
+            {
+              "id": "bio.ecologia.populacoes_comunidades.crescimento_populacional",
+              "label": "Crescimento populacional e dinâmica",
+              "keywords": ["crescimento populacional", "taxa de natalidade", "taxa de mortalidade", "curva sigmoide"]
+            },
+            {
+              "id": "bio.ecologia.populacoes_comunidades.biomas_brasil",
+              "label": "Biomas brasileiros e hotspots",
+              "conceitoCanonic": "biomas_brasil",
+              "keywords": ["bioma", "caatinga", "cerrado", "pampa", "pantanal", "mata atlântica", "amazônia", "hotspot"]
+            },
+            {
+              "id": "bio.ecologia.populacoes_comunidades.niveis_organizacao",
+              "label": "Níveis de organização ecológica",
+              "keywords": ["indivíduo", "população", "comunidade", "ecossistema", "biosfera", "níveis de organização"]
+            }
           ]
         },
         {
           "id": "bio.ecologia.impactos",
           "label": "Impactos humanos e conservação",
           "escopos": [
-            { "id": "bio.ecologia.impactos.poluicao_clima", "label": "Poluição, efeito estufa e mudanças climáticas" },
-            { "id": "bio.ecologia.impactos.conservacao_ucs", "label": "Conservação e unidades de conservação" },
-            { "id": "bio.ecologia.impactos.desmatamento_biodiversidade", "label": "Desmatamento e perda de biodiversidade" }
+            {
+              "id": "bio.ecologia.impactos.poluicao_clima",
+              "label": "Poluição, efeito estufa e mudanças climáticas",
+              "keywords": ["efeito estufa", "mudanças climáticas", "aquecimento global", "poluição", "gases de efeito estufa"]
+            },
+            {
+              "id": "bio.ecologia.impactos.conservacao_ucs",
+              "label": "Conservação e unidades de conservação",
+              "keywords": ["unidade de conservação", "parque nacional", "reserva biológica", "conservação"]
+            },
+            {
+              "id": "bio.ecologia.impactos.desmatamento_biodiversidade",
+              "label": "Desmatamento e perda de biodiversidade",
+              "keywords": ["desmatamento", "biodiversidade", "extinção", "espécie ameaçada", "fragmentação"]
+            }
           ]
         }
       ]
@@ -94,7 +147,7 @@
           "label": "Metabolismo energético",
           "escopos": [
             { "id": "bio.citologia.metabolismo.respiracao_celular", "label": "Respiração celular" },
-            { "id": "bio.citologia.metabolismo.fotossintese", "label": "Fotossíntese" },
+            { "id": "bio.citologia.metabolismo.fotossintese", "label": "Fotossíntese", "conceitoCanonic": "fotossintese", "keywords": ["fotossíntese", "clorofila", "cloroplasto", "fase clara", "fase escura"] },
             { "id": "bio.citologia.metabolismo.fermentacao", "label": "Fermentação e vias anaeróbias" }
           ]
         },
@@ -192,7 +245,7 @@
           "id": "bio.botanica.fisiologia_vegetal",
           "label": "Fisiologia vegetal",
           "escopos": [
-            { "id": "bio.botanica.fisiologia_vegetal.fotossintese_fatores", "label": "Fotossíntese e fatores limitantes" },
+            { "id": "bio.botanica.fisiologia_vegetal.fotossintese_fatores", "label": "Fotossíntese e fatores limitantes", "conceitoCanonic": "fotossintese", "keywords": ["fotossíntese", "fator limitante", "luminosidade", "concentração de CO2", "temperatura"] },
             { "id": "bio.botanica.fisiologia_vegetal.transpiracao_seiva", "label": "Transpiração e transporte de seiva" },
             { "id": "bio.botanica.fisiologia_vegetal.hormonios_vegetais", "label": "Hormônios vegetais e tropismos" }
           ]

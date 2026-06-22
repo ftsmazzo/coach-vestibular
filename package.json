@@ -13,6 +13,8 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:limpar-demo": "npx tsx scripts/limpar-demo-aluno.ts",
     "enem:import": "npx tsx scripts/import-enem-corpus.ts",
+    "enem:benchmark-bio": "npx tsx scripts/benchmark-enem-biologia.ts",
+    "catalog:validate": "npx tsx scripts/validate-catalog.ts",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
   },

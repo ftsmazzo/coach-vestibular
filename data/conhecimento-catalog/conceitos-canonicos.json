@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "notas": "Eixo ortogonal à hierarquia assunto→N1→N2. Agrega diagnóstico de habilidade transversal; N2 continua sendo a unidade student-facing.",
+  "conceitos": [
+    {
+      "id": "fotossintese",
+      "label": "Fotossíntese",
+      "escopos": [
+        "bio.citologia.metabolismo.fotossintese",
+        "bio.botanica.fisiologia_vegetal.fotossintese_fatores"
+      ]
+    },
+    {
+      "id": "biomas_brasil",
+      "label": "Biomas e fitogeografia do Brasil",
+      "escopos": ["bio.ecologia.populacoes_comunidades.biomas_brasil"],
+      "notas": "Candidato futuro a eixo interdisciplinar com Geografia — conceito canônico antes de interliga_com."
+    }
+  ]
+}
