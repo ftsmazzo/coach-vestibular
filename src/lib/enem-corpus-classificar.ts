@@ -145,8 +145,22 @@ export async function classificarCorpusEnem(
           escopos
         );
         for (const q of lote) {
-          const resultado = mapa.get(q.fonteId)!;
+          let resultado = mapa.get(q.fonteId)!;
           resultado.motivo = `IA: ${resultado.motivo}`;
+
+          if (resultado.status === "unclassified") {
+            const fallback = classificarPorKeywords(q.texto, escopos, {
+              confiancaMinima,
+              assuntoId: opts.assuntoId,
+            });
+            if (fallback.status !== "unclassified" && fallback.escopoId) {
+              resultado = {
+                ...fallback,
+                motivo: `fallback keywords: ${fallback.motivo}`,
+              };
+            }
+          }
+
           resultados.push({ fonteId: q.fonteId, resultado });
           if (persistir) await persistirResultado(prisma, q.id, resultado, "ia-v1");
         }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.2-alpha",
+  "catalogVersion": "1.0.3-alpha",
   "materiaId": "biologia",
   "materiaLabel": "Biologia",
   "areaEnem": "Ciências da Natureza",
@@ -43,7 +43,7 @@
           "escopos": [
             { "id": "bio.genetica.mutacao_biotec.tipos_mutacao", "label": "Tipos de mutação e consequências" },
             { "id": "bio.genetica.mutacao_biotec.engenharia_transgenicos", "label": "Engenharia genética e transgênicos" },
-            { "id": "bio.genetica.mutacao_biotec.clonagem_terapia", "label": "Clonagem e terapia gênica" },
+            { "id": "bio.genetica.mutacao_biotec.clonagem_terapia", "label": "Clonagem e terapia gênica", "keywords": ["clonagem", "terapia gênica", "terapia genica", "terapia celular", "células-tronco", "celulas-tronco", "regeneração de tecidos"] },
             { "id": "bio.genetica.mutacao_biotec.pcr_eletroforese", "label": "PCR, eletroforese e técnicas de laboratório", "keywords": ["PCR", "eletroforese", "teste genético", "biologia molecular", "amplificação"] }
           ]
         }
@@ -148,7 +148,8 @@
           "escopos": [
             { "id": "bio.citologia.metabolismo.respiracao_celular", "label": "Respiração celular", "keywords": ["respiração celular", "mitocondria", "ATP", "termogenina", "cadeia respiratória"] },
             { "id": "bio.citologia.metabolismo.fotossintese", "label": "Fotossíntese", "conceitoCanonic": "fotossintese", "keywords": ["fotossíntese", "clorofila", "cloroplasto", "fase clara", "fase escura"] },
-            { "id": "bio.citologia.metabolismo.fermentacao", "label": "Fermentação e vias anaeróbias" }
+            { "id": "bio.citologia.metabolismo.fermentacao", "label": "Fermentação e vias anaeróbias" },
+            { "id": "bio.citologia.metabolismo.enzimas", "label": "Enzimas e catalise biológica", "keywords": ["enzima", "substrato", "catalise", "tubo de ensaio", "aspartame", "edulcorante", "proteína"] }
           ]
         },
         {
@@ -170,11 +171,11 @@
           "id": "bio.fisiologia.sistemas",
           "label": "Sistemas do corpo humano",
           "escopos": [
-            { "id": "bio.fisiologia.sistemas.digestorio", "label": "Sistema digestório e nutrição" },
-            { "id": "bio.fisiologia.sistemas.circulatorio", "label": "Sistema circulatório e sangue", "keywords": ["circulatório", "sangue", "coração", "eletrocardiograma", "ECG", "sinal elétrico"] },
+            { "id": "bio.fisiologia.sistemas.digestorio", "label": "Sistema digestório e nutrição", "keywords": ["digestório", "nutrição", "nutriente", "linhaça", "linhaca", "semente", "óleo"] },
+            { "id": "bio.fisiologia.sistemas.circulatorio", "label": "Sistema circulatório e sangue", "keywords": ["circulatório", "sangue", "coração", "eletrocardiograma", "ECG", "sinal elétrico", "plaqueta", "coagulação", "coagulacao", "hemorragia"] },
             { "id": "bio.fisiologia.sistemas.respiratorio", "label": "Sistema respiratório e trocas gasosas" },
             { "id": "bio.fisiologia.sistemas.excretor", "label": "Sistema excretor e homeostase hídrica" },
-            { "id": "bio.fisiologia.sistemas.nervoso", "label": "Sistema nervoso e integração", "keywords": ["sistema nervoso", "reflexo patelar", "reflexo", "neurônio", "sinapse", "SNC"] },
+            { "id": "bio.fisiologia.sistemas.nervoso", "label": "Sistema nervoso e integração", "keywords": ["sistema nervoso", "reflexo patelar", "reflexo", "neurônio", "sinapse", "SNC", "olho humano", "retina", "córnea", "visão", "visao"] },
             { "id": "bio.fisiologia.sistemas.reprodutor", "label": "Sistema reprodutor humano", "keywords": ["reprodução humana", "fertilização in vitro", "espermatozoide", "óvulo", "gameta", "gestação"] }
           ]
         },
@@ -190,7 +191,7 @@
           "id": "bio.fisiologia.saude_imunidade",
           "label": "Saúde, doenças e imunidade",
           "escopos": [
-            { "id": "bio.fisiologia.saude_imunidade.imunidade_vacinas", "label": "Imunidade, antígenos e vacinas" },
+            { "id": "bio.fisiologia.saude_imunidade.imunidade_vacinas", "label": "Imunidade, antígenos e vacinas", "keywords": ["imunidade", "anticorpo", "antígeno", "vacina", "linfócito", "resposta imune"] },
             { "id": "bio.fisiologia.saude_imunidade.doencas_infecciosas", "label": "Doenças infecciosas (vírus, bactérias)", "keywords": ["covid", "coronavírus", "ebola", "dengue", "zika", "antimicrobiano", "antibiótico", "vírus", "bactéria", "infecção", "PCR", "diagnóstico"] },
             { "id": "bio.fisiologia.saude_imunidade.saude_publica", "label": "Saúde pública e epidemiologia básica", "keywords": ["epidemia", "endemia", "saúde pública", "aedes", "wolbachia", "vacinação em massa"] }
           ]
@@ -206,7 +207,7 @@
           "label": "Teorias e evidências da evolução",
           "escopos": [
             { "id": "bio.evolucao.teorias.selecao_natural", "label": "Seleção natural e Darwinismo", "keywords": ["seleção natural", "darwin", "darwinismo", "anfíbio", "anfibio", "anuro", "reprodução"] },
-            { "id": "bio.evolucao.teorias.evidencias_fosseis", "label": "Evidências — fósseis, anatomia comparada, embriologia", "keywords": ["fóssil", "carbono 14", "carbono-14", "datacao", "anatomia comparada", "embriologia"] },
+            { "id": "bio.evolucao.teorias.evidencias_fosseis", "label": "Evidências — fósseis, anatomia comparada, embriologia", "keywords": ["fóssil", "carbono 14", "carbono-14", "datacao", "datação", "meia-vida", "mamute", "emissões beta", "anatomia comparada", "embriologia"] },
             { "id": "bio.evolucao.teorias.neodarwinismo", "label": "Neodarwinismo e sintese evolutiva" }
           ]
         },

@@ -108,7 +108,7 @@ export async function classificarLoteIA(
 
   const data = await responsesComSchema<IaLoteRes>({
     systemPrompt:
-      "Você classifica questões do ENEM de Biologia. Escolha EXATAMENTE um escopoId da lista ou null se nenhum servir. NUNCA invente IDs.",
+      "Você classifica questões do ENEM de Biologia. Escolha EXATAMENTE um escopoId da lista. Use null SOMENTE se nenhum N2 for minimamente plausível. Prefira o melhor encaixe parcial a null. NUNCA invente IDs.",
     instrucao: `Catálogo N2 (escolha um ID ou null):\n${montarListaN2(escopos)}\n\nClassifique cada questão:\n${blocos}`,
     schema: SCHEMA,
     content: [],

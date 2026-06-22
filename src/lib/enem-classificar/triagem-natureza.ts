@@ -30,6 +30,7 @@ const REGRAS: Regra[] = [
       /\b(raios?\s*cos|sievert|radiacao ionizante|dosimetria|radioatividad)\b/,
       /\b(esfera vertical|fogao por inducao|discos opticos|laser)\b/,
       /\b(gravitacao|pressao|empuxo)\b/,
+      /\b(lampada|lampadas|iluminacao|potencia da lampada|lumen|lux\b|watt\b)\b/,
     ],
   },
   {
@@ -63,6 +64,11 @@ const REGRAS: Regra[] = [
       /\b(reflexo patelar|antimicrobiano|aedes|wolbachia|estaquia|propagacao)\b/,
       /\b(preguica|pantanal|coffea|arabica|hibrid|cruzamento.*planta)\b/,
       /\b(veneno.*cascavel|serpente|picad)\b/,
+      /\b(bioma|fauna|flora|adaptacao.*animal|roedor|reptil|artropod)\b/,
+      /\b(enzima|substrato|tubo de ensaio|aspartame|edulcorante)\b/,
+      /\b(plaqueta|coagulacao|anticorpo|linhaca|linhaça|terapia celular|terapia genica)\b/,
+      /\b(olho humano|retina|cornea|visao|visão|eletrocardiograma|ecg\b)\b/,
+      /\b(mamute|dna de osso|datacao por carbono|meia-vida do carbono)\b/,
     ],
   },
 ];
