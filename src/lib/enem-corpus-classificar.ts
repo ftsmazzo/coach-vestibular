@@ -24,6 +24,13 @@ import {
   type TriagemNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
 import { CORPUS_MATERIA_CONFIG } from "@/lib/enem-corpus-materia";
+import {
+  assuntoElegivelTrilha,
+  filtrarEscoposLinguagens,
+  instrucaoIaLinguagens,
+  trilhaLinguagensPorIdioma,
+  type IdiomaTrilhaLinguagens,
+} from "@/lib/enem-classificar/linguagens-rota";
 import { CLASSIFICACAO_CONFIANCA_MIN } from "@/lib/enem-corpus-stats";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
 
@@ -129,6 +136,7 @@ async function classificarLoteQuestoes(
     materiaLabel: string;
     materiaId: MateriaCorpusId;
     catalogLabel: string;
+    instrucaoExtra?: string;
   }
 ): Promise<Array<{ fonteId: string; resultado: ResultadoClassificacao }>> {
   const resultados: Array<{ fonteId: string; resultado: ResultadoClassificacao }> = [];
@@ -139,7 +147,11 @@ async function classificarLoteQuestoes(
       const mapa = await classificarLoteIA(
         lote.map((q) => ({ fonteId: q.fonteId, texto: q.texto })),
         opts.escopos,
-        { materiaId: opts.materiaId, materiaLabel: opts.catalogLabel }
+        {
+          materiaId: opts.materiaId,
+          materiaLabel: opts.catalogLabel,
+          instrucaoExtra: opts.instrucaoExtra,
+        }
       );
       for (const q of lote) {
         let resultado = mapa.get(q.fonteId)!;
@@ -185,6 +197,10 @@ async function classificarDisciplinaUnica(
   opts: ClassificarCorpusOpts,
   materiaId: MateriaCorpusId
 ): Promise<ClassificarCorpusResultado> {
+  if (materiaId === "linguagens") {
+    return classificarLinguagensTrilhas(prisma, opts);
+  }
+
   const cfg = CORPUS_MATERIA_CONFIG[materiaId];
   const materiaLabel = labelMateriaCorpus(materiaId);
   const prefixoN2 = prefixoCatalogoMateria(materiaId);
@@ -260,6 +276,137 @@ async function classificarDisciplinaUnica(
     triagem: { biologia: 0, quimica: 0, fisica: 0, indefinida: 0 },
     triagemIa: 0,
     materiaProcessadas: materiaParaClassificar.length,
+    materiaId,
+    modo,
+  };
+}
+
+function n2ValidoTrilha(
+  escopoId: string | null,
+  confianca: number | null,
+  trilha: IdiomaTrilhaLinguagens,
+  escopos: ReturnType<typeof indexarEscopos>,
+  confiancaMinima: number,
+  prefixoN2: string
+): boolean {
+  if (!escopoId?.startsWith(`${prefixoN2}.`)) return false;
+  if ((confianca ?? 0) < confiancaMinima) return false;
+  const entry = escopos.get(escopoId);
+  if (!entry) return false;
+  return assuntoElegivelTrilha(entry.assuntoId, trilha);
+}
+
+async function classificarLinguagensTrilhas(
+  prisma: PrismaClient,
+  opts: ClassificarCorpusOpts
+): Promise<ClassificarCorpusResultado> {
+  const materiaId = "linguagens" as const;
+  const materiaLabel = labelMateriaCorpus(materiaId);
+  const prefixoN2 = prefixoCatalogoMateria(materiaId);
+  const catalog = carregarCatalogoMateria(materiaId);
+  const escopos = indexarEscopos(catalog);
+  const confiancaMinima = catalog.regras?.confiancaMinima ?? CLASSIFICACAO_CONFIANCA_MIN;
+  const limit = Math.min(opts.limit ?? LIMITE_MAX, LIMITE_MAX);
+  const persistir = opts.persistir ?? true;
+  const modo =
+    opts.modo === "ia" && iaClassificacaoDisponivel() ? "ia" : "heuristica";
+  const versaoClass = modo === "ia" ? "ia-ling-v1" : "heuristica-ling-v1";
+
+  const questoes = await prisma.enemQuestaoCorpus.findMany({
+    where: {
+      disciplina: "linguagens",
+      ...(opts.ano ? { ano: opts.ano } : {}),
+    },
+    select: {
+      id: true,
+      fonteId: true,
+      idioma: true,
+      enunciadoMd: true,
+      introducaoAlternativas: true,
+      alternativas: true,
+      conhecimentoEscopoId: true,
+      classificacaoConfianca: true,
+    },
+    orderBy: [{ ano: "desc" }, { numero: "asc" }],
+    take: limit,
+  });
+
+  const trilhas: IdiomaTrilhaLinguagens[] = ["COMUM", "ingles", "espanhol"];
+  const porTrilha = new Map<
+    IdiomaTrilhaLinguagens,
+    Array<{ id: string; fonteId: string; texto: string }>
+  >();
+  for (const t of trilhas) porTrilha.set(t, []);
+
+  const contagemTrilha = { portugues: 0, ingles: 0, espanhol: 0 };
+
+  if (!opts.soTriagem) {
+    for (const q of questoes) {
+      const trilha = trilhaLinguagensPorIdioma(q.idioma);
+      if (trilha === "ingles") contagemTrilha.ingles++;
+      else if (trilha === "espanhol") contagemTrilha.espanhol++;
+      else contagemTrilha.portugues++;
+
+      const texto = montarTextoQuestaoCorpus(q);
+      const jaTemN2 = n2ValidoTrilha(
+        q.conhecimentoEscopoId,
+        q.classificacaoConfianca,
+        trilha,
+        escopos,
+        confiancaMinima,
+        prefixoN2
+      );
+      if (!jaTemN2) {
+        porTrilha.get(trilha)!.push({ id: q.id, fonteId: q.fonteId, texto });
+      }
+    }
+  }
+
+  const resultados: Array<{ fonteId: string; resultado: ResultadoClassificacao }> = [];
+
+  for (const trilha of trilhas) {
+    const lote = porTrilha.get(trilha)!;
+    if (lote.length === 0) continue;
+
+    const escoposTrilha = filtrarEscoposLinguagens(escopos, trilha);
+    const parcial = await classificarLoteQuestoes(prisma, lote, {
+      modo,
+      escopos: escoposTrilha,
+      confiancaMinima,
+      assuntoId: opts.assuntoId,
+      persistir,
+      versaoClass,
+      materiaLabel,
+      materiaId,
+      catalogLabel: catalog.materiaLabel,
+      instrucaoExtra: instrucaoIaLinguagens(trilha),
+    });
+    resultados.push(...parcial);
+  }
+
+  const bench = agregarBenchmark(resultados);
+  const totalClassificar = [...porTrilha.values()].reduce((s, a) => s + a.length, 0);
+
+  return {
+    processadas: questoes.length,
+    classified: bench.classified,
+    unclassified: bench.unclassified,
+    review: bench.review,
+    pctClassified:
+      totalClassificar > 0
+        ? Math.round((bench.classified / totalClassificar) * 100)
+        : questoes.length > 0
+          ? 100
+          : 0,
+    topEscopos: bench.topEscopos,
+    triagem: {
+      biologia: contagemTrilha.portugues,
+      quimica: contagemTrilha.ingles,
+      fisica: contagemTrilha.espanhol,
+      indefinida: 0,
+    },
+    triagemIa: 0,
+    materiaProcessadas: totalClassificar,
     materiaId,
     modo,
   };

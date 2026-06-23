@@ -96,13 +96,14 @@ function resultadoDeIa(
 export async function classificarLoteIA(
   items: Array<{ fonteId: string; texto: string }>,
   escopos: Map<string, EscopoIndexEntry>,
-  opts?: { materiaId?: string; materiaLabel?: string }
+  opts?: { materiaId?: string; materiaLabel?: string; instrucaoExtra?: string }
 ): Promise<Map<string, ResultadoClassificacao>> {
   const map = new Map<string, ResultadoClassificacao>();
   if (items.length === 0) return map;
 
   const materiaLabel = opts?.materiaLabel ?? "Biologia";
   const materiaId = opts?.materiaId ?? "biologia";
+  const extra = opts?.instrucaoExtra?.trim();
 
   const blocos = items
     .map(
@@ -111,9 +112,12 @@ export async function classificarLoteIA(
     )
     .join("\n\n");
 
+  const systemBase =
+    `Você classifica questões do ENEM de ${materiaLabel}. Escolha EXATAMENTE um escopoId da lista. ` +
+    `Use null SOMENTE se nenhum N2 for minimamente plausível. Prefira o melhor encaixe parcial a null. NUNCA invente IDs.`;
+
   const data = await responsesComSchema<IaLoteRes>({
-    systemPrompt:
-      `Você classifica questões do ENEM de ${materiaLabel}. Escolha EXATAMENTE um escopoId da lista. Use null SOMENTE se nenhum N2 for minimamente plausível. Prefira o melhor encaixe parcial a null. NUNCA invente IDs.`,
+    systemPrompt: extra ? `${systemBase}\n\n${extra}` : systemBase,
     instrucao: `Catálogo N2 (escolha um ID ou null):\n${montarListaN2(escopos)}\n\nClassifique cada questão:\n${blocos}`,
     schema: SCHEMA,
     content: [],

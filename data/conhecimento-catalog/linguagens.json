@@ -1,10 +1,10 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.0-alpha",
+  "catalogVersion": "1.1.0-alpha",
   "materiaId": "linguagens",
   "materiaLabel": "Linguagens",
   "areaEnem": "Linguagens, Códigos e suas Tecnologias",
-  "notas": "Catálogo único para toda a área ENEM Linguagens (Língua Portuguesa, Literatura, Língua Estrangeira, Artes).",
+  "notas": "Três trilhas ortogonais: pt_* = bloco COMUM (Q~6–45); l2_en = inglês (Q~1–5); l2_es = espanhol (Q~1–5). Roteamento pelo campo idioma do corpus — IA só vê N2 da trilha.",
   "regras": {
     "idImutavel": true,
     "iaSoEscolheIds": true,
@@ -13,151 +13,188 @@
   },
   "assuntos": [
     {
-      "assuntoId": "interpretacao",
-      "assuntoLabel": "Interpretação de textos",
+      "assuntoId": "pt_interp",
+      "assuntoLabel": "Português — interpretação e gêneros",
       "dominios": [
         {
-          "id": "ling.interpretacao.leitura",
+          "id": "ling.pt_interp.leitura",
           "label": "Compreensão e inferência",
           "escopos": [
-            { "id": "ling.interpretacao.leitura.compreensao", "label": "Compreensão global e local", "keywords": ["compreensão", "compreensao", "interpretação", "interpretacao", "texto", "leitura", "significado"] },
-            { "id": "ling.interpretacao.leitura.inferencia", "label": "Inferência e implícitos", "keywords": ["inferência", "inferencia", "implícito", "implicito", "entrelinhas", "pressuposto", "subentendido"] },
-            { "id": "ling.interpretacao.leitura.intertextualidade", "label": "Intertextualidade e paródia", "keywords": ["intertextualidade", "paródia", "parodia", "citação", "citacao", "referência", "referencia", "alusão"] },
-            { "id": "ling.interpretacao.leitura.generos", "label": "Gêneros textuais e discursivos", "keywords": ["gênero textual", "genero textual", "notícia", "noticia", "crônica", "cronica", "artigo de opinião", "reportagem"] },
-            { "id": "ling.interpretacao.leitura.coesao", "label": "Coesão e coerência textual", "keywords": ["coesão", "coesao", "coerência", "coerencia", "conectivo", "referenciação", "progressão temática"] }
+            { "id": "ling.pt_interp.leitura.compreensao_global", "label": "Compreensão global do texto", "keywords": ["compreensão", "compreensao", "ideia central", "tema do texto", "resumo", "significado geral"] },
+            { "id": "ling.pt_interp.leitura.inferencia_implicito", "label": "Inferência e sentido implícito", "keywords": ["inferência", "inferencia", "implícito", "implicito", "entrelinhas", "pressuposto", "subentendido", "sugere que"] },
+            { "id": "ling.pt_interp.leitura.coesao_coerencia", "label": "Coesão, coerência e conectivos", "keywords": ["coesão", "coesao", "coerência", "coerencia", "conectivo", "referenciação", "progressão temática", "retomada"] },
+            { "id": "ling.pt_interp.leitura.intertextualidade", "label": "Intertextualidade e diálogo entre textos", "keywords": ["intertextualidade", "paródia", "parodia", "citação", "citacao", "referência", "alusão", "dialoga com"] }
           ]
         },
         {
-          "id": "ling.interpretacao.funcoes",
-          "label": "Funções da linguagem",
+          "id": "ling.pt_interp.discurso",
+          "label": "Funções e variação",
           "escopos": [
-            { "id": "ling.interpretacao.funcoes.referencial_emotiva", "label": "Funções referencial, emotiva e conativa", "keywords": ["função referencial", "funcao referencial", "função emotiva", "função conativa", "função poética", "função metalinguística"] },
-            { "id": "ling.interpretacao.funcoes.variacao", "label": "Variação linguística e preconceito", "keywords": ["variação linguística", "variacao linguistica", "dialetos", "registro formal", "informal", "preconceito linguístico"] }
+            { "id": "ling.pt_interp.discurso.funcoes_linguagem", "label": "Funções da linguagem", "keywords": ["função referencial", "função emotiva", "função conativa", "função poética", "função metalinguística", "funcao referencial"] },
+            { "id": "ling.pt_interp.discurso.variacao_linguistica", "label": "Variação linguística e preconceito", "keywords": ["variação linguística", "variacao linguistica", "dialetos", "registro formal", "informal", "preconceito linguístico", "norma culta"] }
+          ]
+        },
+        {
+          "id": "ling.pt_interp.generos",
+          "label": "Gêneros textuais e multimodalidade",
+          "escopos": [
+            { "id": "ling.pt_interp.generos.noticia_reportagem", "label": "Notícia e reportagem", "keywords": ["notícia", "noticia", "reportagem", "jornalismo", "manchete", "lead", "fato"] },
+            { "id": "ling.pt_interp.generos.cronica_conto", "label": "Crônica, conto e narrativa curta", "keywords": ["crônica", "cronica", "conto", "narrativa", "ficção", "ficcao", "personagem"] },
+            { "id": "ling.pt_interp.generos.artigo_opiniao", "label": "Artigo de opinião e editorial", "keywords": ["artigo de opinião", "editorial", "argumentação", "ponto de vista", "tese", "colunista"] },
+            { "id": "ling.pt_interp.generos.publicidade_propaganda", "label": "Publicidade, propaganda e marketing", "keywords": ["publicidade", "propaganda", "anúncio", "anuncio", "slogan", "campanha", "persuasão"] },
+            { "id": "ling.pt_interp.generos.carta_documento", "label": "Carta, e-mail e documentos", "keywords": ["carta", "e-mail", "email", "ofício", "oficio", "memorando", "documento oficial"] },
+            { "id": "ling.pt_interp.generos.multimodalidade", "label": "Texto multimodal e hipertexto", "keywords": ["multimodal", "hipertexto", "imagem e texto", "infográfico", "charge", "tirinha", "meme"] }
           ]
         }
       ]
     },
     {
-      "assuntoId": "literatura",
-      "assuntoLabel": "Literatura",
+      "assuntoId": "pt_lit",
+      "assuntoLabel": "Português — literatura",
       "dominios": [
         {
-          "id": "ling.literatura.brasileira",
-          "label": "Literatura brasileira",
+          "id": "ling.pt_lit.brasileira",
+          "label": "Literatura brasileira por período",
           "escopos": [
-            { "id": "ling.literatura.brasileira.colonial", "label": "Literatura colonial e barroco", "keywords": ["literatura colonial", "barroco", "Gregório de Matos", "Gregorio de Matos", "prosa jesuíta", "basílio"] },
-            { "id": "ling.literatura.brasileira.romantismo", "label": "Romantismo brasileiro", "keywords": ["romantismo", "José de Alencar", "Jose de Alencar", "Gonçalves Dias", "Goncalves Dias", "natureza", "indianismo"] },
-            { "id": "ling.literatura.brasileira.realismo", "label": "Realismo e naturalismo", "keywords": ["realismo", "Machado de Assis", "naturalismo", "Aluísio Azevedo", "Aluisio Azevedo", "critica social"] },
-            { "id": "ling.literatura.brasileira.modernismo", "label": "Modernismo e pós-modernismo", "keywords": ["modernismo", "Semana de 1922", "Mário de Andrade", "Mario de Andrade", "Drummond", "concretismo", "pós-modernismo"] },
-            { "id": "ling.literatura.brasileira.contemporanea", "label": "Literatura contemporânea", "keywords": ["literatura contemporânea", "literatura contemporanea", "Clarice Lispector", "Guimarães Rosa", "Guimaraes Rosa", "autores atuais"] }
+            { "id": "ling.pt_lit.brasileira.colonial_barroco", "label": "Colonial e barroco", "keywords": ["literatura colonial", "barroco", "Gregório de Matos", "Gregorio de Matos", "jesuíta", "basílio", "basilio"] },
+            { "id": "ling.pt_lit.brasileira.romantismo", "label": "Romantismo", "keywords": ["romantismo", "José de Alencar", "Jose de Alencar", "Gonçalves Dias", "Goncalves Dias", "indianismo", "natureza"] },
+            { "id": "ling.pt_lit.brasileira.realismo_naturalismo", "label": "Realismo e naturalismo", "keywords": ["realismo", "Machado de Assis", "naturalismo", "Aluísio Azevedo", "Aluisio Azevedo", "critica social"] },
+            { "id": "ling.pt_lit.brasileira.modernismo", "label": "Modernismo", "keywords": ["modernismo", "Semana de 1922", "Mário de Andrade", "Mario de Andrade", "Drummond", "Oswald de Andrade", "concretismo"] },
+            { "id": "ling.pt_lit.brasileira.contemporanea", "label": "Contemporânea", "keywords": ["Clarice Lispector", "Guimarães Rosa", "Guimaraes Rosa", "literatura contemporânea", "literatura contemporanea"] }
           ]
         },
         {
-          "id": "ling.literatura.geral",
-          "label": "Literatura geral e escolas",
+          "id": "ling.pt_lit.geral",
+          "label": "Literatura geral",
           "escopos": [
-            { "id": "ling.literatura.geral.classicismo", "label": "Classicismo e humanismo", "keywords": ["classicismo", "Camões", "Camoes", "humanismo renascentista", "Renascimento"] },
-            { "id": "ling.literatura.geral.vanguardas", "label": "Vanguardas europeias", "keywords": ["vanguardas", "surrealismo", "dadaísmo", "dadismo", "futurismo", "expressionismo"] }
+            { "id": "ling.pt_lit.geral.classicismo_renascentismo", "label": "Classicismo e Renascimento", "keywords": ["classicismo", "Camões", "Camoes", "Renascimento", "humanismo"] },
+            { "id": "ling.pt_lit.geral.vanguardas", "label": "Vanguardas europeias", "keywords": ["vanguardas", "surrealismo", "dadaísmo", "dadismo", "futurismo", "expressionismo"] }
           ]
         },
         {
-          "id": "ling.literatura.recursos",
+          "id": "ling.pt_lit.recursos",
           "label": "Recursos literários",
           "escopos": [
-            { "id": "ling.literatura.recursos.figuras", "label": "Figuras de linguagem literárias", "keywords": ["metáfora", "metafora", "metonímia", "metonimia", "ironía", "ironia", "hipérbole", "hipérbole", "personificação"] },
-            { "id": "ling.literatura.recursos.versificacao", "label": "Versificação e métrica", "keywords": ["verso", "estrofe", "rima", "soneto", "métrica", "metrica", "poema"] }
+            { "id": "ling.pt_lit.recursos.figuras_literarias", "label": "Figuras de linguagem literárias", "keywords": ["metáfora", "metafora", "metonímia", "metonimia", "ironia", "hipérbole", "hipérbole", "personificação", "eufemismo"] },
+            { "id": "ling.pt_lit.recursos.versificacao", "label": "Versificação e métrica", "keywords": ["verso", "estrofe", "rima", "soneto", "métrica", "metrica", "poema", "poesia"] },
+            { "id": "ling.pt_lit.recursos.narratologia", "label": "Narratologia (foco, tempo, narrador)", "keywords": ["narrador", "foco narrativo", "tempo narrativo", "discurso direto", "discurso indireto", "enredo"] }
           ]
         }
       ]
     },
     {
-      "assuntoId": "gramatica",
-      "assuntoLabel": "Gramática normativa",
+      "assuntoId": "pt_gram",
+      "assuntoLabel": "Português — gramática normativa",
       "dominios": [
         {
-          "id": "ling.gramatica.morfologia",
+          "id": "ling.pt_gram.morfologia",
           "label": "Morfologia",
           "escopos": [
-            { "id": "ling.gramatica.morfologia.classes", "label": "Classes de palavras", "keywords": ["substantivo", "adjetivo", "verbo", "advérbio", "adverbio", "preposição", "preposicao", "classe gramatical"] },
-            { "id": "ling.gramatica.morfologia.verbos", "label": "Tempos e modos verbais", "keywords": ["tempo verbal", "modo verbal", "indicativo", "subjuntivo", "imperativo", "conjugação", "conjugacao"] },
-            { "id": "ling.gramatica.morfologia.pronomes", "label": "Pronomes e colocação", "keywords": ["pronome", "colocação pronominal", "colocacao pronominal", "próclise", "proclise", "ênclise", "enclise", "mesóclise"] }
+            { "id": "ling.pt_gram.morfologia.classes_palavras", "label": "Classes de palavras", "keywords": ["substantivo", "adjetivo", "verbo", "advérbio", "adverbio", "preposição", "preposicao", "classe gramatical"] },
+            { "id": "ling.pt_gram.morfologia.verbo_tempo_modo", "label": "Tempos e modos verbais", "keywords": ["tempo verbal", "modo verbal", "indicativo", "subjuntivo", "imperativo", "conjugação", "conjugacao"] },
+            { "id": "ling.pt_gram.morfologia.pronomes_colocacao", "label": "Pronomes e colocação", "keywords": ["pronome", "colocação pronominal", "colocacao pronominal", "próclise", "proclise", "ênclise", "enclise", "mesóclise"] }
           ]
         },
         {
-          "id": "ling.gramatica.sintaxe",
+          "id": "ling.pt_gram.sintaxe",
           "label": "Sintaxe",
           "escopos": [
-            { "id": "ling.gramatica.sintaxe.termos", "label": "Termos da oração", "keywords": ["sujeito", "predicado", "objeto direto", "objeto indireto", "complemento nominal", "adjunto adverbial"] },
-            { "id": "ling.gramatica.sintaxe.concordancia", "label": "Concordância nominal e verbal", "keywords": ["concordância", "concordancia", "concordância verbal", "concordância nominal", "sujeito composto"] },
-            { "id": "ling.gramatica.sintaxe.regencia", "label": "Regência verbal e nominal", "keywords": ["regência", "regencia", "regência verbal", "regência nominal", "crase", "preposição exigida"] },
-            { "id": "ling.gramatica.sintaxe.oracoes", "label": "Período composto e orações", "keywords": ["oração subordinada", "oração coordenada", "período composto", "periodo composto", "conjunção"] }
+            { "id": "ling.pt_gram.sintaxe.termos_oracao", "label": "Termos da oração", "keywords": ["sujeito", "predicado", "objeto direto", "objeto indireto", "complemento nominal", "adjunto adverbial"] },
+            { "id": "ling.pt_gram.sintaxe.concordancia", "label": "Concordância nominal e verbal", "keywords": ["concordância", "concordancia", "concordância verbal", "concordância nominal", "sujeito composto"] },
+            { "id": "ling.pt_gram.sintaxe.regencia_crase", "label": "Regência e crase", "keywords": ["regência", "regencia", "regência verbal", "regência nominal", "crase", "preposição exigida"] },
+            { "id": "ling.pt_gram.sintaxe.oracoes_periodo", "label": "Período composto e orações", "keywords": ["oração subordinada", "oração coordenada", "período composto", "periodo composto", "conjunção"] }
           ]
         },
         {
-          "id": "ling.gramatica.ortografia",
+          "id": "ling.pt_gram.ortografia",
           "label": "Ortografia e pontuação",
           "escopos": [
-            { "id": "ling.gramatica.ortografia.acentuacao", "label": "Acentuação gráfica", "keywords": ["acentuação", "acentuacao", "acento agudo", "acento circunflexo", "til", "oxítona", "paroxítona"] },
-            { "id": "ling.gramatica.ortografia.pontuacao", "label": "Pontuação", "keywords": ["vírgula", "virgula", "ponto", "dois-pontos", "aspas", "pontuação", "pontuacao", "reticências"] }
+            { "id": "ling.pt_gram.ortografia.acentuacao", "label": "Acentuação gráfica", "keywords": ["acentuação", "acentuacao", "acento agudo", "acento circunflexo", "til", "oxítona", "paroxítona"] },
+            { "id": "ling.pt_gram.ortografia.pontuacao", "label": "Pontuação", "keywords": ["vírgula", "virgula", "ponto", "dois-pontos", "aspas", "pontuação", "pontuacao", "reticências"] },
+            { "id": "ling.pt_gram.ortografia.oficial", "label": "Ortografia oficial (novo acordo)", "keywords": ["ortografia", "novo acordo", "grafia", "hífen", "hifen", "emprego de letras"] }
           ]
         }
       ]
     },
     {
-      "assuntoId": "semantica",
-      "assuntoLabel": "Semântica e estilística",
+      "assuntoId": "pt_sem",
+      "assuntoLabel": "Português — semântica",
       "dominios": [
         {
-          "id": "ling.semantica.significacao",
-          "label": "Significação e sentido",
+          "id": "ling.pt_sem.significacao",
+          "label": "Significação",
           "escopos": [
-            { "id": "ling.semantica.significacao.polissemia", "label": "Polissemia, homonímia e sinonímia", "keywords": ["polissemia", "homonímia", "homonimia", "sinonímia", "sinonimia", "antonímia", "antonimia"] },
-            { "id": "ling.semantica.significacao.denotacao", "label": "Denotação e conotação", "keywords": ["denotação", "denotacao", "conotação", "conotacao", "sentido figurado", "sentido literal"] },
-            { "id": "ling.semantica.significacao.figuras_nao_literarias", "label": "Figuras de linguagem em textos não literários", "keywords": ["eufemismo", "pleonasmo", "paralelismo", "antítese", "antitese", "publicidade", "propaganda"] }
+            { "id": "ling.pt_sem.significacao.polissemia_homonimia", "label": "Polissemia, homonímia e sinonímia", "keywords": ["polissemia", "homonímia", "homonimia", "sinonímia", "sinonimia", "antonímia", "antonimia"] },
+            { "id": "ling.pt_sem.significacao.denotacao_conotacao", "label": "Denotação e conotação", "keywords": ["denotação", "denotacao", "conotação", "conotacao", "sentido figurado", "sentido literal"] }
           ]
         }
       ]
     },
     {
-      "assuntoId": "lingua_estrangeira",
-      "assuntoLabel": "Língua estrangeira",
-      "dominios": [
-        {
-          "id": "ling.lingua_estrangeira.leitura",
-          "label": "Interpretação em L2",
-          "escopos": [
-            { "id": "ling.lingua_estrangeira.leitura.ingles", "label": "Interpretação em inglês", "keywords": ["english", "inglês", "ingles", "reading comprehension", "according to the text", "the author"] },
-            { "id": "ling.lingua_estrangeira.leitura.espanhol", "label": "Interpretação em espanhol", "keywords": ["español", "espanhol", "según el texto", "segun el texto", "el autor", "comprensión lectora"] },
-            { "id": "ling.lingua_estrangeira.leitura.vocabulario", "label": "Vocabulário e cognatos em L2", "keywords": ["vocabulary", "vocabulário", "cognato", "false friend", "falso cognato", "meaning", "significado"] }
-          ]
-        }
-      ]
-    },
-    {
-      "assuntoId": "artes",
+      "assuntoId": "pt_art",
       "assuntoLabel": "Artes e cultura visual",
       "dominios": [
         {
-          "id": "ling.artes.visuais",
+          "id": "ling.pt_art.visuais",
           "label": "Artes visuais e manifestações",
           "escopos": [
-            { "id": "ling.artes.visuais.movimentos", "label": "Movimentos artísticos", "keywords": ["impressionismo", "cubismo", "surrealismo", "arte moderna", "arte contemporânea", "vanguarda artística"] },
-            { "id": "ling.artes.visuais.cultura_pop", "label": "Cultura popular, música e cinema", "keywords": ["música", "musica", "cinema", "fotografia", "street art", "cultura popular", "patrimônio imaterial"] },
-            { "id": "ling.artes.visuais.leitura_imagem", "label": "Leitura de imagem e publicidade", "keywords": ["leitura de imagem", "publicidade", "propaganda", "cartaz", "charge", "tirinha", "meme"] }
+            { "id": "ling.pt_art.visuais.movimentos", "label": "Movimentos artísticos", "keywords": ["impressionismo", "cubismo", "surrealismo", "arte moderna", "arte contemporânea", "vanguarda artística"] },
+            { "id": "ling.pt_art.visuais.cultura_popular", "label": "Cultura popular, música e cinema", "keywords": ["música", "musica", "cinema", "fotografia", "street art", "cultura popular", "patrimônio imaterial"] },
+            { "id": "ling.pt_art.visuais.leitura_imagem", "label": "Leitura de imagem (arte, charge, cartaz)", "keywords": ["leitura de imagem", "cartaz", "charge", "tirinha", "obra de arte", "autoria visual"] }
           ]
         }
       ]
     },
     {
-      "assuntoId": "tecnologias",
+      "assuntoId": "pt_tec",
       "assuntoLabel": "Tecnologias da linguagem",
       "dominios": [
         {
-          "id": "ling.tecnologias.digital",
+          "id": "ling.pt_tec.digital",
           "label": "Linguagem digital",
           "escopos": [
-            { "id": "ling.tecnologias.digital.internet", "label": "Internet, mídias digitais e hipertexto", "keywords": ["internet", "hipertexto", "mídia digital", "midia digital", "redes sociais", "blog", "multimodalidade"] },
-            { "id": "ling.tecnologias.digital.acessibilidade", "label": "Acessibilidade e inclusão linguística", "keywords": ["acessibilidade", "libras", "inclusão", "inclusao", "tecnologia assistiva", "comunicação inclusiva"] }
+            { "id": "ling.pt_tec.digital.internet_redes", "label": "Internet, mídias digitais e redes", "keywords": ["internet", "mídia digital", "midia digital", "redes sociais", "blog", "comunicação digital"] },
+            { "id": "ling.pt_tec.digital.acessibilidade", "label": "Acessibilidade e Libras", "keywords": ["acessibilidade", "libras", "inclusão", "inclusao", "tecnologia assistiva", "comunicação inclusiva"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "l2_en",
+      "assuntoLabel": "Inglês — interpretação L2",
+      "dominios": [
+        {
+          "id": "ling.l2_en.leitura",
+          "label": "Reading comprehension (EN)",
+          "escopos": [
+            { "id": "ling.l2_en.leitura.compreensao_global", "label": "Main idea / global understanding", "keywords": ["main idea", "according to the text", "the text is about", "overall", "the author describes", "reading comprehension"] },
+            { "id": "ling.l2_en.leitura.inferencia", "label": "Inference and implicit meaning", "keywords": ["infer", "inference", "implies", "suggests", "between the lines", "implicit", "it can be concluded"] },
+            { "id": "ling.l2_en.leitura.vocabulario_contexto", "label": "Vocabulary in context", "keywords": ["meaning of", "word", "vocabulary", "underlined", "in the context", "closest meaning", "synonym"] },
+            { "id": "ling.l2_en.leitura.coesao_referencia", "keywords": ["cohesion", "reference", "connectors", "however", "therefore", "whereas", "pronoun refers", "linking words"], "label": "Cohesion and reference" },
+            { "id": "ling.l2_en.leitura.proposito_autor", "label": "Author's purpose and tone", "keywords": ["author's purpose", "author's intention", "tone", "attitude", "aims to", "in order to"] },
+            { "id": "ling.l2_en.leitura.comparacao_textos", "label": "Comparing two texts (ENEM style)", "keywords": ["text I", "text II", "both texts", "compare", "contrast", "similar", "different", "TEXTO I", "TEXTO II"] },
+            { "id": "ling.l2_en.leitura.falsos_cognatos", "label": "False cognates and word formation", "keywords": ["false friend", "falso cognato", "cognate", "actually", "pretend", "sensible", "eventually"] },
+            { "id": "ling.l2_en.leitura.gramatica_l2", "label": "Grammar in context (tenses, modals)", "keywords": ["grammar", "tense", "modal", "passive voice", "conditional", "gerund", "past perfect", "would"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "l2_es",
+      "assuntoLabel": "Espanhol — interpretación L2",
+      "dominios": [
+        {
+          "id": "ling.l2_es.leitura",
+          "label": "Comprensión lectora (ES)",
+          "escopos": [
+            { "id": "ling.l2_es.leitura.compreensao_global", "label": "Idea principal / comprensión global", "keywords": ["según el texto", "segun el texto", "idea principal", "el texto trata", "comprensión lectora", "comprension lectora"] },
+            { "id": "ling.l2_es.leitura.inferencia", "label": "Inferencia e implícito", "keywords": ["infiere", "inferencia", "implícito", "implicito", "se puede concluir", "sugiere", "entre líneas"] },
+            { "id": "ling.l2_es.leitura.vocabulario_contexto", "label": "Vocabulario en contexto", "keywords": ["significado de", "palabra", "vocablos", "en el contexto", "sinónimo", "sinonimo", "sentido de"] },
+            { "id": "ling.l2_es.leitura.coesao_referencia", "label": "Cohesión y referencia", "keywords": ["cohesión", "cohesion", "referencia", "conectores", "sin embargo", "por tanto", "pronombre"] },
+            { "id": "ling.l2_es.leitura.proposito_autor", "label": "Propósito del autor", "keywords": ["propósito del autor", "proposito del autor", "intención", "intencion", "tono", "el autor pretende"] },
+            { "id": "ling.l2_es.leitura.comparacao_textos", "label": "Comparación de textos (estilo ENEM)", "keywords": ["TEXTO I", "TEXTO II", "TEXTO 1", "TEXTO 2", "ambos textos", "comparar", "semelhança", "diferença", "diferencia"] },
+            { "id": "ling.l2_es.leitura.falsos_cognatos", "label": "Falsos cognatos y formación de palabras", "keywords": ["falso cognato", "falso amigo", "cognato", "embarazada", "actualmente", "realizar", "exito"] },
+            { "id": "ling.l2_es.leitura.gramatica_l2", "label": "Gramática en contexto (tiempos, modos)", "keywords": ["tiempo verbal", "modo subjuntivo", "condicional", "voz pasiva", "gerundio", "pretérito", "preterito", "futuro"] }
           ]
         }
       ]

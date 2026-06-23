@@ -32,6 +32,10 @@ export type EnemCorpusStats = {
     total: number;
     triagem: { biologia: number; quimica: number; fisica: number; indefinida: number };
   };
+  linguagens: {
+    total: number;
+    trilhas: { portugues: number; ingles: number; espanhol: number };
+  };
   materiaAtiva: MateriaCorpusStats;
   porDisciplina: Array<{ disciplina: string; count: number }>;
   porAno: Array<{ ano: number; count: number }>;
@@ -106,6 +110,10 @@ export async function obterStatsCorpusEnem(
     triQuim,
     triFis,
     triIndef,
+    lingTotal,
+    lingComum,
+    lingEn,
+    lingEs,
     materiaAtiva,
     porDisciplina,
     porAno,
@@ -136,6 +144,10 @@ export async function obterStatsCorpusEnem(
     prisma.enemQuestaoCorpus.count({
       where: { disciplina: "ciencias_natureza", materia: null },
     }),
+    prisma.enemQuestaoCorpus.count({ where: { disciplina: "linguagens" } }),
+    prisma.enemQuestaoCorpus.count({ where: { disciplina: "linguagens", idioma: "COMUM" } }),
+    prisma.enemQuestaoCorpus.count({ where: { disciplina: "linguagens", idioma: "ingles" } }),
+    prisma.enemQuestaoCorpus.count({ where: { disciplina: "linguagens", idioma: "espanhol" } }),
     statsMateria(prisma, materiaId),
     prisma.enemQuestaoCorpus.groupBy({
       by: ["disciplina"],
@@ -168,6 +180,10 @@ export async function obterStatsCorpusEnem(
         fisica: triFis,
         indefinida: triIndef,
       },
+    },
+    linguagens: {
+      total: lingTotal,
+      trilhas: { portugues: lingComum, ingles: lingEn, espanhol: lingEs },
     },
     materiaAtiva: materiaAtiva,
     porDisciplina: porDisciplina.map((d) => ({

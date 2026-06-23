@@ -30,6 +30,10 @@ type Stats = {
     total: number;
     triagem: { biologia: number; quimica: number; fisica: number; indefinida: number };
   };
+  linguagens: {
+    total: number;
+    trilhas: { portugues: number; ingles: number; espanhol: number };
+  };
   materiaAtiva: MateriaStats;
   porDisciplina: Array<{ disciplina: string; count: number }>;
   porAno: Array<{ ano: number; count: number }>;
@@ -85,6 +89,7 @@ export function AdminEnemCorpusPanel() {
 
   const materiaLabel = MATERIA_TAB.find((t) => t.id === materiaId)?.label ?? materiaId;
   const ehNatureza = NATUREZA_IDS.has(materiaId);
+  const ehLinguagens = materiaId === "linguagens";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -136,6 +141,10 @@ export function AdminEnemCorpusPanel() {
         setUltimoRun(
           `Triagem: Bio ${r.triagem.biologia} · Quím ${r.triagem.quimica} · Fís ${r.triagem.fisica} · ? ${r.triagem.indefinida}` +
             (r.triagemIa ? ` · +${r.triagemIa} via IA` : "")
+        );
+      } else if (ehLinguagens) {
+        setUltimoRun(
+          `${matNome}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · PT ${r.triagem.biologia} · EN ${r.triagem.quimica} · ES ${r.triagem.fisica}`
         );
       } else if (ehNatureza) {
         const triKey =
@@ -195,6 +204,15 @@ export function AdminEnemCorpusPanel() {
             classifica só a matéria selecionada — não sobrescreve N2 de outras.
           </p>
         </Card>
+      ) : ehLinguagens ? (
+        <Card className="border-indigo-200 bg-indigo-50/60">
+          <p className="text-sm text-indigo-900">
+            <strong>3 trilhas ortogonais.</strong> Roteamento pelo campo{" "}
+            <code className="text-xs">idioma</code> do corpus (COMUM / inglês / espanhol). A IA só
+            vê N2 da trilha — português (interpretação, literatura, gramática, artes) ≠ L2 EN ≠ L2
+            ES.
+          </p>
+        </Card>
       ) : (
         <Card className="border-violet-200 bg-violet-50/60">
           <p className="text-sm text-violet-900">
@@ -204,7 +222,9 @@ export function AdminEnemCorpusPanel() {
         </Card>
       )}
 
-      <div className={`grid gap-4 sm:grid-cols-2 ${ehNatureza ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+      <div
+        className={`grid gap-4 sm:grid-cols-2 ${ehNatureza || ehLinguagens ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+      >
         <Card>
           <p className="text-sm text-slate-500">Questões no corpus</p>
           <p className="text-3xl font-bold text-slate-900">{stats?.total ?? 0}</p>
@@ -224,6 +244,17 @@ export function AdminEnemCorpusPanel() {
           <p className="text-3xl font-bold text-amber-700">{mat?.fila ?? 0}</p>
           <p className="text-xs text-slate-500">buracos no catálogo</p>
         </Card>
+        {ehLinguagens && (
+          <Card>
+            <p className="text-sm text-slate-500">Trilhas Linguagens</p>
+            <p className="text-lg font-bold text-slate-900">
+              PT {stats?.linguagens?.trilhas.portugues ?? 0} · EN{" "}
+              {stats?.linguagens?.trilhas.ingles ?? 0} · ES{" "}
+              {stats?.linguagens?.trilhas.espanhol ?? 0}
+            </p>
+            <p className="text-xs text-slate-500">total {stats?.linguagens?.total ?? 0}</p>
+          </Card>
+        )}
         {ehNatureza && (
           <Card>
             <p className="text-sm text-slate-500">Triagem Natureza</p>
