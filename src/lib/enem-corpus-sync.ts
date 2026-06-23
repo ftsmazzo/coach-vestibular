@@ -30,7 +30,7 @@ export type ResetSyncCorpusOpts = SyncCorpusOpts & {
 };
 
 export type ResetSyncCorpusResultado = SyncCorpusResultado & {
-  reset: ZerarCorpusResultado | null;
+  reset: ZerarCorpusResultado;
 };
 
 export type SyncCorpusResultado = {
