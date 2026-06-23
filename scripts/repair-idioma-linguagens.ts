@@ -8,8 +8,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { inferirIdiomaCorpusLinguagens } from "../src/lib/enem-classificar/linguagens-rota";
-import { montarFonteId } from "../src/lib/enem-dev/estrutural";
+import { repararIdiomaLinguagensCorpus } from "../src/lib/enem-repair-linguagens";
 
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
@@ -22,83 +21,12 @@ async function main() {
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
   try {
-    const rows = await prisma.enemQuestaoCorpus.findMany({
-      where: { disciplina: "linguagens", numero: { lte: 5 } },
-      select: {
-        id: true,
-        ano: true,
-        numero: true,
-        idioma: true,
-        fonteId: true,
-        enunciadoMd: true,
-        introducaoAlternativas: true,
-        conhecimentoEscopoId: true,
-      },
-    });
-
-    let corrigidas = 0;
-    let n2Limpos = 0;
-
-    for (const r of rows) {
-      const texto = [r.enunciadoMd, r.introducaoAlternativas].filter(Boolean).join("\n");
-      const idiomaDb = r.idioma === "ingles" || r.idioma === "espanhol" ? r.idioma : "COMUM";
-      const idiomaNovo = inferirIdiomaCorpusLinguagens(
-        r.numero,
-        idiomaDb === "COMUM" ? null : idiomaDb,
-        texto
-      );
-      const fonteIdNovo = montarFonteId(r.ano, r.numero, idiomaNovo);
-
-      if (idiomaNovo === r.idioma && fonteIdNovo === r.fonteId) continue;
-
-      const conflito = await prisma.enemQuestaoCorpus.findUnique({
-        where: { fonteId: fonteIdNovo },
-        select: { id: true },
-      });
-      if (conflito && conflito.id !== r.id) {
-        console.warn(`  SKIP ${r.fonteId} → ${fonteIdNovo} (fonteId já existe)`);
-        continue;
-      }
-
-      const limparN2 =
-        r.conhecimentoEscopoId &&
-        ((idiomaNovo === "ingles" && !r.conhecimentoEscopoId.includes("l2_en")) ||
-          (idiomaNovo === "espanhol" && !r.conhecimentoEscopoId.includes("l2_es")) ||
-          (idiomaNovo === "COMUM" &&
-            (r.conhecimentoEscopoId.includes("l2_en") || r.conhecimentoEscopoId.includes("l2_es"))));
-
-      console.log(
-        `  ${r.fonteId} → ${fonteIdNovo} (idioma ${r.idioma} → ${idiomaNovo})` +
-          (limparN2 ? " · limpa N2" : "")
-      );
-
-      if (!dryRun) {
-        await prisma.enemQuestaoCorpus.update({
-          where: { id: r.id },
-          data: {
-            idioma: idiomaNovo,
-            fonteId: fonteIdNovo,
-            ...(limparN2
-              ? {
-                  conhecimentoEscopoId: null,
-                  conhecimentoDominioId: null,
-                  assunto: null,
-                  classificacaoConfianca: null,
-                  classificacaoVersao: null,
-                }
-              : {}),
-          },
-        });
-      }
-
-      corrigidas++;
-      if (limparN2) n2Limpos++;
-    }
-
+    const r = await repararIdiomaLinguagensCorpus(prisma, { dryRun });
+    for (const linha of r.amostra) console.log(`  ${linha}`);
     console.log(
-      `\n${dryRun ? "[dry-run] " : ""}Corrigidas: ${corrigidas} · N2 limpos para reclassificar: ${n2Limpos}`
+      `\n${dryRun ? "[dry-run] " : ""}Corrigidas: ${r.corrigidas} · N2 limpos: ${r.n2Limpos} · ignoradas: ${r.ignoradas}`
     );
-    if (!dryRun && corrigidas > 0) {
+    if (!dryRun && r.corrigidas > 0) {
       console.log("Rode Classificar Linguagens com IA no admin para reprocessar trilhas L2.");
     }
   } finally {

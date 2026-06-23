@@ -86,6 +86,7 @@ export function AdminEnemCorpusPanel() {
   const [erro, setErro] = useState<string | null>(null);
   const [catalogoErro, setCatalogoErro] = useState<string | null>(null);
   const [iaDisponivel, setIaDisponivel] = useState(false);
+  const [linguagensRotaVersion, setLinguagensRotaVersion] = useState<number | null>(null);
 
   const materiaLabel = MATERIA_TAB.find((t) => t.id === materiaId)?.label ?? materiaId;
   const ehNatureza = NATUREZA_IDS.has(materiaId);
@@ -104,6 +105,9 @@ export function AdminEnemCorpusPanel() {
       setCatalogo(data.catalogo);
       setCatalogoErro(data.catalogoErro ?? null);
       setIaDisponivel(Boolean(data.iaDisponivel));
+      setLinguagensRotaVersion(
+        typeof data.linguagensRotaVersion === "number" ? data.linguagensRotaVersion : null
+      );
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -116,7 +120,12 @@ export function AdminEnemCorpusPanel() {
   }, [load]);
 
   async function rodarClassificacao(
-    opts: { triagemOnly?: boolean; retriagem?: boolean; modo?: "ia" | "heuristica" } = {}
+    opts: {
+      triagemOnly?: boolean;
+      retriagem?: boolean;
+      modo?: "ia" | "heuristica";
+      repairLinguagensIdioma?: boolean;
+    } = {}
   ) {
     setClassificando(true);
     setErro(null);
@@ -130,6 +139,7 @@ export function AdminEnemCorpusPanel() {
           soTriagem: opts.triagemOnly ?? false,
           retriagem: opts.retriagem ?? false,
           modo: iaDisponivel && (opts.modo ?? "ia") === "ia" ? "ia" : "heuristica",
+          repairLinguagensIdioma: opts.repairLinguagensIdioma ?? false,
         }),
       });
       const data = await res.json();
@@ -143,8 +153,15 @@ export function AdminEnemCorpusPanel() {
             (r.triagemIa ? ` · +${r.triagemIa} via IA` : "")
         );
       } else if (ehLinguagens) {
+        const repair = data.repair as
+          | { corrigidas: number; n2Limpos: number; ignoradas: number }
+          | null
+          | undefined;
+        const repairTxt = repair
+          ? ` · repair ${repair.corrigidas} idioma, ${repair.n2Limpos} N2 limpos`
+          : "";
         setUltimoRun(
-          `${matNome}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · PT ${r.triagem.biologia} · EN ${r.triagem.quimica} · ES ${r.triagem.fisica}`
+          `${matNome}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · PT ${r.triagem.biologia} · EN ${r.triagem.quimica} · ES ${r.triagem.fisica}${repairTxt}`
         );
       } else if (ehNatureza) {
         const triKey =
@@ -205,13 +222,26 @@ export function AdminEnemCorpusPanel() {
           </p>
         </Card>
       ) : ehLinguagens ? (
-        <Card className="border-indigo-200 bg-indigo-50/60">
-          <p className="text-sm text-indigo-900">
-            <strong>3 trilhas ortogonais.</strong> Q1–5 ENEM: espanhol (<code>idioma:espanhol</code>) e
-            inglês (<code>idioma:COMUM</code> no banco — regra estrutural, não é português). Q6+ =
-            português. A IA só vê N2 da trilha.
-          </p>
-        </Card>
+        <>
+          <Card className="border-indigo-200 bg-indigo-50/60">
+            <p className="text-sm text-indigo-900">
+              <strong>3 trilhas ortogonais.</strong> Q1–5 ENEM: espanhol (<code>idioma:espanhol</code>) e
+              inglês (<code>idioma:COMUM</code> no banco — regra estrutural, não é português). Q6+ =
+              português. A IA só vê N2 da trilha.
+              {linguagensRotaVersion != null && (
+                <span className="ml-1 text-xs text-indigo-700">· rota v{linguagensRotaVersion}</span>
+              )}
+            </p>
+          </Card>
+          {linguagensRotaVersion !== 2 && (
+            <Card className="border-amber-300 bg-amber-50/90">
+              <p className="text-sm text-amber-950">
+                <strong>Deploy desatualizado.</strong> Este servidor ainda não tem a regra Q1–5 COMUM =
+                inglês (rota v2). Faça redeploy e use o botão abaixo para corrigir idioma + N2.
+              </p>
+            </Card>
+          )}
+        </>
       ) : (
         <Card className="border-violet-200 bg-violet-50/60">
           <p className="text-sm text-violet-900">
@@ -302,6 +332,17 @@ export function AdminEnemCorpusPanel() {
               ? `Classificar ${materiaLabel} com IA`
               : `Classificar ${materiaLabel} (heurística)`}
         </Button>
+        {ehLinguagens && (
+          <Button
+            variant="secondary"
+            onClick={() =>
+              rodarClassificacao({ repairLinguagensIdioma: true, retriagem: true, modo: "ia" })
+            }
+            disabled={!podeClassificar || linguagensRotaVersion !== 2}
+          >
+            Corrigir EN Q1–5 + reclassificar
+          </Button>
+        )}
         {iaDisponivel && (
           <Button
             variant="secondary"

@@ -13,6 +13,10 @@ import {
   type MateriaCorpusId,
 } from "@/lib/conhecimento-catalog";
 import { parseMateriaCorpusId } from "@/lib/enem-corpus-materia";
+import {
+  LINGUAGENS_ROTA_VERSION,
+  repararIdiomaLinguagensCorpus,
+} from "@/lib/enem-repair-linguagens";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
@@ -61,6 +65,7 @@ export async function GET(req: Request) {
     materiaId,
     materiasDisponiveis: [...MATERIAS_CORPUS],
     iaDisponivel: Boolean(process.env.OPENAI_API_KEY?.trim()),
+    linguagensRotaVersion: LINGUAGENS_ROTA_VERSION,
   });
 }
 
@@ -74,6 +79,7 @@ const classificarSchema = z.object({
   soTriagem: z.boolean().optional(),
   retriagem: z.boolean().optional(),
   modo: z.enum(["heuristica", "ia"]).optional(),
+  repairLinguagensIdioma: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {
@@ -104,6 +110,11 @@ export async function POST(req: Request) {
     );
   }
 
+  let repair: Awaited<ReturnType<typeof repararIdiomaLinguagensCorpus>> | null = null;
+  if (body.data.repairLinguagensIdioma && materiaId === "linguagens") {
+    repair = await repararIdiomaLinguagensCorpus(prisma);
+  }
+
   const resultado = await classificarCorpusEnem(prisma, {
     ...body.data,
     materiaId,
@@ -112,5 +123,5 @@ export async function POST(req: Request) {
 
   const stats = await obterStatsCorpusEnem(prisma, materiaId);
 
-  return NextResponse.json({ resultado, stats, materiaId });
+  return NextResponse.json({ resultado, stats, materiaId, repair });
 }
