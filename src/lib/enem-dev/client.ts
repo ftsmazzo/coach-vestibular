@@ -16,9 +16,15 @@ async function throttle(): Promise<void> {
 
 async function fetchJson<T>(path: string): Promise<T> {
   await throttle();
-  const res = await fetch(`${BASE_URL}${path}`);
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "coach-vestibular/1.0",
+    },
+  });
   if (!res.ok) {
-    throw new Error(`enem.dev ${path}: HTTP ${res.status}`);
+    const body = await res.text().catch(() => "");
+    throw new Error(`enem.dev ${path}: HTTP ${res.status}${body ? ` — ${body.slice(0, 120)}` : ""}`);
   }
   return res.json() as Promise<T>;
 }

@@ -1,5 +1,9 @@
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
-import { iterarQuestoesL2Ingles, listarProvasEnem } from "@/lib/enem-dev/client";
+import {
+  buscarQuestaoEnem,
+  iterarQuestoesL2Ingles,
+  listarProvasEnem,
+} from "@/lib/enem-dev/client";
 import { mapearQuestaoEstrutural } from "@/lib/enem-dev/estrutural";
 
 export type ImportL2InglesResultado = {
@@ -7,7 +11,27 @@ export type ImportL2InglesResultado = {
   criadas: number;
   atualizadas: number;
   anos: number[];
+  avisos: string[];
 };
+
+/** Mínimo esperado de questões EN Q1–5 no corpus (15 anos × 5). */
+export const L2_INGLES_MINIMO_ESPERADO = 50;
+
+export async function contarInglesLinguagensCorpus(prisma: PrismaClient): Promise<number> {
+  return prisma.enemQuestaoCorpus.count({
+    where: { disciplina: "linguagens", idioma: "ingles" },
+  });
+}
+
+/** Testa conectividade com enem.dev antes do import em lote. */
+export async function testarAcessoEnemDevIngles(): Promise<void> {
+  const q = await buscarQuestaoEnem(2023, 1, "ingles");
+  if (q.discipline !== "linguagens" || q.language !== "ingles") {
+    throw new Error(
+      `enem.dev retornou formato inesperado (discipline=${q.discipline}, language=${q.language})`
+    );
+  }
+}
 
 async function upsertQuestaoCorpus(
   prisma: PrismaClient,
@@ -53,11 +77,28 @@ async function upsertQuestaoCorpus(
  */
 export async function importarL2InglesCorpus(
   prisma: PrismaClient,
-  opts: { anos?: number[]; dryRun?: boolean } = {}
+  opts: { anos?: number[]; dryRun?: boolean; pularSeJaTem?: boolean } = {}
 ): Promise<ImportL2InglesResultado> {
   const dryRun = opts.dryRun ?? false;
+  const avisos: string[] = [];
+
+  if (opts.pularSeJaTem) {
+    const jaTem = await contarInglesLinguagensCorpus(prisma);
+    if (jaTem >= L2_INGLES_MINIMO_ESPERADO) {
+      avisos.push(`Corpus já tem ${jaTem} questões EN — import ignorado.`);
+      return { processadas: 0, criadas: 0, atualizadas: 0, anos: [], avisos };
+    }
+    avisos.push(`EN no banco: ${jaTem} (meta ≥ ${L2_INGLES_MINIMO_ESPERADO}).`);
+  }
+
+  await testarAcessoEnemDevIngles();
+
   const anos =
     opts.anos?.length ? opts.anos : (await listarProvasEnem()).map((p) => p.year).sort((a, b) => a - b);
+
+  if (anos.length === 0) {
+    throw new Error("enem.dev não retornou anos de prova.");
+  }
 
   let processadas = 0;
   let criadas = 0;
@@ -68,7 +109,10 @@ export async function importarL2InglesCorpus(
     let nAno = 0;
     for await (const q of iterarQuestoesL2Ingles(ano)) {
       const row = mapearQuestaoEstrutural(q);
-      if (row.idioma !== "ingles") continue;
+      if (row.idioma !== "ingles") {
+        avisos.push(`${ano} Q${row.numero}: idioma ${row.idioma} ignorado.`);
+        continue;
+      }
 
       processadas++;
       nAno++;
@@ -79,5 +123,16 @@ export async function importarL2InglesCorpus(
     if (nAno > 0) anosOk.push(ano);
   }
 
-  return { processadas, criadas, atualizadas, anos: anosOk };
+  if (processadas === 0) {
+    throw new Error(
+      `Nenhuma questão inglês Q1–5 importada (${anos.length} anos consultados). ` +
+        "Confira se o servidor acessa https://api.enem.dev e tente de novo."
+    );
+  }
+
+  if (criadas === 0 && atualizadas > 0) {
+    avisos.push("Todas as questões EN já existiam — apenas atualizadas.");
+  }
+
+  return { processadas, criadas, atualizadas, anos: anosOk, avisos };
 }

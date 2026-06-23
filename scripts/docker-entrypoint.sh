@@ -31,7 +31,8 @@ fi
 
 echo "==> Corpus ENEM (enem.dev) — sync em background se necessário..."
 npx tsx scripts/import-enem-corpus.ts --if-empty >> /tmp/enem-import.log 2>&1 &
-echo "==> Import ENEM rodando em background (log: /tmp/enem-import.log). App sobe sem aguardar."
+npx tsx scripts/import-enem-l2-ingles.ts --if-missing >> /tmp/enem-l2-en.log 2>&1 &
+echo "==> Import ENEM rodando em background (logs: /tmp/enem-import.log, /tmp/enem-l2-en.log). App sobe sem aguardar."
 
 echo "==> Iniciando Next.js na porta ${PORT:-3000}..."
 exec npm run start

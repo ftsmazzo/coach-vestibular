@@ -173,14 +173,27 @@ export function AdminEnemCorpusPanel() {
           | null
           | undefined;
         const importL2 = data.importL2 as
-          | { processadas: number; criadas: number; atualizadas: number; anos: number[] }
+          | {
+              processadas: number;
+              criadas: number;
+              atualizadas: number;
+              anos: number[];
+              avisos?: string[];
+            }
           | null
           | undefined;
         if (opts.importarLinguagensIngles) {
+          const avisoTxt =
+            importL2?.avisos?.length ? ` · ${importL2.avisos.join(" ")}` : "";
           setUltimoRun(
-            `Import L2 EN (${segundos}s): ${importL2?.criadas ?? 0} novas · ${importL2?.atualizadas ?? 0} atualizadas · ${importL2?.processadas ?? 0} Q1–5` +
+            `Import L2 EN (${segundos}s): ${importL2?.criadas ?? 0} novas · ${importL2?.atualizadas ?? 0} atualizadas · ${importL2?.processadas ?? 0} Q1–5${avisoTxt}` +
               (importL2?.criadas ? " — agora Classificar com IA" : "")
           );
+          if ((importL2?.processadas ?? 0) === 0) {
+            setErro(
+              "Import inglês não trouxe questões. Confira logs do servidor e acesso a api.enem.dev."
+            );
+          }
         } else {
           setUltimoRun(
             `Repair idioma (${segundos}s): ${repair?.corrigidas ?? 0} corrigidas · ${repair?.n2Limpos ?? 0} N2 limpos`
@@ -218,15 +231,22 @@ export function AdminEnemCorpusPanel() {
           | { corrigidas: number; n2Limpos: number; ignoradas: number }
           | null
           | undefined;
+        const importL2 = data.importL2 as
+          | { criadas: number; atualizadas: number; processadas: number }
+          | null
+          | undefined;
+        const importTxt = importL2
+          ? ` · import EN +${importL2.criadas} novas (${importL2.processadas} Q1–5)`
+          : "";
         const repairTxt = repair
           ? ` · repair ${repair.corrigidas} idioma, ${repair.n2Limpos} N2 limpos`
           : "";
         const vazio =
           r.materiaProcessadas === 0
-            ? " · nada na fila (todas já têm N2 válido — use Corrigir EN ou retriagem)"
+            ? " · nada na fila (todas já têm N2 válido — use Importar EN ou retriagem)"
             : "";
         setUltimoRun(
-          `${matNome} (${segundos}s): ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · PT ${r.triagem.biologia} · EN ${r.triagem.quimica} · ES ${r.triagem.fisica}${repairTxt}${vazio}`
+          `${matNome} (${segundos}s): ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · PT ${r.triagem.biologia} · EN ${r.triagem.quimica} · ES ${r.triagem.fisica}${importTxt}${repairTxt}${vazio}`
         );
       } else if (ehNatureza) {
         const triKey =

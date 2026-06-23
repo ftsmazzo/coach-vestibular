@@ -131,7 +131,14 @@ export async function POST(req: Request) {
       repair = await repararIdiomaLinguagensCorpus(prisma);
     }
 
-    if (body.data.soRepararIdioma || body.data.importarLinguagensIngles) {
+    const soApenasImportOuRepair =
+      body.data.soRepararIdioma ||
+      (body.data.importarLinguagensIngles &&
+        !body.data.retriagem &&
+        !body.data.repairLinguagensIdioma &&
+        body.data.modo !== "ia");
+
+    if (soApenasImportOuRepair) {
       const [stats, fila] = await Promise.all([
         obterStatsCorpusEnem(prisma, materiaId),
         listarFilaRevisaoEnem(prisma, materiaId, 15),

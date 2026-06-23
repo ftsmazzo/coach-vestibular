@@ -11,7 +11,11 @@ import { Pool } from "pg";
 import { Prisma, PrismaClient } from "../src/generated/prisma/client";
 import { iterarQuestoesAno, listarProvasEnem } from "../src/lib/enem-dev/client";
 import { mapearQuestaoEstrutural } from "../src/lib/enem-dev/estrutural";
-import { importarL2InglesCorpus } from "../src/lib/enem-import-l2-ingles";
+import {
+  contarInglesLinguagensCorpus,
+  importarL2InglesCorpus,
+  L2_INGLES_MINIMO_ESPERADO,
+} from "../src/lib/enem-import-l2-ingles";
 
 function parseArgs() {
   const dryRun = process.argv.includes("--dry-run");
@@ -37,10 +41,22 @@ async function main() {
   try {
     if (ifEmpty && !anoFiltro && process.env.RUN_ENEM_IMPORT !== "true") {
       const totalExistente = await prisma.enemQuestaoCorpus.count();
+      const inglesExistente = await contarInglesLinguagensCorpus(prisma);
+
       if (totalExistente >= CORPUS_MINIMO) {
-        console.log(
-          `Corpus ENEM já populado (${totalExistente} questões) — import ignorado. Use RUN_ENEM_IMPORT=true para forçar.`
-        );
+        if (inglesExistente < L2_INGLES_MINIMO_ESPERADO) {
+          console.log(
+            `Corpus ENEM populado (${totalExistente}), mas inglês Q1–5 incompleto (${inglesExistente}) — importando só EN...`
+          );
+          const l2 = await importarL2InglesCorpus(prisma);
+          console.log(
+            `  L2 inglês: ${l2.processadas} processadas — ${l2.criadas} criadas, ${l2.atualizadas} atualizadas`
+          );
+        } else {
+          console.log(
+            `Corpus ENEM já populado (${totalExistente} questões, EN=${inglesExistente}) — import ignorado. Use RUN_ENEM_IMPORT=true para forçar.`
+          );
+        }
         return;
       }
       if (totalExistente > 0) {
