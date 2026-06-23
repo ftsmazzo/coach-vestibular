@@ -66,6 +66,8 @@ type EstruturalValidacao = {
 };
 
 const ENEM_CORPUS_RESET_TOKEN = "ZERAR_CORPUS_ENEM";
+
+const MATERIA_TAB: Array<{ id: MateriaCorpusId; label: string; grupo?: string }> = [
   { id: "biologia", label: "Biologia", grupo: "Natureza" },
   { id: "quimica", label: "Química", grupo: "Natureza" },
   { id: "fisica", label: "Física", grupo: "Natureza" },
