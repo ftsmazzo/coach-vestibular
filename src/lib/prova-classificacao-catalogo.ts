@@ -86,9 +86,9 @@ export function labelsLegadosFromResultado(resultado: ResultadoClassificacao): {
     const materia =
       DISC_LING_PARA_MATERIA[disc] ??
       (disc === "indefinido" ? "Português" : "Português");
-    const tax =
-      resultado.escopoId &&
-      escopoIdParaTaxonomy(resultado.escopoId, "linguagens");
+    const tax = resultado.escopoId
+      ? escopoIdParaTaxonomy(resultado.escopoId, "linguagens")
+      : null;
     if (tax?.temaId) {
       const mat = taxonomy.materias.find((m) => m.id === tax.materiaId);
       const tema = mat?.temas.find((t) => t.id === tax.temaId);
@@ -99,8 +99,9 @@ export function labelsLegadosFromResultado(resultado: ResultadoClassificacao): {
   }
 
   if (resultado.materiaId === "humanas") {
-    const tax =
-      resultado.escopoId && escopoIdParaTaxonomy(resultado.escopoId, "humanas");
+    const tax = resultado.escopoId
+      ? escopoIdParaTaxonomy(resultado.escopoId, "humanas")
+      : null;
     if (tax) {
       const mat = taxonomy.materias.find((m) => m.id === tax.materiaId);
       const tema = mat?.temas.find((t) => t.id === tax.temaId);
@@ -125,12 +126,12 @@ export function labelsLegadosFromResultado(resultado: ResultadoClassificacao): {
 
   const cfg = CORPUS_MATERIA_CONFIG[resultado.materiaId as MateriaCorpusId];
   const materia = cfg?.label ?? normalizarLabelMateria(resultado.materiaId);
-  const tax =
-    resultado.escopoId &&
-    escopoIdParaTaxonomy(
-      resultado.escopoId,
-      resultado.materiaId as MateriaCorpusId
-    );
+  const tax = resultado.escopoId
+    ? escopoIdParaTaxonomy(
+        resultado.escopoId,
+        resultado.materiaId as MateriaCorpusId
+      )
+    : null;
   if (tax?.temaId) {
     const mat = taxonomy.materias.find((m) => m.id === tax.materiaId);
     const tema = mat?.temas.find((t) => t.id === tax.temaId);
