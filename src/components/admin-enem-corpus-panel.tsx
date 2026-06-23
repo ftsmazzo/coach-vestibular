@@ -125,10 +125,12 @@ export function AdminEnemCorpusPanel() {
       retriagem?: boolean;
       modo?: "ia" | "heuristica";
       repairLinguagensIdioma?: boolean;
+      soRepararIdioma?: boolean;
     } = {}
   ) {
     setClassificando(true);
     setErro(null);
+    const inicio = Date.now();
     try {
       const res = await fetch("/api/admin/enem-corpus", {
         method: "POST",
@@ -140,16 +142,63 @@ export function AdminEnemCorpusPanel() {
           retriagem: opts.retriagem ?? false,
           modo: iaDisponivel && (opts.modo ?? "ia") === "ia" ? "ia" : "heuristica",
           repairLinguagensIdioma: opts.repairLinguagensIdioma ?? false,
+          soRepararIdioma: opts.soRepararIdioma ?? false,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Classificação falhou");
-      setStats(data.stats);
-      const r = data.resultado;
+      let data: Record<string, unknown>;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(
+          res.ok
+            ? "Resposta inválida do servidor"
+            : `Falha HTTP ${res.status} — tente de novo ou veja logs do servidor`
+        );
+      }
+      if (!res.ok) {
+        throw new Error(
+          typeof data.error === "string" ? data.error : `Classificação falhou (HTTP ${res.status})`
+        );
+      }
+
+      if (data.stats) setStats(data.stats as Stats);
+
+      const segundos = ((Date.now() - inicio) / 1000).toFixed(1);
+
+      if (opts.soRepararIdioma) {
+        const repair = data.repair as
+          | { corrigidas: number; n2Limpos: number; ignoradas: number }
+          | null
+          | undefined;
+        setUltimoRun(
+          `Repair idioma (${segundos}s): ${repair?.corrigidas ?? 0} corrigidas · ${repair?.n2Limpos ?? 0} N2 limpos · ${repair?.ignoradas ?? 0} ignoradas` +
+            (repair?.n2Limpos ? " — agora clique Classificar com IA" : "")
+        );
+        return;
+      }
+
+      const r = data.resultado as {
+        classified: number;
+        materiaProcessadas: number;
+        pctClassified: number;
+        processadas: number;
+        triagem: {
+          biologia: number;
+          quimica: number;
+          fisica: number;
+          indefinida?: number;
+        };
+        triagemIa?: number;
+      } | null;
+
+      if (!r) {
+        throw new Error("Servidor não retornou resultado da classificação");
+      }
+
       const matNome = catalogo?.materia ?? materiaLabel;
       if (opts.triagemOnly) {
         setUltimoRun(
-          `Triagem: Bio ${r.triagem.biologia} · Quím ${r.triagem.quimica} · Fís ${r.triagem.fisica} · ? ${r.triagem.indefinida}` +
+          `Triagem (${segundos}s): Bio ${r.triagem.biologia} · Quím ${r.triagem.quimica} · Fís ${r.triagem.fisica} · ? ${r.triagem.indefinida ?? 0}` +
             (r.triagemIa ? ` · +${r.triagemIa} via IA` : "")
         );
       } else if (ehLinguagens) {
@@ -160,22 +209,33 @@ export function AdminEnemCorpusPanel() {
         const repairTxt = repair
           ? ` · repair ${repair.corrigidas} idioma, ${repair.n2Limpos} N2 limpos`
           : "";
+        const vazio =
+          r.materiaProcessadas === 0
+            ? " · nada na fila (todas já têm N2 válido — use Corrigir EN ou retriagem)"
+            : "";
         setUltimoRun(
-          `${matNome}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · PT ${r.triagem.biologia} · EN ${r.triagem.quimica} · ES ${r.triagem.fisica}${repairTxt}`
+          `${matNome} (${segundos}s): ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · PT ${r.triagem.biologia} · EN ${r.triagem.quimica} · ES ${r.triagem.fisica}${repairTxt}${vazio}`
         );
       } else if (ehNatureza) {
         const triKey =
           materiaId === "biologia" ? "biologia" : materiaId === "quimica" ? "quimica" : "fisica";
+        const vazio =
+          r.materiaProcessadas === 0 ? " · nada na fila (já classificadas)" : "";
         setUltimoRun(
-          `${matNome}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · triadas ${r.triagem[triKey]}` +
+          `${matNome} (${segundos}s): ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · triadas ${r.triagem[triKey]}${vazio}` +
             (r.triagemIa ? ` · triagem IA +${r.triagemIa}` : "")
         );
       } else {
+        const vazio =
+          r.materiaProcessadas === 0
+            ? ` · nada na fila (fila admin: ${mat?.fila ?? "?"})`
+            : "";
         setUltimoRun(
-          `${matNome}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · ${r.processadas} no bloco`
+          `${matNome} (${segundos}s): ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · ${r.processadas} no bloco${vazio}`
         );
       }
-      await load();
+
+      if (data.fila) setFila(data.fila as FilaItem[]);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -198,7 +258,16 @@ export function AdminEnemCorpusPanel() {
     <div className="space-y-6">
       {erro && (
         <Card className="border-red-200 bg-red-50/80">
-          <p className="text-sm text-red-800">{erro}</p>
+          <p className="text-sm font-medium text-red-800">Erro: {erro}</p>
+        </Card>
+      )}
+
+      {classificando && (
+        <Card className="border-teal-200 bg-teal-50/80">
+          <p className="text-sm text-teal-900">
+            <strong>Processando…</strong> Classificação com IA pode levar vários minutos (até 10 min).
+            Não feche esta aba.
+          </p>
         </Card>
       )}
 
@@ -325,7 +394,11 @@ export function AdminEnemCorpusPanel() {
       )}
 
       <div className="flex flex-wrap gap-3">
-        <Button onClick={() => rodarClassificacao({ modo: "ia" })} disabled={!podeClassificar}>
+        <Button
+          type="button"
+          onClick={() => rodarClassificacao({ modo: "ia" })}
+          disabled={!podeClassificar}
+        >
           {classificando
             ? "Processando…"
             : iaDisponivel
@@ -333,18 +406,30 @@ export function AdminEnemCorpusPanel() {
               : `Classificar ${materiaLabel} (heurística)`}
         </Button>
         {ehLinguagens && (
-          <Button
-            variant="secondary"
-            onClick={() =>
-              rodarClassificacao({ repairLinguagensIdioma: true, retriagem: true, modo: "ia" })
-            }
-            disabled={!podeClassificar || linguagensRotaVersion !== 2}
-          >
-            Corrigir EN Q1–5 + reclassificar
-          </Button>
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => rodarClassificacao({ soRepararIdioma: true })}
+              disabled={classificando || linguagensRotaVersion !== 2}
+            >
+              Só corrigir idioma EN (Q1–5)
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                rodarClassificacao({ repairLinguagensIdioma: true, retriagem: true, modo: "ia" })
+              }
+              disabled={!podeClassificar || linguagensRotaVersion !== 2}
+            >
+              Corrigir EN Q1–5 + reclassificar
+            </Button>
+          </>
         )}
         {iaDisponivel && (
           <Button
+            type="button"
             variant="secondary"
             onClick={() => rodarClassificacao({ modo: "heuristica" })}
             disabled={!podeClassificar}
@@ -354,6 +439,7 @@ export function AdminEnemCorpusPanel() {
         )}
         {ehNatureza && (
           <Button
+            type="button"
             variant="secondary"
             onClick={() => rodarClassificacao({ triagemOnly: true, retriagem: true, modo: "ia" })}
             disabled={classificando || !stats?.total}
@@ -361,7 +447,7 @@ export function AdminEnemCorpusPanel() {
             Retriagem Natureza (IA)
           </Button>
         )}
-        <Button variant="secondary" onClick={load} disabled={loading}>
+        <Button type="button" variant="secondary" onClick={load} disabled={loading || classificando}>
           Atualizar
         </Button>
       </div>
