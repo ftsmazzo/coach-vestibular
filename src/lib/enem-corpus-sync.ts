@@ -2,8 +2,8 @@ import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import {
   iterarQuestoesAnoCompleto,
   listarProvasEnem,
-  type EnemDevExam,
 } from "@/lib/enem-dev/client";
+import type { EnemDevExam } from "@/lib/enem-dev/types";
 import {
   mapearQuestaoEstrutural,
   type EnemCorpusEstrutural,

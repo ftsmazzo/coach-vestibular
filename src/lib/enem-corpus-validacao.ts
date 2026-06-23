@@ -2,8 +2,8 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import {
   iterarQuestoesAnoCompleto,
   listarProvasEnem,
-  type EnemDevExam,
 } from "@/lib/enem-dev/client";
+import type { EnemDevExam } from "@/lib/enem-dev/types";
 import { mapearQuestaoEstrutural } from "@/lib/enem-dev/estrutural";
 import { ENEM_CORPUS_MINIMO } from "@/lib/enem-corpus-stats";
 import { L2_INGLES_MINIMO_ESPERADO, contarInglesLinguagensCorpus } from "@/lib/enem-import-l2-ingles";
