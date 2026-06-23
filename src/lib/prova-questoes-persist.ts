@@ -72,6 +72,17 @@ function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
   }));
 }
 
+function camposN2(r: ProvaQuestaoRow) {
+  return {
+    conhecimentoEscopoId: r.conhecimentoEscopoId ?? null,
+    conhecimentoDominioId: r.conhecimentoDominioId ?? null,
+    classificacaoVersao: r.classificacaoVersao ?? null,
+    classificacaoConfianca: r.classificacaoConfianca ?? null,
+    classificacaoSecundariosJson: r.classificacaoSecundariosJson ?? null,
+    conceitosCanonicosJson: r.conceitosCanonicosJson ?? null,
+  };
+}
+
 /** Grava classificação no banco (pipeline PDF ou CSV do ChatGPT). */
 export async function persistirQuestoesClassificadas(
   provaId: string,
@@ -98,6 +109,7 @@ export async function persistirQuestoesClassificadas(
           observacoes: r.observacoes ?? null,
           enunciado: truncarEnunciado(r.enunciado),
           gabarito: r.gabarito ?? null,
+          ...camposN2(r),
         })),
       }),
     ]);
@@ -121,6 +133,7 @@ export async function persistirQuestoesClassificadas(
         observacoes: r.observacoes ?? null,
         enunciado: truncarEnunciado(r.enunciado),
         gabarito: r.gabarito ?? null,
+        ...camposN2(r),
       },
       update: {
         areaBloco: r.areaBloco ?? null,
@@ -131,6 +144,7 @@ export async function persistirQuestoesClassificadas(
         observacoes: r.observacoes ?? null,
         ...(r.enunciado ? { enunciado: truncarEnunciado(r.enunciado) } : {}),
         ...(r.gabarito ? { gabarito: r.gabarito } : {}),
+        ...camposN2(r),
       },
     });
     n++;
@@ -138,9 +152,60 @@ export async function persistirQuestoesClassificadas(
   return n;
 }
 
+/** Atualiza classificação N2 + rótulos legados sem apagar enunciado/gabarito existentes. */
+export async function atualizarClassificacaoLote(
+  provaId: string,
+  rows: ProvaQuestaoRow[]
+): Promise<number> {
+  let n = 0;
+  for (const r of rows) {
+    const variante = varianteRow(r);
+    const existente = await prisma.provaQuestao.findUnique({
+      where: whereVariante(provaId, r.numero, variante),
+      select: { id: true, enunciado: true, gabarito: true },
+    });
+    if (!existente) continue;
+
+    await prisma.provaQuestao.update({
+      where: { id: existente.id },
+      data: {
+        areaBloco: r.areaBloco ?? null,
+        materia: r.materia,
+        assunto: r.assunto,
+        conhecimentoExigido: r.conhecimentoExigido ?? null,
+        nivelDificuldade: r.nivelDificuldade ?? null,
+        ...camposN2(r),
+      },
+    });
+    n++;
+  }
+  return n;
+}
+
+type QuestaoComN2 = QuestaoExtraida & {
+  idiomaVariante?: IdiomaVarianteQuestao;
+  conhecimentoEscopoId?: string | null;
+  conhecimentoDominioId?: string | null;
+  classificacaoVersao?: string | null;
+  classificacaoConfianca?: number | null;
+  classificacaoSecundariosJson?: string | null;
+  conceitosCanonicosJson?: string | null;
+};
+
+function camposN2Questao(q: QuestaoComN2) {
+  return {
+    conhecimentoEscopoId: q.conhecimentoEscopoId ?? null,
+    conhecimentoDominioId: q.conhecimentoDominioId ?? null,
+    classificacaoVersao: q.classificacaoVersao ?? null,
+    classificacaoConfianca: q.classificacaoConfianca ?? null,
+    classificacaoSecundariosJson: q.classificacaoSecundariosJson ?? null,
+    conceitosCanonicosJson: q.conceitosCanonicosJson ?? null,
+  };
+}
+
 export async function upsertQuestoesExtraidas(
   provaId: string,
-  questoes: (QuestaoExtraida & { idiomaVariante?: IdiomaVarianteQuestao })[],
+  questoes: QuestaoComN2[],
   idiomaVariantePadrao: IdiomaVarianteQuestao = "COMUM"
 ): Promise<number> {
   let n = 0;
@@ -160,6 +225,7 @@ export async function upsertQuestoesExtraidas(
         observacoes: q.observacoes ?? null,
         enunciado: truncarEnunciado(q.trechoEnunciado),
         gabarito: null,
+        ...camposN2Questao(q),
       },
       update: {
         areaBloco: q.areaBloco ?? null,
@@ -169,6 +235,7 @@ export async function upsertQuestoesExtraidas(
         nivelDificuldade: q.nivelDificuldade ?? null,
         observacoes: q.observacoes ?? null,
         enunciado: truncarEnunciado(q.trechoEnunciado),
+        ...camposN2Questao(q),
       },
     });
     n++;

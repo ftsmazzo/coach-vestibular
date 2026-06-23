@@ -50,6 +50,47 @@ export function AdminAuditoriaProva({
   const [orientacaoReclassificar, setOrientacaoReclassificar] = useState("");
   const [reclassificando, setReclassificando] = useState(false);
   const [normalizandoAreas, setNormalizandoAreas] = useState(false);
+  const [reclassificandoLote, setReclassificandoLote] = useState(false);
+
+  async function reclassificarProvaInteira() {
+    if (
+      !confirm(
+        "Reclassificar TODAS as questões desta prova com o catálogo N2 v1.2?\n\n" +
+          "Usa enunciado/resumo já salvo no banco — não precisa reenviar o PDF.\n" +
+          "Pode levar vários minutos e consome créditos da OpenAI.\n" +
+          "Gabaritos e enunciados completos são preservados."
+      )
+    ) {
+      return;
+    }
+    setReclassificandoLote(true);
+    setMsg("");
+    try {
+      const res = await fetch(`/api/admin/provas/${provaId}/reclassificar-lote`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg(data.error ?? "Erro ao reclassificar prova");
+        return;
+      }
+      const extra =
+        data.semTexto > 0
+          ? ` ${data.semTexto} questão(ões) sem texto suficiente (cole enunciado na auditoria).`
+          : "";
+      const avisos =
+        Array.isArray(data.avisos) && data.avisos.length > 0
+          ? ` Avisos: ${data.avisos.slice(0, 3).join(" ")}`
+          : "";
+      setMsg((data.mensagem ?? "Reclassificação concluída.") + extra + avisos);
+      onQuestoesAtualizadas?.();
+      if (resultado) await auditar();
+    } catch {
+      setMsg("Erro de rede ao reclassificar prova inteira.");
+    } finally {
+      setReclassificandoLote(false);
+    }
+  }
 
   async function normalizarAreas() {
     setNormalizandoAreas(true);
@@ -177,6 +218,8 @@ export function AdminAuditoriaProva({
       <p className="mb-3 text-sm text-violet-900">
         Verifica inconsistências graves (bloco×matéria, idioma, classificação errada). Áreas usam
         só 4 rótulos internos: Línguas e códigos, Ciências Humanas, Ciências Naturais, Exatas.
+        Use <strong>Reclassificar prova inteira</strong> para migrar provas antigas ao catálogo N2
+        sem reenviar o PDF.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button type="button" disabled={auditing} onClick={auditar}>
@@ -184,8 +227,18 @@ export function AdminAuditoriaProva({
         </Button>
         <Button
           type="button"
+          variant="primary"
+          disabled={reclassificandoLote || auditing}
+          onClick={reclassificarProvaInteira}
+        >
+          {reclassificandoLote
+            ? "Reclassificando prova… (pode levar minutos)"
+            : "Reclassificar prova inteira (catálogo N2)"}
+        </Button>
+        <Button
+          type="button"
           variant="secondary"
-          disabled={normalizandoAreas || auditing}
+          disabled={normalizandoAreas || auditing || reclassificandoLote}
           onClick={normalizarAreas}
         >
           {normalizandoAreas ? "Padronizando..." : "Padronizar áreas (4 blocos)"}

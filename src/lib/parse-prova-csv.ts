@@ -11,6 +11,13 @@ export interface ProvaQuestaoRow {
   observacoes?: string;
   enunciado?: string;
   gabarito?: string;
+  /** Classificação N2 (catálogo v1.2) */
+  conhecimentoEscopoId?: string | null;
+  conhecimentoDominioId?: string | null;
+  classificacaoVersao?: string | null;
+  classificacaoConfianca?: number | null;
+  classificacaoSecundariosJson?: string | null;
+  conceitosCanonicosJson?: string | null;
 }
 
 export interface ParseProvaCsvOptions {

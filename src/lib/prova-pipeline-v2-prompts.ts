@@ -1,11 +1,7 @@
-import {
-  FEW_SHOTS_CLASSIFICACAO,
-  REGRAS_OURO_CLASSIFICACAO,
-} from "@/lib/prova-classificacao-regras";
 import { listaAreasBlocoParaPrompt } from "@/lib/areas-bloco";
 
 /**
- * Prompts do pipeline V2 — classificação com desambiguação (pacote GPT + taxonomia).
+ * Prompts do pipeline V2 — extração leve do PDF + classificação N2 via catálogo Coach.
  */
 
 export const PROMPT_SISTEMA_ESTRUTURA = `Você é um analisador estrutural de provas objetivas brasileiras (qualquer banca ou simulado).
@@ -25,36 +21,20 @@ Regras:
 - formato_layout e idiomas_estrangeiros: inferir do documento.
 - NÃO classifique matéria, assunto, dificuldade ou gabarito nesta etapa.`.trim();
 
-const FEW_SHOTS_TXT = JSON.stringify(FEW_SHOTS_CLASSIFICACAO, null, 0);
+export const PROMPT_SISTEMA_EXTRACAO_PEDAGOGICA = `Você extrai metadados pedagógicos leves de questões de vestibular brasileiro (qualquer banca).
 
-export const PROMPT_SISTEMA_CLASSIFICACAO = `Você é um classificador pedagógico de questões de vestibular brasileiro.
-
-Tarefa:
-Classificar cada questão usando os campos do schema, incluindo resumo_enunciado (1 linha objetiva do que a questão pede).
-
-Regras obrigatórias:
-- Não misture matéria com assunto.
-- materia e assunto devem vir apenas da taxonomia fornecida pelo usuário.
-- area_bloco DEVE ser EXATAMENTE um destes 4 rótulos internos (ignore títulos longos do PDF):
+Tarefa por questão:
+- area_bloco: EXATAMENTE um destes 4 rótulos internos (ignore títulos longos do PDF):
 ${listaAreasBlocoParaPrompt()}
-- Use area_bloco como prioridade 1; resumo_enunciado e conteúdo visível como prioridade 2.
-- Se area_bloco for «Línguas e códigos», não classifique como Geografia, Biologia, Física, Química, História, Filosofia ou Sociologia.
-- Se area_bloco for «Ciências Humanas», não classifique como Biologia, Física ou Química (Humanas != Biologia).
-- Línguas e códigos != Geografia, salvo mapa, cartografia, clima, relevo, urbanização ou dado geográfico explícito.
-- Texto sobre território, região, paisagem, população ou ambiente pode ser Português se a tarefa for interpretação textual.
-- Texto sobre sociedade, política, cidadania, desigualdade, gênero, cultura ou trabalho não é Biologia.
-- Só classifique Biologia com mecanismo biológico explícito: célula, genética, fisiologia, ecologia, evolução, organismo.
-- Só classifique Geografia com conteúdo espacial, territorial, cartográfico, climático ou geopolítico explícito.
-- Filosofia: conceitos, autores, ética, conhecimento, verdade, razão, liberdade, justiça.
-- Sociologia: instituições, cultura, cidadania, desigualdade, identidade, gênero, trabalho, movimentos sociais.
-- História: processos históricos, períodos, eventos, regimes, guerras, colonização.
-- Se incerto, materia vazia ou "A classificar". Nunca chute Biologia.
-- resumo_enunciado: obrigatório, uma linha, sem copiar o enunciado inteiro.
-- dificuldade: facil, media ou dificil na maioria das questões legíveis (mínimo ~70% do lote).
-- Física: forças, energia, circuitos, cinemática, óptica — não confundir com Geografia nem Biologia.
-- Responda somente no formato solicitado.
+- resumo_enunciado: 1 linha objetiva do que a questão pede (gênero, habilidade, tema) — sem copiar o enunciado inteiro.
+- dificuldade: facil, media ou dificil quando legível.
 
-${REGRAS_OURO_CLASSIFICACAO}
+Regras:
+- NÃO classifique matéria, assunto nem taxonomia — só área/bloco + resumo + dificuldade.
+- area_bloco tem prioridade sobre palavras soltas do texto.
+- Línguas e códigos ≠ Geografia/Biologia/Física/Química salvo conteúdo explícito da disciplina.
+- Ciências Humanas ≠ Biologia/Física/Química.
+- Responda somente no formato solicitado.`.trim();
 
-Exemplos de classificação correta:
-${FEW_SHOTS_TXT}`.trim();
+/** @deprecated Pipeline V2 usa PROMPT_SISTEMA_EXTRACAO_PEDAGOGICA + catálogo N2. */
+export const PROMPT_SISTEMA_CLASSIFICACAO = PROMPT_SISTEMA_EXTRACAO_PEDAGOGICA;

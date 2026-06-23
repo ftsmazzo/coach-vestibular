@@ -5,7 +5,17 @@ import {
 
 export type { EstruturaProvaDetectada };
 
-export type ClassificacaoLoteRes = {
+export type ExtracaoPedagogicaLoteRes = {
+  questoes?: Array<{
+    numero: number;
+    area_bloco?: string;
+    resumo_enunciado?: string;
+    dificuldade?: string;
+  }>;
+};
+
+/** @deprecated use ExtracaoPedagogicaLoteRes */
+export type ClassificacaoLoteRes = ExtracaoPedagogicaLoteRes & {
   questoes?: Array<{
     numero: number;
     area_bloco?: string;
@@ -13,6 +23,7 @@ export type ClassificacaoLoteRes = {
     assunto?: string;
     conhecimento?: string;
     dificuldade?: string;
+    resumo_enunciado?: string;
   }>;
 };
 
@@ -52,12 +63,12 @@ export function validarEstruturaProva(
   }
 }
 
-export function validarClassificacaoLote(
-  data: ClassificacaoLoteRes,
+export function validarExtracaoPedagogicaLote(
+  data: ExtracaoPedagogicaLoteRes,
   numerosEsperados: number[]
 ): void {
   if (!data?.questoes || !Array.isArray(data.questoes)) {
-    throw new Error("Classificação sem array de questões");
+    throw new Error("Extração sem array de questões");
   }
 
   const esperados = new Set(numerosEsperados);
@@ -70,17 +81,22 @@ export function validarClassificacaoLote(
     );
   }
 
-  let semPedagogia = 0;
+  let semResumo = 0;
   let semDificuldade = 0;
   for (const q of noLote) {
     const d = (q.dificuldade ?? "").trim().toLowerCase();
     if (d && !["facil", "media", "dificil", "fácil", "média", "difícil"].includes(d)) {
       throw new Error(`Dificuldade inválida na questão ${q.numero}`);
     }
-    const materiaVazia = !q.materia?.trim() || q.materia.trim() === "A classificar";
-    const conhecimentoVazio = !q.conhecimento?.trim();
-    if (materiaVazia && conhecimentoVazio) semPedagogia++;
-    if (!d && !materiaVazia) semDificuldade++;
+    if (!q.resumo_enunciado?.trim()) semResumo++;
+    if (!d) semDificuldade++;
+  }
+
+  const maxSemResumo = Math.ceil(noLote.length * 0.4);
+  if (semResumo > maxSemResumo) {
+    throw new Error(
+      `Muitas questões sem resumo_enunciado (${semResumo}/${noLote.length})`
+    );
   }
 
   const maxSemDificuldade = Math.floor(noLote.length * 0.65);
@@ -89,11 +105,12 @@ export function validarClassificacaoLote(
       `Poucas questões com dificuldade (${noLote.length - semDificuldade}/${noLote.length}); preencha facil/media/dificil`
     );
   }
+}
 
-  const maxSemPedagogia = Math.ceil(noLote.length * 0.5);
-  if (semPedagogia > maxSemPedagogia) {
-    throw new Error(
-      `Muitas questões sem matéria/conhecimento útil (${semPedagogia}/${noLote.length})`
-    );
-  }
+/** @deprecated use validarExtracaoPedagogicaLote */
+export function validarClassificacaoLote(
+  data: ClassificacaoLoteRes,
+  numerosEsperados: number[]
+): void {
+  validarExtracaoPedagogicaLote(data, numerosEsperados);
 }

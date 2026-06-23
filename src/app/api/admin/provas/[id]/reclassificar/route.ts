@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
-import { classificarQuestaoUnica } from "@/lib/prova-classificacao-motor";
+import { classificarQuestaoProvaComCatalogo } from "@/lib/prova-classificacao-catalogo";
 import { modeloClassificacao } from "@/lib/openai-modelos";
 import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
@@ -46,14 +46,14 @@ export async function POST(
     undefined;
 
   try {
-    const salva = await classificarQuestaoUnica({
+    const salva = await classificarQuestaoProvaComCatalogo({
       numero,
+      idiomaVariante,
       trechoEnunciado: enunciado,
       materia: existente?.materia ?? "A classificar",
-      assunto: existente?.assunto ?? "A classificar",
       areaBloco: existente?.areaBloco ?? null,
-      conhecimentoExigido: existente?.conhecimentoExigido ?? null,
-      nivelDificuldade: existente?.nivelDificuldade ?? null,
+      gabarito: existente?.gabarito ?? null,
+      banca: prova.banca,
       observacoes: orientacaoHumana ?? null,
     });
 
@@ -61,7 +61,11 @@ export async function POST(
       salva.observacoes = orientacaoHumana;
     }
 
-    if (salva.materia === "A classificar" || salva.assunto === "A classificar") {
+    if (
+      !salva.conhecimentoEscopoId ||
+      salva.materia === "A classificar" ||
+      salva.assunto === "A classificar"
+    ) {
       return NextResponse.json(
         { error: "A IA não classificou esta questão. Cole mais texto do enunciado." },
         { status: 422 }
@@ -84,6 +88,8 @@ export async function POST(
       materia: atualizada?.materia ?? salva.materia,
       assunto: atualizada?.assunto ?? salva.assunto,
       conhecimentoExigido: atualizada?.conhecimentoExigido ?? salva.conhecimentoExigido,
+      conhecimentoEscopoId:
+        atualizada?.conhecimentoEscopoId ?? salva.conhecimentoEscopoId ?? null,
       nivelDificuldade: atualizada?.nivelDificuldade ?? salva.nivelDificuldade,
     });
   } catch (e) {

@@ -4,23 +4,13 @@ import {
   uploadPdfBuffer,
 } from "@/lib/openai-responses-client";
 import {
-  validarClassificacaoLote,
+  validarExtracaoPedagogicaLote,
   validarEstruturaProva,
 } from "@/lib/prova-pipeline-v2-validacao";
 import { parseGabaritoLote } from "@/lib/gabarito";
 import { normalizarMapaGabarito, resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 import { gerarCsvProvaQuestoes } from "@/lib/prova-csv-export";
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
-import {
-  alinharLoteTaxonomia,
-  normalizarLabelAssunto,
-  normalizarLabelMateria,
-} from "@/lib/taxonomia-validacao";
-import { taxonomy } from "@/lib/taxonomy";
-import {
-  PROMPT_SISTEMA_CLASSIFICACAO,
-  PROMPT_SISTEMA_ESTRUTURA,
-} from "@/lib/prova-pipeline-v2-prompts";
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import {
   chaveQuestaoVariante,
@@ -29,10 +19,7 @@ import {
   inferirOrdemIdiomasDoPdf,
   type FaixaIdiomaOpcional,
 } from "@/lib/prova-idioma";
-import {
-  areaBlocoPorNumero,
-  validarItemClassificado,
-} from "@/lib/prova-classificacao-regras";
+import { areaBlocoPorNumero } from "@/lib/prova-classificacao-regras";
 import {
   montarContextoProvaTxt,
   resolverPoliticaIdiomas,
@@ -40,6 +27,11 @@ import {
   type EstruturaProvaDetectada,
   type ProvaPipelineContext,
 } from "@/lib/prova-pipeline-contexto";
+import { classificarRowsProvaComCatalogo } from "@/lib/prova-classificacao-catalogo";
+import {
+  PROMPT_SISTEMA_EXTRACAO_PEDAGOGICA,
+  PROMPT_SISTEMA_ESTRUTURA,
+} from "@/lib/prova-pipeline-v2-prompts";
 
 export type { ProvaPipelineContext };
 
@@ -117,9 +109,9 @@ const SCHEMA_ESTRUTURA = {
   },
 } as const;
 
-function schemaClassificacaoLote() {
+function schemaExtracaoPedagogicaLote() {
   return {
-    name: "classificacao_questoes",
+    name: "extracao_pedagogica_questoes",
     strict: true,
     schema: {
       type: "object",
@@ -131,27 +123,16 @@ function schemaClassificacaoLote() {
             properties: {
               numero: { type: "integer" },
               area_bloco: { type: "string" },
-              materia: { type: "string" },
-              assunto: { type: "string" },
-              conhecimento: { type: "string" },
-              dificuldade: {
-                type: "string",
-                enum: ["facil", "media", "dificil", ""],
-              },
               resumo_enunciado: {
                 type: "string",
                 description: "Uma linha: o que a questão exige (gênero, habilidade, tema).",
               },
+              dificuldade: {
+                type: "string",
+                enum: ["facil", "media", "dificil", ""],
+              },
             },
-            required: [
-              "numero",
-              "area_bloco",
-              "materia",
-              "assunto",
-              "conhecimento",
-              "dificuldade",
-              "resumo_enunciado",
-            ],
+            required: ["numero", "area_bloco", "resumo_enunciado", "dificuldade"],
             additionalProperties: false,
           },
         },
@@ -160,12 +141,6 @@ function schemaClassificacaoLote() {
       additionalProperties: false,
     },
   };
-}
-
-function resumoTaxonomia(): string {
-  return taxonomy.materias
-    .map((m) => `${m.label}: ${m.temas.map((t) => t.label).join(", ")}`)
-    .join("\n");
 }
 
 function normalizarDificuldade(raw: string): string | undefined {
@@ -187,18 +162,15 @@ type EstruturaRes = EstruturaProvaDetectada & {
   observacoes: string;
 };
 
-type QuestaoClassificada = {
+type QuestaoExtraidaPdf = {
   numero: number;
   area_bloco: string;
-  materia: string;
-  assunto: string;
-  conhecimento: string;
   dificuldade: string;
   resumo_enunciado: string;
 };
 
-type ClassificacaoRes = {
-  questoes: QuestaoClassificada[];
+type ExtracaoRes = {
+  questoes: QuestaoExtraidaPdf[];
 };
 
 function chunks<T>(arr: T[], size: number): T[][] {
@@ -217,7 +189,7 @@ function tamanhoLote(totalNumeros: number): number {
 }
 
 function questaoParaRow(
-  q: QuestaoClassificada,
+  q: QuestaoExtraidaPdf,
   estrutura: EstruturaRes,
   idiomaVariante: ProvaQuestaoRow["idiomaVariante"] = "COMUM"
 ): ProvaQuestaoRow {
@@ -225,61 +197,32 @@ function questaoParaRow(
     q.area_bloco?.trim() ||
     areaBlocoPorNumero(estrutura.blocos ?? [], q.numero) ||
     undefined;
-  const materiaRaw = q.materia?.trim() || "A classificar";
-  const materia =
-    materiaRaw === "A classificar" ? materiaRaw : normalizarLabelMateria(materiaRaw);
-  const areaBloco = normalizarAreaBloco(areaRaw, materia) ?? undefined;
-  const assunto =
-    materia === "A classificar"
-      ? "A classificar"
-      : normalizarLabelAssunto(materia, q.assunto);
+  const areaBloco = normalizarAreaBloco(areaRaw) ?? undefined;
   const resumo = q.resumo_enunciado?.trim() ?? "";
   return {
     numero: q.numero,
     idiomaVariante,
     areaBloco,
-    materia,
-    assunto,
-    conhecimentoExigido: q.conhecimento?.trim() || undefined,
+    materia: "A classificar",
+    assunto: "A classificar",
     nivelDificuldade: normalizarDificuldade(q.dificuldade ?? ""),
     enunciado: resumo || undefined,
     observacoes: resumo ? resumo.slice(0, 200) : undefined,
   };
 }
 
-function aplicarQuestoesClassificadas(
-  questoes: QuestaoClassificada[],
+function aplicarQuestoesExtraidas(
+  questoes: QuestaoExtraidaPdf[],
   lote: number[],
   estrutura: EstruturaRes,
   rowsMap: Map<string, ProvaQuestaoRow>,
-  invalidos: Set<string>,
   idiomaVariante: ProvaQuestaoRow["idiomaVariante"] = "COMUM"
 ): void {
   for (const q of questoes) {
     if (!lote.includes(q.numero)) continue;
     const row = questaoParaRow(q, estrutura, idiomaVariante);
     const chave = chaveQuestaoVariante(q.numero, idiomaVariante ?? "COMUM");
-    const area = row.areaBloco ?? "";
-    const val = validarItemClassificado({
-      numero: q.numero,
-      areaBloco: area,
-      materia: row.materia,
-      assunto: row.assunto,
-      conhecimento: row.conhecimentoExigido,
-      resumoEnunciado: q.resumo_enunciado,
-    });
-    if (!val.ok) {
-      invalidos.add(chave);
-      rowsMap.set(chave, {
-        ...row,
-        materia: "A classificar",
-        assunto: "A classificar",
-        observacoes: val.motivo?.slice(0, 200),
-      });
-    } else {
-      invalidos.delete(chave);
-      rowsMap.set(chave, row);
-    }
+    rowsMap.set(chave, row);
   }
 }
 
@@ -316,11 +259,11 @@ function validarRows(
   }
 
   const semConhecimento = rows.filter(
-    (r) => !r.conhecimentoExigido?.trim() && r.materia !== "A classificar"
+    (r) => !r.conhecimentoEscopoId?.trim() && r.materia !== "A classificar"
   );
   if (semConhecimento.length > 0) {
     avisos.push(
-      `${semConhecimento.length} questão(ões) sem conhecimento exigido (nº ${semConhecimento
+      `${semConhecimento.length} questão(ões) sem escopo N2 (nº ${semConhecimento
         .slice(0, 8)
         .map((q) => q.numero)
         .join(", ")}${semConhecimento.length > 8 ? "…" : ""}).`
@@ -336,7 +279,7 @@ function validarRows(
 }
 
 /**
- * Pipeline V2: PDF → estrutura autônoma → classificação em lotes → gabarito em código → banco.
+ * Pipeline V2: PDF → estrutura → extração (área + resumo) → catálogo N2 v1.2 → gabarito → banco.
  * ENEM, vestibulares, simulados e listas — layout inferido do documento.
  */
 export async function executarPipelineProvaV2(
@@ -410,10 +353,8 @@ Preencha o schema estrutural completo a partir do PDF.
   }
 
   const resumoEstrutura = resumoEstruturaParaClassificacao(estrutura);
-  const taxonomia = resumoTaxonomia();
   const rowsMap = new Map<string, ProvaQuestaoRow>();
-  const invalidosPosIa = new Set<string>();
-  let modelClass = modeloPipelinePrincipal();
+  let modelExtracao = modeloPipelinePrincipal();
 
   const numerosFaixa =
     faixaIdioma != null
@@ -424,17 +365,15 @@ Preencha o schema estrutural completo a partir do PDF.
       ? numeros.filter((n) => n < faixaIdioma.inicio || n > faixaIdioma.fim)
       : numeros;
 
-  const montarInstrucaoClass = (numsStr: string, extra = "") => `${ctxTxt}
+  const montarInstrucaoExtracao = (numsStr: string, extra = "") => `${ctxTxt}
 
 ${resumoEstrutura ? `Contexto estrutural:\n${resumoEstrutura}\n` : ""}
-Classifique SOMENTE as questões: ${numsStr}
-Para cada item preencha resumo_enunciado (1 linha) antes de decidir materia/assunto.
-area_bloco do PDF tem prioridade sobre palavras do texto (Humanas != Biologia; Linguagens != Geografia salvo mapa/clima explícito).
-${extra}
-Taxonomia:
-${taxonomia}`;
+Extraia metadados SOMENTE das questões: ${numsStr}
+Para cada item: area_bloco (4 rótulos canônicos), resumo_enunciado (1 linha) e dificuldade.
+NÃO preencha matéria nem assunto — a classificação N2 é feita depois pelo catálogo Coach.
+${extra}`;
 
-  async function classificarLotes(
+  async function extrairLotes(
     nums: number[],
     variante: ProvaQuestaoRow["idiomaVariante"],
     instrucaoExtra: string,
@@ -445,57 +384,51 @@ ${taxonomia}`;
     const lotes = chunks(nums, loteSize);
     for (let i = 0; i < lotes.length; i++) {
       const lote = lotes[i];
-      const classExec = await responsesComPdfSchemaComValidacao<ClassificacaoRes>({
+      const extracaoExec = await responsesComPdfSchemaComValidacao<ExtracaoRes>({
         fileId,
-        taskName: `classificacao-${label}-${i + 1}`,
-        systemPrompt: PROMPT_SISTEMA_CLASSIFICACAO,
-        instrucao: montarInstrucaoClass(lote.join(", "), instrucaoExtra),
-        schema: schemaClassificacaoLote(),
-        validate: (data) => validarClassificacaoLote(data, lote),
+        taskName: `extracao-${label}-${i + 1}`,
+        systemPrompt: PROMPT_SISTEMA_EXTRACAO_PEDAGOGICA,
+        instrucao: montarInstrucaoExtracao(lote.join(", "), instrucaoExtra),
+        schema: schemaExtracaoPedagogicaLote(),
+        validate: (data) => validarExtracaoPedagogicaLote(data, lote),
       });
-      modelClass = classExec.model;
-      aplicarQuestoesClassificadas(
-        classExec.data.questoes ?? [],
+      modelExtracao = extracaoExec.model;
+      aplicarQuestoesExtraidas(
+        extracaoExec.data.questoes ?? [],
         lote,
         estrutura,
         rowsMap,
-        invalidosPosIa,
         variante
       );
       etapas.push(
-        `${label} lote ${i + 1}/${lotes.length} (${classExec.model}): ${classExec.data.questoes?.length ?? 0} itens`
+        `${label} lote ${i + 1}/${lotes.length} (${extracaoExec.model}): ${extracaoExec.data.questoes?.length ?? 0} itens`
       );
     }
   }
 
   if (politicaIdioma.modoDuplicata && faixaIdioma) {
-    await classificarLotes(
-      numerosComuns,
-      "COMUM",
-      "",
-      "Comum"
-    );
-    await classificarLotes(
+    await extrairLotes(numerosComuns, "COMUM", "", "Comum");
+    await extrairLotes(
       numerosFaixa,
       "INGLES",
-      "Classifique APENAS o bloco em INGLÊS (Língua Inglesa) — ignore a versão em espanhol.\n",
+      "Extraia APENAS o bloco em INGLÊS (Língua Inglesa) — ignore a versão em espanhol.\n",
       "Inglês"
     );
-    await classificarLotes(
+    await extrairLotes(
       numerosFaixa,
       "ESPANHOL",
-      "Classifique APENAS o bloco em ESPANHOL (Língua Espanhola) — ignore a versão em inglês.\n",
+      "Extraia APENAS o bloco em ESPANHOL (Língua Espanhola) — ignore a versão em inglês.\n",
       "Espanhol"
     );
   } else if (politicaIdioma.forcarSomenteIngles) {
     const faixaLegado = faixaIdioma ?? inferirFaixaIdiomaDoPdf(estrutura) ?? { inicio: 1, fim: 5 };
     const comuns = numeros.filter((n) => n < faixaLegado.inicio || n > faixaLegado.fim);
     const faixaNums = numeros.filter((n) => n >= faixaLegado.inicio && n <= faixaLegado.fim);
-    await classificarLotes(comuns, "COMUM", "", "Comum");
-    await classificarLotes(
+    await extrairLotes(comuns, "COMUM", "", "Comum");
+    await extrairLotes(
       faixaNums,
       "INGLES",
-      "Duplicata EN/ES: classifique só o bloco em INGLÊS.\n",
+      "Duplicata EN/ES: extraia só o bloco em INGLÊS.\n",
       "Inglês"
     );
   } else {
@@ -503,57 +436,25 @@ ${taxonomia}`;
     const lotesNums = chunks(numeros, loteSize);
     for (let i = 0; i < lotesNums.length; i++) {
       const lote = lotesNums[i];
-      const classExec = await responsesComPdfSchemaComValidacao<ClassificacaoRes>({
+      const extracaoExec = await responsesComPdfSchemaComValidacao<ExtracaoRes>({
         fileId,
-        taskName: `classificacao-lote-${i + 1}`,
-        systemPrompt: PROMPT_SISTEMA_CLASSIFICACAO,
-        instrucao: montarInstrucaoClass(lote.join(", ")),
-        schema: schemaClassificacaoLote(),
-        validate: (data) => validarClassificacaoLote(data, lote),
+        taskName: `extracao-lote-${i + 1}`,
+        systemPrompt: PROMPT_SISTEMA_EXTRACAO_PEDAGOGICA,
+        instrucao: montarInstrucaoExtracao(lote.join(", ")),
+        schema: schemaExtracaoPedagogicaLote(),
+        validate: (data) => validarExtracaoPedagogicaLote(data, lote),
       });
-      modelClass = classExec.model;
-      aplicarQuestoesClassificadas(
-        classExec.data.questoes ?? [],
+      modelExtracao = extracaoExec.model;
+      aplicarQuestoesExtraidas(
+        extracaoExec.data.questoes ?? [],
         lote,
         estrutura,
         rowsMap,
-        invalidosPosIa,
         "COMUM"
       );
       etapas.push(
-        `Lote ${i + 1}/${lotesNums.length} (${classExec.model}): ${classExec.data.questoes?.length ?? 0} itens`
+        `Extração lote ${i + 1}/${lotesNums.length} (${extracaoExec.model}): ${extracaoExec.data.questoes?.length ?? 0} itens`
       );
-    }
-  }
-
-  if (invalidosPosIa.size > 0) {
-    const porVariante = new Map<string, number[]>();
-    for (const chave of invalidosPosIa) {
-      const [n, v] = chave.split(":");
-      const lista = porVariante.get(v) ?? [];
-      lista.push(parseInt(n!, 10));
-      porVariante.set(v, lista);
-    }
-    avisos.push(
-      `${invalidosPosIa.size} linha(s) com validação pós-IA — reclassificando em lote menor.`
-    );
-    for (const [v, numsRaw] of porVariante) {
-      const variante = v as ProvaQuestaoRow["idiomaVariante"];
-      const nums = [...new Set(numsRaw)].sort((a, b) => a - b);
-      const extra =
-        variante === "INGLES"
-          ? "Classifique APENAS o bloco em INGLÊS.\nRETRY: corrija bloco/matéria.\n"
-          : variante === "ESPANHOL"
-            ? "Classifique APENAS o bloco em ESPANHOL.\nRETRY: corrija bloco/matéria.\n"
-            : "RETRY: a classificação anterior violou regras de bloco. Corrija com base no PDF.\n";
-      await classificarLotes(nums, variante, extra, `Retry ${v}`);
-    }
-    if (invalidosPosIa.size > 0) {
-      avisos.push(
-        `${invalidosPosIa.size} linha(s) ainda inconsistentes após retry — use Auditoria → Reclassificar.`
-      );
-    } else {
-      etapas.push("Retry pós-validação: inconsistências corrigidas.");
     }
   }
 
@@ -561,33 +462,11 @@ ${taxonomia}`;
     compararQuestoesPorNumeroEOrdem(a, b, ordemIdiomasFaixa)
   );
 
-  const alinhadas = alinharLoteTaxonomia(
-    rows.map((r) => ({
-      numero: r.numero,
-      trechoEnunciado: r.observacoes ?? "",
-      materia: r.materia,
-      assunto: r.assunto,
-      areaBloco: r.areaBloco ?? null,
-      conhecimentoExigido: r.conhecimentoExigido ?? null,
-      nivelDificuldade: r.nivelDificuldade ?? null,
-      observacoes: r.observacoes ?? null,
-    }))
-  );
-  rows = alinhadas.questoes.map((q, i) => {
-    const orig = rows[i]!;
-    return {
-      ...orig,
-      areaBloco: q.areaBloco ?? undefined,
-      materia: q.materia,
-      assunto: q.assunto,
-      conhecimentoExigido: q.conhecimentoExigido ?? undefined,
-      nivelDificuldade: q.nivelDificuldade ?? undefined,
-      observacoes: q.observacoes ?? undefined,
-    };
-  });
-  if (alinhadas.corrigidas > 0) {
-    avisos.push(`${alinhadas.corrigidas} par(es) matéria/assunto alinhados à taxonomia.`);
-  }
+  etapas.push("Classificação N2 (catálogo v1.2)…");
+  const catalogo = await classificarRowsProvaComCatalogo(rows, { banca: ctx.banca });
+  rows = catalogo.rows;
+  avisos.push(...catalogo.avisos);
+  etapas.push(...catalogo.etapas);
 
   if (opts?.incluirGabarito && opts.gabaritoTexto?.trim()) {
     const mapaG = normalizarMapaGabarito(parseGabaritoLote(opts.gabaritoTexto), numeros);
@@ -615,7 +494,7 @@ ${taxonomia}`;
     rows,
     csv: opts?.gerarCsv ? gerarCsvProvaQuestoes(rows) : "",
     avisos,
-    modeloUsado: modelClass,
+    modeloUsado: modelExtracao,
     numerosDetectados: numeros,
     etapas,
     estruturaDetectada: estrutura,
