@@ -1,10 +1,13 @@
 import type { EscopoIndexEntry } from "@/lib/conhecimento-catalog/types";
-import {
-  detectarPassagemEspanhol,
-  detectarPassagemIngles,
-} from "@/lib/prova-materia-ajuste";
 
 export type IdiomaTrilhaLinguagens = "COMUM" | "ingles" | "espanhol";
+
+/** Faixa de idioma estrangeiro opcional no caderno ENEM (dia 1). */
+export const FAIXA_L2_ENEM = { inicio: 1, fim: 5 } as const;
+
+export function naFaixaL2Enem(numero: number): boolean {
+  return numero >= FAIXA_L2_ENEM.inicio && numero <= FAIXA_L2_ENEM.fim;
+}
 
 /** Idioma persistido no corpus (campo EnemQuestaoCorpus.idioma). */
 export function trilhaLinguagensPorIdioma(idioma: string | null | undefined): IdiomaTrilhaLinguagens {
@@ -14,21 +17,19 @@ export function trilhaLinguagensPorIdioma(idioma: string | null | undefined): Id
 }
 
 /**
- * Faixa L2 do ENEM (Q1–5): enem.dev costuma enviar inglês com language=null → acaba COMUM no banco.
- * Inferência por texto quando idioma=COMUM e numero≤5.
+ * Trilha efetiva para classificação/stats.
+ *
+ * ENEM Q1–5: só existem variantes EN e ES. enem.dev grava espanhol com `language:espanhol`
+ * e inglês com `language:null` → `idioma:COMUM`. Nessa faixa, COMUM = inglês (não português).
  */
 export function trilhaLinguagensEfetiva(
   idioma: string | null | undefined,
   numero: number,
-  texto: string
+  _texto?: string
 ): IdiomaTrilhaLinguagens {
   const db = trilhaLinguagensPorIdioma(idioma);
-  if (db !== "COMUM") return db;
-  if (numero < 1 || numero > 5) return "COMUM";
-  const t = texto.trim();
-  if (t.length < 40) return "COMUM";
-  if (detectarPassagemEspanhol(t)) return "espanhol";
-  if (detectarPassagemIngles(t)) return "ingles";
+  if (db === "espanhol" || db === "ingles") return db;
+  if (naFaixaL2Enem(numero)) return "ingles";
   return "COMUM";
 }
 
@@ -36,16 +37,11 @@ export function trilhaLinguagensEfetiva(
 export function inferirIdiomaCorpusLinguagens(
   numero: number,
   language: "ingles" | "espanhol" | null,
-  texto: string | null
+  _texto?: string | null
 ): "COMUM" | "ingles" | "espanhol" {
-  if (language === "ingles" || language === "espanhol") return language;
-  if (numero >= 1 && numero <= 5) {
-    const t = (texto ?? "").trim();
-    if (t.length >= 40) {
-      if (detectarPassagemEspanhol(t)) return "espanhol";
-      if (detectarPassagemIngles(t)) return "ingles";
-    }
-  }
+  if (language === "espanhol") return "espanhol";
+  if (language === "ingles") return "ingles";
+  if (naFaixaL2Enem(numero)) return "ingles";
   return "COMUM";
 }
 

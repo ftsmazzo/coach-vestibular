@@ -64,7 +64,8 @@ async function main() {
         r.conhecimentoEscopoId &&
         ((idiomaNovo === "ingles" && !r.conhecimentoEscopoId.includes("l2_en")) ||
           (idiomaNovo === "espanhol" && !r.conhecimentoEscopoId.includes("l2_es")) ||
-          (idiomaNovo === "COMUM" && r.conhecimentoEscopoId.includes("l2_")));
+          (idiomaNovo === "COMUM" &&
+            (r.conhecimentoEscopoId.includes("l2_en") || r.conhecimentoEscopoId.includes("l2_es"))));
 
       console.log(
         `  ${r.fonteId} → ${fonteIdNovo} (idioma ${r.idioma} → ${idiomaNovo})` +

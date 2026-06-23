@@ -207,9 +207,9 @@ export function AdminEnemCorpusPanel() {
       ) : ehLinguagens ? (
         <Card className="border-indigo-200 bg-indigo-50/60">
           <p className="text-sm text-indigo-900">
-            <strong>3 trilhas ortogonais (contagem efetiva).</strong> Roteamento por{" "}
-            <code className="text-xs">idioma</code> + inferência na faixa Q1–5 (inglês vinha como
-            COMUM no banco). A IA só vê N2 da trilha PT / EN / ES.
+            <strong>3 trilhas ortogonais.</strong> Q1–5 ENEM: espanhol (<code>idioma:espanhol</code>) e
+            inglês (<code>idioma:COMUM</code> no banco — regra estrutural, não é português). Q6+ =
+            português. A IA só vê N2 da trilha.
           </p>
         </Card>
       ) : (
