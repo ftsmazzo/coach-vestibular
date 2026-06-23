@@ -61,7 +61,12 @@ export function validarE1(catalog: MateriaCatalogo): ResultadoValidacao[] {
 
   for (const assunto of catalog.assuntos) {
     for (const dominio of assunto.dominios) {
-      if (!dominio.id.includes(`.${assunto.assuntoId}.`) && !dominio.id.endsWith(`.${assunto.assuntoId}`)) {
+      if (
+        assunto.assuntoId !== "__sistema" &&
+        assunto.assuntoId !== "_fallback" &&
+        !dominio.id.includes(`.${assunto.assuntoId}.`) &&
+        !dominio.id.endsWith(`.${assunto.assuntoId}`)
+      ) {
         const ok = dominio.id.includes(assunto.assuntoId.replace(/_/g, ""));
         if (!ok && !dominio.id.includes(assunto.assuntoId.split("_")[0]!)) {
           results.push(
@@ -71,7 +76,9 @@ export function validarE1(catalog: MateriaCatalogo): ResultadoValidacao[] {
       }
 
       for (const escopo of dominio.escopos) {
-        if (!escopo.id.startsWith(`${dominio.id}.`)) {
+        const ehFallbackEscopo =
+          escopo.id.endsWith(".__nao_classificado") || escopo.id.includes(".__nao_classificado");
+        if (!ehFallbackEscopo && !escopo.id.startsWith(`${dominio.id}.`)) {
           results.push(
             resultado("E1", false, `Escopo ${escopo.id} não é filho de ${dominio.id}`)
           );
