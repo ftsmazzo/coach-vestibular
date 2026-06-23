@@ -57,6 +57,27 @@ const LIMITE_MAX = 900;
 const LOTE_IA = 8;
 const LOTE_TRIAGEM_IA = 10;
 
+type AlternativaCorpus = { text?: string | null; letter?: string };
+
+function montarTextoQuestaoCorpus(q: {
+  enunciadoMd: string | null;
+  introducaoAlternativas: string | null;
+  alternativas?: unknown;
+}): string {
+  const partes = [q.enunciadoMd, q.introducaoAlternativas].filter(Boolean) as string[];
+
+  if (Array.isArray(q.alternativas)) {
+    for (const raw of q.alternativas) {
+      const alt = raw as AlternativaCorpus;
+      if (typeof alt.text === "string" && alt.text.trim()) {
+        partes.push(alt.letter ? `${alt.letter}) ${alt.text}` : alt.text);
+      }
+    }
+  }
+
+  return partes.join("\n");
+}
+
 function persistirResultado(
   prisma: PrismaClient,
   id: string,
@@ -186,6 +207,7 @@ async function classificarDisciplinaUnica(
       fonteId: true,
       enunciadoMd: true,
       introducaoAlternativas: true,
+      alternativas: true,
       conhecimentoEscopoId: true,
       classificacaoConfianca: true,
     },
@@ -197,7 +219,7 @@ async function classificarDisciplinaUnica(
 
   if (!opts.soTriagem) {
     for (const q of questoes) {
-      const texto = [q.enunciadoMd, q.introducaoAlternativas].filter(Boolean).join("\n");
+      const texto = montarTextoQuestaoCorpus(q);
       const jaTemN2 =
         q.conhecimentoEscopoId?.startsWith(`${prefixoN2}.`) === true &&
         (q.classificacaoConfianca ?? 0) >= confiancaMinima;
@@ -270,6 +292,7 @@ async function classificarNaturezaSub(
       fonteId: true,
       enunciadoMd: true,
       introducaoAlternativas: true,
+      alternativas: true,
       materia: true,
       conhecimentoEscopoId: true,
       classificacaoConfianca: true,
@@ -290,7 +313,7 @@ async function classificarNaturezaSub(
   };
 
   const itens: Item[] = questoes.map((q) => {
-    const texto = [q.enunciadoMd, q.introducaoAlternativas].filter(Boolean).join("\n");
+    const texto = montarTextoQuestaoCorpus(q);
     const triHeur = triarMateriaNatureza(texto);
     return {
       id: q.id,

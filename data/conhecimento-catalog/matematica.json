@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.0-alpha",
+  "catalogVersion": "1.0.1-alpha",
   "materiaId": "matematica",
   "materiaLabel": "Matemática",
   "areaEnem": "Matemática e suas Tecnologias",
@@ -88,8 +88,8 @@
           "id": "mat.geometria_plana.figuras",
           "label": "Áreas e perímetros",
           "escopos": [
-            { "id": "mat.geometria_plana.figuras.areas_basicas", "label": "Áreas de triângulo, retângulo e círculo", "keywords": ["área do triângulo", "área do retângulo", "área do círculo", "πr²", "perímetro", "circunferência"] },
-            { "id": "mat.geometria_plana.figuras.poligonos", "label": "Polígonos e áreas compostas", "keywords": ["polígono", "hexágono", "pentágono", "área composta", "figura composta", "ladrilhamento"] },
+            { "id": "mat.geometria_plana.figuras.areas_basicas", "label": "Áreas de triângulo, retângulo e círculo", "keywords": ["área do triângulo", "área do retângulo", "área do círculo", "πr²", "perímetro", "circunferência", "terreno", "maior área", "prefeitura", "restrição"] },
+            { "id": "mat.geometria_plana.figuras.poligonos", "label": "Polígonos e áreas compostas", "keywords": ["polígono", "hexágono", "pentágono", "área composta", "figura composta", "ladrilhamento", "terreno", "moradores", "optar pelo terreno"] },
             { "id": "mat.geometria_plana.figuras.semelhanca", "label": "Semelhança de triângulos", "keywords": ["semelhança", "triângulos semelhantes", "proporcionalidade", "escala", "homotetia"] }
           ]
         },
@@ -112,8 +112,8 @@
           "id": "mat.geometria_espacial.solidos",
           "label": "Volumes e áreas de superfície",
           "escopos": [
-            { "id": "mat.geometria_espacial.solidos.prisma_cubo", "label": "Prisma e cubo", "keywords": ["prisma", "cubo", "paralelepípedo", "volume do prisma", "área total"] },
-            { "id": "mat.geometria_espacial.solidos.cilindro", "label": "Cilindro", "keywords": ["cilindro", "volume do cilindro", "πr²h", "lata", "tubo"] },
+            { "id": "mat.geometria_espacial.solidos.prisma_cubo", "label": "Prisma e cubo", "keywords": ["prisma", "cubo", "paralelepípedo", "volume do prisma", "área total", "caixa de papelão", "mudança", "encaixar", "aresta", "espaço livre"] },
+            { "id": "mat.geometria_espacial.solidos.cilindro", "label": "Cilindro", "keywords": ["cilindro", "volume do cilindro", "πr²h", "lata", "tubo", "garrafa", "garrafas"] },
             { "id": "mat.geometria_espacial.solidos.cone", "label": "Cone e tronco de cone", "keywords": ["cone", "tronco de cone", "volume do cone", "1/3 πr²h", "funil"] },
             { "id": "mat.geometria_espacial.solidos.esfera", "label": "Esfera", "keywords": ["esfera", "volume da esfera", "4/3 πr³", "bola", "globo"] },
             { "id": "mat.geometria_espacial.solidos.piramide", "label": "Pirâmide", "keywords": ["pirâmide", "volume da pirâmide", "base poligonal", "ápice"] },
@@ -161,7 +161,7 @@
           "id": "mat.progressoes.sequencias",
           "label": "PA e PG",
           "escopos": [
-            { "id": "mat.progressoes.sequencias.pa", "label": "Progressão aritmética (PA)", "keywords": ["progressão aritmética", "PA", "razão aritmética", "an", "termo geral"] },
+            { "id": "mat.progressoes.sequencias.pa", "label": "Progressão aritmética (PA)", "keywords": ["progressão aritmética", "PA", "razão aritmética", "an", "termo geral", "andares", "edifício", "andar"] },
             { "id": "mat.progressoes.sequencias.pg", "label": "Progressão geométrica (PG)", "keywords": ["progressão geométrica", "PG", "razão geométrica", "q^n", "termo geral PG"] }
           ]
         }
@@ -177,7 +177,8 @@
           "escopos": [
             { "id": "mat.estatistica.medidas.tendencia_central", "label": "Média, mediana e moda", "keywords": ["média", "mediana", "moda", "tendência central", "dados estatísticos"] },
             { "id": "mat.estatistica.medidas.dispersao", "label": "Amplitude e desvio", "keywords": ["amplitude", "desvio padrão", "variância", "dispersão"] },
-            { "id": "mat.estatistica.medidas.graficos", "label": "Gráficos estatísticos", "keywords": ["histograma", "gráfico de barras", "setores", "pizza", "box plot", "diagrama"] }
+            { "id": "mat.estatistica.medidas.graficos", "label": "Gráficos estatísticos", "keywords": ["histograma", "gráfico de barras", "setores", "pizza", "box plot", "diagrama", "empresa", "comprar", "filtro", "filtros", "tabela"] },
+            { "id": "mat.estatistica.medidas.leitura_tabelas", "label": "Leitura de tabelas e gráficos (decisão)", "keywords": ["tabela", "gráfico", "leitura de dados", "comparar valores", "empresário", "empresa", "lentes", "espessura", "filtro descartado", "paciente", "carpinteiro", "arquiteto", "peças"] }
           ]
         },
         {
@@ -199,7 +200,7 @@
           "id": "mat.combinatoria.contagem",
           "label": "Princípios de contagem",
           "escopos": [
-            { "id": "mat.combinatoria.contagem.principio_fundamental", "label": "Princípio fundamental da contagem", "keywords": ["princípio fundamental", "contagem", "possibilidades", "multiplicação de opções"] },
+            { "id": "mat.combinatoria.contagem.principio_fundamental", "label": "Princípio fundamental da contagem", "keywords": ["princípio fundamental", "contagem", "possibilidades", "multiplicação de opções", "carpinteiro", "peças", "produzir peças"] },
             { "id": "mat.combinatoria.contagem.permutacao", "label": "Permutação", "keywords": ["permutação", "permutacao", "ordem", "n!", "fila", "arranjo total"] },
             { "id": "mat.combinatoria.contagem.arranjo", "label": "Arranjo", "keywords": ["arranjo", "A(n,p)", "ordem importa", "seleção ordenada"] },
             { "id": "mat.combinatoria.contagem.combinacao", "label": "Combinação", "keywords": ["combinação", "combinacao", "C(n,p)", "ordem não importa", "subconjunto"] }
@@ -208,7 +209,7 @@
       ]
     },
     {
-      "assuntoId": "matematica_financeira",
+      "assuntoId": "financeira",
       "assuntoLabel": "Matemática financeira",
       "dominios": [
         {

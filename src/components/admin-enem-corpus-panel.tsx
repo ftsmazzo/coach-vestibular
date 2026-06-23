@@ -158,8 +158,11 @@ export function AdminEnemCorpusPanel() {
   }
 
   const mat = stats?.materiaAtiva;
-  const catalogoOk = catalogo?.validacao.every((v) => v.ok) ?? false;
-  const podeClassificar = Boolean(catalogo) && !classificando && (stats?.total ?? 0) > 0;
+  const validacaoE0Ok = catalogo?.validacao.filter((v) => v.nivel === "E0").every((v) => v.ok) ?? false;
+  const validacaoE1Ok = catalogo?.validacao.filter((v) => v.nivel === "E1").every((v) => v.ok) ?? false;
+  const catalogoOk = validacaoE0Ok && validacaoE1Ok;
+  const podeClassificar =
+    Boolean(catalogo) && validacaoE0Ok && !classificando && (stats?.total ?? 0) > 0;
 
   if (loading && !stats) {
     return <p className="text-slate-500">Carregando corpus ENEM…</p>;
@@ -244,11 +247,19 @@ export function AdminEnemCorpusPanel() {
         </Card>
       )}
 
-      {!catalogoOk && catalogo && (
+      {!validacaoE1Ok && catalogo && validacaoE0Ok && (
         <Card className="border-amber-200 bg-amber-50/80">
           <p className="text-sm text-amber-900">
-            Catálogo {catalogo.materia} com falhas de validação — corrija antes de classificar em
-            produção.
+            Catálogo {catalogo.materia} com avisos E1 (hierarquia) — classificação permitida, mas
+            corrija para produção madura.
+          </p>
+        </Card>
+      )}
+
+      {!validacaoE0Ok && catalogo && (
+        <Card className="border-amber-200 bg-amber-50/80">
+          <p className="text-sm text-amber-900">
+            Catálogo {catalogo.materia} com falhas E0 — corrija IDs/teto antes de classificar.
           </p>
         </Card>
       )}
