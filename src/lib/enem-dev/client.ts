@@ -102,7 +102,7 @@ export async function* iterarQuestoesAnoCompleto(
 
   let inglesPaginado = 0;
   try {
-    for await (const q of iterarQuestoesAno(ano, DEFAULT_PAGE_SIZE, 0, "ingles")) {
+    for await (const q of iterarQuestoesAno(ano, DEFAULT_PAGE_SIZE, "ingles")) {
       inglesPaginado++;
       yield q;
     }
@@ -135,13 +135,14 @@ export async function* iterarCorpusEnemCompleto(): AsyncGenerator<{
 /** Itera todas as questões de um ano respeitando paginação e rate limit. */
 export async function* iterarQuestoesAno(
   ano: number,
-  pageSize = DEFAULT_PAGE_SIZE
+  pageSize = DEFAULT_PAGE_SIZE,
+  language?: EnemDevLanguage
 ): AsyncGenerator<EnemDevQuestionsPage["questions"][number]> {
   let offset = 0;
   let hasMore = true;
 
   while (hasMore) {
-    const page = await listarQuestoesAno(ano, pageSize, offset);
+    const page = await listarQuestoesAno(ano, pageSize, offset, language);
     for (const q of page.questions) {
       yield q;
     }
