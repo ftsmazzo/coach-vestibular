@@ -8,6 +8,7 @@ export type {
 } from "./types";
 
 export {
+  anosComL2Ingles,
   buscarQuestaoEnem,
   iterarQuestoesAno,
   iterarQuestoesL2Ingles,

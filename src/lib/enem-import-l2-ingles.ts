@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import {
+  anosComL2Ingles,
   buscarQuestaoEnem,
   iterarQuestoesL2Ingles,
   listarProvasEnem,
@@ -14,7 +15,7 @@ export type ImportL2InglesResultado = {
   avisos: string[];
 };
 
-/** Mínimo esperado de questões EN Q1–5 no corpus (15 anos × 5). */
+/** Mínimo esperado de questões EN Q1–5 no corpus (~13 anos × 5; 2009 e 2011 sem inglês na API). */
 export const L2_INGLES_MINIMO_ESPERADO = 50;
 
 export async function contarInglesLinguagensCorpus(prisma: PrismaClient): Promise<number> {
@@ -93,11 +94,19 @@ export async function importarL2InglesCorpus(
 
   await testarAcessoEnemDevIngles();
 
-  const anos =
-    opts.anos?.length ? opts.anos : (await listarProvasEnem()).map((p) => p.year).sort((a, b) => a - b);
+  const provas = await listarProvasEnem();
+  const anosComEn = anosComL2Ingles(provas);
+  const anos = opts.anos?.length
+    ? opts.anos.filter((a) => anosComEn.includes(a))
+    : anosComEn;
+
+  const semIngles = provas.filter((p) => !p.languages.some((l) => l.value === "ingles")).map((p) => p.year);
+  if (semIngles.length > 0) {
+    avisos.push(`Anos sem inglês na API (ignorados): ${semIngles.join(", ")}.`);
+  }
 
   if (anos.length === 0) {
-    throw new Error("enem.dev não retornou anos de prova.");
+    throw new Error("Nenhum ano com trilha inglês na API enem.dev.");
   }
 
   let processadas = 0;

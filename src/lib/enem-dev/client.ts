@@ -33,6 +33,20 @@ export async function listarProvasEnem(): Promise<EnemDevExam[]> {
   return fetchJson<EnemDevExam[]>("/exams");
 }
 
+/** Anos cuja prova na API declara suporte a `?language=ingles` (ex.: 2009 e 2011 não têm). */
+export function anosComL2Ingles(provas: EnemDevExam[]): number[] {
+  return provas
+    .filter((p) => p.languages.some((l) => l.value === "ingles"))
+    .map((p) => p.year)
+    .sort((a, b) => a - b);
+}
+
+function enemDevErroIgnoravel(msg: string): boolean {
+  if (msg.includes("404")) return true;
+  if (msg.includes("400") && /language.*not found/i.test(msg)) return true;
+  return false;
+}
+
 export async function listarQuestoesAno(
   ano: number,
   limit = DEFAULT_PAGE_SIZE,
@@ -65,7 +79,9 @@ export async function* iterarQuestoesL2Ingles(
       if (q.discipline === "linguagens") yield q;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      if (!msg.includes("404")) throw e;
+      if (!enemDevErroIgnoravel(msg)) throw e;
+      // Prova inteira sem trilha inglês — não tenta Q2–5
+      if (index === 1) return;
     }
   }
 }
