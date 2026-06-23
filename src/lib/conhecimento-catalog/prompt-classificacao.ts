@@ -91,13 +91,20 @@ export function montarBlocoQuestaoV11(q: {
   enunciado: string;
   alternativas: string;
   gabarito?: string | null;
+  numero?: number;
+  idioma?: string | null;
 }): string {
   const gab =
     q.gabarito?.trim() ?
       `Gabarito: ${q.gabarito.trim()}`
     : "Gabarito: (não informado)";
+  const meta =
+    q.numero != null || q.idioma
+      ? `Metadados: numero=${q.numero ?? "—"} idioma=${q.idioma ?? "COMUM"}\n`
+      : "";
   return (
     `### ${q.fonteId}\n` +
+    meta +
     `Enunciado:\n${q.enunciado.slice(0, 2000)}\n\n` +
     `Alternativas:\n${q.alternativas.slice(0, 1500)}\n` +
     gab

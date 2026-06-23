@@ -1,8 +1,5 @@
 import type { EscopoIndexEntry, MateriaCatalogo } from "@/lib/conhecimento-catalog/types";
-import {
-  detectarIdiomaTextoQuestao,
-  naFaixaL2Enem,
-} from "./linguagens-rota";
+import { naFaixaL2Enem } from "./linguagens-rota";
 
 export type DisciplinaLinguagens = "portugues" | "ingles" | "espanhol" | "indefinido";
 
@@ -129,8 +126,9 @@ function montarRota(
 }
 
 /**
- * Roteamento Linguagens — metadado enem.dev vence; Q6+ COMUM = português;
- * heurística de texto só Q1–5 (ES) ou inglês forte em qualquer posição.
+ * Roteamento estrutural — sem heurística de palavras.
+ * Fonte: campo `idioma` enem.dev + posição ENEM (Q1–5 L2, Q6+ português).
+ * A IA classifica N2 dentro da rota via catálogo/prompt v1.2.
  */
 export function routeLanguageDiscipline(
   input: QuestaoRotaInput,
@@ -147,7 +145,7 @@ export function routeLanguageDiscipline(
       "metadata",
       metaL2.confianca,
       false,
-      `Metadado L2: idioma=${input.idioma ?? "—"} disciplina=${input.disciplinaOriginalId ?? "—"}`
+      `Metadado enem.dev: idioma=${input.idioma ?? "—"}`
     );
   }
 
@@ -164,36 +162,13 @@ export function routeLanguageDiscipline(
   }
 
   if (numero != null && !naFaixaL2Enem(numero)) {
-    const inglesQ6 = detectarIdiomaTextoQuestao(input, { numero });
-    if (inglesQ6?.disciplina === "ingles") {
-      return montarRota(
-        rotas,
-        "ingles",
-        "idioma_texto_base",
-        inglesQ6.confianca,
-        inglesQ6.confianca < 0.8,
-        `Q${numero} COMUM com texto claramente em inglês (exceção corpus).`
-      );
-    }
     return montarRota(
       rotas,
       "portugues",
       "posicao_enem",
-      0.88,
+      0.95,
       false,
-      `Questão ${numero} (Q6+) idioma COMUM → português/artes/tecnologias.`
-    );
-  }
-
-  const detectado = detectarIdiomaTextoQuestao(input, { numero });
-  if (detectado) {
-    return montarRota(
-      rotas,
-      detectado.disciplina,
-      "idioma_texto_base",
-      detectado.confianca,
-      detectado.confianca < 0.75,
-      `Idioma no texto-base (faixa L2 Q${numero ?? "?"}), ignorando comando PT.`
+      `Q${numero} (Q6–45) idioma COMUM → português/artes/tecnologias.`
     );
   }
 
@@ -204,7 +179,7 @@ export function routeLanguageDiscipline(
       "incerto",
       0.2,
       true,
-      `Q${numero} na faixa L2 sem metadado de idioma nem texto L2 detectável.`
+      `Q${numero} (Q1–5) idioma COMUM — reimportar/sync enem.dev (ES ou EN).`
     );
   }
 
@@ -214,7 +189,7 @@ export function routeLanguageDiscipline(
     "incerto",
     0.15,
     true,
-    "Rota incerta — sem metadado, posição ou texto-base suficiente."
+    "Sem metadado de idioma nem posição ENEM."
   );
 }
 

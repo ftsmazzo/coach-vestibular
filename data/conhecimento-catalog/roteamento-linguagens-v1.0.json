@@ -1,88 +1,54 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "service": "routeLanguageDiscipline",
-  "description": "Especificação de roteamento obrigatório antes da classificação de escopo em Linguagens.",
+  "description": "Roteamento estrutural antes da classificação IA de escopo em Linguagens. Sem heurística de palavras.",
   "inputFields": [
     "disciplinaOriginalId",
     "idioma",
-    "areaEnem",
     "numero",
-    "textoBase",
-    "enunciado",
-    "alternativas",
     "origem"
   ],
   "outputSchema": {
     "catalogoMateriaId": "linguagens",
     "disciplinaOriginalId": "portugues|ingles|espanhol|indefinido",
-    "allowedAssuntoIds": [
-      "string"
-    ],
-    "criterio": "metadata|posicao_enem|idioma_texto_base|inferido|incerto",
+    "allowedAssuntoIds": ["string"],
+    "criterio": "metadata|posicao_enem|incerto",
     "confianca": "number 0-1",
     "sinalizadorRevisao": "boolean"
   },
   "rules": [
-    "Se disciplinaOriginalId ou idioma vier da fonte como ingles/en/es/en_us/enem_lingua_inglesa, retornar ingles e allowedAssuntoIds=['l2_en'].",
-    "Se disciplinaOriginalId ou idioma vier da fonte como espanhol/es/es_es/enem_lingua_espanhola, retornar espanhol e allowedAssuntoIds=['l2_es'].",
-    "Se disciplinaOriginalId vier como portugues/redacao/literatura/gramatica/artes, retornar portugues e allowedAssuntoIds=['pt_interp','pt_lit','pt_gram','pt_sem','pt_art','pt_tec'].",
-    "Q6–Q45 com idioma COMUM → portugues (posicao_enem). Nunca marcar espanhol por heurística de texto em Q6+.",
-    "Exceção: Q6+ COMUM com texto claramente em inglês (marcadores EN, zero PT) → ingles na rota de classificação.",
-    "Heurística ES só na faixa Q1–5; NÃO usar que/para/como/del como marcadores espanhóis (são português).",
-    "Ignorar o idioma do comando/enunciado se ele for apenas instrução em português; detectar pelo texto-base e alternativas.",
-    "Se o texto-base dominante tiver marcadores de inglês (the, of, and, to, with, should, would, not) e não houver muitos marcadores espanhóis, retornar ingles.",
-    "Se o texto-base dominante tiver marcadores de espanhol (el, la, los, las, que, para, una, porque, según, también) e sinais como ¿/¡, retornar espanhol.",
-    "Se houver texto em português e cobrar literatura, gramática, artes, gêneros ou tecnologia da linguagem, retornar portugues.",
-    "Se a rota ficar incerta, retornar disciplinaOriginalId='indefinido', allowedAssuntoIds=[], sinalizadorRevisao=true."
+    "idioma=ingles ou espanhol (enem.dev) → rota ingles/l2_en ou espanhol/l2_es.",
+    "Q6–Q45 idioma COMUM → portugues (pt_*).",
+    "Q1–5 idioma COMUM → indefinido (sync enem.dev; não inferir idioma por palavras).",
+    "Nunca alterar idioma no corpus por contagem de palavras.",
+    "Classificação N2: IA + catálogo v1.2 dentro da rota permitida."
   ],
   "examples": [
     {
-      "input": {
-        "idioma": "ingles",
-        "enunciado": "No texto, a expressão...",
-        "textoBase": "The author argues that..."
-      },
+      "input": { "idioma": "ingles", "numero": 3 },
       "output": {
         "disciplinaOriginalId": "ingles",
-        "allowedAssuntoIds": [
-          "l2_en"
-        ],
+        "allowedAssuntoIds": ["l2_en"],
         "criterio": "metadata",
         "confianca": 0.99
       }
     },
     {
-      "input": {
-        "idioma": null,
-        "numero": 3,
-        "textoBase": "El texto trata de la inmigración..."
-      },
+      "input": { "idioma": "COMUM", "numero": 22 },
       "output": {
-        "disciplinaOriginalId": "espanhol",
-        "allowedAssuntoIds": [
-          "l2_es"
-        ],
-        "criterio": "idioma_texto_base",
-        "confianca": 0.9
+        "disciplinaOriginalId": "portugues",
+        "allowedAssuntoIds": ["pt_interp", "pt_lit", "pt_gram", "pt_sem", "pt_art", "pt_tec"],
+        "criterio": "posicao_enem",
+        "confianca": 0.95
       }
     },
     {
-      "input": {
-        "disciplinaOriginalId": "portugues",
-        "textoBase": "Texto de Machado de Assis..."
-      },
+      "input": { "idioma": "COMUM", "numero": 3 },
       "output": {
-        "disciplinaOriginalId": "portugues",
-        "allowedAssuntoIds": [
-          "pt_interp",
-          "pt_lit",
-          "pt_gram",
-          "pt_sem",
-          "pt_art",
-          "pt_tec"
-        ],
-        "criterio": "metadata",
-        "confianca": 0.99
+        "disciplinaOriginalId": "indefinido",
+        "allowedAssuntoIds": [],
+        "criterio": "incerto",
+        "confianca": 0.2
       }
     }
   ]

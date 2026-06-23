@@ -86,6 +86,8 @@ type QuestaoParaClassificar = {
   gabarito?: string;
   enunciado?: string;
   alternativas?: string;
+  numero?: number;
+  idioma?: string | null;
 };
 
 type AlternativaCorpus = { text?: string | null; letter?: string };
@@ -193,6 +195,8 @@ async function classificarLoteQuestoes(
                 enunciado: q.enunciado ?? q.texto,
                 alternativas: q.alternativas ?? "",
                 gabarito: q.gabarito,
+                numero: q.numero,
+                idioma: q.idioma,
               })),
               opts.catalog,
               opts.escopos,
@@ -211,7 +215,7 @@ async function classificarLoteQuestoes(
         let resultado = mapa.get(q.fonteId)!;
         resultado.motivo = `${usaV11 ? "IA v11" : "IA"}: ${resultado.motivo}`;
 
-        if (resultado.status === "unclassified") {
+        if (resultado.status === "unclassified" && opts.materiaId !== "linguagens") {
           const fallback = classificarPorKeywords(q.texto, opts.escopos, {
             confiancaMinima: opts.confiancaMinima,
             assuntoId: opts.assuntoId,
@@ -470,6 +474,8 @@ async function classificarLinguagensTrilhas(
     enunciado: string;
     alternativas: string;
     gabarito: string;
+    numero: number;
+    idioma: string;
     rota: RotaLinguagens;
   };
 
@@ -521,6 +527,8 @@ async function classificarLinguagensTrilhas(
         enunciado,
         alternativas,
         gabarito: q.gabarito,
+        numero: q.numero,
+        idioma: q.idioma,
         rota,
       };
 
@@ -578,6 +586,8 @@ async function classificarLinguagensTrilhas(
         enunciado: i.enunciado,
         alternativas: i.alternativas,
         gabarito: i.gabarito,
+        numero: i.numero,
+        idioma: i.idioma,
       })),
       {
         modo,

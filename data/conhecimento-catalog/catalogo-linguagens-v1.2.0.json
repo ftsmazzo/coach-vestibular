@@ -22,13 +22,12 @@
     "roteamentoObrigatorio": {
       "etapa1": "Determinar disciplinaOriginalId/rota ANTES de escolher escopo: portugues, ingles ou espanhol.",
       "etapa2": "Enviar ao classificador apenas os escopos permitidos para a rota escolhida.",
-      "regraCritica": "A língua do COMANDO/INSTRUÇÃO geralmente é português e não deve definir a rota. A rota é definida pelo texto-base, metadado da prova, número da questão ou campo idioma/disciplinaOriginalId.",
+      "regraCritica": "Roteamento estrutural (metadado enem.dev + posição ENEM). A IA classifica N2 dentro da rota via catálogo v1.2 — sem heurística de palavras.",
       "ordemDePreferencia": [
-        "campo disciplinaOriginalId ou idioma da fonte (ingles/espanhol explícitos da API enem.dev)",
-        "número/posição ENEM: Q6–Q45 idioma COMUM → português/artes/tecnologias",
-        "exceção Q6+: texto claramente em inglês (marcadores EN, sem PT) → ingles na classificação, sem alterar idioma COMUM no corpus",
-        "idioma dominante do texto-base na faixa L2 (Q1–5) — heurística conservadora; NUNCA usar que/para/como como marcador ES",
-        "conteúdo cobrado: literatura/gramática/PT/arte/tecnologia → portugues; reading comprehension → ingles; comprensión lectora → espanhol"
+        "campo idioma da API enem.dev (ingles/espanhol)",
+        "posição ENEM: Q6–Q45 idioma COMUM → português",
+        "Q1–5 idioma COMUM → sync/reimport enem.dev (não inferir por texto)",
+        "classificação N2 pela IA com descricao, exemplosEnunciado, negativeHints do catálogo"
       ],
       "rotas": {
         "portugues": [

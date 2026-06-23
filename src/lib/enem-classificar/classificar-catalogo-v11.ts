@@ -168,6 +168,8 @@ export type QuestaoClassificacaoV11 = {
   enunciado: string;
   alternativas: string;
   gabarito?: string | null;
+  numero?: number;
+  idioma?: string | null;
 };
 
 export type ClassificarV11Opts = {

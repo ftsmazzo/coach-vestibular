@@ -19,12 +19,12 @@ Nunca classifique uma questão de inglês/espanhol como Português apenas porque
 No ENEM, o comando costuma estar em português; quem define a rota é o texto-base, metadado da fonte,
 campo idioma/disciplinaOriginalId ou posição da questão.
 
-ORDEM DE DECISÃO DA ROTA
-1. Se houver disciplinaOriginalId/idioma explícito (ingles/espanhol) da API, use esse valor.
-2. Se Q6–Q45 com idioma COMUM → português/artes/tecnologias (regra ENEM).
-3. Exceção: Q6+ COMUM com texto claramente em inglês (sem marcadores PT) → rota ingles na classificação.
-4. Na faixa L2 (Q1–5) sem metadado, detecte ES/EN no texto-base com heurística conservadora (que/para/como são português, não espanhol).
-5. Se continuar incerto → ling.__nao_classificado com sinalizadorRevisao=true.
+ORDEM DE DECISÃO DA ROTA (implementada no código — não use heurística de palavras)
+1. Campo `idioma` da API enem.dev: ingles → ingles; espanhol → espanhol.
+2. Q6–Q45 com idioma COMUM → portugues (posição ENEM).
+3. Q1–5 com idioma COMUM → indefinido (sync/reimport enem.dev).
+4. A IA classifica o escopo N2 dentro da rota, usando descricao, exemplosEnunciado, negativeHints e regraDesempate do catálogo.
+5. Se confiança baixa ou rota incerta → ling.__nao_classificado.
 
 ESCOPO PERMITIDO POR ROTA
 - portugues: apenas assuntos pt_interp, pt_lit, pt_gram, pt_sem, pt_art, pt_tec.

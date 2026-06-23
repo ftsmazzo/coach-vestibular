@@ -4,10 +4,7 @@ import {
   idFallbackNaoClassificado,
   indexarEscopos,
 } from "@/lib/conhecimento-catalog";
-import {
-  detectarIdiomaTextoQuestao,
-  naFaixaL2Enem,
-} from "@/lib/enem-classificar/linguagens-rota";
+import { naFaixaL2Enem } from "@/lib/enem-classificar/linguagens-rota";
 import {
   routeLanguageDiscipline,
   validarEscopoNaRota,
@@ -15,7 +12,7 @@ import {
 import { montarFonteId } from "@/lib/enem-dev/estrutural";
 
 /** Bump quando mudar regra de roteamento L2 — admin exibe para confirmar deploy. */
-export const LINGUAGENS_ROTA_VERSION = 5;
+export const LINGUAGENS_ROTA_VERSION = 6;
 
 export type RepairLinguagensResultado = {
   corrigidas: number;
@@ -24,60 +21,9 @@ export type RepairLinguagensResultado = {
   amostra: string[];
 };
 
-type AlternativaCorpus = { text?: string | null; letter?: string };
-
-function montarPartesRepair(row: {
-  enunciadoMd: string | null;
-  introducaoAlternativas: string | null;
-  alternativas?: unknown;
-}): { enunciado: string; alternativas: string } {
-  const enunciado = [row.enunciadoMd, row.introducaoAlternativas].filter(Boolean).join("\n");
-  const altLinhas: string[] = [];
-  if (Array.isArray(row.alternativas)) {
-    for (const raw of row.alternativas) {
-      const alt = raw as AlternativaCorpus;
-      if (typeof alt.text === "string" && alt.text.trim()) {
-        altLinhas.push(alt.letter ? `${alt.letter}) ${alt.text}` : alt.text);
-      }
-    }
-  }
-  return { enunciado, alternativas: altLinhas.join("\n") };
-}
-
-function idiomaCorretoPorPosicao(
-  numero: number,
-  idiomaAtual: string,
-  enunciado: string,
-  alternativas: string
-): "COMUM" | "ingles" | "espanhol" {
-  if (idiomaAtual === "ingles" || idiomaAtual === "espanhol") {
-    if (!naFaixaL2Enem(numero) && idiomaAtual === "espanhol") {
-      return "COMUM";
-    }
-    if (!naFaixaL2Enem(numero) && idiomaAtual === "ingles") {
-      const det = detectarIdiomaTextoQuestao(
-        { enunciado, alternativas, textoBase: enunciado },
-        { numero }
-      );
-      return det?.disciplina === "ingles" ? "ingles" : "COMUM";
-    }
-    return idiomaAtual as "ingles" | "espanhol";
-  }
-
-  if (naFaixaL2Enem(numero)) {
-    const det = detectarIdiomaTextoQuestao(
-      { enunciado, alternativas, textoBase: enunciado },
-      { numero }
-    );
-    if (det?.disciplina === "ingles") return "ingles";
-  }
-
-  return "COMUM";
-}
-
 /**
- * Reverte corrupção de idioma (Q6+ marcado espanhol por heurística errada) e limpa N2 fora da rota.
- * Não reescreve idioma por heurística agressiva — confia em enem.dev + posição ENEM.
+ * Reparo estrutural — reverte idioma L2 fora da faixa Q1–5 e limpa N2 fora da rota.
+ * Sem heurística de texto; confia em enem.dev + posição ENEM.
  */
 export async function repararIdiomaLinguagensCorpus(
   prisma: PrismaClient,
@@ -98,7 +44,6 @@ export async function repararIdiomaLinguagensCorpus(
       fonteId: true,
       enunciadoMd: true,
       introducaoAlternativas: true,
-      alternativas: true,
       conhecimentoEscopoId: true,
     },
   });
@@ -109,17 +54,19 @@ export async function repararIdiomaLinguagensCorpus(
   const amostra: string[] = [];
 
   for (const r of rows) {
-    const { enunciado, alternativas } = montarPartesRepair(r);
-    const idiomaNovo = idiomaCorretoPorPosicao(r.numero, r.idioma, enunciado, alternativas);
+    let idiomaNovo: "COMUM" | "ingles" | "espanhol" =
+      r.idioma === "ingles" || r.idioma === "espanhol" ? r.idioma : "COMUM";
+
+    if (!naFaixaL2Enem(r.numero) && idiomaNovo !== "COMUM") {
+      idiomaNovo = "COMUM";
+    }
+
     const fonteIdNovo = montarFonteId(r.ano, r.numero, idiomaNovo);
 
     const rota = routeLanguageDiscipline(
       {
         idioma: idiomaNovo,
         numero: r.numero,
-        enunciado,
-        alternativas,
-        textoBase: enunciado,
         origem: "enem_api",
       },
       catalog
