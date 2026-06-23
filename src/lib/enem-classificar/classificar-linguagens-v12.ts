@@ -2,7 +2,6 @@ import { responsesComSchema } from "@/lib/openai-responses-client";
 import {
   montarBlocoQuestaoV11,
   montarCatalogoReduzido,
-  montarSystemClassificacaoV11,
   montarSystemClassificacaoLinguagensV12,
 } from "@/lib/conhecimento-catalog/prompt-classificacao";
 import { idFallbackNaoClassificado } from "@/lib/conhecimento-catalog/load";
@@ -12,11 +11,24 @@ import type {
   MateriaCatalogo,
   ResultadoClassificacao,
 } from "@/lib/conhecimento-catalog/types";
+import type { DisciplinaLinguagens } from "./route-language-discipline";
 
-export const CLASSIFICADOR_CATALOGO_V11 = "ia-catalogo-v11";
+export const CLASSIFICADOR_LING_V12 = "ia-catalogo-v12-ling";
 
-type IaV11Item = {
+const ROTAS_ASSUNTOS: Record<Exclude<DisciplinaLinguagens, "indefinido">, string[]> = {
+  portugues: ["pt_interp", "pt_lit", "pt_gram", "pt_sem", "pt_art", "pt_tec"],
+  ingles: ["l2_en"],
+  espanhol: ["l2_es"],
+};
+
+type IaLingV12Item = {
   fonteId: string;
+  rota: {
+    disciplinaOriginalId: DisciplinaLinguagens;
+    criterio: string;
+    confianca: number;
+    justificativa?: string;
+  };
   primario: {
     id: string;
     assuntoId?: string;
@@ -30,12 +42,10 @@ type IaV11Item = {
   sinalizadorRevisao?: boolean;
 };
 
-type IaV11Lote = {
-  classificacoes: IaV11Item[];
-};
+type IaLingV12Lote = { classificacoes: IaLingV12Item[] };
 
-const SCHEMA_V11 = {
-  name: "classificacao_catalogo_v11",
+const SCHEMA_LING_V12 = {
+  name: "classificacao_linguagens_v12",
   strict: true,
   schema: {
     type: "object",
@@ -46,6 +56,20 @@ const SCHEMA_V11 = {
           type: "object",
           properties: {
             fonteId: { type: "string" },
+            rota: {
+              type: "object",
+              properties: {
+                disciplinaOriginalId: {
+                  type: "string",
+                  enum: ["portugues", "ingles", "espanhol", "indefinido"],
+                },
+                criterio: { type: "string" },
+                confianca: { type: "number" },
+                justificativa: { type: "string" },
+              },
+              required: ["disciplinaOriginalId", "criterio", "confianca", "justificativa"],
+              additionalProperties: false,
+            },
             primario: {
               type: "object",
               properties: {
@@ -79,6 +103,7 @@ const SCHEMA_V11 = {
           },
           required: [
             "fonteId",
+            "rota",
             "primario",
             "secundarios",
             "conhecimentoExigidoN3",
@@ -95,20 +120,44 @@ const SCHEMA_V11 = {
   },
 } as const;
 
-function idsValidos(escopos: Map<string, EscopoIndexEntry>, fallbackId: string): Set<string> {
-  return new Set([...escopos.keys(), fallbackId]);
+export type QuestaoLinguagensV12 = {
+  fonteId: string;
+  enunciado: string;
+  alternativas: string;
+  gabarito?: string | null;
+  /** Metadados opcionais — hint, não regra (ENEM, PDF, simulado). */
+  numero?: number;
+  idioma?: string | null;
+  banca?: string | null;
+  origem?: string | null;
+};
+
+function escopoNaRota(
+  escopoId: string,
+  disciplina: DisciplinaLinguagens,
+  escopos: Map<string, EscopoIndexEntry>,
+  fallbackId: string
+): boolean {
+  if (escopoId === fallbackId) return true;
+  if (disciplina === "indefinido") return false;
+  const entry = escopos.get(escopoId);
+  if (!entry) return false;
+  return ROTAS_ASSUNTOS[disciplina].includes(entry.assuntoId);
 }
 
 function itemParaResultado(
-  row: IaV11Item,
+  row: IaLingV12Item,
   escopos: Map<string, EscopoIndexEntry>,
-  materiaId: string,
   confiancaMinima: number,
   fallbackId: string,
   ids: Set<string>
 ): ResultadoClassificacao {
+  const rota = row.rota;
   let primarioId = row.primario.id;
-  if (!ids.has(primarioId)) {
+  const rotaOk = escopoNaRota(primarioId, rota.disciplinaOriginalId, escopos, fallbackId);
+  const idOk = ids.has(primarioId);
+
+  if (!idOk || !rotaOk) {
     primarioId = fallbackId;
   }
 
@@ -116,10 +165,20 @@ function itemParaResultado(
   const confianca = row.primario.confianca ?? 0;
   const ehFallback = primarioId === fallbackId;
   const revisao =
-    row.sinalizadorRevisao === true || ehFallback || confianca < confiancaMinima;
+    row.sinalizadorRevisao === true ||
+    rota.disciplinaOriginalId === "indefinido" ||
+    ehFallback ||
+    confianca < confiancaMinima ||
+    !rotaOk;
 
   const secundariosValidos = (row.secundarios ?? [])
-    .filter((s) => ids.has(s.id) && s.id !== primarioId && s.id !== fallbackId)
+    .filter(
+      (s) =>
+        ids.has(s.id) &&
+        s.id !== primarioId &&
+        s.id !== fallbackId &&
+        escopoNaRota(s.id, rota.disciplinaOriginalId, escopos, fallbackId)
+    )
     .slice(0, 2)
     .map((s) => ({ escopoId: s.id, confianca: s.confianca }));
 
@@ -129,33 +188,20 @@ function itemParaResultado(
     .slice(0, 3)
     .join(" | ");
 
-  if (!entry && !ehFallback) {
-    return {
-      status: "unclassified",
-      confianca: 0,
-      materiaId,
-      assuntoId: null,
-      dominioId: null,
-      escopoId: null,
-      conceitoCanonic: null,
-      motivo: `ID inválido: ${row.primario.id}`,
-      conhecimentoExigido: n3 || null,
-      sinalizadorRevisao: true,
-    };
-  }
-
   const status =
     ehFallback || revisao ? "review" : confianca >= confiancaMinima + 0.1 ? "classified" : "review";
 
   return {
     status,
     confianca,
-    materiaId: entry?.materiaId ?? materiaId,
+    materiaId: "linguagens",
     assuntoId: entry?.assuntoId ?? row.primario.assuntoId ?? null,
     dominioId: entry?.dominioId ?? null,
     escopoId: ehFallback ? fallbackId : entry!.escopoId,
     conceitoCanonic: row.primario.conceitoCanonic ?? entry?.conceitoCanonic ?? null,
-    motivo: row.justificativa ?? "IA v11",
+    disciplinaOriginalId: rota.disciplinaOriginalId,
+    rotaCriterio: rota.criterio,
+    motivo: row.justificativa ?? rota.justificativa ?? "IA linguagens v12",
     conhecimentoExigido: n3 || null,
     escoposSecundarios: secundariosValidos.length ? secundariosValidos : undefined,
     sinalizadorRevisao: revisao,
@@ -163,61 +209,50 @@ function itemParaResultado(
   };
 }
 
-export type QuestaoClassificacaoV11 = {
-  fonteId: string;
-  enunciado: string;
-  alternativas: string;
-  gabarito?: string | null;
-  numero?: number;
-  idioma?: string | null;
-};
-
-export type ClassificarV11Opts = {
-  instrucaoExtra?: string;
-  /** @deprecated Linguagens usa classificarLoteLinguagensV12 (rota+ N2 numa passagem). */
-  rotaDisciplina?: string;
-};
-
-/** Classificação IA v1.1+ — catálogo rico, multi-label, N3 livre, validação de IDs. */
-export async function classificarLoteCatalogoV11(
-  items: QuestaoClassificacaoV11[],
+/**
+ * Classificação Linguagens v1.2 — prova-agnóstica.
+ * Uma chamada IA: rota (PT/EN/ES) + escopo N2 via catálogo (sem Q6+ nem heurística de palavras).
+ */
+export async function classificarLoteLinguagensV12(
+  items: QuestaoLinguagensV12[],
   catalog: MateriaCatalogo,
-  escopos: Map<string, EscopoIndexEntry>,
-  opts?: ClassificarV11Opts
+  escopos: Map<string, EscopoIndexEntry>
 ): Promise<Map<string, ResultadoClassificacao>> {
   const map = new Map<string, ResultadoClassificacao>();
   if (items.length === 0) return map;
 
   const confiancaMinima = catalog.regras.confiancaMinima ?? 0.45;
-  const fallbackId = idFallbackNaoClassificado(catalog.materiaId);
-  const ids = idsValidos(escopos, fallbackId);
+  const fallbackId = idFallbackNaoClassificado("linguagens");
+  const ids = new Set([...escopos.keys(), fallbackId]);
   const catalogoJson = JSON.stringify(montarCatalogoReduzido(escopos));
 
-  const blocos = items.map((q) => montarBlocoQuestaoV11(q)).join("\n\n");
+  const blocos = items
+    .map((q) => {
+      const metaParts = [
+        q.origem ? `origem=${q.origem}` : null,
+        q.numero != null ? `numero=${q.numero}` : null,
+        q.idioma ? `idioma=${q.idioma}` : null,
+        q.banca ? `banca=${q.banca}` : null,
+      ].filter(Boolean);
+      const meta = metaParts.length ? `Metadados (hints): ${metaParts.join(" ")}\n` : "";
+      return meta + montarBlocoQuestaoV11(q);
+    })
+    .join("\n\n");
 
-  const systemPrompt =
-    catalog.materiaId === "linguagens"
-      ? montarSystemClassificacaoLinguagensV12(catalog)
-      : montarSystemClassificacaoV11(catalog);
-
-  const extra = opts?.instrucaoExtra?.trim();
-  const instrucaoExtra = extra ? `\n\n${extra}` : "";
-
-  const data = await responsesComSchema<IaV11Lote>({
-    systemPrompt,
+  const data = await responsesComSchema<IaLingV12Lote>({
+    systemPrompt: montarSystemClassificacaoLinguagensV12(catalog),
     instrucao:
-      `CATÁLOGO (escopos N2 da rota permitida):\n${catalogoJson}\n\n` +
-      `Fallback se incerto: ${fallbackId}\n` +
-      instrucaoExtra +
-      `\n\nClassifique cada questão:\n${blocos}`,
-    schema: SCHEMA_V11,
+      `CATÁLOGO LINGUAGENS (todos os escopos N2 — rota + primário):\n${catalogoJson}\n\n` +
+      `Fallback se incerto: ${fallbackId}\n\n` +
+      `Classifique cada questão (primeiro rota PT/EN/ES pelo texto-base, depois escopo N2):\n${blocos}`,
+    schema: SCHEMA_LING_V12,
     content: [],
   });
 
   for (const row of data.classificacoes) {
     map.set(
       row.fonteId,
-      itemParaResultado(row, escopos, catalog.materiaId, confiancaMinima, fallbackId, ids)
+      itemParaResultado(row, escopos, confiancaMinima, fallbackId, ids)
     );
   }
 
@@ -226,7 +261,7 @@ export async function classificarLoteCatalogoV11(
       map.set(q.fonteId, {
         status: "review",
         confianca: 0,
-        materiaId: catalog.materiaId,
+        materiaId: "linguagens",
         assuntoId: null,
         dominioId: null,
         escopoId: fallbackId,
@@ -238,4 +273,10 @@ export async function classificarLoteCatalogoV11(
   }
 
   return map;
+}
+
+export function versaoClassificacaoLingV12(resultado: ResultadoClassificacao): string {
+  const disc = resultado.disciplinaOriginalId ?? "indefinido";
+  const crit = resultado.rotaCriterio ?? "ia";
+  return `${CLASSIFICADOR_LING_V12}|disc=${disc}|crit=${crit}|rc=${(resultado.confianca ?? 0).toFixed(2)}`;
 }

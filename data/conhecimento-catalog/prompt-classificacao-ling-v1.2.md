@@ -19,12 +19,12 @@ Nunca classifique uma questão de inglês/espanhol como Português apenas porque
 No ENEM, o comando costuma estar em português; quem define a rota é o texto-base, metadado da fonte,
 campo idioma/disciplinaOriginalId ou posição da questão.
 
-ORDEM DE DECISÃO DA ROTA (implementada no código — não use heurística de palavras)
-1. Campo `idioma` da API enem.dev: ingles → ingles; espanhol → espanhol.
-2. Q6–Q45 com idioma COMUM → portugues (posição ENEM).
-3. Q1–5 com idioma COMUM → indefinido (sync/reimport enem.dev).
-4. A IA classifica o escopo N2 dentro da rota, usando descricao, exemplosEnunciado, negativeHints e regraDesempate do catálogo.
-5. Se confiança baixa ou rota incerta → ling.__nao_classificado.
+ORDEM DE DECISÃO DA ROTA (implementada na IA — prova-agnóstico)
+1. Leia texto-base + enunciado + alternativas. O comando em PT não define idioma.
+2. Metadados (idioma, numero, banca) são hints opcionais — não use posição fixa no caderno.
+3. Defina rota: portugues | ingles | espanhol | indefinido.
+4. Escolha primario.id do catálogo compatível com a rota.
+5. Confiança baixa → ling.__nao_classificado.
 
 ESCOPO PERMITIDO POR ROTA
 - portugues: apenas assuntos pt_interp, pt_lit, pt_gram, pt_sem, pt_art, pt_tec.
@@ -91,8 +91,7 @@ Gabarito: {{gabarito}}
 
 ## Notas para o Cursor
 
-1. Implemente `routeLanguageDiscipline(question)` antes de `classifyQuestionScope(question)`.
-2. Depois da rota, reduza o catálogo enviado ao modelo. Não mande escopos de Português para questão de Inglês/Espanhol.
-3. Valide programaticamente se o ID retornado pertence à rota. Se não pertencer, force `ling.__nao_classificado` e `sinalizadorRevisao=true`.
-4. Salve `disciplinaOriginalId` separada de `catalogoMateriaId`: `catalogoMateriaId` será sempre `linguagens`; `disciplinaOriginalId` será `portugues`, `ingles` ou `espanhol`.
-5. Logue `criterio` e `confianca` do roteamento para auditar erros grosseiros de idioma.
+1. Linguagens usa `classificarLoteLinguagensV12` — uma passagem IA retorna `rota` + `primario`.
+2. Valide programaticamente se primario.assuntoId pertence à rota.
+3. Mesmo motor serve ENEM corpus, PDF upload e simulados — sem regras Q6+ no código.
+4. Salve `disciplinaOriginalId` e `rotaCriterio` para auditoria.

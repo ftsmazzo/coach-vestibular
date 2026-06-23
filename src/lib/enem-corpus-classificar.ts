@@ -30,19 +30,12 @@ import {
   triarMateriaNatureza,
   type TriagemNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
+import {
+  classificarLoteLinguagensV12,
+  versaoClassificacaoLingV12,
+  CLASSIFICADOR_LING_V12,
+} from "@/lib/enem-classificar/classificar-linguagens-v12";
 import { CORPUS_MATERIA_CONFIG } from "@/lib/enem-corpus-materia";
-import {
-  instrucaoIaLinguagens,
-  type IdiomaTrilhaLinguagens,
-} from "@/lib/enem-classificar/linguagens-rota";
-import {
-  routeLanguageDiscipline,
-  filtrarEscoposPorRota,
-  validarEscopoNaRota,
-  versaoClassificacaoComRota,
-  type DisciplinaLinguagens,
-  type RotaLinguagens,
-} from "@/lib/enem-classificar/route-language-discipline";
 import { idFallbackNaoClassificado } from "@/lib/conhecimento-catalog/load";
 import { CLASSIFICACAO_CONFIANCA_MIN } from "@/lib/enem-corpus-stats";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
@@ -354,75 +347,29 @@ async function classificarDisciplinaUnica(
   };
 }
 
-function n2ValidoRota(
+function contarTrilhaLinguagens(
+  disciplina: string | null | undefined
+): "portugues" | "ingles" | "espanhol" | "indefinido" {
+  if (disciplina === "ingles") return "ingles";
+  if (disciplina === "espanhol") return "espanhol";
+  if (disciplina === "portugues") return "portugues";
+  return "indefinido";
+}
+
+function n2ValidoLinguagens(
   escopoId: string | null,
   confianca: number | null,
-  rota: RotaLinguagens,
-  escopos: ReturnType<typeof indexarEscopos>,
   confiancaMinima: number,
   prefixoN2: string
 ): boolean {
-  if (!escopoId?.startsWith(`${prefixoN2}.`)) return false;
-  if ((confianca ?? 0) < confiancaMinima) return false;
-  return validarEscopoNaRota(
-    { escopoId, assuntoId: escopos.get(escopoId)?.assuntoId ?? null },
-    rota,
-    escopos,
-    idFallbackNaoClassificado("linguagens")
+  return Boolean(
+    escopoId?.startsWith(`${prefixoN2}.`) &&
+      !escopoId.endsWith(".__nao_classificado") &&
+      (confianca ?? 0) >= confiancaMinima
   );
 }
 
-function disciplinaParaTrilha(d: DisciplinaLinguagens): IdiomaTrilhaLinguagens {
-  if (d === "ingles") return "ingles";
-  if (d === "espanhol") return "espanhol";
-  return "COMUM";
-}
-
-function aplicarRotaAoResultado(
-  resultado: ResultadoClassificacao,
-  rota: RotaLinguagens,
-  escopos: ReturnType<typeof indexarEscopos>,
-  fallbackId: string,
-  confiancaMinima: number
-): ResultadoClassificacao {
-  const ok = validarEscopoNaRota(resultado, rota, escopos, fallbackId);
-  const base = {
-    ...resultado,
-    disciplinaOriginalId: rota.disciplinaOriginalId,
-    rotaCriterio: rota.criterio,
-  };
-
-  if (
-    ok &&
-    !rota.sinalizadorRevisao &&
-    resultado.escopoId !== fallbackId &&
-    (resultado.confianca ?? 0) >= confiancaMinima
-  ) {
-    return base;
-  }
-
-  if (!ok && resultado.escopoId && resultado.escopoId !== fallbackId) {
-    return {
-      ...base,
-      status: "review",
-      escopoId: fallbackId,
-      assuntoId: null,
-      dominioId: null,
-      sinalizadorRevisao: true,
-      motivo: `escopo fora da rota ${rota.disciplinaOriginalId}: ${resultado.motivo}`,
-    };
-  }
-
-  if (rota.sinalizadorRevisao || rota.disciplinaOriginalId === "indefinido") {
-    return {
-      ...base,
-      status: "review",
-      sinalizadorRevisao: true,
-    };
-  }
-
-  return base;
-}
+const LOTE_LING_V12 = 4;
 
 async function classificarLinguagensTrilhas(
   prisma: PrismaClient,
@@ -439,12 +386,7 @@ async function classificarLinguagensTrilhas(
   const persistir = opts.persistir ?? true;
   const modo =
     opts.modo === "ia" && iaClassificacaoDisponivel() ? "ia" : "heuristica";
-  const usaV11 = catalogoUsaClassificadorV11(catalog);
-  const versaoBase =
-    modo === "ia" ?
-      usaV11 ? `${CLASSIFICADOR_CATALOGO_V11}-ling`
-      : "ia-ling-v1"
-    : "heuristica-ling-v1";
+  const versaoBase = modo === "ia" ? CLASSIFICADOR_LING_V12 : "heuristica-ling-v1";
 
   const questoes = await prisma.enemQuestaoCorpus.findMany({
     where: {
@@ -467,7 +409,9 @@ async function classificarLinguagensTrilhas(
     take: limit,
   });
 
-  type ItemRota = {
+  const contagemTrilha = { portugues: 0, ingles: 0, espanhol: 0, indefinido: 0 };
+  const resultados: Array<{ fonteId: string; resultado: ResultadoClassificacao }> = [];
+  const paraClassificar: Array<{
     id: string;
     fonteId: string;
     texto: string;
@@ -476,51 +420,36 @@ async function classificarLinguagensTrilhas(
     gabarito: string;
     numero: number;
     idioma: string;
-    rota: RotaLinguagens;
-  };
-
-  const porDisciplina = new Map<DisciplinaLinguagens, ItemRota[]>();
-  const indefinidos: ItemRota[] = [];
-  for (const d of ["portugues", "ingles", "espanhol", "indefinido"] as const) {
-    porDisciplina.set(d, []);
-  }
-
-  const contagemTrilha = { portugues: 0, ingles: 0, espanhol: 0, indefinido: 0 };
+  }> = [];
 
   if (!opts.soTriagem) {
     for (const q of questoes) {
-      const texto = montarTextoQuestaoCorpus(q);
       const partes = montarPartesQuestaoCorpus(q);
       const enunciado = partes.enunciado;
       const alternativas = partes.alternativas;
+      const texto = montarTextoQuestaoCorpus(q);
 
-      const rota = routeLanguageDiscipline(
-        {
-          idioma: q.idioma,
-          numero: q.numero,
-          enunciado,
-          alternativas,
-          textoBase: enunciado,
-          origem: "enem_api",
-        },
-        catalog
-      );
+      if (
+        n2ValidoLinguagens(
+          q.conhecimentoEscopoId,
+          q.classificacaoConfianca,
+          confiancaMinima,
+          prefixoN2
+        )
+      ) {
+        const entry = q.conhecimentoEscopoId
+          ? escopos.get(q.conhecimentoEscopoId)
+          : null;
+        const trilha = entry?.assuntoId?.startsWith("l2_en")
+          ? "ingles"
+          : entry?.assuntoId?.startsWith("l2_es")
+            ? "espanhol"
+            : "portugues";
+        contagemTrilha[trilha]++;
+        continue;
+      }
 
-      if (rota.disciplinaOriginalId === "ingles") contagemTrilha.ingles++;
-      else if (rota.disciplinaOriginalId === "espanhol") contagemTrilha.espanhol++;
-      else if (rota.disciplinaOriginalId === "portugues") contagemTrilha.portugues++;
-      else contagemTrilha.indefinido++;
-
-      const jaTemN2 = n2ValidoRota(
-        q.conhecimentoEscopoId,
-        q.classificacaoConfianca,
-        rota,
-        escopos,
-        confiancaMinima,
-        prefixoN2
-      );
-
-      const item: ItemRota = {
+      paraClassificar.push({
         id: q.id,
         fonteId: q.fonteId,
         texto,
@@ -529,108 +458,66 @@ async function classificarLinguagensTrilhas(
         gabarito: q.gabarito,
         numero: q.numero,
         idioma: q.idioma,
-        rota,
-      };
+      });
+    }
+  }
 
-      if (!jaTemN2) {
-        if (rota.disciplinaOriginalId === "indefinido") {
-          indefinidos.push(item);
-        } else {
-          porDisciplina.get(rota.disciplinaOriginalId)!.push(item);
+  if (modo === "ia") {
+    for (let i = 0; i < paraClassificar.length; i += LOTE_LING_V12) {
+      const lote = paraClassificar.slice(i, i + LOTE_LING_V12);
+      const mapa = await classificarLoteLinguagensV12(
+        lote.map((q) => ({
+          fonteId: q.fonteId,
+          enunciado: q.enunciado,
+          alternativas: q.alternativas,
+          gabarito: q.gabarito,
+          numero: q.numero,
+          idioma: q.idioma,
+          origem: "enem_api",
+        })),
+        catalog,
+        escopos
+      );
+
+      for (const q of lote) {
+        const resultado = mapa.get(q.fonteId)!;
+        const trilha = contarTrilhaLinguagens(resultado.disciplinaOriginalId);
+        contagemTrilha[trilha]++;
+        resultados.push({ fonteId: q.fonteId, resultado });
+        if (persistir) {
+          await persistirResultado(
+            prisma,
+            q.id,
+            resultado,
+            versaoClassificacaoLingV12(resultado),
+            materiaLabel
+          );
         }
       }
     }
-  }
-
-  const resultados: Array<{ fonteId: string; resultado: ResultadoClassificacao }> = [];
-
-  for (const item of indefinidos) {
-    const resultado: ResultadoClassificacao = {
-      status: "review",
-      confianca: 0,
-      materiaId,
-      assuntoId: null,
-      dominioId: null,
-      escopoId: fallbackId,
-      conceitoCanonic: null,
-      motivo: `rota incerta: ${item.rota.justificativa}`,
-      disciplinaOriginalId: "indefinido",
-      rotaCriterio: item.rota.criterio,
-      sinalizadorRevisao: true,
-    };
-    resultados.push({ fonteId: item.fonteId, resultado });
-    if (persistir) {
-      await persistirResultado(
-        prisma,
-        item.id,
-        resultado,
-        versaoClassificacaoComRota(versaoBase, item.rota),
-        materiaLabel
-      );
-    }
-  }
-
-  for (const [disciplina, itens] of porDisciplina) {
-    if (disciplina === "indefinido" || itens.length === 0) continue;
-
-    const rotaRef = itens[0]!.rota;
-    const escoposRota = filtrarEscoposPorRota(escopos, rotaRef);
-    const trilha = disciplinaParaTrilha(disciplina);
-
-    const parcial = await classificarLoteQuestoes(
-      prisma,
-      itens.map((i) => ({
-        id: i.id,
-        fonteId: i.fonteId,
-        texto: i.texto,
-        enunciado: i.enunciado,
-        alternativas: i.alternativas,
-        gabarito: i.gabarito,
-        numero: i.numero,
-        idioma: i.idioma,
-      })),
-      {
-        modo,
-        escopos: escoposRota,
+  } else {
+    for (const q of paraClassificar) {
+      const resultado = classificarPorKeywords(q.texto, escopos, {
         confiancaMinima,
         assuntoId: opts.assuntoId,
-        persistir: false,
-        versaoClass: versaoClassificacaoComRota(versaoBase, rotaRef),
-        materiaLabel,
-        materiaId,
-        catalogLabel: catalog.materiaLabel,
-        catalog,
-        instrucaoExtra: instrucaoIaLinguagens(trilha),
-        v11Opts: { rotaDisciplina: disciplina, instrucaoExtra: rotaRef.justificativa },
-      }
-    );
-
-    for (const row of parcial) {
-      const item = itens.find((i) => i.fonteId === row.fonteId)!;
-      const resultado = aplicarRotaAoResultado(
-        row.resultado,
-        item.rota,
-        escopos,
-        fallbackId,
-        confiancaMinima
-      );
-      resultados.push({ fonteId: row.fonteId, resultado });
+      });
+      const trilha = resultado.assuntoId?.startsWith("l2_en")
+        ? "ingles"
+        : resultado.assuntoId?.startsWith("l2_es")
+          ? "espanhol"
+          : resultado.escopoId
+            ? "portugues"
+            : "indefinido";
+      contagemTrilha[trilha]++;
+      resultados.push({ fonteId: q.fonteId, resultado });
       if (persistir) {
-        await persistirResultado(
-          prisma,
-          item.id,
-          resultado,
-          versaoClassificacaoComRota(versaoBase, item.rota),
-          materiaLabel
-        );
+        await persistirResultado(prisma, q.id, resultado, versaoBase, materiaLabel);
       }
     }
   }
 
   const bench = agregarBenchmark(resultados);
-  const totalClassificar =
-    indefinidos.length +
-    [...porDisciplina.values()].reduce((s, a) => s + a.length, 0);
+  const totalClassificar = paraClassificar.length;
 
   return {
     processadas: questoes.length,

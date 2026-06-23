@@ -126,9 +126,8 @@ function montarRota(
 }
 
 /**
- * Roteamento estrutural — sem heurística de palavras.
- * Fonte: campo `idioma` enem.dev + posição ENEM (Q1–5 L2, Q6+ português).
- * A IA classifica N2 dentro da rota via catálogo/prompt v1.2.
+ * @deprecated Não usar para classificar — Linguagens usa classificarLoteLinguagensV12 (IA).
+ * Mantido apenas para referência de validação de escopos por assuntoId.
  */
 export function routeLanguageDiscipline(
   input: QuestaoRotaInput,

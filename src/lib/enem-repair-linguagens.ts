@@ -1,18 +1,13 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
   carregarCatalogoMateria,
-  idFallbackNaoClassificado,
   indexarEscopos,
 } from "@/lib/conhecimento-catalog";
 import { naFaixaL2Enem } from "@/lib/enem-classificar/linguagens-rota";
-import {
-  routeLanguageDiscipline,
-  validarEscopoNaRota,
-} from "@/lib/enem-classificar/route-language-discipline";
 import { montarFonteId } from "@/lib/enem-dev/estrutural";
 
-/** Bump quando mudar regra de roteamento L2 — admin exibe para confirmar deploy. */
-export const LINGUAGENS_ROTA_VERSION = 6;
+/** Versão do motor de classificação Linguagens (IA v12 unificado). */
+export const LINGUAGENS_ROTA_VERSION = 7;
 
 export type RepairLinguagensResultado = {
   corrigidas: number;
@@ -21,18 +16,23 @@ export type RepairLinguagensResultado = {
   amostra: string[];
 };
 
+function escopoCompativelIdioma(assuntoId: string, idioma: string): boolean {
+  if (idioma === "ingles") return assuntoId.startsWith("l2_en");
+  if (idioma === "espanhol") return assuntoId.startsWith("l2_es");
+  return assuntoId.startsWith("pt_");
+}
+
 /**
- * Reparo estrutural — reverte idioma L2 fora da faixa Q1–5 e limpa N2 fora da rota.
- * Sem heurística de texto; confia em enem.dev + posição ENEM.
+ * Reparo estrutural do corpus ENEM — não classifica.
+ * - L2 (ingles/espanhol) só na faixa Q1–5
+ * - Limpa N2 cujo assuntoId não combina com idioma persistido
  */
 export async function repararIdiomaLinguagensCorpus(
   prisma: PrismaClient,
   opts: { dryRun?: boolean } = {}
 ): Promise<RepairLinguagensResultado> {
   const dryRun = opts.dryRun ?? false;
-  const catalog = carregarCatalogoMateria("linguagens");
-  const escopos = indexarEscopos(catalog);
-  const fallbackId = idFallbackNaoClassificado("linguagens");
+  const escopos = indexarEscopos(carregarCatalogoMateria("linguagens"));
 
   const rows = await prisma.enemQuestaoCorpus.findMany({
     where: { disciplina: "linguagens" },
@@ -42,8 +42,6 @@ export async function repararIdiomaLinguagensCorpus(
       numero: true,
       idioma: true,
       fonteId: true,
-      enunciadoMd: true,
-      introducaoAlternativas: true,
       conhecimentoEscopoId: true,
     },
   });
@@ -62,27 +60,13 @@ export async function repararIdiomaLinguagensCorpus(
     }
 
     const fonteIdNovo = montarFonteId(r.ano, r.numero, idiomaNovo);
-
-    const rota = routeLanguageDiscipline(
-      {
-        idioma: idiomaNovo,
-        numero: r.numero,
-        origem: "enem_api",
-      },
-      catalog
-    );
+    const assuntoId = r.conhecimentoEscopoId
+      ? escopos.get(r.conhecimentoEscopoId)?.assuntoId
+      : null;
 
     const limparN2 =
-      Boolean(r.conhecimentoEscopoId) &&
-      !validarEscopoNaRota(
-        {
-          escopoId: r.conhecimentoEscopoId,
-          assuntoId: escopos.get(r.conhecimentoEscopoId!)?.assuntoId ?? null,
-        },
-        rota,
-        escopos,
-        fallbackId
-      );
+      Boolean(r.conhecimentoEscopoId && assuntoId) &&
+      !escopoCompativelIdioma(assuntoId!, idiomaNovo);
 
     const mudouIdioma = idiomaNovo !== r.idioma;
     const mudouFonteId = fonteIdNovo !== r.fonteId;
@@ -96,16 +80,13 @@ export async function repararIdiomaLinguagensCorpus(
         where: { fonteId: fonteIdNovo },
         select: { id: true },
       });
-      if (conflito && conflito.id !== r.id) {
-        conflitoFonteId = true;
-      }
+      if (conflito && conflito.id !== r.id) conflitoFonteId = true;
     }
 
     if (amostra.length < 10) {
       amostra.push(
         `${r.fonteId} → ${fonteIdNovo} (${r.idioma}→${idiomaNovo}, Q${r.numero})` +
-          (limparN2 ? " · N2 limpo" : "") +
-          (conflitoFonteId ? " · conflito fonteId" : "")
+          (limparN2 ? " · N2 limpo" : "")
       );
     }
 
@@ -120,28 +101,23 @@ export async function repararIdiomaLinguagensCorpus(
           }
         : {};
 
-      if (conflitoFonteId) {
-        if (limparN2) {
-          await prisma.enemQuestaoCorpus.update({ where: { id: r.id }, data: dataN2 });
-        } else {
-          ignoradas++;
-          continue;
-        }
-      } else {
-        await prisma.enemQuestaoCorpus.update({
-          where: { id: r.id },
-          data: {
-            ...(mudouIdioma ? { idioma: idiomaNovo } : {}),
-            ...(mudouFonteId ? { fonteId: fonteIdNovo } : {}),
-            ...dataN2,
-          },
-        });
+      if (conflitoFonteId && !limparN2) {
+        ignoradas++;
+        continue;
       }
+
+      await prisma.enemQuestaoCorpus.update({
+        where: { id: r.id },
+        data: {
+          ...(mudouIdioma ? { idioma: idiomaNovo } : {}),
+          ...(mudouFonteId && !conflitoFonteId ? { fonteId: fonteIdNovo } : {}),
+          ...dataN2,
+        },
+      });
     }
 
     corrigidas++;
     if (limparN2) n2Limpos++;
-    if (conflitoFonteId && !limparN2) ignoradas++;
   }
 
   return { corrigidas, n2Limpos, ignoradas, amostra };

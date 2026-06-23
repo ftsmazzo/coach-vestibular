@@ -66,23 +66,30 @@ export function montarSystemClassificacaoV11(catalog: MateriaCatalogo): string {
   );
 }
 
-/** System prompt Linguagens v1.2 — roteamento já feito; classificar só na rota permitida. */
-export function montarSystemClassificacaoLinguagensV12(
-  catalog: MateriaCatalogo,
-  rotaDisciplina: string
-): string {
+/** System prompt Linguagens v1.2 — rota + N2 numa única passagem IA (prova-agnóstico). */
+export function montarSystemClassificacaoLinguagensV12(catalog: MateriaCatalogo): string {
   const base = montarSystemClassificacaoV11(catalog);
-  const roteamento = catalog.regras.roteamentoObrigatorio;
-  const regraCritica =
-    roteamento?.regraCritica ??
-    "O comando em português NÃO define a rota. Classifique apenas escopos da rota já definida.";
+  const fallbackId = idFallbackNaoClassificado(catalog.materiaId);
+  const confMin = catalog.regras.confiancaMinima ?? 0.45;
 
   return (
     `${base}\n\n` +
-    `LINGUAGENS — ROTA JÁ DEFINIDA: ${rotaDisciplina}\n` +
-    `${regraCritica}\n` +
-    `Não escolha escopos de outra disciplina/idioma. ` +
-    `Gênero ou tema do texto não viram secundário se forem só contexto.`
+    `LINGUAGENS v1.2 — ROTEAMENTO + ESCOPO N2\n` +
+    `Funciona para qualquer prova (ENEM, vestibular, PDF): não use posição fixa no caderno como regra.\n\n` +
+    `REGRA ZERO — ROTEAMENTO OBRIGATÓRIO\n` +
+    `Antes do escopo N2, defina rota.disciplinaOriginalId:\n` +
+    `- portugues: PT, literatura, gramática, artes, tecnologias da linguagem.\n` +
+    `- ingles: texto-base/competência de língua inglesa (comando pode estar em PT).\n` +
+    `- espanhol: texto-base/competência de língua espanhola.\n` +
+    `- indefinido: só se texto ilegível ou impossível decidir.\n\n` +
+    `O comando em português NÃO define a rota. Metadados (idioma, numero, banca) são hints opcionais.\n` +
+    `Decida pela língua dominante do TEXTO-BASE e pelo conhecimento cobrado.\n\n` +
+    `ESCOPOS POR ROTA\n` +
+    `- portugues: pt_interp, pt_lit, pt_gram, pt_sem, pt_art, pt_tec\n` +
+    `- ingles: l2_en\n` +
+    `- espanhol: l2_es\n\n` +
+    `primario.id deve pertencer à rota escolhida. Se confiança < ${confMin} → primario.id = "${fallbackId}".\n` +
+    `Gênero/tema do texto não vira secundário se for só contexto.`
   );
 }
 
