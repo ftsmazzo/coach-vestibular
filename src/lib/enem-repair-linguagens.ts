@@ -3,7 +3,7 @@ import { inferirIdiomaCorpusLinguagens } from "@/lib/enem-classificar/linguagens
 import { montarFonteId } from "@/lib/enem-dev/estrutural";
 
 /** Bump quando mudar regra de roteamento L2 — admin exibe para confirmar deploy. */
-export const LINGUAGENS_ROTA_VERSION = 2;
+export const LINGUAGENS_ROTA_VERSION = 3;
 
 export type RepairLinguagensResultado = {
   corrigidas: number;
@@ -12,13 +12,16 @@ export type RepairLinguagensResultado = {
   amostra: string[];
 };
 
-/** Corrige idioma/fonteId Q1–5 e limpa N2 de trilha errada. */
+/**
+ * Corrige N2 de trilha errada nas questões L2 (Q1–5) e limpa pt_* em idioma=ingles.
+ */
 export async function repararIdiomaLinguagensCorpus(
   prisma: PrismaClient,
   opts: { dryRun?: boolean } = {}
 ): Promise<RepairLinguagensResultado> {
   const dryRun = opts.dryRun ?? false;
-  const rows = await prisma.enemQuestaoCorpus.findMany({
+
+  const rowsL2 = await prisma.enemQuestaoCorpus.findMany({
     where: { disciplina: "linguagens", numero: { lte: 5 } },
     select: {
       id: true,
@@ -31,6 +34,24 @@ export async function repararIdiomaLinguagensCorpus(
       conhecimentoEscopoId: true,
     },
   });
+
+  const rowsIngles = await prisma.enemQuestaoCorpus.findMany({
+    where: { disciplina: "linguagens", idioma: "ingles" },
+    select: {
+      id: true,
+      ano: true,
+      numero: true,
+      idioma: true,
+      fonteId: true,
+      enunciadoMd: true,
+      introducaoAlternativas: true,
+      conhecimentoEscopoId: true,
+    },
+  });
+
+  const porId = new Map<string, (typeof rowsL2)[number]>();
+  for (const r of [...rowsL2, ...rowsIngles]) porId.set(r.id, r);
+  const rows = [...porId.values()];
 
   let corrigidas = 0;
   let n2Limpos = 0;

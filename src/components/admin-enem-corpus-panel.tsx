@@ -126,6 +126,7 @@ export function AdminEnemCorpusPanel() {
       modo?: "ia" | "heuristica";
       repairLinguagensIdioma?: boolean;
       soRepararIdioma?: boolean;
+      importarLinguagensIngles?: boolean;
     } = {}
   ) {
     setClassificando(true);
@@ -143,6 +144,7 @@ export function AdminEnemCorpusPanel() {
           modo: iaDisponivel && (opts.modo ?? "ia") === "ia" ? "ia" : "heuristica",
           repairLinguagensIdioma: opts.repairLinguagensIdioma ?? false,
           soRepararIdioma: opts.soRepararIdioma ?? false,
+          importarLinguagensIngles: opts.importarLinguagensIngles ?? false,
         }),
       });
       let data: Record<string, unknown>;
@@ -165,15 +167,25 @@ export function AdminEnemCorpusPanel() {
 
       const segundos = ((Date.now() - inicio) / 1000).toFixed(1);
 
-      if (opts.soRepararIdioma) {
+      if (opts.soRepararIdioma || opts.importarLinguagensIngles) {
         const repair = data.repair as
           | { corrigidas: number; n2Limpos: number; ignoradas: number }
           | null
           | undefined;
-        setUltimoRun(
-          `Repair idioma (${segundos}s): ${repair?.corrigidas ?? 0} corrigidas · ${repair?.n2Limpos ?? 0} N2 limpos · ${repair?.ignoradas ?? 0} ignoradas` +
-            (repair?.n2Limpos ? " — agora clique Classificar com IA" : "")
-        );
+        const importL2 = data.importL2 as
+          | { processadas: number; criadas: number; atualizadas: number; anos: number[] }
+          | null
+          | undefined;
+        if (opts.importarLinguagensIngles) {
+          setUltimoRun(
+            `Import L2 EN (${segundos}s): ${importL2?.criadas ?? 0} novas · ${importL2?.atualizadas ?? 0} atualizadas · ${importL2?.processadas ?? 0} Q1–5` +
+              (importL2?.criadas ? " — agora Classificar com IA" : "")
+          );
+        } else {
+          setUltimoRun(
+            `Repair idioma (${segundos}s): ${repair?.corrigidas ?? 0} corrigidas · ${repair?.n2Limpos ?? 0} N2 limpos`
+          );
+        }
         return;
       }
 
@@ -294,19 +306,27 @@ export function AdminEnemCorpusPanel() {
         <>
           <Card className="border-indigo-200 bg-indigo-50/60">
             <p className="text-sm text-indigo-900">
-              <strong>3 trilhas ortogonais.</strong> Q1–5 ENEM: espanhol (<code>idioma:espanhol</code>) e
-              inglês (<code>idioma:COMUM</code> no banco — regra estrutural, não é português). Q6+ =
-              português. A IA só vê N2 da trilha.
+              <strong>3 trilhas ortogonais.</strong> enem.dev: espanhol na listagem padrão (Q1–5),{" "}
+              <strong>inglês só com</strong> <code>?language=ingles</code> (import separado). Q6+ =
+              português (<code>idioma:COMUM</code>). A IA só vê N2 da trilha.
               {linguagensRotaVersion != null && (
                 <span className="ml-1 text-xs text-indigo-700">· rota v{linguagensRotaVersion}</span>
               )}
             </p>
           </Card>
-          {linguagensRotaVersion !== 2 && (
+          {linguagensRotaVersion !== 3 && (
             <Card className="border-amber-300 bg-amber-50/90">
               <p className="text-sm text-amber-950">
-                <strong>Deploy desatualizado.</strong> Este servidor ainda não tem a regra Q1–5 COMUM =
-                inglês (rota v2). Faça redeploy e use o botão abaixo para corrigir idioma + N2.
+                <strong>Deploy desatualizado (rota v3).</strong> Falta importar inglês via enem.dev.
+                Use <strong>Importar inglês Q1–5</strong> e depois Classificar com IA.
+              </p>
+            </Card>
+          )}
+          {(stats?.linguagens?.trilhas.ingles ?? 0) === 0 && linguagensRotaVersion === 3 && (
+            <Card className="border-amber-300 bg-amber-50/90">
+              <p className="text-sm text-amber-950">
+                <strong>EN = 0 no banco.</strong> Clique <strong>Importar inglês Q1–5</strong> (~75
+                questões, leva ~2 min por rate limit da API).
               </p>
             </Card>
           )}
@@ -410,20 +430,25 @@ export function AdminEnemCorpusPanel() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => rodarClassificacao({ soRepararIdioma: true })}
-              disabled={classificando || linguagensRotaVersion !== 2}
+              onClick={() => rodarClassificacao({ importarLinguagensIngles: true })}
+              disabled={classificando || linguagensRotaVersion !== 3}
             >
-              Só corrigir idioma EN (Q1–5)
+              Importar inglês Q1–5
             </Button>
             <Button
               type="button"
               variant="secondary"
               onClick={() =>
-                rodarClassificacao({ repairLinguagensIdioma: true, retriagem: true, modo: "ia" })
+                rodarClassificacao({
+                  importarLinguagensIngles: true,
+                  repairLinguagensIdioma: true,
+                  retriagem: true,
+                  modo: "ia",
+                })
               }
-              disabled={!podeClassificar || linguagensRotaVersion !== 2}
+              disabled={!podeClassificar || linguagensRotaVersion !== 3}
             >
-              Corrigir EN Q1–5 + reclassificar
+              Importar EN + classificar
             </Button>
           </>
         )}

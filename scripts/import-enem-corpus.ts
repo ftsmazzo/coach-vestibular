@@ -11,6 +11,7 @@ import { Pool } from "pg";
 import { Prisma, PrismaClient } from "../src/generated/prisma/client";
 import { iterarQuestoesAno, listarProvasEnem } from "../src/lib/enem-dev/client";
 import { mapearQuestaoEstrutural } from "../src/lib/enem-dev/estrutural";
+import { importarL2InglesCorpus } from "../src/lib/enem-import-l2-ingles";
 
 function parseArgs() {
   const dryRun = process.argv.includes("--dry-run");
@@ -109,6 +110,14 @@ async function main() {
         }
       }
       console.log(`  ENEM ${ano} concluído.`);
+    }
+
+    if (!dryRun) {
+      console.log("\n→ Importando variantes inglês Q1–5 (enem.dev ?language=ingles)...");
+      const l2 = await importarL2InglesCorpus(prisma, { anos });
+      console.log(
+        `  L2 inglês: ${l2.processadas} processadas — ${l2.criadas} criadas, ${l2.atualizadas} atualizadas (${l2.anos.length} anos)`
+      );
     }
 
     console.log(

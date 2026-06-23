@@ -17,6 +17,7 @@ import {
   LINGUAGENS_ROTA_VERSION,
   repararIdiomaLinguagensCorpus,
 } from "@/lib/enem-repair-linguagens";
+import { importarL2InglesCorpus } from "@/lib/enem-import-l2-ingles";
 import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 600;
@@ -84,6 +85,7 @@ const classificarSchema = z.object({
   repairLinguagensIdioma: z.boolean().optional(),
   /** Só corrige idioma Q1–5 (Linguagens), sem classificar. */
   soRepararIdioma: z.boolean().optional(),
+  importarLinguagensIngles: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {
@@ -116,6 +118,12 @@ export async function POST(req: Request) {
 
   try {
     let repair: Awaited<ReturnType<typeof repararIdiomaLinguagensCorpus>> | null = null;
+    let importL2: Awaited<ReturnType<typeof importarL2InglesCorpus>> | null = null;
+
+    if (body.data.importarLinguagensIngles && materiaId === "linguagens") {
+      importL2 = await importarL2InglesCorpus(prisma);
+    }
+
     if (
       (body.data.repairLinguagensIdioma || body.data.soRepararIdioma) &&
       materiaId === "linguagens"
@@ -123,12 +131,20 @@ export async function POST(req: Request) {
       repair = await repararIdiomaLinguagensCorpus(prisma);
     }
 
-    if (body.data.soRepararIdioma) {
+    if (body.data.soRepararIdioma || body.data.importarLinguagensIngles) {
       const [stats, fila] = await Promise.all([
         obterStatsCorpusEnem(prisma, materiaId),
         listarFilaRevisaoEnem(prisma, materiaId, 15),
       ]);
-      return NextResponse.json({ stats, fila, materiaId, repair, soRepararIdioma: true });
+      return NextResponse.json({
+        stats,
+        fila,
+        materiaId,
+        repair,
+        importL2,
+        soRepararIdioma: Boolean(body.data.soRepararIdioma),
+        importarLinguagensIngles: Boolean(body.data.importarLinguagensIngles),
+      });
     }
 
     const resultado = await classificarCorpusEnem(prisma, {
@@ -142,7 +158,7 @@ export async function POST(req: Request) {
       listarFilaRevisaoEnem(prisma, materiaId, 15),
     ]);
 
-    return NextResponse.json({ resultado, stats, fila, materiaId, repair });
+    return NextResponse.json({ resultado, stats, fila, materiaId, repair, importL2 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro na classificação";
     console.error("[enem-corpus] POST", e);

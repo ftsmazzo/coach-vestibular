@@ -1,4 +1,4 @@
-import type { EnemDevExam, EnemDevQuestionsPage } from "./types";
+import type { EnemDevExam, EnemDevLanguage, EnemDevQuestionsPage } from "./types";
 
 const BASE_URL = "https://api.enem.dev/v1";
 const DEFAULT_PAGE_SIZE = 50;
@@ -30,11 +30,38 @@ export async function listarProvasEnem(): Promise<EnemDevExam[]> {
 export async function listarQuestoesAno(
   ano: number,
   limit = DEFAULT_PAGE_SIZE,
-  offset = 0
+  offset = 0,
+  language?: EnemDevLanguage
 ): Promise<EnemDevQuestionsPage> {
+  const lang = language ? `&language=${language}` : "";
   return fetchJson<EnemDevQuestionsPage>(
-    `/exams/${ano}/questions?limit=${limit}&offset=${offset}`
+    `/exams/${ano}/questions?limit=${limit}&offset=${offset}${lang}`
   );
+}
+
+/** Questão individual — use `language=ingles` na faixa L2 (Q1–5 linguagens). */
+export async function buscarQuestaoEnem(
+  ano: number,
+  index: number,
+  language?: EnemDevLanguage
+): Promise<EnemDevQuestionsPage["questions"][number]> {
+  const lang = language ? `?language=${language}` : "";
+  return fetchJson(`/exams/${ano}/questions/${index}${lang}`);
+}
+
+/** Variante inglês Q1–5 (não vem na listagem paginada padrão do enem.dev). */
+export async function* iterarQuestoesL2Ingles(
+  ano: number
+): AsyncGenerator<EnemDevQuestionsPage["questions"][number]> {
+  for (let index = 1; index <= 5; index++) {
+    try {
+      const q = await buscarQuestaoEnem(ano, index, "ingles");
+      if (q.discipline === "linguagens") yield q;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!msg.includes("404")) throw e;
+    }
+  }
 }
 
 /** Itera todas as questões de um ano respeitando paginação e rate limit. */

@@ -8,7 +8,9 @@ export type {
 } from "./types";
 
 export {
+  buscarQuestaoEnem,
   iterarQuestoesAno,
+  iterarQuestoesL2Ingles,
   listarProvasEnem,
   listarQuestoesAno,
 } from "./client";

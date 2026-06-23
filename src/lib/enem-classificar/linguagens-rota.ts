@@ -19,29 +19,25 @@ export function trilhaLinguagensPorIdioma(idioma: string | null | undefined): Id
 /**
  * Trilha efetiva para classificação/stats.
  *
- * ENEM Q1–5: só existem variantes EN e ES. enem.dev grava espanhol com `language:espanhol`
- * e inglês com `language:null` → `idioma:COMUM`. Nessa faixa, COMUM = inglês (não português).
+ * enem.dev: espanhol vem na listagem padrão (Q1–5); inglês só com `?language=ingles`
+ * (import separado → `idioma:ingles`). `idioma:COMUM` = português (Q6+).
  */
 export function trilhaLinguagensEfetiva(
   idioma: string | null | undefined,
-  numero: number,
+  _numero?: number,
   _texto?: string
 ): IdiomaTrilhaLinguagens {
-  const db = trilhaLinguagensPorIdioma(idioma);
-  if (db === "espanhol" || db === "ingles") return db;
-  if (naFaixaL2Enem(numero)) return "ingles";
-  return "COMUM";
+  return trilhaLinguagensPorIdioma(idioma);
 }
 
-/** Idioma para import/upsert — corrige language=null do enem.dev na faixa 1–5. */
+/** Idioma para import/upsert a partir do campo `language` da API. */
 export function inferirIdiomaCorpusLinguagens(
-  numero: number,
+  _numero: number,
   language: "ingles" | "espanhol" | null,
   _texto?: string | null
 ): "COMUM" | "ingles" | "espanhol" {
   if (language === "espanhol") return "espanhol";
   if (language === "ingles") return "ingles";
-  if (naFaixaL2Enem(numero)) return "ingles";
   return "COMUM";
 }
 
