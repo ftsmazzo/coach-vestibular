@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { iterarQuestoesL2Ingles, listarProvasEnem } from "@/lib/enem-dev/client";
 import { mapearQuestaoEstrutural } from "@/lib/enem-dev/estrutural";
 
