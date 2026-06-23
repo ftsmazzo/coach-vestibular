@@ -23,6 +23,15 @@ export type CatalogRegras = {
     keywords?: number;
     keywordsContexto?: number;
     exemplosEnunciado?: string;
+    negativeHints?: string;
+  };
+  /** Linguagens v1.2+ — roteamento obrigatório antes da classificação N2. */
+  roteamentoObrigatorio?: {
+    etapa1?: string;
+    etapa2?: string;
+    regraCritica?: string;
+    ordemDePreferencia?: string[];
+    rotas: Record<string, string[]>;
   };
 };
 
@@ -46,6 +55,8 @@ export type EscopoCatalogo = {
   descricao?: string;
   keywords?: string[];
   keywordsContexto?: string[];
+  /** Termos que penalizam este escopo se aparecerem no enunciado (v1.2+). */
+  negativeHints?: string[];
   exemplosEnunciado?: string[];
   naoConfundirCom?: string[];
   regraDesempate?: string;
@@ -78,6 +89,7 @@ export type EscopoIndexEntry = {
   materiaId: string;
   keywords: string[];
   keywordsContexto: string[];
+  negativeHints: string[];
   descricao?: string;
   exemplosEnunciado: string[];
   naoConfundirCom: string[];
@@ -118,6 +130,10 @@ export type ResultadoClassificacao = {
   dominioId: string | null;
   escopoId: string | null;
   conceitoCanonic: string | null;
+  /** Linguagens — disciplina fina após roteamento (portugues|ingles|espanhol). */
+  disciplinaOriginalId?: string | null;
+  /** Critério do roteamento de idioma (auditoria). */
+  rotaCriterio?: string | null;
   motivo: string;
   /** N3 — texto livre proposto pela IA (revisão humana) */
   conhecimentoExigido?: string | null;

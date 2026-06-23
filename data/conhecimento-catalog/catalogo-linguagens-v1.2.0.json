@@ -1,0 +1,2048 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.2.0",
+  "materiaId": "linguagens",
+  "materiaLabel": "Linguagens",
+  "areaEnem": "Linguagens, Códigos e suas Tecnologias",
+  "notas": "Catálogo agregado para Português/Artes/Tecnologias e línguas estrangeiras. Classificação deve ocorrer em duas etapas: (1) roteamento obrigatório por disciplina/idioma; (2) classificação no escopo N2 permitido para a rota. Campos por escopo: descricao, keywords, keywordsContexto, negativeHints, exemplosEnunciado, naoConfundirCom, regraDesempate, conceitoCanonic.",
+  "changelog": [
+    "1.2.0: Refatorado no padrão Química v1.2 com descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate.",
+    "1.2.0: Adicionado roteamento obrigatório de disciplina/idioma antes da escolha do escopo para reduzir erros grosseiros entre Português, Inglês e Espanhol.",
+    "1.2.0: Documentada regra crítica: ignorar o português do comando/instrução ao detectar idioma; considerar texto-base, metadados e posição da questão.",
+    "1.2.0: Reforçados escopos L2_EN e L2_ES com negativeHints cruzados e naoConfundirCom contra português e entre si.",
+    "1.2.0: Adicionado fallback ling.__nao_classificado para baixa confiança, texto-base ausente, imagem ilegível ou rota incerta."
+  ],
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "Aplica-se a N0–N2. Em N3 ver politicaN3.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "roteamentoObrigatorio": {
+      "etapa1": "Determinar disciplinaOriginalId/rota ANTES de escolher escopo: portugues, ingles ou espanhol.",
+      "etapa2": "Enviar ao classificador apenas os escopos permitidos para a rota escolhida.",
+      "regraCritica": "A língua do COMANDO/INSTRUÇÃO geralmente é português e não deve definir a rota. A rota é definida pelo texto-base, metadado da prova, número da questão ou campo idioma/disciplinaOriginalId.",
+      "ordemDePreferencia": [
+        "campo disciplinaOriginalId ou idioma da fonte",
+        "número/posição da questão no ENEM: língua estrangeira usualmente Q1–Q5; português/artes/tecnologias Q6–Q45",
+        "idioma dominante do texto-base e alternativas, ignorando comando em português",
+        "conteúdo cobrado: literatura/gramática/PT/arte/tecnologia → portugues; reading comprehension em inglês → ingles; comprensión lectora em espanhol → espanhol"
+      ],
+      "rotas": {
+        "portugues": [
+          "pt_interp",
+          "pt_lit",
+          "pt_gram",
+          "pt_sem",
+          "pt_art",
+          "pt_tec"
+        ],
+        "ingles": [
+          "l2_en"
+        ],
+        "espanhol": [
+          "l2_es"
+        ]
+      }
+    },
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2,
+      "nota": "Em Linguagens, o secundário só entra quando a questão realmente cobra duas competências. O gênero/tema do texto não deve virar secundário se for apenas contexto. Em L2, manter secundários dentro da mesma língua, salvo caso excepcional explicitamente interdisciplinar."
+    },
+    "politicaN3": "A IA escolhe APENAS IDs em N0–N2. Em N3 (conhecimentoExigido) PROPÕE texto livre para revisão humana; N3 nunca é um ID.",
+    "regraDesempate": "Primeiro aplicar roteamento de idioma/disciplina. Depois aplicar negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confiança < confiancaMinima → ling.__nao_classificado.",
+    "pesos": {
+      "descricao": "regra mais forte: o que o escopo cobre e não cobre",
+      "examplesEnunciado": "referência semântica (similaridade), não match literal",
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "negativeHints": "penalidade: presença do termo reduz a probabilidade deste escopo"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "pt_interp",
+      "assuntoLabel": "Português — interpretação e gêneros",
+      "disciplinaOriginalId": "portugues",
+      "trilha": "portugues_comum",
+      "dominios": [
+        {
+          "id": "ling.pt_interp.leitura",
+          "label": "Compreensão e inferência",
+          "escopos": [
+            {
+              "id": "ling.pt_interp.leitura.compreensao_global",
+              "label": "Compreensão global do texto",
+              "keywords": [
+                "ideia central",
+                "tema do texto",
+                "tese central",
+                "sentido global",
+                "compreensão global",
+                "finalidade do texto"
+              ],
+              "descricao": "Identificação da tese, tema, finalidade geral ou sentido global de texto em português. NÃO cobre inferência específica de informação implícita, análise de gênero ou gramática normativa.",
+              "keywordsContexto": [
+                "em síntese",
+                "o texto defende",
+                "de modo geral",
+                "assunto principal"
+              ],
+              "negativeHints": [
+                "main idea",
+                "idea principal",
+                "gramática",
+                "concordância",
+                "regência"
+              ],
+              "exemplosEnunciado": [
+                "A ideia central do texto é...",
+                "De acordo com o conjunto do texto, o autor pretende..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.inferencia_implicito",
+                "ling.pt_interp.generos.artigo_opiniao",
+                "ling.l2_en.leitura.compreensao_global",
+                "ling.l2_es.leitura.compreensao_global"
+              ],
+              "regraDesempate": "Se a alternativa correta resume o texto como um todo → aqui. Se depende de uma informação subentendida/localizada → inferencia_implicito. Se a rota for inglês/espanhol → usar L2 correspondente.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_interp.leitura.inferencia_implicito",
+              "label": "Inferência e sentido implícito",
+              "keywords": [
+                "inferência",
+                "implícito",
+                "subentendido",
+                "pressuposto",
+                "entrelinhas",
+                "sugere que",
+                "depreende-se"
+              ],
+              "descricao": "Inferência, pressupostos, subentendidos, ironias e sentidos não literais em texto em português. NÃO cobre simples localização de tese global.",
+              "keywordsContexto": [
+                "ironia",
+                "ambiguidade",
+                "pista textual",
+                "não dito"
+              ],
+              "negativeHints": [
+                "main idea",
+                "idea principal",
+                "concordância",
+                "classe gramatical"
+              ],
+              "exemplosEnunciado": [
+                "Infere-se do texto que a personagem...",
+                "A expressão empregada sugere, implicitamente, que..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.compreensao_global",
+                "ling.pt_sem.significacao.denotacao_conotacao"
+              ],
+              "regraDesempate": "Se a resposta exige ler algo que não está explicitamente dito → aqui. Se apenas resume o texto → compreensao_global.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_interp.leitura.coesao_coerencia",
+              "label": "Coesão, coerência e conectivos",
+              "keywords": [
+                "coesão",
+                "coerência",
+                "conectivo",
+                "referenciação",
+                "retomada",
+                "anáfora",
+                "catáfora",
+                "progressão temática"
+              ],
+              "descricao": "Relações de coesão e coerência textual: conectivos, referenciação, anáfora/catáfora, progressão temática e encadeamento argumentativo.",
+              "keywordsContexto": [
+                "pronome retoma",
+                "operador argumentativo",
+                "relação de causa",
+                "relação de oposição"
+              ],
+              "negativeHints": [
+                "grammar in context",
+                "cohesion and reference",
+                "cohesión y referencia"
+              ],
+              "exemplosEnunciado": [
+                "O pronome destacado retoma qual termo anterior?",
+                "O conectivo 'portanto' estabelece relação de..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_gram.morfologia.pronomes_colocacao",
+                "ling.l2_en.leitura.coesao_referencia",
+                "ling.l2_es.leitura.coesao_referencia"
+              ],
+              "regraDesempate": "Se o foco é função textual de conectivo/referente → aqui. Se é regra normativa de colocação pronominal → pt_gram.morfologia.pronomes_colocacao.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_interp.leitura.intertextualidade",
+              "label": "Intertextualidade e diálogo entre textos",
+              "keywords": [
+                "intertextualidade",
+                "paródia",
+                "paráfrase",
+                "citação",
+                "alusão",
+                "referência intertextual",
+                "dialoga com"
+              ],
+              "descricao": "Diálogo entre textos, paródia, paráfrase, alusão, citação, apropriação e reescritura. NÃO cobre apenas comparação temática simples em L2.",
+              "keywordsContexto": [
+                "releitura",
+                "apropriação",
+                "texto-fonte"
+              ],
+              "negativeHints": [
+                "comparing two texts",
+                "comparación de textos"
+              ],
+              "exemplosEnunciado": [
+                "A tirinha estabelece intertextualidade com o poema ao...",
+                "O anúncio ressignifica um texto conhecido por meio de..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.generos.multimodalidade",
+                "ling.l2_en.leitura.comparacao_textos",
+                "ling.l2_es.leitura.comparacao_textos"
+              ],
+              "regraDesempate": "Se o conhecimento cobrado é diálogo/releitura entre textos em português → aqui. Se são dois textos em língua estrangeira comparados pela compreensão leitora → L2 comparação.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "ling.pt_interp.discurso",
+          "label": "Funções e variação",
+          "escopos": [
+            {
+              "id": "ling.pt_interp.discurso.funcoes_linguagem",
+              "label": "Funções da linguagem",
+              "keywords": [
+                "função referencial",
+                "função emotiva",
+                "função conativa",
+                "função poética",
+                "função metalinguística",
+                "função fática",
+                "funções da linguagem"
+              ],
+              "descricao": "Funções da linguagem (referencial, emotiva, conativa, poética, fática, metalinguística) e predominância comunicativa.",
+              "keywordsContexto": [
+                "emissor",
+                "receptor",
+                "mensagem",
+                "código",
+                "canal",
+                "referente"
+              ],
+              "negativeHints": [
+                "gênero textual",
+                "notícia",
+                "propaganda"
+              ],
+              "exemplosEnunciado": [
+                "No trecho, predomina a função conativa porque o texto busca...",
+                "A função metalinguística se evidencia quando..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.generos.publicidade_propaganda",
+                "ling.pt_interp.generos.noticia_reportagem"
+              ],
+              "regraDesempate": "Se pede a função predominante da linguagem → aqui. Se pede reconhecer o gênero ou estratégia persuasiva de anúncio → gênero correspondente.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_interp.discurso.variacao_linguistica",
+              "label": "Variação linguística e preconceito",
+              "keywords": [
+                "variação linguística",
+                "preconceito linguístico",
+                "norma-padrão",
+                "registro informal",
+                "regionalismo",
+                "oralidade",
+                "dialeto",
+                "socioleto"
+              ],
+              "descricao": "Variação linguística, registros, norma-padrão, oralidade, regionalismos, gírias e preconceito linguístico.",
+              "keywordsContexto": [
+                "fala popular",
+                "norma culta",
+                "adequação linguística"
+              ],
+              "negativeHints": [
+                "língua estrangeira",
+                "false cognates",
+                "falsos cognatos"
+              ],
+              "exemplosEnunciado": [
+                "O uso de marcas de oralidade no texto indica...",
+                "A atitude criticada no texto configura preconceito linguístico porque..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_gram.ortografia.oficial"
+              ],
+              "regraDesempate": "Se cobra adequação social/variação de uso → aqui. Se cobra grafia correta pela norma → ortografia oficial.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "ling.pt_interp.generos",
+          "label": "Gêneros textuais e multimodalidade",
+          "escopos": [
+            {
+              "id": "ling.pt_interp.generos.noticia_reportagem",
+              "label": "Notícia e reportagem",
+              "keywords": [
+                "notícia",
+                "reportagem",
+                "manchete",
+                "lead",
+                "jornalismo",
+                "fato",
+                "fonte jornalística"
+              ],
+              "descricao": "Reconhecimento e funcionamento de notícia/reportagem: informação jornalística, lead, fato, fonte, objetividade e aprofundamento.",
+              "keywordsContexto": [
+                "entrevista",
+                "veículo de imprensa",
+                "informação"
+              ],
+              "negativeHints": [
+                "tese",
+                "editorial",
+                "artigo de opinião",
+                "advertisement"
+              ],
+              "exemplosEnunciado": [
+                "O trecho apresenta características de reportagem porque...",
+                "A função do lead no texto jornalístico é..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.generos.artigo_opiniao",
+                "ling.pt_interp.leitura.compreensao_global"
+              ],
+              "regraDesempate": "Se cobra estrutura/função do gênero jornalístico informativo → aqui. Se cobra opinião/tese do autor → artigo_opiniao.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_interp.generos.cronica_conto",
+              "label": "Crônica, conto e narrativa curta",
+              "keywords": [
+                "crônica",
+                "conto",
+                "narrativa",
+                "personagem",
+                "enredo",
+                "ficção",
+                "narrador"
+              ],
+              "descricao": "Gêneros narrativos curtos: crônica, conto, narrador, personagem, enredo e efeito de cotidiano/ficcionalização.",
+              "keywordsContexto": [
+                "cotidiano",
+                "desfecho",
+                "conflito narrativo"
+              ],
+              "negativeHints": [
+                "foco narrativo",
+                "narratologia"
+              ],
+              "exemplosEnunciado": [
+                "A crônica se caracteriza por transformar um fato cotidiano em...",
+                "O conflito narrativo do conto se estabelece quando..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_lit.recursos.narratologia"
+              ],
+              "regraDesempate": "Se cobra reconhecer o gênero ou efeito da crônica/conto → aqui. Se cobra tecnicamente foco narrativo/tempo/narrador → narratologia.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_interp.generos.artigo_opiniao",
+              "label": "Artigo de opinião e editorial",
+              "keywords": [
+                "artigo de opinião",
+                "editorial",
+                "argumentação",
+                "tese",
+                "ponto de vista",
+                "opinião do autor",
+                "argumento"
+              ],
+              "descricao": "Artigo de opinião, editorial e texto argumentativo: tese, argumento, ponto de vista, estratégia persuasiva e posicionamento autoral.",
+              "keywordsContexto": [
+                "defende que",
+                "posicionamento",
+                "convencer"
+              ],
+              "negativeHints": [
+                "lead",
+                "notícia",
+                "reportagem",
+                "main idea"
+              ],
+              "exemplosEnunciado": [
+                "A tese defendida pelo autor é...",
+                "O argumento utilizado para sustentar o ponto de vista é..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.generos.noticia_reportagem",
+                "ling.pt_interp.leitura.compreensao_global"
+              ],
+              "regraDesempate": "Se o foco é tese/argumento/opinião → aqui. Se é apenas tema central do texto sem análise argumentativa → compreensao_global.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_interp.generos.publicidade_propaganda",
+              "label": "Publicidade, propaganda e marketing",
+              "keywords": [
+                "publicidade",
+                "propaganda",
+                "anúncio",
+                "slogan",
+                "campanha",
+                "persuasão",
+                "marketing"
+              ],
+              "descricao": "Publicidade, propaganda, campanha, slogan e estratégias de persuasão verbal/visual. NÃO cobre apenas função conativa abstrata se o gênero não é anúncio/campanha.",
+              "keywordsContexto": [
+                "consumidor",
+                "convencer",
+                "imagem do produto",
+                "chamada"
+              ],
+              "negativeHints": [
+                "notícia",
+                "reportagem",
+                "poema"
+              ],
+              "exemplosEnunciado": [
+                "O recurso persuasivo do anúncio consiste em...",
+                "O slogan da campanha busca levar o leitor a..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.discurso.funcoes_linguagem",
+                "ling.pt_interp.generos.multimodalidade"
+              ],
+              "regraDesempate": "Se é anúncio/campanha e cobra persuasão → aqui. Se cobra integração de imagem/texto sem foco publicitário → multimodalidade.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_interp.generos.carta_documento",
+              "label": "Carta, e-mail e documentos",
+              "keywords": [
+                "carta",
+                "e-mail",
+                "ofício",
+                "memorando",
+                "abaixo-assinado",
+                "documento oficial",
+                "destinatário",
+                "remetente"
+              ],
+              "descricao": "Cartas, e-mails, documentos oficiais e gêneros epistolares: interlocução, formalidade, propósito e estrutura composicional.",
+              "keywordsContexto": [
+                "vocativo",
+                "saudação",
+                "despedida",
+                "formalidade"
+              ],
+              "negativeHints": [
+                "redação ENEM",
+                "proposta de intervenção"
+              ],
+              "exemplosEnunciado": [
+                "A formalidade do texto se justifica pela relação entre remetente e destinatário...",
+                "O gênero carta aberta se caracteriza por..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.discurso.variacao_linguistica"
+              ],
+              "regraDesempate": "Se cobra estrutura/finalidade de carta/documento → aqui. Se cobra adequação de registro sem foco no gênero → variação linguística.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_interp.generos.divulgacao_cientifica",
+              "label": "Divulgação científica e texto instrucional",
+              "keywords": [
+                "divulgação científica",
+                "texto científico",
+                "experimento",
+                "manual",
+                "instrução",
+                "explicação científica",
+                "popularização da ciência"
+              ],
+              "descricao": "Divulgação científica, textos instrucionais/explicativos e popularização do conhecimento técnico para público amplo.",
+              "keywordsContexto": [
+                "pesquisa",
+                "estudo",
+                "procedimento",
+                "cientistas"
+              ],
+              "negativeHints": [
+                "questão de biologia",
+                "questão de química",
+                "conteúdo disciplinar de ciências"
+              ],
+              "exemplosEnunciado": [
+                "O texto de divulgação científica aproxima o leitor leigo do tema ao...",
+                "A finalidade das instruções apresentadas é..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.compreensao_global"
+              ],
+              "regraDesempate": "Se a prova é Linguagens e cobra finalidade/linguagem do texto científico → aqui. Se cobra o conteúdo científico para resolver questão de Natureza → classificar na matéria científica, não em Linguagens.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_interp.generos.multimodalidade",
+              "label": "Texto multimodal e hipertexto",
+              "keywords": [
+                "multimodalidade",
+                "charge",
+                "tirinha",
+                "meme",
+                "infográfico",
+                "cartaz",
+                "imagem e texto",
+                "hipertexto"
+              ],
+              "descricao": "Leitura integrada de texto verbal e imagem: charge, tirinha, meme, infográfico, cartaz e hipertexto. NÃO cobre arte visual como movimento artístico se o foco for história da arte.",
+              "keywordsContexto": [
+                "linguagem verbal e não verbal",
+                "efeito de humor",
+                "elementos visuais"
+              ],
+              "negativeHints": [
+                "movimento artístico",
+                "modernismo",
+                "barroco"
+              ],
+              "exemplosEnunciado": [
+                "O humor da tirinha decorre da relação entre imagem e fala da personagem...",
+                "O infográfico organiza informações por meio de..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_art.visuais.leitura_imagem",
+                "ling.pt_interp.generos.publicidade_propaganda"
+              ],
+              "regraDesempate": "Se cobra articulação texto-imagem em gênero comunicativo → aqui. Se cobra leitura estética/histórica de obra de arte → pt_art.visuais.leitura_imagem ou movimentos.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "pt_lit",
+      "assuntoLabel": "Português — literatura",
+      "disciplinaOriginalId": "portugues",
+      "trilha": "portugues_comum",
+      "dominios": [
+        {
+          "id": "ling.pt_lit.brasileira",
+          "label": "Literatura brasileira por período",
+          "escopos": [
+            {
+              "id": "ling.pt_lit.brasileira.colonial_barroco",
+              "label": "Colonial e barroco",
+              "keywords": [
+                "barroco",
+                "Gregório de Matos",
+                "literatura colonial",
+                "quinhentismo",
+                "arcadismo",
+                "Basílio da Gama",
+                "cultismo",
+                "conceptismo"
+              ],
+              "descricao": "Literatura colonial, quinhentismo, barroco e arcadismo no Brasil; autores, temas e traços estéticos do período.",
+              "keywordsContexto": [
+                "contrarreforma",
+                "dualismo",
+                "bucolismo"
+              ],
+              "negativeHints": [
+                "função poética",
+                "figura de linguagem"
+              ],
+              "exemplosEnunciado": [
+                "O poema de Gregório de Matos revela traços barrocos ao..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_lit.recursos.figuras_literarias"
+              ],
+              "regraDesempate": "Se cobra escola/período/autoria → aqui. Se cobra apenas metáfora/ironia como recurso independente → figuras_literarias.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_lit.brasileira.romantismo",
+              "label": "Romantismo",
+              "keywords": [
+                "romantismo",
+                "José de Alencar",
+                "Gonçalves Dias",
+                "indianismo",
+                "nacionalismo romântico",
+                "idealização",
+                "ultrarromantismo"
+              ],
+              "descricao": "Romantismo brasileiro: indianismo, nacionalismo, subjetivismo, idealização amorosa e gerações poéticas.",
+              "keywordsContexto": [
+                "natureza idealizada",
+                "herói indígena",
+                "amor impossível"
+              ],
+              "negativeHints": [
+                "realismo",
+                "naturalismo",
+                "modernismo"
+              ],
+              "exemplosEnunciado": [
+                "O indianismo romântico aparece no texto pela idealização do indígena como..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_lit.brasileira.realismo_naturalismo"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_lit.brasileira.realismo_naturalismo",
+              "label": "Realismo e naturalismo",
+              "keywords": [
+                "realismo",
+                "naturalismo",
+                "Machado de Assis",
+                "Aluísio Azevedo",
+                "determinismo",
+                "cientificismo",
+                "crítica social"
+              ],
+              "descricao": "Realismo e naturalismo no Brasil: crítica social, objetividade, determinismo, cientificismo e análise psicológica.",
+              "keywordsContexto": [
+                "ironia machadiana",
+                "adultério",
+                "meio social"
+              ],
+              "negativeHints": [
+                "romantismo",
+                "idealização",
+                "indianismo"
+              ],
+              "exemplosEnunciado": [
+                "A crítica ao comportamento burguês aproxima o trecho do Realismo porque..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_lit.brasileira.romantismo"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_lit.brasileira.modernismo",
+              "label": "Modernismo",
+              "keywords": [
+                "modernismo",
+                "Semana de 1922",
+                "Mário de Andrade",
+                "Oswald de Andrade",
+                "Drummond",
+                "antropofagia",
+                "verso livre"
+              ],
+              "descricao": "Modernismo brasileiro: ruptura formal, coloquialidade, nacionalismo crítico, Semana de 1922, antropofagia e poesia moderna.",
+              "keywordsContexto": [
+                "coloquialidade",
+                "ruptura estética",
+                "nacionalismo crítico"
+              ],
+              "negativeHints": [
+                "vanguardas europeias"
+              ],
+              "exemplosEnunciado": [
+                "A linguagem coloquial e a ruptura métrica indicam traços modernistas porque..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_lit.geral.vanguardas"
+              ],
+              "regraDesempate": "Se cobra repercussão/obra/autores do modernismo brasileiro → aqui. Se cobra movimentos europeus em si → vanguardas.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_lit.brasileira.contemporanea",
+              "label": "Contemporânea",
+              "keywords": [
+                "Clarice Lispector",
+                "Guimarães Rosa",
+                "literatura contemporânea",
+                "João Cabral",
+                "introspecção",
+                "regionalismo universalizante"
+              ],
+              "descricao": "Literatura brasileira contemporânea e pós-1945: prosa/poesia moderna tardia, regionalismo renovado, introspecção e experimentação.",
+              "keywordsContexto": [
+                "fluxo de consciência",
+                "neologismo",
+                "sertão"
+              ],
+              "negativeHints": [
+                "romantismo",
+                "barroco"
+              ],
+              "exemplosEnunciado": [
+                "A exploração da subjetividade em Clarice Lispector se manifesta por..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_lit.recursos.narratologia"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "ling.pt_lit.geral",
+          "label": "Literatura geral",
+          "escopos": [
+            {
+              "id": "ling.pt_lit.geral.classicismo_renascentismo",
+              "label": "Classicismo e Renascimento",
+              "keywords": [
+                "classicismo",
+                "Renascimento",
+                "Camões",
+                "humanismo",
+                "medida nova",
+                "antropocentrismo"
+              ],
+              "descricao": "Classicismo, Renascimento e humanismo na literatura geral: equilíbrio formal, antropocentrismo, medida nova e Camões.",
+              "keywordsContexto": [
+                "soneto clássico",
+                "equilíbrio formal"
+              ],
+              "negativeHints": [
+                "barroco brasileiro",
+                "modernismo"
+              ],
+              "exemplosEnunciado": [
+                "O soneto camoniano revela traços classicistas pela valorização de..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_lit.brasileira.colonial_barroco"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_lit.geral.vanguardas",
+              "label": "Vanguardas europeias",
+              "keywords": [
+                "vanguardas europeias",
+                "futurismo",
+                "dadaísmo",
+                "surrealismo",
+                "expressionismo",
+                "cubismo",
+                "ruptura estética"
+              ],
+              "descricao": "Vanguardas europeias: futurismo, dadaísmo, surrealismo, expressionismo, cubismo e rupturas estéticas do início do século XX.",
+              "keywordsContexto": [
+                "manifesto",
+                "inconsciente",
+                "máquina",
+                "fragmentação"
+              ],
+              "negativeHints": [
+                "Semana de 1922",
+                "modernismo brasileiro"
+              ],
+              "exemplosEnunciado": [
+                "O caráter ilógico da imagem aproxima o texto do surrealismo porque..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_lit.brasileira.modernismo"
+              ],
+              "regraDesempate": "Se cobra o movimento europeu em si → aqui. Se cobra autores/obras do modernismo brasileiro → modernismo.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "ling.pt_lit.recursos",
+          "label": "Recursos literários",
+          "escopos": [
+            {
+              "id": "ling.pt_lit.recursos.figuras_literarias",
+              "label": "Figuras de linguagem literárias",
+              "keywords": [
+                "metáfora",
+                "metonímia",
+                "ironia",
+                "antítese",
+                "hipérbole",
+                "eufemismo",
+                "personificação",
+                "figura de linguagem"
+              ],
+              "descricao": "Figuras de linguagem e efeitos expressivos: metáfora, metonímia, ironia, antítese, hipérbole, eufemismo, personificação etc.",
+              "keywordsContexto": [
+                "efeito expressivo",
+                "sentido figurado"
+              ],
+              "negativeHints": [
+                "escola literária",
+                "período literário"
+              ],
+              "exemplosEnunciado": [
+                "A expressão destacada constitui metáfora porque...",
+                "A ironia do verso decorre de..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_sem.significacao.denotacao_conotacao",
+                "ling.pt_lit.brasileira.modernismo"
+              ],
+              "regraDesempate": "Se a questão pede nomear/interpretar recurso expressivo → aqui. Se pede escola literária → período correspondente.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_lit.recursos.versificacao",
+              "label": "Versificação e métrica",
+              "keywords": [
+                "verso",
+                "estrofe",
+                "rima",
+                "métrica",
+                "soneto",
+                "redondilha",
+                "ritmo poético",
+                "escansão"
+              ],
+              "descricao": "Versificação, métrica, rima, ritmo, estrofe, soneto e estrutura formal do poema.",
+              "keywordsContexto": [
+                "poema",
+                "poesia",
+                "sílabas poéticas"
+              ],
+              "negativeHints": [
+                "figura de linguagem",
+                "narrador"
+              ],
+              "exemplosEnunciado": [
+                "A regularidade métrica do poema evidencia...",
+                "O esquema de rimas do soneto é..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_lit.recursos.figuras_literarias"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_lit.recursos.narratologia",
+              "label": "Narratologia (foco, tempo, narrador)",
+              "keywords": [
+                "narrador",
+                "foco narrativo",
+                "tempo narrativo",
+                "discurso direto",
+                "discurso indireto",
+                "discurso indireto livre",
+                "enredo"
+              ],
+              "descricao": "Elementos narrativos: foco narrativo, narrador, tempo, espaço, enredo, discurso direto/indireto/indireto livre.",
+              "keywordsContexto": [
+                "personagem",
+                "ponto de vista",
+                "narrativa"
+              ],
+              "negativeHints": [
+                "gênero crônica",
+                "gênero conto"
+              ],
+              "exemplosEnunciado": [
+                "O emprego do discurso indireto livre permite revelar...",
+                "O foco narrativo em primeira pessoa produz efeito de..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.generos.cronica_conto"
+              ],
+              "regraDesempate": "Se cobra técnica narrativa → aqui. Se cobra reconhecimento do gênero crônica/conto → generos.cronica_conto.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "pt_gram",
+      "assuntoLabel": "Português — gramática normativa",
+      "disciplinaOriginalId": "portugues",
+      "trilha": "portugues_comum",
+      "dominios": [
+        {
+          "id": "ling.pt_gram.morfologia",
+          "label": "Morfologia",
+          "escopos": [
+            {
+              "id": "ling.pt_gram.morfologia.classes_palavras",
+              "label": "Classes de palavras",
+              "keywords": [
+                "classe gramatical",
+                "substantivo",
+                "adjetivo",
+                "advérbio",
+                "preposição",
+                "conjunção",
+                "artigo",
+                "pronome"
+              ],
+              "descricao": "Classes de palavras e valor morfológico: substantivo, adjetivo, advérbio, preposição, conjunção, artigo, numeral etc.",
+              "keywordsContexto": [
+                "valor morfológico",
+                "termo destacado"
+              ],
+              "negativeHints": [
+                "cohesion and reference",
+                "vocabulario en contexto"
+              ],
+              "exemplosEnunciado": [
+                "No trecho, a palavra destacada funciona como advérbio porque..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.coesao_coerencia",
+                "ling.l2_en.leitura.gramatica_l2",
+                "ling.l2_es.leitura.gramatica_l2"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_gram.morfologia.verbo_tempo_modo",
+              "label": "Tempos e modos verbais",
+              "keywords": [
+                "tempo verbal",
+                "modo verbal",
+                "indicativo",
+                "subjuntivo",
+                "imperativo",
+                "pretérito",
+                "futuro do pretérito",
+                "conjugação"
+              ],
+              "descricao": "Tempos, modos, aspectos e valores semânticos de formas verbais em português.",
+              "keywordsContexto": [
+                "valor modal",
+                "hipótese",
+                "ordem",
+                "possibilidade"
+              ],
+              "negativeHints": [
+                "tenses",
+                "modals",
+                "tiempos verbales"
+              ],
+              "exemplosEnunciado": [
+                "O emprego do futuro do pretérito indica...",
+                "A forma verbal no subjuntivo expressa..."
+              ],
+              "naoConfundirCom": [
+                "ling.l2_en.leitura.gramatica_l2",
+                "ling.l2_es.leitura.gramatica_l2"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_gram.morfologia.pronomes_colocacao",
+              "label": "Pronomes e colocação",
+              "keywords": [
+                "pronome",
+                "colocação pronominal",
+                "próclise",
+                "ênclise",
+                "mesóclise",
+                "pronome oblíquo",
+                "referente pronominal"
+              ],
+              "descricao": "Pronomes e colocação pronominal em português: próclise, ênclise, mesóclise, referente e adequação normativa.",
+              "keywordsContexto": [
+                "se",
+                "lhe",
+                "o/a",
+                "me"
+              ],
+              "negativeHints": [
+                "referenciação textual",
+                "cohesion"
+              ],
+              "exemplosEnunciado": [
+                "A próclise é obrigatória no trecho devido à presença de..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.coesao_coerencia"
+              ],
+              "regraDesempate": "Se cobra regra normativa de posição/uso pronominal → aqui. Se cobra retomada textual/coesão → coesao_coerencia.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "ling.pt_gram.sintaxe",
+          "label": "Sintaxe",
+          "escopos": [
+            {
+              "id": "ling.pt_gram.sintaxe.termos_oracao",
+              "label": "Termos da oração",
+              "keywords": [
+                "sujeito",
+                "predicado",
+                "objeto direto",
+                "objeto indireto",
+                "complemento nominal",
+                "adjunto adverbial",
+                "aposto",
+                "vocativo"
+              ],
+              "descricao": "Análise sintática de termos da oração: sujeito, predicado, complementos, adjuntos, aposto e vocativo.",
+              "keywordsContexto": [
+                "função sintática",
+                "termo da oração"
+              ],
+              "negativeHints": [
+                "coesão textual",
+                "argumentação"
+              ],
+              "exemplosEnunciado": [
+                "O termo destacado exerce função sintática de..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_gram.sintaxe.oracoes_periodo"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_gram.sintaxe.concordancia",
+              "label": "Concordância nominal e verbal",
+              "keywords": [
+                "concordância verbal",
+                "concordância nominal",
+                "sujeito composto",
+                "plural",
+                "singular",
+                "norma-padrão"
+              ],
+              "descricao": "Concordância nominal e verbal na norma-padrão do português.",
+              "keywordsContexto": [
+                "adequação gramatical",
+                "flexão"
+              ],
+              "negativeHints": [
+                "variação linguística",
+                "preconceito linguístico"
+              ],
+              "exemplosEnunciado": [
+                "A forma verbal está no plural porque concorda com..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.discurso.variacao_linguistica"
+              ],
+              "regraDesempate": "Se cobra regra normativa de concordância → aqui. Se discute legitimidade de variedades linguísticas → variação linguística.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_gram.sintaxe.regencia_crase",
+              "label": "Regência e crase",
+              "keywords": [
+                "regência",
+                "crase",
+                "à",
+                "preposição",
+                "transitividade verbal",
+                "regência nominal",
+                "regência verbal"
+              ],
+              "descricao": "Regência verbal/nominal e uso de crase em português: exigência de preposição e fusão de a + a.",
+              "keywordsContexto": [
+                "termo regido",
+                "complemento"
+              ],
+              "negativeHints": [
+                "coesão",
+                "conectivo"
+              ],
+              "exemplosEnunciado": [
+                "O emprego da crase é obrigatório porque o termo regente exige..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_gram.sintaxe.termos_oracao"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_gram.sintaxe.oracoes_periodo",
+              "label": "Período composto e orações",
+              "keywords": [
+                "oração coordenada",
+                "oração subordinada",
+                "período composto",
+                "subordinação",
+                "coordenação",
+                "oração adjetiva",
+                "oração substantiva",
+                "oração adverbial"
+              ],
+              "descricao": "Período composto, coordenação, subordinação, orações subordinadas e relações sintático-semânticas.",
+              "keywordsContexto": [
+                "conjunção",
+                "valor semântico",
+                "período"
+              ],
+              "negativeHints": [
+                "função textual do conectivo"
+              ],
+              "exemplosEnunciado": [
+                "A oração introduzida por 'quando' expressa circunstância de..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.coesao_coerencia"
+              ],
+              "regraDesempate": "Se cobra classificação sintática da oração → aqui. Se cobra efeito coesivo/argumentativo do conectivo no texto → coesao_coerencia.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "ling.pt_gram.ortografia",
+          "label": "Ortografia e pontuação",
+          "escopos": [
+            {
+              "id": "ling.pt_gram.ortografia.acentuacao",
+              "label": "Acentuação gráfica",
+              "keywords": [
+                "acentuação",
+                "acento gráfico",
+                "oxítona",
+                "paroxítona",
+                "proparoxítona",
+                "hiato",
+                "ditongo"
+              ],
+              "descricao": "Regras de acentuação gráfica do português: oxítonas, paroxítonas, proparoxítonas, hiato e ditongos.",
+              "keywordsContexto": [
+                "sílaba tônica",
+                "novo acordo"
+              ],
+              "negativeHints": [
+                "pontuação",
+                "vírgula"
+              ],
+              "exemplosEnunciado": [
+                "A palavra recebe acento gráfico pela mesma regra de..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_gram.ortografia.oficial"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_gram.ortografia.pontuacao",
+              "label": "Pontuação",
+              "keywords": [
+                "pontuação",
+                "vírgula",
+                "ponto e vírgula",
+                "dois-pontos",
+                "travessão",
+                "aspas"
+              ],
+              "descricao": "Pontuação e seus efeitos sintáticos/semânticos: vírgula, ponto e vírgula, dois-pontos, travessão, aspas.",
+              "keywordsContexto": [
+                "isolamento de termo",
+                "aposto",
+                "vocativo"
+              ],
+              "negativeHints": [
+                "acentuação",
+                "ortografia oficial"
+              ],
+              "exemplosEnunciado": [
+                "A vírgula foi empregada para isolar..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_gram.sintaxe.termos_oracao"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_gram.ortografia.oficial",
+              "label": "Ortografia oficial (novo acordo)",
+              "keywords": [
+                "ortografia oficial",
+                "novo acordo ortográfico",
+                "hífen",
+                "grafia correta",
+                "mal/mau",
+                "porque/por que",
+                "emprego de letras"
+              ],
+              "descricao": "Ortografia oficial, novo acordo, grafia correta, hífen, emprego de letras e formas padrão.",
+              "keywordsContexto": [
+                "norma ortográfica",
+                "forma correta"
+              ],
+              "negativeHints": [
+                "variação linguística",
+                "acentuação"
+              ],
+              "exemplosEnunciado": [
+                "Assinale a alternativa em que todas as palavras estão grafadas corretamente."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.discurso.variacao_linguistica",
+                "ling.pt_gram.ortografia.acentuacao"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "pt_sem",
+      "assuntoLabel": "Português — semântica",
+      "disciplinaOriginalId": "portugues",
+      "trilha": "portugues_comum",
+      "dominios": [
+        {
+          "id": "ling.pt_sem.significacao",
+          "label": "Significação",
+          "escopos": [
+            {
+              "id": "ling.pt_sem.significacao.polissemia_homonimia",
+              "label": "Polissemia, homonímia e sinonímia",
+              "keywords": [
+                "polissemia",
+                "homonímia",
+                "sinonímia",
+                "antonímia",
+                "paronímia",
+                "ambiguidade lexical",
+                "sentidos da palavra"
+              ],
+              "descricao": "Relações lexicais: polissemia, homonímia, sinonímia, antonímia, paronímia e ambiguidade lexical em português.",
+              "keywordsContexto": [
+                "mesma palavra",
+                "contexto de uso",
+                "duplo sentido"
+              ],
+              "negativeHints": [
+                "false cognates",
+                "falsos cognatos"
+              ],
+              "exemplosEnunciado": [
+                "A palavra destacada assume outro sentido em..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_sem.significacao.denotacao_conotacao",
+                "ling.l2_en.leitura.falsos_cognatos",
+                "ling.l2_es.leitura.falsos_cognatos"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_sem.significacao.denotacao_conotacao",
+              "label": "Denotação e conotação",
+              "keywords": [
+                "denotação",
+                "conotação",
+                "sentido literal",
+                "sentido figurado",
+                "valor expressivo",
+                "linguagem figurada"
+              ],
+              "descricao": "Denotação, conotação, sentido literal e figurado, valor expressivo de palavras e expressões.",
+              "keywordsContexto": [
+                "significado contextual",
+                "efeito de sentido"
+              ],
+              "negativeHints": [
+                "metáfora específica",
+                "figura de linguagem"
+              ],
+              "exemplosEnunciado": [
+                "No contexto, a expressão foi usada em sentido conotativo porque..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_lit.recursos.figuras_literarias",
+                "ling.pt_sem.significacao.polissemia_homonimia"
+              ],
+              "regraDesempate": "Se cobra oposição literal/figurado → aqui. Se pede identificar metáfora/ironia etc. como figura → figuras_literarias.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "pt_art",
+      "assuntoLabel": "Artes e cultura visual",
+      "disciplinaOriginalId": "portugues",
+      "trilha": "portugues_comum",
+      "dominios": [
+        {
+          "id": "ling.pt_art.visuais",
+          "label": "Artes visuais e manifestações",
+          "escopos": [
+            {
+              "id": "ling.pt_art.visuais.movimentos",
+              "label": "Movimentos artísticos",
+              "keywords": [
+                "movimento artístico",
+                "história da arte",
+                "barroco",
+                "impressionismo",
+                "modernismo nas artes",
+                "arte contemporânea",
+                "vanguarda artística"
+              ],
+              "descricao": "Movimentos artísticos, estilos e história da arte em Linguagens: barroco, modernismo, impressionismo, arte contemporânea etc.",
+              "keywordsContexto": [
+                "obra de arte",
+                "estilo artístico",
+                "período artístico"
+              ],
+              "negativeHints": [
+                "literatura modernista",
+                "figura de linguagem"
+              ],
+              "exemplosEnunciado": [
+                "A obra se aproxima do expressionismo por enfatizar..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_art.visuais.leitura_imagem",
+                "ling.pt_lit.brasileira.modernismo"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_art.visuais.cultura_popular",
+              "label": "Cultura popular, música e cinema",
+              "keywords": [
+                "cultura popular",
+                "patrimônio cultural",
+                "música",
+                "cinema",
+                "dança",
+                "manifestação cultural",
+                "cultura de massa"
+              ],
+              "descricao": "Cultura popular, música, dança, cinema, patrimônio cultural e manifestações culturais brasileiras ou globais.",
+              "keywordsContexto": [
+                "identidade cultural",
+                "tradição",
+                "folclore"
+              ],
+              "negativeHints": [
+                "língua estrangeira",
+                "gramática"
+              ],
+              "exemplosEnunciado": [
+                "A manifestação cultural descrita contribui para a identidade de um grupo ao..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_art.visuais.movimentos"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_art.visuais.leitura_imagem",
+              "label": "Leitura de imagem (arte, charge, cartaz)",
+              "keywords": [
+                "leitura de imagem",
+                "composição visual",
+                "linguagem visual",
+                "charge",
+                "cartaz",
+                "fotografia",
+                "obra de arte",
+                "elementos visuais"
+              ],
+              "descricao": "Leitura estética/semiótica de obra, imagem, charge, cartaz ou fotografia quando o foco é composição visual, sentido e linguagem artística.",
+              "keywordsContexto": [
+                "cor",
+                "forma",
+                "perspectiva",
+                "enquadramento"
+              ],
+              "negativeHints": [
+                "hipertexto",
+                "infográfico informativo"
+              ],
+              "exemplosEnunciado": [
+                "A organização visual da imagem produz efeito de crítica ao..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.generos.multimodalidade",
+                "ling.pt_art.visuais.movimentos"
+              ],
+              "regraDesempate": "Se cobra composição/sentido visual de imagem ou obra → aqui. Se cobra integração texto-imagem de gênero comunicativo → multimodalidade.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "pt_tec",
+      "assuntoLabel": "Tecnologias da linguagem",
+      "disciplinaOriginalId": "portugues",
+      "trilha": "portugues_comum",
+      "dominios": [
+        {
+          "id": "ling.pt_tec.digital",
+          "label": "Linguagem digital",
+          "escopos": [
+            {
+              "id": "ling.pt_tec.digital.internet_redes",
+              "label": "Internet, mídias digitais e redes",
+              "keywords": [
+                "internet",
+                "redes sociais",
+                "mídias digitais",
+                "hipertexto",
+                "letramento digital",
+                "gênero digital",
+                "circulação de informação"
+              ],
+              "descricao": "Tecnologias da informação, gêneros digitais, redes sociais, hipertexto, circulação de discursos e letramento digital.",
+              "keywordsContexto": [
+                "postagem",
+                "comentário",
+                "link",
+                "plataforma"
+              ],
+              "negativeHints": [
+                "gramática normativa",
+                "literatura"
+              ],
+              "exemplosEnunciado": [
+                "A característica do gênero digital evidenciada no texto é..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.generos.multimodalidade"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.pt_tec.digital.acessibilidade",
+              "label": "Acessibilidade e Libras",
+              "keywords": [
+                "Libras",
+                "acessibilidade",
+                "audiodescrição",
+                "tecnologia assistiva",
+                "inclusão comunicacional",
+                "língua de sinais"
+              ],
+              "descricao": "Acessibilidade comunicacional, Libras, audiodescrição, inclusão, tecnologias assistivas e direitos linguísticos.",
+              "keywordsContexto": [
+                "surdo",
+                "pessoa com deficiência",
+                "barreira comunicacional"
+              ],
+              "negativeHints": [
+                "variação linguística",
+                "idioma estrangeiro"
+              ],
+              "exemplosEnunciado": [
+                "A presença de intérprete de Libras garante acessibilidade comunicacional porque..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.discurso.variacao_linguistica"
+              ],
+              "regraDesempate": null,
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "l2_en",
+      "assuntoLabel": "Inglês — interpretação L2",
+      "disciplinaOriginalId": "ingles",
+      "trilha": "lingua_estrangeira",
+      "dominios": [
+        {
+          "id": "ling.l2_en.leitura",
+          "label": "Reading comprehension (EN)",
+          "escopos": [
+            {
+              "id": "ling.l2_en.leitura.compreensao_global",
+              "label": "Main idea / global understanding",
+              "keywords": [
+                "main idea",
+                "overall meaning",
+                "central idea",
+                "the text is mainly about",
+                "purpose of the text"
+              ],
+              "descricao": "Identificação da ideia central, tema ou finalidade global de texto em INGLÊS. NÃO usar para texto em português ou espanhol.",
+              "keywordsContexto": [
+                "advertisement",
+                "cartoon",
+                "poem",
+                "article"
+              ],
+              "negativeHints": [
+                "idea principal",
+                "comprensión global",
+                "ideia central em português"
+              ],
+              "exemplosEnunciado": [
+                "The main purpose of the text is to..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.compreensao_global",
+                "ling.l2_es.leitura.compreensao_global"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em inglês e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou espanhol, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_en.leitura.inferencia",
+              "label": "Inference and implicit meaning",
+              "keywords": [
+                "infer",
+                "imply",
+                "suggest",
+                "implicit",
+                "according to the text",
+                "one can conclude"
+              ],
+              "descricao": "Inferência e sentido implícito em texto-base em INGLÊS.",
+              "keywordsContexto": [
+                "tone",
+                "context clue"
+              ],
+              "negativeHints": [
+                "infiere",
+                "implícito",
+                "subentendido em português"
+              ],
+              "exemplosEnunciado": [
+                "From the text, it can be inferred that the author..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.inferencia_implicito",
+                "ling.l2_es.leitura.inferencia"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em inglês e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou espanhol, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_en.leitura.vocabulario_contexto",
+              "label": "Vocabulary in context",
+              "keywords": [
+                "meaning of the word",
+                "vocabulary",
+                "expression",
+                "in context",
+                "phrasal verb",
+                "synonym"
+              ],
+              "descricao": "Sentido de palavra/expressão em inglês pelo contexto; phrasal verbs e equivalência lexical contextual.",
+              "keywordsContexto": [
+                "the word '...' refers to",
+                "contextual meaning"
+              ],
+              "negativeHints": [
+                "vocabulario en contexto",
+                "polissemia em português"
+              ],
+              "exemplosEnunciado": [
+                "In the text, the word 'issue' is closest in meaning to..."
+              ],
+              "naoConfundirCom": [
+                "ling.l2_en.leitura.falsos_cognatos",
+                "ling.pt_sem.significacao.polissemia_homonimia"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em inglês e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou espanhol, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_en.leitura.coesao_referencia",
+              "keywords": [
+                "reference",
+                "refers to",
+                "pronoun",
+                "connector",
+                "cohesion",
+                "linking word",
+                "therefore",
+                "however"
+              ],
+              "label": "Cohesion and reference",
+              "descricao": "Coesão, referência pronominal e conectores em texto em inglês.",
+              "keywordsContexto": [
+                "it refers to",
+                "this refers to",
+                "which refers to"
+              ],
+              "negativeHints": [
+                "coesão em português",
+                "cohesión"
+              ],
+              "exemplosEnunciado": [
+                "In the sentence, the pronoun 'they' refers to..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.coesao_coerencia",
+                "ling.l2_es.leitura.coesao_referencia"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em inglês e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou espanhol, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_en.leitura.proposito_autor",
+              "label": "Author's purpose and tone",
+              "keywords": [
+                "author's purpose",
+                "tone",
+                "attitude",
+                "intention",
+                "criticizes",
+                "persuades",
+                "warns"
+              ],
+              "descricao": "Propósito, tom, atitude ou posicionamento do autor em texto em inglês.",
+              "keywordsContexto": [
+                "ironic tone",
+                "critical tone",
+                "humorous tone"
+              ],
+              "negativeHints": [
+                "propósito del autor",
+                "funções da linguagem"
+              ],
+              "exemplosEnunciado": [
+                "The author's tone toward the topic is best described as..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.discurso.funcoes_linguagem",
+                "ling.l2_es.leitura.proposito_autor"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em inglês e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou espanhol, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_en.leitura.comparacao_textos",
+              "label": "Comparing two texts (ENEM style)",
+              "keywords": [
+                "both texts",
+                "text I and text II",
+                "compare",
+                "similarity",
+                "difference",
+                "whereas"
+              ],
+              "descricao": "Comparação de dois textos em inglês quanto a tema, finalidade, abordagem ou ponto de vista.",
+              "keywordsContexto": [
+                "two excerpts",
+                "same topic"
+              ],
+              "negativeHints": [
+                "comparación de textos",
+                "intertextualidade em português"
+              ],
+              "exemplosEnunciado": [
+                "Texts I and II differ because the first..., whereas the second..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.intertextualidade",
+                "ling.l2_es.leitura.comparacao_textos"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em inglês e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou espanhol, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_en.leitura.falsos_cognatos",
+              "label": "False cognates and word formation",
+              "keywords": [
+                "false cognate",
+                "cognate",
+                "prefix",
+                "suffix",
+                "word formation",
+                "actually",
+                "pretend",
+                "college"
+              ],
+              "descricao": "Falsos cognatos, cognatos, prefixos/sufixos e formação de palavras em inglês.",
+              "keywordsContexto": [
+                "false friend",
+                "derivation"
+              ],
+              "negativeHints": [
+                "falsos cognatos",
+                "falsos amigos"
+              ],
+              "exemplosEnunciado": [
+                "The word 'actually' in the text should be understood as..."
+              ],
+              "naoConfundirCom": [
+                "ling.l2_en.leitura.vocabulario_contexto",
+                "ling.l2_es.leitura.falsos_cognatos"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em inglês e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou espanhol, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_en.leitura.gramatica_l2",
+              "label": "Grammar in context (tenses, modals)",
+              "keywords": [
+                "verb tense",
+                "modal verb",
+                "should",
+                "must",
+                "would",
+                "passive voice",
+                "conditional",
+                "present perfect"
+              ],
+              "descricao": "Gramática do inglês em contexto de leitura: tempos verbais, modais, voz passiva, condição e relações gramaticais que afetam compreensão.",
+              "keywordsContexto": [
+                "grammar in context",
+                "auxiliary"
+              ],
+              "negativeHints": [
+                "tempos e modos verbais em português",
+                "tiempos verbales"
+              ],
+              "exemplosEnunciado": [
+                "The modal verb 'should' indicates..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_gram.morfologia.verbo_tempo_modo",
+                "ling.l2_es.leitura.gramatica_l2"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em inglês e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou espanhol, NÃO usar.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "l2_es",
+      "assuntoLabel": "Espanhol — interpretación L2",
+      "disciplinaOriginalId": "espanhol",
+      "trilha": "lingua_estrangeira",
+      "dominios": [
+        {
+          "id": "ling.l2_es.leitura",
+          "label": "Comprensión lectora (ES)",
+          "escopos": [
+            {
+              "id": "ling.l2_es.leitura.compreensao_global",
+              "label": "Idea principal / comprensión global",
+              "keywords": [
+                "idea principal",
+                "comprensión global",
+                "tema del texto",
+                "propósito del texto",
+                "el texto trata de"
+              ],
+              "descricao": "Identificação da ideia principal, tema ou finalidade global de texto em ESPANHOL. NÃO usar para texto em português ou inglês.",
+              "keywordsContexto": [
+                "anuncio",
+                "viñeta",
+                "poema",
+                "artículo"
+              ],
+              "negativeHints": [
+                "main idea",
+                "ideia central em português"
+              ],
+              "exemplosEnunciado": [
+                "La idea principal del texto es..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.compreensao_global",
+                "ling.l2_en.leitura.compreensao_global"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em espanhol e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou inglês, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_es.leitura.inferencia",
+              "label": "Inferencia e implícito",
+              "keywords": [
+                "infiere",
+                "implícito",
+                "se deduce",
+                "sugiere",
+                "de acuerdo con el texto",
+                "se puede concluir"
+              ],
+              "descricao": "Inferência e sentido implícito em texto-base em espanhol.",
+              "keywordsContexto": [
+                "pista contextual",
+                "tono"
+              ],
+              "negativeHints": [
+                "infer",
+                "subentendido em português"
+              ],
+              "exemplosEnunciado": [
+                "Del texto se infiere que el autor..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.inferencia_implicito",
+                "ling.l2_en.leitura.inferencia"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em espanhol e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou inglês, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_es.leitura.vocabulario_contexto",
+              "label": "Vocabulario en contexto",
+              "keywords": [
+                "vocabulario",
+                "significado de la palabra",
+                "expresión",
+                "en contexto",
+                "sinónimo"
+              ],
+              "descricao": "Sentido de palavra/expressão em espanhol pelo contexto; equivalência lexical contextual.",
+              "keywordsContexto": [
+                "la palabra '...' se refiere a",
+                "sentido contextual"
+              ],
+              "negativeHints": [
+                "vocabulary in context",
+                "polissemia em português"
+              ],
+              "exemplosEnunciado": [
+                "En el texto, la palabra 'embarazada' significa..."
+              ],
+              "naoConfundirCom": [
+                "ling.l2_es.leitura.falsos_cognatos",
+                "ling.pt_sem.significacao.polissemia_homonimia"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em espanhol e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou inglês, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_es.leitura.coesao_referencia",
+              "label": "Cohesión y referencia",
+              "keywords": [
+                "cohesión",
+                "referencia",
+                "pronombre",
+                "conector",
+                "sin embargo",
+                "por lo tanto",
+                "se refiere a"
+              ],
+              "descricao": "Coesão, referência pronominal e conectores em texto em espanhol.",
+              "keywordsContexto": [
+                "este/esta",
+                "ello",
+                "dicho término"
+              ],
+              "negativeHints": [
+                "cohesion and reference",
+                "coesão em português"
+              ],
+              "exemplosEnunciado": [
+                "En el fragmento, el pronombre 'ellos' se refiere a..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.coesao_coerencia",
+                "ling.l2_en.leitura.coesao_referencia"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em espanhol e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou inglês, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_es.leitura.proposito_autor",
+              "label": "Propósito del autor",
+              "keywords": [
+                "propósito del autor",
+                "intención",
+                "tono",
+                "actitud",
+                "critica",
+                "persuade",
+                "advierte"
+              ],
+              "descricao": "Propósito, tom, atitude ou posicionamento do autor em texto em espanhol.",
+              "keywordsContexto": [
+                "tono irónico",
+                "tono crítico",
+                "humorístico"
+              ],
+              "negativeHints": [
+                "author's purpose",
+                "funções da linguagem"
+              ],
+              "exemplosEnunciado": [
+                "El tono del autor frente al tema puede describirse como..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.discurso.funcoes_linguagem",
+                "ling.l2_en.leitura.proposito_autor"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em espanhol e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou inglês, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_es.leitura.comparacao_textos",
+              "label": "Comparación de textos (estilo ENEM)",
+              "keywords": [
+                "ambos textos",
+                "texto I y texto II",
+                "comparación",
+                "semejanza",
+                "diferencia",
+                "mientras que"
+              ],
+              "descricao": "Comparação de dois textos em espanhol quanto a tema, finalidade, abordagem ou ponto de vista.",
+              "keywordsContexto": [
+                "dos fragmentos",
+                "mismo tema"
+              ],
+              "negativeHints": [
+                "comparing two texts",
+                "intertextualidade em português"
+              ],
+              "exemplosEnunciado": [
+                "Los textos I y II se diferencian porque el primero..., mientras el segundo..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_interp.leitura.intertextualidade",
+                "ling.l2_en.leitura.comparacao_textos"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em espanhol e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou inglês, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_es.leitura.falsos_cognatos",
+              "label": "Falsos cognatos y formación de palabras",
+              "keywords": [
+                "falso cognato",
+                "falsos amigos",
+                "cognado",
+                "prefijo",
+                "sufijo",
+                "embarazada",
+                "apellido",
+                "largo"
+              ],
+              "descricao": "Falsos cognatos/falsos amigos, cognatos, prefixos/sufixos e formação de palavras em espanhol.",
+              "keywordsContexto": [
+                "formación de palabras",
+                "derivación"
+              ],
+              "negativeHints": [
+                "false cognate",
+                "polissemia em português"
+              ],
+              "exemplosEnunciado": [
+                "La palabra 'largo' en el texto no equivale a 'largo' en portugués, sino a..."
+              ],
+              "naoConfundirCom": [
+                "ling.l2_es.leitura.vocabulario_contexto",
+                "ling.l2_en.leitura.falsos_cognatos"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em espanhol e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou inglês, NÃO usar.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ling.l2_es.leitura.gramatica_l2",
+              "label": "Gramática en contexto (tiempos, modos)",
+              "keywords": [
+                "tiempo verbal",
+                "modo subjuntivo",
+                "indicativo",
+                "imperativo",
+                "pronombre",
+                "perífrasis verbal",
+                "pretérito"
+              ],
+              "descricao": "Gramática do espanhol em contexto de leitura: tempos, modos, pronomes, conectores, perífrases e estruturas que afetam compreensão.",
+              "keywordsContexto": [
+                "gramática en contexto",
+                "verbo"
+              ],
+              "negativeHints": [
+                "grammar in context",
+                "tempos verbais em português"
+              ],
+              "exemplosEnunciado": [
+                "El uso del subjuntivo en el fragmento expresa..."
+              ],
+              "naoConfundirCom": [
+                "ling.pt_gram.morfologia.verbo_tempo_modo",
+                "ling.l2_en.leitura.gramatica_l2"
+              ],
+              "regraDesempate": "Se o texto-base dominante estiver em espanhol e a pergunta cobra leitura/compreensão desse texto → usar este escopo. Se a rota detectada for português ou inglês, NÃO usar.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "_fallback",
+      "assuntoLabel": "Fallback / revisão",
+      "disciplinaOriginalId": "indefinido",
+      "trilha": "fallback",
+      "dominios": [
+        {
+          "id": "ling.fallback",
+          "label": "Fallback de Linguagens",
+          "escopos": [
+            {
+              "id": "ling.__nao_classificado",
+              "label": "Não classificado / revisar manualmente",
+              "descricao": "Use quando o roteamento de idioma/disciplina for incerto, quando a questão depender de imagem ilegível/áudio ausente, quando nenhum escopo atingir a confiança mínima ou quando houver empate irresolúvel.",
+              "keywords": [],
+              "keywordsContexto": [],
+              "negativeHints": [],
+              "exemplosEnunciado": [
+                "Questão com texto-base ausente, idioma ambíguo ou classificação abaixo do limiar."
+              ],
+              "naoConfundirCom": [],
+              "regraDesempate": "Fallback obrigatório para baixa confiança ou erro de roteamento.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

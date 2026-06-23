@@ -8,6 +8,7 @@ export type EscopoPromptReduzido = {
   descricao?: string;
   keywords: string[];
   keywordsContexto: string[];
+  negativeHints?: string[];
   exemplosEnunciado: string[];
   naoConfundirCom: string[];
   regraDesempate?: string;
@@ -27,6 +28,7 @@ export function montarCatalogoReduzido(
       ...(e.descricao ? { descricao: e.descricao } : {}),
       keywords: e.keywords,
       keywordsContexto: e.keywordsContexto,
+      ...(e.negativeHints.length > 0 ? { negativeHints: e.negativeHints } : {}),
       exemplosEnunciado: e.exemplosEnunciado,
       naoConfundirCom: e.naoConfundirCom,
       ...(e.regraDesempate ? { regraDesempate: e.regraDesempate } : {}),
@@ -53,6 +55,7 @@ export function montarSystemClassificacaoV11(catalog: MateriaCatalogo): string {
     `   - descricao → o que cobre E o que NÃO cobre\n` +
     `   - exemplosEnunciado → similaridade semântica\n` +
     `   - keywords (peso ${regras.pesos?.keywords ?? 1}) e keywordsContexto (peso ${regras.pesos?.keywordsContexto ?? 0.4})\n` +
+    `   - negativeHints → se o enunciado contém o termo, este escopo provavelmente NÃO é o primário\n` +
     `   - naoConfundirCom + regraDesempate → desempate entre irmãos\n` +
     `4. Multi-label: 1 escopo PRIMÁRIO e até ${maxSec} SECUNDÁRIOS com confiança própria.\n` +
     `5. Se confiança do primário < ${confMin} OU empate irresolvível → primario.id = "${fallbackId}".\n` +
@@ -60,6 +63,26 @@ export function montarSystemClassificacaoV11(catalog: MateriaCatalogo): string {
     `7. Keyword sozinha NÃO basta — avalie o conceito testado na pergunta/alternativas.\n` +
     `8. Use o gabarito (quando fornecido) para calibrar o conhecimento exigido.\n\n` +
     `SAÍDA: JSON estrito no schema solicitado, sem markdown.`
+  );
+}
+
+/** System prompt Linguagens v1.2 — roteamento já feito; classificar só na rota permitida. */
+export function montarSystemClassificacaoLinguagensV12(
+  catalog: MateriaCatalogo,
+  rotaDisciplina: string
+): string {
+  const base = montarSystemClassificacaoV11(catalog);
+  const roteamento = catalog.regras.roteamentoObrigatorio;
+  const regraCritica =
+    roteamento?.regraCritica ??
+    "O comando em português NÃO define a rota. Classifique apenas escopos da rota já definida.";
+
+  return (
+    `${base}\n\n` +
+    `LINGUAGENS — ROTA JÁ DEFINIDA: ${rotaDisciplina}\n` +
+    `${regraCritica}\n` +
+    `Não escolha escopos de outra disciplina/idioma. ` +
+    `Gênero ou tema do texto não viram secundário se forem só contexto.`
   );
 }
 

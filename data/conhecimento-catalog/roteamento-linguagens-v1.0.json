@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0",
+  "service": "routeLanguageDiscipline",
+  "description": "Especificação de roteamento obrigatório antes da classificação de escopo em Linguagens.",
+  "inputFields": [
+    "disciplinaOriginalId",
+    "idioma",
+    "areaEnem",
+    "numero",
+    "textoBase",
+    "enunciado",
+    "alternativas",
+    "origem"
+  ],
+  "outputSchema": {
+    "catalogoMateriaId": "linguagens",
+    "disciplinaOriginalId": "portugues|ingles|espanhol|indefinido",
+    "allowedAssuntoIds": [
+      "string"
+    ],
+    "criterio": "metadata|posicao_enem|idioma_texto_base|inferido|incerto",
+    "confianca": "number 0-1",
+    "sinalizadorRevisao": "boolean"
+  },
+  "rules": [
+    "Se disciplinaOriginalId ou idioma vier da fonte como ingles/en/es/en_us/enem_lingua_inglesa, retornar ingles e allowedAssuntoIds=['l2_en'].",
+    "Se disciplinaOriginalId ou idioma vier da fonte como espanhol/es/es_es/enem_lingua_espanhola, retornar espanhol e allowedAssuntoIds=['l2_es'].",
+    "Se disciplinaOriginalId vier como portugues/redacao/literatura/gramatica/artes, retornar portugues e allowedAssuntoIds=['pt_interp','pt_lit','pt_gram','pt_sem','pt_art','pt_tec'].",
+    "Se origem for ENEM e numero entre 1 e 5, exigir metadado de opção de língua; sem metadado, detectar idioma do texto-base e marcar revisão se confiança < 0.8.",
+    "Ignorar o idioma do comando/enunciado se ele for apenas instrução em português; detectar pelo texto-base e alternativas.",
+    "Se o texto-base dominante tiver marcadores de inglês (the, of, and, to, with, should, would, not) e não houver muitos marcadores espanhóis, retornar ingles.",
+    "Se o texto-base dominante tiver marcadores de espanhol (el, la, los, las, que, para, una, porque, según, también) e sinais como ¿/¡, retornar espanhol.",
+    "Se houver texto em português e cobrar literatura, gramática, artes, gêneros ou tecnologia da linguagem, retornar portugues.",
+    "Se a rota ficar incerta, retornar disciplinaOriginalId='indefinido', allowedAssuntoIds=[], sinalizadorRevisao=true."
+  ],
+  "examples": [
+    {
+      "input": {
+        "idioma": "ingles",
+        "enunciado": "No texto, a expressão...",
+        "textoBase": "The author argues that..."
+      },
+      "output": {
+        "disciplinaOriginalId": "ingles",
+        "allowedAssuntoIds": [
+          "l2_en"
+        ],
+        "criterio": "metadata",
+        "confianca": 0.99
+      }
+    },
+    {
+      "input": {
+        "idioma": null,
+        "numero": 3,
+        "textoBase": "El texto trata de la inmigración..."
+      },
+      "output": {
+        "disciplinaOriginalId": "espanhol",
+        "allowedAssuntoIds": [
+          "l2_es"
+        ],
+        "criterio": "idioma_texto_base",
+        "confianca": 0.9
+      }
+    },
+    {
+      "input": {
+        "disciplinaOriginalId": "portugues",
+        "textoBase": "Texto de Machado de Assis..."
+      },
+      "output": {
+        "disciplinaOriginalId": "portugues",
+        "allowedAssuntoIds": [
+          "pt_interp",
+          "pt_lit",
+          "pt_gram",
+          "pt_sem",
+          "pt_art",
+          "pt_tec"
+        ],
+        "criterio": "metadata",
+        "confianca": 0.99
+      }
+    }
+  ]
+}

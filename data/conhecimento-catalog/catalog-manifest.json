@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0.0",
+  "notas": "Arquivo ativo por materiaId. roteamentoLinguagens aponta para a spec de routeLanguageDiscipline.",
+  "active": {
+    "biologia": "catalogo-biologia-v1.2.0.json",
+    "quimica": "catalogo-quimica-v1.2.1.json",
+    "fisica": "catalogo-fisica-v1.2.0.json",
+    "matematica": "catalogo-matematica-v1.2.0.json",
+    "humanas": "catalogo-humanas-v1.2.0.json",
+    "linguagens": "catalogo-linguagens-v1.2.0.json"
+  },
+  "roteamentoLinguagens": "roteamento-linguagens-v1.0.json",
+  "prompts": {
+    "biologia": "prompt-classificacao-bio-v1.2.md",
+    "quimica": "prompt-classificacao-quim-v1.2.md",
+    "fisica": "prompt-classificacao-fis-v1.2.md",
+    "matematica": "prompt-classificacao-mat-v1.2.md",
+    "humanas": "prompt-classificacao-hum-v1.2.md",
+    "linguagens": "prompt-classificacao-ling-v1.2.md"
+  }
+}

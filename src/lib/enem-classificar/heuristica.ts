@@ -80,6 +80,13 @@ export function classificarPorKeywords(
       }
     }
 
+    for (const hint of entry.negativeHints ?? []) {
+      const n = normalizarTexto(hint);
+      if (n.length >= 3 && texto.includes(n)) {
+        score -= 1.5;
+      }
+    }
+
     if (score > 0) candidatos.push({ entry, score, hits });
   }
 

@@ -15,12 +15,16 @@ export type {
 } from "./types";
 
 export {
+  arquivoCatalogoAtivo,
   carregarCatalogoMateria,
   carregarConceitosCanonicos,
   catalogoUsaClassificadorV11,
   idFallbackNaoClassificado,
   indexarEscopos,
+  indexGlobalEscopos,
   labelMateriaCorpus,
+  limparCacheCatalogos,
+  limparCacheIndexGlobalEscopos,
   mapaConceitoPorEscopo,
   MATERIA_CORPUS_LABEL,
   MATERIAS_CORPUS,
@@ -28,11 +32,12 @@ export {
   prefixoCatalogoMateria,
   PREFIXO_MATERIA,
 } from "./load";
-export type { MateriaCorpusId } from "./load";
+export type { EscopoIndexGlobalEntry, MateriaCorpusId } from "./load";
 
 export { validarCatalogo, validarE0, validarE1, validarE2 } from "./validate";
 export {
   montarBlocoQuestaoV11,
   montarCatalogoReduzido,
   montarSystemClassificacaoV11,
+  montarSystemClassificacaoLinguagensV12,
 } from "./prompt-classificacao";

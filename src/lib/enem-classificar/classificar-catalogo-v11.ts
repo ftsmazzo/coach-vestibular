@@ -3,6 +3,7 @@ import {
   montarBlocoQuestaoV11,
   montarCatalogoReduzido,
   montarSystemClassificacaoV11,
+  montarSystemClassificacaoLinguagensV12,
 } from "@/lib/conhecimento-catalog/prompt-classificacao";
 import { idFallbackNaoClassificado } from "@/lib/conhecimento-catalog/load";
 import type {
@@ -164,11 +165,18 @@ export type QuestaoClassificacaoV11 = {
   gabarito?: string | null;
 };
 
-/** Classificação IA v1.1 — catálogo rico, multi-label, N3 livre, validação de IDs. */
+export type ClassificarV11Opts = {
+  instrucaoExtra?: string;
+  /** Linguagens: system prompt com rota pré-definida. */
+  rotaDisciplina?: string;
+};
+
+/** Classificação IA v1.1+ — catálogo rico, multi-label, N3 livre, validação de IDs. */
 export async function classificarLoteCatalogoV11(
   items: QuestaoClassificacaoV11[],
   catalog: MateriaCatalogo,
-  escopos: Map<string, EscopoIndexEntry>
+  escopos: Map<string, EscopoIndexEntry>,
+  opts?: ClassificarV11Opts
 ): Promise<Map<string, ResultadoClassificacao>> {
   const map = new Map<string, ResultadoClassificacao>();
   if (items.length === 0) return map;
@@ -180,12 +188,21 @@ export async function classificarLoteCatalogoV11(
 
   const blocos = items.map((q) => montarBlocoQuestaoV11(q)).join("\n\n");
 
+  const systemPrompt =
+    opts?.rotaDisciplina && catalog.materiaId === "linguagens"
+      ? montarSystemClassificacaoLinguagensV12(catalog, opts.rotaDisciplina)
+      : montarSystemClassificacaoV11(catalog);
+
+  const extra = opts?.instrucaoExtra?.trim();
+  const instrucaoExtra = extra ? `\n\n${extra}` : "";
+
   const data = await responsesComSchema<IaV11Lote>({
-    systemPrompt: montarSystemClassificacaoV11(catalog),
+    systemPrompt,
     instrucao:
-      `CATÁLOGO (escopos N2):\n${catalogoJson}\n\n` +
-      `Fallback se incerto: ${fallbackId}\n\n` +
-      `Classifique cada questão:\n${blocos}`,
+      `CATÁLOGO (escopos N2 da rota permitida):\n${catalogoJson}\n\n` +
+      `Fallback se incerto: ${fallbackId}\n` +
+      instrucaoExtra +
+      `\n\nClassifique cada questão:\n${blocos}`,
     schema: SCHEMA_V11,
     content: [],
   });

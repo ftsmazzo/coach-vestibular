@@ -13,6 +13,37 @@ import {
 
 const CATALOG_DIR = join(process.cwd(), "data", "conhecimento-catalog");
 
+type CatalogManifest = {
+  schemaVersion?: string;
+  active?: Record<string, string>;
+};
+
+let cacheManifest: CatalogManifest | null = null;
+
+function carregarManifest(): CatalogManifest {
+  if (cacheManifest) return cacheManifest;
+  try {
+    cacheManifest = readJson<CatalogManifest>("catalog-manifest.json");
+  } catch {
+    cacheManifest = { active: {} };
+  }
+  return cacheManifest;
+}
+
+function resolverArquivoCatalogo(materiaId: string): string {
+  const manifest = carregarManifest();
+  const fromManifest = manifest.active?.[materiaId];
+  if (fromManifest) return fromManifest;
+  if (materiaId === "biologia") return "biologia.json";
+  return `${materiaId}.json`;
+}
+
+/** Limpa cache de manifest e índice global (testes ou promoção de catálogo). */
+export function limparCacheCatalogos(): void {
+  cacheManifest = null;
+  limparCacheIndexGlobalEscopos();
+}
+
 /** Prefixo de IDs N2 por matéria (bio., quim., mat., …). */
 export const PREFIXO_MATERIA: Record<string, string> = Object.fromEntries(
   Object.values(CORPUS_MATERIA_CONFIG).map((c) => [c.materiaId, c.prefixo])
@@ -42,12 +73,16 @@ function readJson<T>(fileName: string): T {
 }
 
 export function carregarCatalogoMateria(materiaId: string): MateriaCatalogo {
-  const file = materiaId === "biologia" ? "biologia.json" : `${materiaId}.json`;
+  const file = resolverArquivoCatalogo(materiaId);
   const catalog = readJson<MateriaCatalogo>(file);
   if (catalog.materiaId !== materiaId) {
     throw new Error(`Catálogo ${file}: materiaId "${catalog.materiaId}" ≠ "${materiaId}"`);
   }
   return catalog;
+}
+
+export function arquivoCatalogoAtivo(materiaId: string): string {
+  return resolverArquivoCatalogo(materiaId);
 }
 
 export function carregarConceitosCanonicos(): ConceitosCanonicosFile {
@@ -73,6 +108,7 @@ export function indexarEscopos(catalog: MateriaCatalogo): Map<string, EscopoInde
           materiaId: catalog.materiaId,
           keywords: escopo.keywords ?? [],
           keywordsContexto: escopo.keywordsContexto ?? [],
+          negativeHints: escopo.negativeHints ?? [],
           descricao: escopo.descricao,
           exemplosEnunciado: escopo.exemplosEnunciado ?? [],
           naoConfundirCom: escopo.naoConfundirCom ?? [],
@@ -88,7 +124,7 @@ export function indexarEscopos(catalog: MateriaCatalogo): Map<string, EscopoInde
   return map;
 }
 
-/** Catálogo v1.1+ com campos ricos para classificação IA estruturada. */
+/** Catálogo v1.1+ (campos ricos) ou v1.2+ (negativeHints, regras completas). */
 export function catalogoUsaClassificadorV11(catalog: MateriaCatalogo): boolean {
   const v = catalog.schemaVersion ?? catalog.catalogVersion ?? "1.0.0";
   const [major, minor] = v.split(".").map(Number);
@@ -140,7 +176,7 @@ export function indexGlobalEscopos(): Map<string, EscopoIndexGlobalEntry> {
   return map;
 }
 
-/** Limpa cache (testes ou hot-reload de catálogo). */
+/** Limpa cache do índice global (testes ou hot-reload de catálogo). */
 export function limparCacheIndexGlobalEscopos(): void {
   cacheIndexGlobal = null;
 }

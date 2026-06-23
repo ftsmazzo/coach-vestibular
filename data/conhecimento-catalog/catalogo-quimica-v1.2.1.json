@@ -1,0 +1,1901 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.2.1",
+  "materiaId": "quimica",
+  "materiaLabel": "Química",
+  "areaEnem": "Ciências da Natureza",
+  "notas": "N0=área ENEM. Assunto=taxonomia Coach. N1=domínio. N2=escopo. N3=conhecimentoExigido livre por questão. Campos por escopo: descricao (cobre / NÃO cobre), keywords (fortes, peso 1.0), keywordsContexto (fracas, peso 0.4), exemplosEnunciado (referência semântica), negativeHints (termos que NÃO devem puxar a questão para cá), naoConfundirCom (IDs irmãos), regraDesempate, conceitoCanonic.",
+  "changelog": [
+    "1.2.1: Correção textual no changelog do fallback; sem mudança estrutural de IDs.",
+    "1.2.0: Padrão de schema unificado com Biologia v1.1+ — adicionados descricao, exemplosEnunciado, keywordsContexto, naoConfundirCom e regraDesempate a todos os escopos.",
+    "1.2.0: Adicionado negativeHints (exclusão por termo) nos escopos de maior confusão (catálise, pilha x eletrólise, combustão x combustíveis, isomeria, Arrhenius x funções inorgânicas).",
+    "1.2.0: +6 escopos cobrindo lacunas de vestibular: funções inorgânicas (ácidos/bases/sais/óxidos), propriedades coligativas, radioatividade, entropia/energia livre de Gibbs e Ka/Kb (ácidos e bases fracos). Total N2 = 67 (teto 80).",
+    "1.2.0: Correções — 'enanteômero' → 'enantiômero'; 'eletração forçada'/'eletração' → termos corretos de eletrólise; separadas keywords fortes de contexto.",
+    "1.2.0: confiancaMinima 0.35 → 0.45; documentadas regras de multiLabel, politicaN3, fallback e pesos; adicionado bucket quim.__nao_classificado."
+  ],
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "Aplica-se a N0–N2. Em N3 ver politicaN3.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2,
+      "nota": "Questões de Química frequentemente cruzam temas (ex.: combustão = termoquímica + ambiental; titulação = soluções + ácido-base). Retornar 1 primário e até 2 secundários com confiança própria."
+    },
+    "politicaN3": "A IA escolhe APENAS IDs em N0–N2. Em N3 (conhecimentoExigido) PROPÕE texto livre para revisão humana; N3 nunca é um ID.",
+    "regraDesempate": "Se ≥2 escopos irmãos disparam, aplicar negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confiança < confiancaMinima → quim.__nao_classificado.",
+    "pesos": {
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "exemplosEnunciado": "referência semântica (similaridade), não match literal",
+      "negativeHints": "penalidade: presença do termo reduz a probabilidade deste escopo"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "atomistica",
+      "assuntoLabel": "Atomística",
+      "dominios": [
+        {
+          "id": "quim.atomistica.estrutura",
+          "label": "Estrutura atômica",
+          "escopos": [
+            {
+              "id": "quim.atomistica.estrutura.particulas",
+              "label": "Prótons, nêutrons e elétrons",
+              "descricao": "Partículas subatômicas, número atômico, carga e identidade do elemento.",
+              "keywords": [
+                "próton",
+                "nêutron",
+                "elétron",
+                "número atômico",
+                "núcleo",
+                "carga elétrica"
+              ],
+              "keywordsContexto": [
+                "partícula subatômica",
+                "eletrosfera"
+              ],
+              "exemplosEnunciado": [
+                "Um átomo possui 17 prótons e 18 nêutrons; determine seu número de massa."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.atomistica.estrutura.isotopos",
+              "label": "Isótopos e massa atômica",
+              "descricao": "Isótopos, isóbaros, isótonos e cálculo de massa atômica média ponderada.",
+              "keywords": [
+                "isótopo",
+                "massa atômica",
+                "número de massa",
+                "isóbaro",
+                "isótono",
+                "abundância isotópica"
+              ],
+              "keywordsContexto": [
+                "média ponderada",
+                "u (unidade de massa)"
+              ],
+              "exemplosEnunciado": [
+                "Dadas as abundâncias de dois isótopos do cloro, calcule a massa atômica média do elemento."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.atomistica.estrutura.modelos_atomicos",
+              "label": "Modelos atômicos históricos",
+              "descricao": "Evolução dos modelos (Dalton, Thomson, Rutherford, Bohr) e seus experimentos.",
+              "keywords": [
+                "modelo atômico",
+                "Dalton",
+                "Thomson",
+                "Rutherford",
+                "Bohr",
+                "pudim de passas",
+                "experimento de Rutherford"
+              ],
+              "keywordsContexto": [
+                "salto quântico",
+                "núcleo denso"
+              ],
+              "exemplosEnunciado": [
+                "O experimento de Rutherford com a folha de ouro levou à conclusão de que o átomo possui..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "quim.atomistica.tabela_periodica",
+          "label": "Tabela periódica",
+          "escopos": [
+            {
+              "id": "quim.atomistica.tabela_periodica.organizacao",
+              "label": "Organização e famílias",
+              "descricao": "Organização da tabela em períodos e grupos/famílias e suas propriedades gerais.",
+              "keywords": [
+                "tabela periódica",
+                "família",
+                "grupo",
+                "período",
+                "metais alcalinos",
+                "gases nobres",
+                "halogênios"
+              ],
+              "keywordsContexto": [
+                "coluna",
+                "linha"
+              ],
+              "exemplosEnunciado": [
+                "Elementos do grupo 1 (metais alcalinos) compartilham qual característica na camada de valência?"
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.atomistica.tabela_periodica.tendencias",
+              "label": "Propriedades periódicas",
+              "descricao": "Variação de raio atômico, eletronegatividade, energia de ionização e afinidade eletrônica ao longo da tabela.",
+              "keywords": [
+                "eletronegatividade",
+                "raio atômico",
+                "energia de ionização",
+                "afinidade eletrônica",
+                "propriedade periódica",
+                "tendência periódica"
+              ],
+              "keywordsContexto": [
+                "caráter metálico"
+              ],
+              "exemplosEnunciado": [
+                "Ao longo de um período, da esquerda para a direita, o raio atômico tende a..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.atomistica.tabela_periodica.metaloides",
+              "label": "Metais, ametais e metaloides",
+              "descricao": "Classificação dos elementos por caráter (metal, ametal, semimetal) e propriedades associadas.",
+              "keywords": [
+                "metal",
+                "ametal",
+                "metaloide",
+                "semimetal",
+                "caráter metálico",
+                "condutividade elétrica"
+              ],
+              "keywordsContexto": [
+                "brilho",
+                "maleabilidade"
+              ],
+              "exemplosEnunciado": [
+                "O silício é classificado como semimetal por apresentar condutividade intermediária entre..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "quim.atomistica.eletrons",
+          "label": "Distribuição eletrônica",
+          "escopos": [
+            {
+              "id": "quim.atomistica.eletrons.configuracao",
+              "label": "Configuração eletrônica e orbitais",
+              "descricao": "Distribuição eletrônica (Linus Pauling), subníveis, orbitais e camada de valência.",
+              "keywords": [
+                "configuração eletrônica",
+                "distribuição eletrônica",
+                "orbital",
+                "subnível",
+                "camada de valência",
+                "diagrama de Linus Pauling"
+              ],
+              "keywordsContexto": [
+                "número quântico",
+                "spin"
+              ],
+              "exemplosEnunciado": [
+                "Faça a distribuição eletrônica do elemento de número atômico 26 e indique os elétrons de valência."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.atomistica.eletrons.ions",
+              "label": "Formação de íons",
+              "descricao": "Formação de cátions e ânions, estabilidade (regra do octeto) e relação com a família.",
+              "keywords": [
+                "íon",
+                "cátion",
+                "ânion",
+                "regra do octeto",
+                "perda de elétrons",
+                "ganho de elétrons"
+              ],
+              "keywordsContexto": [
+                "valência",
+                "estabilidade eletrônica"
+              ],
+              "exemplosEnunciado": [
+                "Para atingir a configuração de gás nobre, um átomo do grupo 2 tende a formar um íon de carga..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "quim.atomistica.radioatividade",
+          "label": "Radioatividade",
+          "escopos": [
+            {
+              "id": "quim.atomistica.radioatividade.decaimento",
+              "label": "Emissões, decaimento e meia-vida",
+              "descricao": "Emissões alfa/beta/gama, leis do decaimento, meia-vida, fissão e fusão nuclear. Compartilha conceito com Física Moderna.",
+              "conceitoCanonic": "radioatividade",
+              "keywords": [
+                "radioatividade",
+                "emissão alfa",
+                "emissão beta",
+                "emissão gama",
+                "meia-vida",
+                "decaimento radioativo",
+                "fissão nuclear",
+                "fusão nuclear"
+              ],
+              "keywordsContexto": [
+                "isótopo radioativo",
+                "transmutação",
+                "carbono-14"
+              ],
+              "exemplosEnunciado": [
+                "Um isótopo com meia-vida de 8 dias parte de 80 g; qual a massa restante após 24 dias?",
+                "Na emissão de uma partícula alfa, o número atômico do elemento varia em..."
+              ],
+              "naoConfundirCom": [
+                "fis.fisica_moderna"
+              ],
+              "regraDesempate": "Se o foco é decaimento/meia-vida/equação nuclear → aqui. Se é dualidade onda-partícula, efeito fotoelétrico ou relatividade → Física Moderna.",
+              "negativeHints": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "ligacoes",
+      "assuntoLabel": "Ligações químicas",
+      "dominios": [
+        {
+          "id": "quim.ligacoes.tipos",
+          "label": "Tipos de ligação",
+          "escopos": [
+            {
+              "id": "quim.ligacoes.tipos.ionica",
+              "label": "Ligação iônica",
+              "descricao": "Ligação por transferência de elétrons entre metal e ametal; retículo/cristal iônico e propriedades.",
+              "keywords": [
+                "ligação iônica",
+                "transferência de elétrons",
+                "cristal iônico",
+                "retículo cristalino",
+                "composto iônico"
+              ],
+              "keywordsContexto": [
+                "sal",
+                "ponto de fusão alto"
+              ],
+              "exemplosEnunciado": [
+                "O alto ponto de fusão do NaCl é explicado pela forte atração no retículo..."
+              ],
+              "naoConfundirCom": [
+                "quim.ligacoes.tipos.covalente"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.ligacoes.tipos.covalente",
+              "label": "Ligação covalente",
+              "descricao": "Ligação por compartilhamento de elétrons entre ametais; ligações simples/dupla/tripla e dativa.",
+              "keywords": [
+                "ligação covalente",
+                "compartilhamento de elétrons",
+                "dupla ligação",
+                "tripla ligação",
+                "ligação dativa",
+                "molécula"
+              ],
+              "keywordsContexto": [
+                "covalente coordenada",
+                "fórmula estrutural"
+              ],
+              "exemplosEnunciado": [
+                "Na molécula de N2, os átomos compartilham três pares de elétrons formando uma ligação..."
+              ],
+              "naoConfundirCom": [
+                "quim.ligacoes.tipos.ionica"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.ligacoes.tipos.metalica",
+              "label": "Ligação metálica",
+              "descricao": "Modelo do mar de elétrons e propriedades dos metais (condutividade, maleabilidade, brilho).",
+              "keywords": [
+                "ligação metálica",
+                "mar de elétrons",
+                "nuvem eletrônica",
+                "condutor metálico",
+                "liga metálica"
+              ],
+              "keywordsContexto": [
+                "maleabilidade",
+                "ductilidade"
+              ],
+              "exemplosEnunciado": [
+                "A boa condutividade elétrica dos metais decorre da mobilidade dos elétrons no..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "quim.ligacoes.geometria",
+          "label": "Geometria molecular",
+          "escopos": [
+            {
+              "id": "quim.ligacoes.geometria.vsepr",
+              "label": "Geometria e VSEPR",
+              "descricao": "Previsão da geometria molecular por repulsão dos pares eletrônicos (linear, angular, trigonal, tetraédrica, piramidal).",
+              "keywords": [
+                "geometria molecular",
+                "VSEPR",
+                "linear",
+                "angular",
+                "trigonal plana",
+                "tetraédrica",
+                "piramidal"
+              ],
+              "keywordsContexto": [
+                "pares de elétrons",
+                "ângulo de ligação"
+              ],
+              "exemplosEnunciado": [
+                "A molécula de água apresenta geometria angular devido aos dois pares de elétrons..."
+              ],
+              "naoConfundirCom": [
+                "quim.ligacoes.geometria.polaridade"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.ligacoes.geometria.polaridade",
+              "label": "Polaridade e dipolo",
+              "descricao": "Polaridade de ligações e de moléculas; momento dipolar resultante e relação com a geometria.",
+              "keywords": [
+                "polaridade",
+                "dipolo",
+                "molécula polar",
+                "molécula apolar",
+                "momento dipolar"
+              ],
+              "keywordsContexto": [
+                "vetor dipolo",
+                "diferença de eletronegatividade"
+              ],
+              "exemplosEnunciado": [
+                "O CO2 é apolar apesar das ligações polares porque sua geometria linear faz os dipolos se..."
+              ],
+              "naoConfundirCom": [
+                "quim.ligacoes.geometria.vsepr"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.ligacoes.geometria.hibridizacao",
+              "label": "Hibridização",
+              "descricao": "Hibridização de orbitais (sp, sp2, sp3) e relação com geometria e tipo de ligação.",
+              "keywords": [
+                "hibridização",
+                "sp3",
+                "sp2",
+                "sp",
+                "orbital híbrido"
+              ],
+              "keywordsContexto": [
+                "ligação sigma",
+                "ligação pi"
+              ],
+              "exemplosEnunciado": [
+                "O carbono em uma ligação dupla apresenta hibridização do tipo..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "quim.ligacoes.interacoes",
+          "label": "Forças intermoleculares",
+          "escopos": [
+            {
+              "id": "quim.ligacoes.interacoes.ponte_hidrogenio",
+              "label": "Ligações de hidrogênio",
+              "descricao": "Ligações de hidrogênio e seu efeito em propriedades físicas (ebulição, solubilidade, tensão superficial).",
+              "keywords": [
+                "ligação de hidrogênio",
+                "ponte de hidrogênio",
+                "ponto de ebulição elevado",
+                "tensão superficial"
+              ],
+              "keywordsContexto": [
+                "água",
+                "F-H, O-H, N-H"
+              ],
+              "exemplosEnunciado": [
+                "O ponto de ebulição anormalmente alto da água decorre das fortes ligações de..."
+              ],
+              "naoConfundirCom": [
+                "quim.ligacoes.interacoes.van_der_waals"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.ligacoes.interacoes.van_der_waals",
+              "label": "Forças de London e dipolo-dipolo",
+              "descricao": "Forças de van der Waals: dipolo induzido (London) e dipolo permanente; comparação de intensidade.",
+              "keywords": [
+                "forças de London",
+                "dipolo induzido",
+                "dipolo-dipolo",
+                "van der Waals",
+                "forças intermoleculares"
+              ],
+              "keywordsContexto": [
+                "dipolo permanente",
+                "massa molar e ebulição"
+              ],
+              "exemplosEnunciado": [
+                "Entre moléculas apolares, a única interação possível é a força de dipolo..."
+              ],
+              "naoConfundirCom": [
+                "quim.ligacoes.interacoes.ponte_hidrogenio"
+              ],
+              "negativeHints": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "inorganica",
+      "assuntoLabel": "Funções inorgânicas",
+      "dominios": [
+        {
+          "id": "quim.inorganica.funcoes",
+          "label": "Ácidos, bases, sais e óxidos",
+          "escopos": [
+            {
+              "id": "quim.inorganica.funcoes.acidos_bases",
+              "label": "Ácidos e bases — classificação e nomenclatura",
+              "descricao": "CLASSIFICAÇÃO e nomenclatura das funções ácido e base inorgânicas (força, número de H+/OH-, nomes). NÃO cobre cálculo de pH nem teorias (ver assunto acidos_bases).",
+              "keywords": [
+                "ácido inorgânico",
+                "base inorgânica",
+                "hidróxido",
+                "hidrácido",
+                "oxiácido",
+                "nomenclatura de ácidos",
+                "força do ácido"
+              ],
+              "keywordsContexto": [
+                "HCl",
+                "H2SO4",
+                "NaOH"
+              ],
+              "exemplosEnunciado": [
+                "Classifique o H2SO4 quanto ao número de hidrogênios ionizáveis e à presença de oxigênio.",
+                "Dê o nome do composto Ca(OH)2 segundo as regras de nomenclatura inorgânica."
+              ],
+              "naoConfundirCom": [
+                "quim.acidos_bases.teorias.ph_poh",
+                "quim.acidos_bases.teorias.arrhenius"
+              ],
+              "negativeHints": [
+                "cálculo de pH",
+                "escala de pH",
+                "Bronsted",
+                "par conjugado"
+              ],
+              "regraDesempate": "Se o foco é CLASSIFICAR/NOMEAR a substância → aqui. Se é teoria ácido-base ou cálculo de pH/pOH → assunto acidos_bases."
+            },
+            {
+              "id": "quim.inorganica.funcoes.sais_oxidos",
+              "label": "Sais e óxidos — classificação e reações",
+              "descricao": "Sais e óxidos (ácidos, básicos, anfóteros, neutros), nomenclatura e reações de formação (salificação, óxido + água).",
+              "keywords": [
+                "sal",
+                "óxido",
+                "óxido ácido",
+                "óxido básico",
+                "óxido anfótero",
+                "reação de salificação",
+                "anidrido"
+              ],
+              "keywordsContexto": [
+                "NaCl",
+                "CO2",
+                "CaO",
+                "neutralização gera sal"
+              ],
+              "exemplosEnunciado": [
+                "O CO2 reage com água formando ácido carbônico, comportando-se como óxido...",
+                "Indique o sal formado na reação entre ácido clorídrico e hidróxido de sódio."
+              ],
+              "naoConfundirCom": [
+                "quim.acidos_bases.reacoes.neutralizacao"
+              ],
+              "regraDesempate": "Se o foco é classificar/nomear o sal ou óxido → aqui. Se é a reação de neutralização e seus cálculos → acidos_bases.reacoes.neutralizacao.",
+              "negativeHints": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "estequiometria",
+      "assuntoLabel": "Estequiometria",
+      "dominios": [
+        {
+          "id": "quim.estequiometria.mol",
+          "label": "Mol e massa",
+          "escopos": [
+            {
+              "id": "quim.estequiometria.mol.avogadro",
+              "label": "Mol e constante de Avogadro",
+              "descricao": "Conceito de mol, constante de Avogadro e conversão entre número de partículas e quantidade de matéria.",
+              "keywords": [
+                "mol",
+                "constante de Avogadro",
+                "quantidade de matéria",
+                "número de mols",
+                "6,02 x 10^23"
+              ],
+              "keywordsContexto": [
+                "partículas",
+                "entidades elementares"
+              ],
+              "exemplosEnunciado": [
+                "Quantas moléculas há em 2 mol de água, considerando a constante de Avogadro?"
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.estequiometria.mol.massa_molar",
+              "label": "Massa molar e conversões",
+              "descricao": "Massa molar e conversões massa↔mol↔partículas.",
+              "keywords": [
+                "massa molar",
+                "g/mol",
+                "conversão mol-massa",
+                "massa molecular"
+              ],
+              "keywordsContexto": [
+                "gramas por mol"
+              ],
+              "exemplosEnunciado": [
+                "Qual a massa, em gramas, de 0,5 mol de CO2 (massa molar 44 g/mol)?"
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "quim.estequiometria.reacoes",
+          "label": "Reações estequiométricas",
+          "escopos": [
+            {
+              "id": "quim.estequiometria.reacoes.balanceamento",
+              "label": "Balanceamento de equações",
+              "descricao": "Balanceamento de equações químicas e leitura de proporções estequiométricas (coeficientes).",
+              "keywords": [
+                "balanceamento",
+                "coeficiente estequiométrico",
+                "equação química",
+                "proporção em mols",
+                "lei de Lavoisier"
+              ],
+              "keywordsContexto": [
+                "reagente",
+                "produto",
+                "conservação de massa"
+              ],
+              "exemplosEnunciado": [
+                "Após balancear a combustão do propano, qual a razão entre mols de O2 e de CO2?"
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.estequiometria.reacoes.limitante",
+              "label": "Reagente limitante e excesso",
+              "descricao": "Identificação do reagente limitante e do excesso; cálculo da quantidade de produto a partir do limitante.",
+              "keywords": [
+                "reagente limitante",
+                "reagente em excesso",
+                "limitante",
+                "sobra de reagente"
+              ],
+              "keywordsContexto": [
+                "proporção estequiométrica",
+                "rendimento teórico"
+              ],
+              "exemplosEnunciado": [
+                "Misturando 3 mol de H2 com 1 mol de N2, qual é o reagente limitante na síntese da amônia?"
+              ],
+              "naoConfundirCom": [
+                "quim.estequiometria.reacoes.pureza"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.estequiometria.reacoes.pureza",
+              "label": "Pureza e rendimento",
+              "descricao": "Cálculos com pureza de amostra e rendimento percentual da reação.",
+              "keywords": [
+                "pureza",
+                "rendimento",
+                "amostra impura",
+                "rendimento percentual",
+                "grau de pureza"
+              ],
+              "keywordsContexto": [
+                "impureza",
+                "rendimento real"
+              ],
+              "exemplosEnunciado": [
+                "Uma amostra de calcário com 80% de pureza é aquecida; calcule a massa de CaO obtida."
+              ],
+              "naoConfundirCom": [
+                "quim.estequiometria.reacoes.limitante"
+              ],
+              "negativeHints": []
+            }
+          ]
+        },
+        {
+          "id": "quim.estequiometria.gases",
+          "label": "Gases e volume molar",
+          "escopos": [
+            {
+              "id": "quim.estequiometria.gases.volume_molar",
+              "label": "Volume molar e CNTP",
+              "descricao": "Volume molar dos gases nas CNTP (22,4 L/mol) e relação volume↔mol em reações.",
+              "keywords": [
+                "volume molar",
+                "CNTP",
+                "22,4 L",
+                "litros de gás",
+                "volume nas CNTP"
+              ],
+              "keywordsContexto": [
+                "condições normais",
+                "gás ideal"
+              ],
+              "exemplosEnunciado": [
+                "Qual o volume ocupado por 2 mol de gás nas CNTP?"
+              ],
+              "naoConfundirCom": [
+                "quim.estequiometria.gases.lei_gases"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.estequiometria.gases.lei_gases",
+              "label": "Lei dos gases (PV=nRT)",
+              "descricao": "Equação de Clapeyron e transformações gasosas (relação entre P, V, T e n) fora das CNTP.",
+              "keywords": [
+                "PV=nRT",
+                "equação de Clapeyron",
+                "transformação gasosa",
+                "constante dos gases",
+                "lei geral dos gases"
+              ],
+              "keywordsContexto": [
+                "pressão",
+                "volume",
+                "temperatura absoluta"
+              ],
+              "exemplosEnunciado": [
+                "Calcule a pressão de 2 mol de gás ocupando 10 L a 300 K usando a equação de Clapeyron."
+              ],
+              "naoConfundirCom": [
+                "quim.estequiometria.gases.volume_molar"
+              ],
+              "negativeHints": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "solucoes",
+      "assuntoLabel": "Soluções",
+      "dominios": [
+        {
+          "id": "quim.solucoes.concentracao",
+          "label": "Concentração",
+          "escopos": [
+            {
+              "id": "quim.solucoes.concentracao.molaridade",
+              "label": "Molaridade e concentração comum",
+              "descricao": "Concentração em quantidade de matéria (mol/L), concentração comum (g/L) e ppm.",
+              "keywords": [
+                "molaridade",
+                "concentração em mol/L",
+                "concentração comum",
+                "g/L",
+                "ppm",
+                "concentração molar"
+              ],
+              "keywordsContexto": [
+                "soluto",
+                "solvente",
+                "mol/L"
+              ],
+              "exemplosEnunciado": [
+                "Qual a molaridade de uma solução com 4 g de NaOH dissolvidos em 500 mL?"
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.solucoes.concentracao.titulacao",
+              "label": "Titulação",
+              "descricao": "Análise volumétrica: titulação ácido-base, ponto de equivalência e uso de indicadores para determinar concentração.",
+              "keywords": [
+                "titulação",
+                "ponto de equivalência",
+                "volumetria",
+                "bureta",
+                "concentração desconhecida"
+              ],
+              "keywordsContexto": [
+                "indicador",
+                "viragem"
+              ],
+              "exemplosEnunciado": [
+                "Foram gastos 20 mL de NaOH 0,1 mol/L para neutralizar 10 mL de HCl; calcule a concentração do ácido."
+              ],
+              "naoConfundirCom": [
+                "quim.acidos_bases.reacoes.neutralizacao",
+                "quim.solucoes.concentracao.molaridade"
+              ],
+              "regraDesempate": "Se há volume gasto/ponto de equivalência para DESCOBRIR concentração → titulação. Se é só a reação ácido+base → neutralizacao.",
+              "negativeHints": []
+            },
+            {
+              "id": "quim.solucoes.concentracao.misturas",
+              "label": "Mistura de soluções",
+              "descricao": "Cálculo da concentração final ao misturar soluções (mesmo soluto, com ou sem reação).",
+              "keywords": [
+                "mistura de soluções",
+                "concentração final",
+                "mistura de mesmo soluto",
+                "volume total"
+              ],
+              "keywordsContexto": [
+                "soma de volumes"
+              ],
+              "exemplosEnunciado": [
+                "Misturando 200 mL de solução 0,5 mol/L com 300 mL de 0,2 mol/L do mesmo sal, qual a concentração final?"
+              ],
+              "naoConfundirCom": [
+                "quim.solucoes.diluicao.formula"
+              ],
+              "negativeHints": []
+            }
+          ]
+        },
+        {
+          "id": "quim.solucoes.diluicao",
+          "label": "Diluição",
+          "escopos": [
+            {
+              "id": "quim.solucoes.diluicao.formula",
+              "label": "Diluição (C1V1=C2V2)",
+              "descricao": "Diluição de soluções pela adição de solvente, mantendo a quantidade de soluto (C1V1=C2V2).",
+              "keywords": [
+                "diluição",
+                "C1V1=C2V2",
+                "adição de solvente",
+                "diluir solução"
+              ],
+              "keywordsContexto": [
+                "concentração diminui",
+                "volume aumenta"
+              ],
+              "exemplosEnunciado": [
+                "Que volume de água deve ser adicionado a 100 mL de solução 0,4 mol/L para torná-la 0,1 mol/L?"
+              ],
+              "naoConfundirCom": [
+                "quim.solucoes.concentracao.misturas"
+              ],
+              "negativeHints": []
+            }
+          ]
+        },
+        {
+          "id": "quim.solucoes.solubilidade",
+          "label": "Solubilidade e precipitação",
+          "escopos": [
+            {
+              "id": "quim.solucoes.solubilidade.produto_ionico",
+              "label": "Solubilidade, curvas e Kps",
+              "descricao": "Coeficiente de solubilidade, curvas de solubilidade (saturada/insaturada/supersaturada), produto de solubilidade (Kps) e precipitação.",
+              "keywords": [
+                "solubilidade",
+                "Kps",
+                "produto de solubilidade",
+                "curva de solubilidade",
+                "solução saturada",
+                "precipitação"
+              ],
+              "keywordsContexto": [
+                "supersaturada",
+                "coeficiente de solubilidade"
+              ],
+              "exemplosEnunciado": [
+                "Pela curva de solubilidade, ao resfriar uma solução saturada de KNO3, ocorre..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.solucoes.solubilidade.coloides",
+              "label": "Coloides e suspensões",
+              "descricao": "Classificação de dispersões (solução, coloide, suspensão) e efeito Tyndall.",
+              "keywords": [
+                "coloide",
+                "suspensão",
+                "dispersão",
+                "efeito Tyndall",
+                "emulsão"
+              ],
+              "keywordsContexto": [
+                "tamanho da partícula dispersa"
+              ],
+              "exemplosEnunciado": [
+                "A dispersão da luz por um feixe que atravessa o leite caracteriza o efeito..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "quim.solucoes.coligativas",
+          "label": "Propriedades coligativas",
+          "escopos": [
+            {
+              "id": "quim.solucoes.coligativas.propriedades",
+              "label": "Tonoscopia, ebulioscopia, crioscopia e osmose",
+              "descricao": "Efeitos coligativos do soluto não volátil: abaixamento da pressão de vapor, elevação do ponto de ebulição, abaixamento do ponto de congelamento e pressão osmótica.",
+              "keywords": [
+                "propriedade coligativa",
+                "tonoscopia",
+                "ebulioscopia",
+                "crioscopia",
+                "pressão osmótica",
+                "osmometria",
+                "pressão de vapor"
+              ],
+              "keywordsContexto": [
+                "soluto não volátil",
+                "anticongelante",
+                "número de partículas"
+              ],
+              "exemplosEnunciado": [
+                "A adição de sal à água eleva seu ponto de ebulição; esse efeito coligativo é a...",
+                "Por que se usa etilenoglicol como anticongelante no radiador de carros?"
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "termoquimica",
+      "assuntoLabel": "Termoquímica",
+      "dominios": [
+        {
+          "id": "quim.termoquimica.entalpia",
+          "label": "Entalpia e calor de reação",
+          "escopos": [
+            {
+              "id": "quim.termoquimica.entalpia.reacao",
+              "label": "Entalpia de reação",
+              "descricao": "Variação de entalpia (ΔH), reações exotérmicas/endotérmicas e diagramas de energia.",
+              "keywords": [
+                "entalpia",
+                "variação de entalpia",
+                "delta H",
+                "exotérmica",
+                "endotérmica",
+                "calor de reação",
+                "diagrama de energia"
+              ],
+              "keywordsContexto": [
+                "liberação de calor",
+                "absorção de calor"
+              ],
+              "exemplosEnunciado": [
+                "Em uma reação com ΔH negativo, a energia dos produtos em relação aos reagentes é..."
+              ],
+              "naoConfundirCom": [
+                "quim.termoquimica.espontaneidade.entropia_gibbs"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.termoquimica.entalpia.lei_hess",
+              "label": "Lei de Hess",
+              "descricao": "Cálculo de ΔH por soma de etapas (Lei de Hess) e por entalpias de formação ou energias de ligação.",
+              "keywords": [
+                "lei de Hess",
+                "entalpia de formação",
+                "energia de ligação",
+                "ciclo termoquímico",
+                "soma de etapas"
+              ],
+              "keywordsContexto": [
+                "caminho da reação",
+                "ΔH total"
+              ],
+              "exemplosEnunciado": [
+                "Dadas as entalpias de três reações intermediárias, calcule o ΔH da reação global pela Lei de Hess."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.termoquimica.entalpia.combustao",
+              "label": "Combustão e poder calorífico",
+              "descricao": "Calor de combustão e poder calorífico de combustíveis. NÃO cobre o contexto ambiental/energético do combustível (ver ambiental.combustiveis).",
+              "keywords": [
+                "calor de combustão",
+                "poder calorífico",
+                "entalpia de combustão",
+                "combustão completa"
+              ],
+              "keywordsContexto": [
+                "energia liberada por grama",
+                "comparação de combustíveis"
+              ],
+              "exemplosEnunciado": [
+                "Compare o poder calorífico do etanol e da gasolina a partir de suas entalpias de combustão."
+              ],
+              "naoConfundirCom": [
+                "quim.ambiental.combustiveis.fossil",
+                "quim.ambiental.combustiveis.renovavel"
+              ],
+              "negativeHints": [
+                "emissão de CO2",
+                "impacto ambiental",
+                "matriz energética"
+              ],
+              "regraDesempate": "Se o foco é CALCULAR energia/calor liberado → aqui. Se é a fonte/impacto ambiental do combustível → ambiental.combustiveis."
+            }
+          ]
+        },
+        {
+          "id": "quim.termoquimica.espontaneidade",
+          "label": "Entropia e espontaneidade",
+          "escopos": [
+            {
+              "id": "quim.termoquimica.espontaneidade.entropia_gibbs",
+              "label": "Entropia e energia livre de Gibbs",
+              "descricao": "Entropia (ΔS), energia livre de Gibbs (ΔG = ΔH − TΔS) e critério de espontaneidade de processos.",
+              "keywords": [
+                "entropia",
+                "energia livre de Gibbs",
+                "delta G",
+                "delta S",
+                "espontaneidade",
+                "processo espontâneo"
+              ],
+              "keywordsContexto": [
+                "desordem",
+                "ΔG negativo"
+              ],
+              "exemplosEnunciado": [
+                "Uma reação com ΔH > 0 e ΔS > 0 será espontânea em quais condições de temperatura?"
+              ],
+              "naoConfundirCom": [
+                "quim.termoquimica.entalpia.reacao"
+              ],
+              "negativeHints": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "cinetica",
+      "assuntoLabel": "Cinética química",
+      "dominios": [
+        {
+          "id": "quim.cinetica.velocidade",
+          "label": "Velocidade de reação",
+          "escopos": [
+            {
+              "id": "quim.cinetica.velocidade.fatores",
+              "label": "Fatores que afetam a velocidade",
+              "descricao": "Efeito de temperatura, concentração, superfície de contato, pressão e catalisador sobre a velocidade da reação.",
+              "keywords": [
+                "velocidade de reação",
+                "fatores da velocidade",
+                "superfície de contato",
+                "efeito da temperatura",
+                "efeito da concentração"
+              ],
+              "keywordsContexto": [
+                "colisões efetivas",
+                "teoria das colisões"
+              ],
+              "exemplosEnunciado": [
+                "Por que um comprimido efervescente triturado reage mais rápido que inteiro?"
+              ],
+              "naoConfundirCom": [
+                "quim.cinetica.velocidade.catalise"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.cinetica.velocidade.lei_velocidade",
+              "label": "Lei de velocidade e ordem de reação",
+              "descricao": "Lei de velocidade, ordem de reação e determinação da constante de velocidade a partir de dados experimentais.",
+              "keywords": [
+                "lei de velocidade",
+                "ordem de reação",
+                "constante de velocidade",
+                "etapa determinante",
+                "molecularidade"
+              ],
+              "keywordsContexto": [
+                "velocidade inicial",
+                "expoente da concentração"
+              ],
+              "exemplosEnunciado": [
+                "A partir da tabela de velocidades iniciais, determine a ordem da reação em relação ao reagente A."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.cinetica.velocidade.catalise",
+              "label": "Catálise e energia de ativação",
+              "descricao": "Ação do catalisador, energia de ativação e complexo ativado. Catálise enzimática em contexto químico.",
+              "keywords": [
+                "catalisador",
+                "catálise",
+                "energia de ativação",
+                "complexo ativado",
+                "inibidor"
+              ],
+              "keywordsContexto": [
+                "abaixa a energia de ativação",
+                "catálise enzimática"
+              ],
+              "exemplosEnunciado": [
+                "O catalisador aumenta a velocidade da reação porque oferece um caminho com menor energia de..."
+              ],
+              "naoConfundirCom": [
+                "quim.cinetica.velocidade.fatores"
+              ],
+              "negativeHints": [
+                "estrutura da enzima",
+                "sítio ativo",
+                "metabolismo celular"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "equilibrio",
+      "assuntoLabel": "Equilíbrio químico",
+      "dominios": [
+        {
+          "id": "quim.equilibrio.constante",
+          "label": "Constante de equilíbrio",
+          "escopos": [
+            {
+              "id": "quim.equilibrio.constante.kc_kp",
+              "label": "Kc, Kp e grau de equilíbrio",
+              "descricao": "Constante de equilíbrio (Kc, Kp), expressão a partir da equação e cálculo do grau de equilíbrio.",
+              "keywords": [
+                "constante de equilíbrio",
+                "Kc",
+                "Kp",
+                "expressão da constante",
+                "grau de equilíbrio",
+                "quociente de reação"
+              ],
+              "keywordsContexto": [
+                "concentração no equilíbrio",
+                "reação reversível"
+              ],
+              "exemplosEnunciado": [
+                "Escreva a expressão de Kc para a reação de síntese da amônia em equilíbrio."
+              ],
+              "naoConfundirCom": [
+                "quim.equilibrio.constante.le_chatelier"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.equilibrio.constante.le_chatelier",
+              "label": "Princípio de Le Chatelier",
+              "descricao": "Deslocamento do equilíbrio por variação de concentração, pressão/volume e temperatura.",
+              "keywords": [
+                "Le Chatelier",
+                "deslocamento de equilíbrio",
+                "perturbação do equilíbrio",
+                "efeito da pressão",
+                "efeito da temperatura no equilíbrio"
+              ],
+              "keywordsContexto": [
+                "sentido direto",
+                "sentido inverso"
+              ],
+              "exemplosEnunciado": [
+                "Ao aumentar a pressão sobre um equilíbrio gasoso, ele se desloca no sentido de menor número de..."
+              ],
+              "naoConfundirCom": [
+                "quim.equilibrio.constante.kc_kp"
+              ],
+              "negativeHints": []
+            }
+          ]
+        },
+        {
+          "id": "quim.equilibrio.ionico",
+          "label": "Equilíbrio iônico",
+          "escopos": [
+            {
+              "id": "quim.equilibrio.ionico.kw",
+              "label": "Autoionização da água e Kw",
+              "descricao": "Autoionização da água, produto iônico Kw e relação com pH/pOH neutros.",
+              "keywords": [
+                "autoionização da água",
+                "Kw",
+                "produto iônico da água",
+                "ionização da água"
+              ],
+              "keywordsContexto": [
+                "10^-14",
+                "neutralidade"
+              ],
+              "exemplosEnunciado": [
+                "A 25 °C, o produto iônico da água vale 10^-14; determine a [H+] de uma solução neutra."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.equilibrio.ionico.ka_kb",
+              "label": "Ka, Kb e ácidos/bases fracos",
+              "descricao": "Constantes de ionização (Ka, Kb), grau de ionização e força de ácidos e bases fracos.",
+              "keywords": [
+                "Ka",
+                "Kb",
+                "constante de ionização",
+                "ácido fraco",
+                "base fraca",
+                "grau de ionização"
+              ],
+              "keywordsContexto": [
+                "equilíbrio de ionização",
+                "força relativa"
+              ],
+              "exemplosEnunciado": [
+                "Quanto maior o Ka de um ácido, ____ sua força; calcule a [H+] de um ácido fraco com Ka conhecido."
+              ],
+              "naoConfundirCom": [
+                "quim.acidos_bases.teorias.ph_poh"
+              ],
+              "regraDesempate": "Se há constante de equilíbrio Ka/Kb e grau de ionização → aqui. Se é apenas escala/cálculo direto de pH de ácido forte → acidos_bases.ph_poh.",
+              "negativeHints": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "acidos_bases",
+      "assuntoLabel": "Ácidos e bases (teoria e pH)",
+      "dominios": [
+        {
+          "id": "quim.acidos_bases.teorias",
+          "label": "Teorias ácido-base",
+          "escopos": [
+            {
+              "id": "quim.acidos_bases.teorias.arrhenius",
+              "label": "Arrhenius e Bronsted-Lowry",
+              "descricao": "Teorias ácido-base (Arrhenius, Bronsted-Lowry, Lewis) e pares conjugados. NÃO cobre classificação/nomenclatura das funções (ver inorganica).",
+              "keywords": [
+                "Arrhenius",
+                "Bronsted-Lowry",
+                "Lewis",
+                "doador de próton",
+                "receptor de próton",
+                "par conjugado",
+                "teoria ácido-base"
+              ],
+              "keywordsContexto": [
+                "ácido conjugado",
+                "base conjugada"
+              ],
+              "exemplosEnunciado": [
+                "Segundo Bronsted-Lowry, na reação NH3 + H2O, a água atua como ácido por..."
+              ],
+              "naoConfundirCom": [
+                "quim.inorganica.funcoes.acidos_bases"
+              ],
+              "negativeHints": [
+                "nomenclatura",
+                "classificar quanto ao número de hidrogênios"
+              ]
+            },
+            {
+              "id": "quim.acidos_bases.teorias.ph_poh",
+              "label": "pH, pOH e escala",
+              "descricao": "Cálculo de pH e pOH, escala de acidez/basicidade e uso de indicadores.",
+              "keywords": [
+                "pH",
+                "pOH",
+                "escala de pH",
+                "cálculo de pH",
+                "indicador ácido-base",
+                "faixa de viragem"
+              ],
+              "keywordsContexto": [
+                "logaritmo",
+                "acidez"
+              ],
+              "exemplosEnunciado": [
+                "Uma solução tem [H+] = 10^-3 mol/L; determine seu pH e classifique-a."
+              ],
+              "naoConfundirCom": [
+                "quim.equilibrio.ionico.ka_kb"
+              ],
+              "negativeHints": []
+            }
+          ]
+        },
+        {
+          "id": "quim.acidos_bases.reacoes",
+          "label": "Reações ácido-base",
+          "escopos": [
+            {
+              "id": "quim.acidos_bases.reacoes.neutralizacao",
+              "label": "Neutralização",
+              "descricao": "Reação de neutralização (ácido + base → sal + água) e seus cálculos. Quando há volume titulado para achar concentração, ver titulação.",
+              "keywords": [
+                "neutralização",
+                "ácido mais base",
+                "sal e água",
+                "reação de neutralização"
+              ],
+              "keywordsContexto": [
+                "equivalência ácido-base"
+              ],
+              "exemplosEnunciado": [
+                "Na neutralização total de HCl por NaOH, os produtos formados são..."
+              ],
+              "naoConfundirCom": [
+                "quim.solucoes.concentracao.titulacao",
+                "quim.inorganica.funcoes.sais_oxidos"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.acidos_bases.reacoes.tampao",
+              "label": "Soluções tampão",
+              "descricao": "Soluções-tampão: composição (ácido fraco + sal), ação e manutenção do pH.",
+              "keywords": [
+                "solução tampão",
+                "tampão",
+                "buffer",
+                "pH constante",
+                "resistência à variação de pH"
+              ],
+              "keywordsContexto": [
+                "ácido fraco e sua base conjugada",
+                "sangue"
+              ],
+              "exemplosEnunciado": [
+                "Por que a adição de pequena quantidade de ácido a uma solução-tampão quase não altera seu pH?"
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.acidos_bases.reacoes.hidrolise",
+              "label": "Hidrólise de sais",
+              "descricao": "Hidrólise salina e o caráter ácido/básico/neutro da solução resultante.",
+              "keywords": [
+                "hidrólise de sais",
+                "caráter ácido",
+                "caráter básico",
+                "sal de ácido forte e base fraca",
+                "hidrólise salina"
+              ],
+              "keywordsContexto": [
+                "solução resultante",
+                "pH do sal"
+              ],
+              "exemplosEnunciado": [
+                "Ao dissolver cloreto de amônio em água, a solução resultante apresenta caráter..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "eletroquimica",
+      "assuntoLabel": "Eletroquímica",
+      "dominios": [
+        {
+          "id": "quim.eletroquimica.pilhas",
+          "label": "Pilhas e potencial",
+          "escopos": [
+            {
+              "id": "quim.eletroquimica.pilhas.galvanica",
+              "label": "Pilha galvânica",
+              "descricao": "Pilha/célula galvânica: ânodo, cátodo, fluxo de elétrons, ponte salina e cálculo da ddp (processo ESPONTÂNEO).",
+              "keywords": [
+                "pilha",
+                "célula galvânica",
+                "ânodo",
+                "cátodo",
+                "ponte salina",
+                "diferença de potencial",
+                "ddp",
+                "fem"
+              ],
+              "keywordsContexto": [
+                "potencial de redução",
+                "polo negativo e positivo"
+              ],
+              "exemplosEnunciado": [
+                "Na pilha de Daniell, o eletrodo de zinco atua como ânodo porque sofre..."
+              ],
+              "naoConfundirCom": [
+                "quim.eletroquimica.eletrolise.processo"
+              ],
+              "negativeHints": [
+                "corrente externa",
+                "processo forçado",
+                "não espontâneo"
+              ],
+              "regraDesempate": "Se a reação é ESPONTÂNEA e gera corrente → pilha galvânica. Se exige corrente externa para ocorrer → eletrólise."
+            },
+            {
+              "id": "quim.eletroquimica.pilhas.serie",
+              "label": "Série de reatividade e oxirredução",
+              "descricao": "Número de oxidação (Nox), balanceamento de oxirredução, agentes oxidante/redutor e previsão pela série de reatividade.",
+              "keywords": [
+                "série de reatividade",
+                "oxirredução",
+                "número de oxidação",
+                "Nox",
+                "agente oxidante",
+                "agente redutor",
+                "oxidação",
+                "redução"
+              ],
+              "keywordsContexto": [
+                "semirreação",
+                "transferência de elétrons"
+              ],
+              "exemplosEnunciado": [
+                "Determine o número de oxidação do enxofre no íon sulfato (SO4 2-).",
+                "Identifique o agente redutor na reação dada."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "quim.eletroquimica.eletrolise",
+          "label": "Eletrólise e corrosão",
+          "escopos": [
+            {
+              "id": "quim.eletroquimica.eletrolise.processo",
+              "label": "Eletrólise",
+              "descricao": "Eletrólise ígnea e aquosa (processo NÃO espontâneo por corrente externa); prioridade de descarga e cálculos de Faraday.",
+              "keywords": [
+                "eletrólise",
+                "eletrólise ígnea",
+                "eletrólise aquosa",
+                "corrente externa",
+                "descarga de íons",
+                "leis de Faraday"
+              ],
+              "keywordsContexto": [
+                "banho eletrolítico",
+                "galvanoplastia"
+              ],
+              "exemplosEnunciado": [
+                "Na eletrólise aquosa do NaCl, qual gás é liberado no cátodo?"
+              ],
+              "naoConfundirCom": [
+                "quim.eletroquimica.pilhas.galvanica"
+              ],
+              "negativeHints": [
+                "espontâneo",
+                "gera corrente",
+                "ponte salina"
+              ]
+            },
+            {
+              "id": "quim.eletroquimica.eletrolise.corrosao",
+              "label": "Corrosão e proteção catódica",
+              "descricao": "Corrosão de metais (ferrugem) como oxidação e métodos de proteção (metal de sacrifício, galvanização).",
+              "keywords": [
+                "corrosão",
+                "ferrugem",
+                "oxidação do ferro",
+                "metal de sacrifício",
+                "proteção catódica",
+                "galvanização"
+              ],
+              "keywordsContexto": [
+                "ânodo de sacrifício",
+                "zinco protege o ferro"
+              ],
+              "exemplosEnunciado": [
+                "Por que a peça de zinco acoplada ao casco de um navio de aço impede sua corrosão?"
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "organica",
+      "assuntoLabel": "Química orgânica",
+      "dominios": [
+        {
+          "id": "quim.organica.funcoes",
+          "label": "Funções orgânicas",
+          "escopos": [
+            {
+              "id": "quim.organica.funcoes.hidrocarbonetos",
+              "label": "Hidrocarbonetos",
+              "descricao": "Hidrocarbonetos (alcanos, alcenos, alcinos, aromáticos) e suas características.",
+              "keywords": [
+                "hidrocarboneto",
+                "alcano",
+                "alceno",
+                "alcino",
+                "aromático",
+                "benzeno",
+                "cadeia carbônica"
+              ],
+              "keywordsContexto": [
+                "parafina",
+                "insaturação"
+              ],
+              "exemplosEnunciado": [
+                "O composto com fórmula CnH2n e uma dupla ligação pertence à função..."
+              ],
+              "naoConfundirCom": [
+                "quim.organica.funcoes.oxigenadas"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.organica.funcoes.oxigenadas",
+              "label": "Funções oxigenadas",
+              "descricao": "Funções com oxigênio: álcool, aldeído, cetona, ácido carboxílico, éster, éter.",
+              "keywords": [
+                "álcool",
+                "aldeído",
+                "cetona",
+                "ácido carboxílico",
+                "éster",
+                "éter",
+                "função oxigenada"
+              ],
+              "keywordsContexto": [
+                "hidroxila",
+                "carbonila",
+                "carboxila"
+              ],
+              "exemplosEnunciado": [
+                "A presença do grupo carboxila (-COOH) identifica a função..."
+              ],
+              "naoConfundirCom": [
+                "quim.organica.funcoes.nitrogenadas"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.organica.funcoes.nitrogenadas",
+              "label": "Funções nitrogenadas",
+              "descricao": "Funções com nitrogênio: amina, amida, nitrila e nitrocomposto.",
+              "keywords": [
+                "amina",
+                "amida",
+                "nitrila",
+                "função nitrogenada",
+                "grupo amino"
+              ],
+              "keywordsContexto": [
+                "base orgânica"
+              ],
+              "exemplosEnunciado": [
+                "O grupo funcional -CONH2 caracteriza a função orgânica..."
+              ],
+              "naoConfundirCom": [
+                "quim.organica.funcoes.oxigenadas"
+              ],
+              "negativeHints": []
+            }
+          ]
+        },
+        {
+          "id": "quim.organica.nomenclatura",
+          "label": "Nomenclatura IUPAC",
+          "escopos": [
+            {
+              "id": "quim.organica.nomenclatura.iupac",
+              "label": "Nomenclatura de cadeias",
+              "descricao": "Nomenclatura IUPAC: prefixo (número de carbonos), infixo (saturação) e sufixo (função) da cadeia principal.",
+              "keywords": [
+                "nomenclatura IUPAC",
+                "prefixo",
+                "infixo",
+                "sufixo",
+                "cadeia principal",
+                "número de carbonos"
+              ],
+              "keywordsContexto": [
+                "met-, et-, prop-",
+                "-ano, -eno, -ino"
+              ],
+              "exemplosEnunciado": [
+                "Dê o nome IUPAC do hidrocarboneto de cadeia com 4 carbonos e uma tripla ligação."
+              ],
+              "naoConfundirCom": [
+                "quim.organica.nomenclatura.grupos"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.organica.nomenclatura.grupos",
+              "label": "Ramificações e radicais",
+              "descricao": "Identificação e numeração de ramificações/radicais na cadeia e classificação da cadeia carbônica.",
+              "keywords": [
+                "ramificação",
+                "radical orgânico",
+                "cadeia ramificada",
+                "metil",
+                "etil",
+                "classificação de cadeia"
+              ],
+              "keywordsContexto": [
+                "carbono primário/secundário/terciário"
+              ],
+              "exemplosEnunciado": [
+                "Na nomenclatura, a ramificação ligada à cadeia principal com um carbono é chamada..."
+              ],
+              "naoConfundirCom": [
+                "quim.organica.nomenclatura.iupac"
+              ],
+              "negativeHints": []
+            }
+          ]
+        },
+        {
+          "id": "quim.organica.isomeria",
+          "label": "Isomeria",
+          "escopos": [
+            {
+              "id": "quim.organica.isomeria.plana",
+              "label": "Isomeria plana",
+              "descricao": "Isomeria constitucional: de cadeia, posição, função, compensação (metameria) e tautomeria.",
+              "keywords": [
+                "isomeria plana",
+                "isomeria de cadeia",
+                "isomeria de posição",
+                "isomeria de função",
+                "metameria",
+                "tautomeria"
+              ],
+              "keywordsContexto": [
+                "mesma fórmula molecular",
+                "isômeros constitucionais"
+              ],
+              "exemplosEnunciado": [
+                "O etanol e o metoximetano (éter) têm a mesma fórmula molecular e são isômeros de..."
+              ],
+              "naoConfundirCom": [
+                "quim.organica.isomeria.espacial"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.organica.isomeria.espacial",
+              "label": "Isomeria espacial",
+              "descricao": "Isomeria geométrica (cis-trans) e óptica (quiralidade, enantiômeros, atividade óptica).",
+              "keywords": [
+                "isomeria espacial",
+                "cis-trans",
+                "isomeria geométrica",
+                "isomeria óptica",
+                "enantiômero",
+                "carbono quiral",
+                "atividade óptica"
+              ],
+              "keywordsContexto": [
+                "luz polarizada",
+                "carbono assimétrico"
+              ],
+              "exemplosEnunciado": [
+                "Um composto com carbono assimétrico que desvia o plano da luz polarizada apresenta isomeria..."
+              ],
+              "naoConfundirCom": [
+                "quim.organica.isomeria.plana"
+              ],
+              "negativeHints": []
+            }
+          ]
+        },
+        {
+          "id": "quim.organica.reacoes",
+          "label": "Reações orgânicas",
+          "escopos": [
+            {
+              "id": "quim.organica.reacoes.adicao_substituicao",
+              "label": "Adição, substituição e eliminação",
+              "descricao": "Principais reações orgânicas: adição, substituição, eliminação, oxidação e esterificação.",
+              "keywords": [
+                "reação de adição",
+                "reação de substituição",
+                "reação de eliminação",
+                "hidrogenação",
+                "halogenação",
+                "esterificação"
+              ],
+              "keywordsContexto": [
+                "saturação da dupla",
+                "regra de Markovnikov"
+              ],
+              "exemplosEnunciado": [
+                "A adição de H2 a um alceno na presença de catalisador produz um..."
+              ],
+              "naoConfundirCom": [
+                "quim.organica.reacoes.polimeros"
+              ],
+              "negativeHints": []
+            },
+            {
+              "id": "quim.organica.reacoes.polimeros",
+              "label": "Polímeros e polimerização",
+              "descricao": "Polímeros naturais e sintéticos; polimerização por adição e por condensação.",
+              "keywords": [
+                "polímero",
+                "polimerização",
+                "monômero",
+                "polimerização por adição",
+                "polimerização por condensação",
+                "plástico"
+              ],
+              "keywordsContexto": [
+                "PVC",
+                "polietileno",
+                "macromolécula"
+              ],
+              "exemplosEnunciado": [
+                "O polietileno é obtido pela polimerização por adição de unidades de..."
+              ],
+              "naoConfundirCom": [
+                "quim.organica.reacoes.adicao_substituicao"
+              ],
+              "negativeHints": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "ambiental",
+      "assuntoLabel": "Química ambiental",
+      "dominios": [
+        {
+          "id": "quim.ambiental.poluicao",
+          "label": "Poluição e impactos",
+          "escopos": [
+            {
+              "id": "quim.ambiental.poluicao.atmosferica",
+              "label": "Poluição atmosférica",
+              "descricao": "Poluentes do ar, chuva ácida, smog, efeito estufa e camada de ozônio sob a ótica química.",
+              "keywords": [
+                "chuva ácida",
+                "smog",
+                "camada de ozônio",
+                "CFC",
+                "efeito estufa",
+                "poluição atmosférica",
+                "gases poluentes"
+              ],
+              "keywordsContexto": [
+                "SOx",
+                "NOx",
+                "inversão térmica"
+              ],
+              "exemplosEnunciado": [
+                "A chuva ácida resulta da reação entre água e óxidos de enxofre/nitrogênio, formando ácidos como..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.ambiental.poluicao.agua",
+              "label": "Poluição da água",
+              "descricao": "Poluição hídrica: eutrofização, esgoto, DBO e contaminantes domésticos/industriais.",
+              "keywords": [
+                "eutrofização",
+                "poluição da água",
+                "esgoto",
+                "DBO",
+                "fosfato",
+                "detergente"
+              ],
+              "keywordsContexto": [
+                "oxigênio dissolvido",
+                "matéria orgânica"
+              ],
+              "exemplosEnunciado": [
+                "O excesso de nutrientes em um lago causa proliferação de algas e queda do oxigênio, processo chamado..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "quim.ambiental.poluicao.metais",
+              "label": "Metais pesados e contaminação",
+              "descricao": "Contaminação por metais pesados (mercúrio, chumbo, cádmio) e bioacumulação.",
+              "keywords": [
+                "metal pesado",
+                "mercúrio",
+                "chumbo",
+                "cádmio",
+                "contaminação",
+                "bioacumulação"
+              ],
+              "keywordsContexto": [
+                "intoxicação",
+                "cadeia alimentar"
+              ],
+              "exemplosEnunciado": [
+                "A bioacumulação de mercúrio ao longo da cadeia alimentar afeta principalmente os organismos de nível trófico..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "quim.ambiental.combustiveis",
+          "label": "Combustíveis e energia",
+          "escopos": [
+            {
+              "id": "quim.ambiental.combustiveis.fossil",
+              "label": "Combustíveis fósseis e petróleo",
+              "descricao": "Petróleo, destilação fracionada, gás natural e carvão como fontes e seus impactos. NÃO cobre o cálculo de calor de combustão (ver termoquimica.combustao).",
+              "keywords": [
+                "petróleo",
+                "combustível fóssil",
+                "destilação fracionada",
+                "gasolina",
+                "diesel",
+                "gás natural",
+                "refino"
+              ],
+              "keywordsContexto": [
+                "fração do petróleo",
+                "octanagem"
+              ],
+              "exemplosEnunciado": [
+                "A separação das frações do petróleo na refinaria baseia-se na diferença de pontos de ebulição, processo chamado..."
+              ],
+              "naoConfundirCom": [
+                "quim.termoquimica.entalpia.combustao"
+              ],
+              "negativeHints": [
+                "calor de combustão",
+                "poder calorífico",
+                "delta H"
+              ]
+            },
+            {
+              "id": "quim.ambiental.combustiveis.renovavel",
+              "label": "Biocombustíveis e energia limpa",
+              "descricao": "Biocombustíveis (etanol, biodiesel, biogás) e fontes renováveis; vantagens ambientais e balanço de carbono.",
+              "keywords": [
+                "etanol",
+                "biodiesel",
+                "biocombustível",
+                "biogás",
+                "energia renovável",
+                "biomassa",
+                "balanço de carbono"
+              ],
+              "keywordsContexto": [
+                "transesterificação",
+                "fonte limpa"
+              ],
+              "exemplosEnunciado": [
+                "O etanol é considerado combustível renovável porque o CO2 liberado é reabsorvido pela cana via..."
+              ],
+              "naoConfundirCom": [
+                "quim.termoquimica.entalpia.combustao"
+              ],
+              "negativeHints": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "__sistema",
+      "assuntoLabel": "Sistema (não temático)",
+      "dominios": [
+        {
+          "id": "quim.__sistema.fallback",
+          "label": "Fallback / revisão",
+          "escopos": [
+            {
+              "id": "quim.__nao_classificado",
+              "label": "Não classificado / revisar",
+              "descricao": "Bucket de fallback. Recebe questões com confiança máxima abaixo de confiancaMinima ou empate irresolvível. NÃO conta para maxN2PorMateria. Toda questão aqui deve ser revisada por humano.",
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": [],
+              "exemplosEnunciado": [],
+              "keywords": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

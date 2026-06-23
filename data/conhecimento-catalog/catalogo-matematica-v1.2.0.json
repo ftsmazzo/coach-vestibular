@@ -1,0 +1,1368 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.2.0",
+  "materiaId": "matematica",
+  "materiaLabel": "Matemática",
+  "areaEnem": "Matemática e suas Tecnologias",
+  "notas": "N0=área ENEM. Assunto=taxonomia Coach. N1=domínio. N2=escopo. N3=conhecimentoExigido livre por questão. Campos por escopo: descricao (cobre / NÃO cobre), keywords (fortes, peso 1.0), keywordsContexto (fracas, peso 0.4), exemplosEnunciado (referência semântica), negativeHints (termos que NÃO devem puxar a questão para cá), naoConfundirCom (IDs irmãos), regraDesempate, conceitoCanonic.",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "Aplica-se a N0–N2. Em N3 ver politicaN3.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2,
+      "nota": "Matemática deve ser classificada pelo método de resolução, não pelo cenário textual. Retornar secundário quando houver combinação real de modelos (ex.: porcentagem + função exponencial)."
+    },
+    "politicaN3": "A IA escolhe APENAS IDs em N0–N2. Em N3 (conhecimentoExigido) PROPÕE texto livre para revisão humana; N3 nunca é um ID.",
+    "regraDesempate": "Se ≥2 escopos irmãos disparam, aplicar negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confiança < confiancaMinima → mat.__nao_classificado.",
+    "pesos": {
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "exemplosEnunciado": "referência semântica (similaridade), não match literal",
+      "negativeHints": "penalidade: presença do termo reduz a probabilidade deste escopo"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "aritmetica",
+      "assuntoLabel": "Aritmética e números",
+      "dominios": [
+        {
+          "id": "mat.aritmetica.numeros",
+          "label": "Operações e razões",
+          "escopos": [
+            {
+              "id": "mat.aritmetica.numeros.operacoes",
+              "label": "Operações com números reais",
+              "keywords": [
+                "soma",
+                "subtração",
+                "multiplicação",
+                "divisão",
+                "números reais",
+                "operacao",
+                "calculo"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de operações com números reais. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar operações com números reais para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.aritmetica.numeros.razao_proporcao",
+              "label": "Razão, proporção e regra de três",
+              "keywords": [
+                "razão",
+                "proporção",
+                "regra de três",
+                "regra de tres",
+                "grandezas proporcionais",
+                "inversamente proporcional"
+              ],
+              "descricao": "Razão, proporção, regra de três e grandezas direta/inversamente proporcionais. NÃO cobre modelagem funcional y=ax+b como objetivo principal.",
+              "exemplosEnunciado": [
+                "Se 4 máquinas produzem 120 peças em 3 horas, estime a produção de 6 máquinas no mesmo tempo."
+              ],
+              "negativeHints": [
+                "função afim",
+                "coeficiente angular"
+              ],
+              "naoConfundirCom": [
+                "mat.funcoes.geral.afim",
+                "mat.aritmetica.numeros.porcentagem"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "mat.aritmetica.numeros.porcentagem",
+              "label": "Porcentagem e variação percentual",
+              "keywords": [
+                "porcentagem",
+                "percentual",
+                "aumento",
+                "desconto",
+                "variação percentual",
+                "lucro",
+                "prejuízo"
+              ],
+              "descricao": "Porcentagem, aumentos/descontos sucessivos e variação percentual.",
+              "exemplosEnunciado": [
+                "Um produto sofreu aumento de 20% e depois desconto de 10%; determine o preço final."
+              ],
+              "negativeHints": [
+                "juros compostos",
+                "crescimento exponencial"
+              ],
+              "naoConfundirCom": [
+                "mat.financeira.juros.compostos",
+                "mat.funcoes.geral.exponencial"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "mat.aritmetica.numeros.escala",
+              "label": "Escala e mapas",
+              "keywords": [
+                "escala",
+                "mapa",
+                "representação gráfica",
+                "proporcionalidade em mapas"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de escala e mapas. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar escala e mapas para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.aritmetica.numeros.mmc_mdc",
+              "label": "MMC, MDC e divisibilidade",
+              "keywords": [
+                "mmc",
+                "mdc",
+                "mínimo múltiplo",
+                "máximo divisor",
+                "divisibilidade",
+                "números primos"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de mmc, mdc e divisibilidade. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar mmc, mdc e divisibilidade para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        },
+        {
+          "id": "mat.aritmetica.potencias",
+          "label": "Potenciação e radiciação",
+          "escopos": [
+            {
+              "id": "mat.aritmetica.potencias.potenciacao",
+              "label": "Potenciação e propriedades",
+              "keywords": [
+                "potência",
+                "potencia",
+                "expoente",
+                "base",
+                "propriedades de potências"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de potenciação e propriedades. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar potenciação e propriedades para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.aritmetica.potencias.radiciacao",
+              "label": "Radiciação e irracionais",
+              "keywords": [
+                "raiz quadrada",
+                "raiz cúbica",
+                "radiciação",
+                "irracional",
+                "√",
+                "simplificar radical"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de radiciação e irracionais. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar radiciação e irracionais para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "algebra",
+      "assuntoLabel": "Álgebra",
+      "dominios": [
+        {
+          "id": "mat.algebra.equacoes",
+          "label": "Equações e sistemas",
+          "escopos": [
+            {
+              "id": "mat.algebra.equacoes.primeiro_grau",
+              "label": "Equações do 1º grau",
+              "keywords": [
+                "equação do primeiro grau",
+                "1º grau",
+                "ax+b",
+                "incógnita",
+                "resolver equação"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de equações do 1º grau. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar equações do 1º grau para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.algebra.equacoes.segundo_grau",
+              "label": "Equações do 2º grau",
+              "keywords": [
+                "equação do segundo grau",
+                "2º grau",
+                "bhaskara",
+                "delta",
+                "raízes",
+                "parábola"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de equações do 2º grau. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar equações do 2º grau para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.algebra.equacoes.sistemas_lineares",
+              "label": "Sistemas lineares 2×2",
+              "keywords": [
+                "sistema de equações",
+                "substituição",
+                "adição",
+                "duas incógnitas",
+                "sistema linear"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de sistemas lineares 2×2. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar sistemas lineares 2×2 para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.algebra.equacoes.inequacoes",
+              "label": "Inequações",
+              "keywords": [
+                "inequação",
+                "desigualdade",
+                "intervalo",
+                "maior que",
+                "menor que",
+                "≤",
+                "≥"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de inequações. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar inequações para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        },
+        {
+          "id": "mat.algebra.polinomios",
+          "label": "Polinômios e produtos",
+          "escopos": [
+            {
+              "id": "mat.algebra.polinomios.fatoracao",
+              "label": "Fatoração e produtos notáveis",
+              "keywords": [
+                "fatoração",
+                "fatoracao",
+                "produtos notáveis",
+                "trinômio quadrado perfeito",
+                "diferença de quadrados"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de fatoração e produtos notáveis. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar fatoração e produtos notáveis para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.algebra.polinomios.fracao_algebraica",
+              "label": "Frações algébricas",
+              "keywords": [
+                "fração algébrica",
+                "simplificação algébrica",
+                "MMC de denominadores"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de frações algébricas. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar frações algébricas para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "funcoes",
+      "assuntoLabel": "Funções",
+      "dominios": [
+        {
+          "id": "mat.funcoes.geral",
+          "label": "Conceito e tipos de função",
+          "escopos": [
+            {
+              "id": "mat.funcoes.geral.conceito_grafico",
+              "label": "Domínio, imagem e gráfico",
+              "keywords": [
+                "domínio",
+                "imagem",
+                "gráfico de função",
+                "eixo x",
+                "eixo y",
+                "ponto no gráfico"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de domínio, imagem e gráfico. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar domínio, imagem e gráfico para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.funcoes.geral.afim",
+              "label": "Função afim e linear",
+              "keywords": [
+                "função afim",
+                "função linear",
+                "f(x)=ax+b",
+                "coeficiente angular",
+                "reta crescente"
+              ],
+              "descricao": "Função afim/linear, taxa de variação constante, coeficientes e gráfico em reta. NÃO classificar aqui se for apenas regra de três pontual.",
+              "exemplosEnunciado": [
+                "Uma tarifa tem valor fixo mais custo por quilômetro; modele a função que dá o preço total."
+              ],
+              "negativeHints": [
+                "proporção simples",
+                "regra de três"
+              ],
+              "naoConfundirCom": [
+                "mat.aritmetica.numeros.razao_proporcao",
+                "mat.progressoes.sequencias.pa"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "mat.funcoes.geral.quadratica",
+              "label": "Função quadrática",
+              "keywords": [
+                "função quadrática",
+                "parábola",
+                "vértice",
+                "concavidade",
+                "f(x)=ax²",
+                "zeros da função"
+              ],
+              "descricao": "Função quadrática, parábola, raízes, vértice, concavidade e problemas de máximo/mínimo.",
+              "exemplosEnunciado": [
+                "A altura de um projétil é descrita por uma função quadrática; determine a altura máxima."
+              ],
+              "negativeHints": [
+                "equação do 2º grau isolada"
+              ],
+              "naoConfundirCom": [
+                "mat.algebra.equacoes.segundo_grau"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "mat.funcoes.geral.exponencial",
+              "label": "Função exponencial",
+              "keywords": [
+                "função exponencial",
+                "crescimento exponencial",
+                "decaimento",
+                "a^x",
+                "juros compostos"
+              ],
+              "descricao": "Função exponencial e crescimento/decaimento multiplicativo, incluindo modelos populacionais e financeiros.",
+              "exemplosEnunciado": [
+                "Uma população dobra a cada período; escreva a função que modela seu crescimento."
+              ],
+              "negativeHints": [
+                "progressão geométrica",
+                "juros compostos"
+              ],
+              "naoConfundirCom": [
+                "mat.progressoes.sequencias.pg",
+                "mat.financeira.juros.compostos"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "mat.funcoes.geral.logaritmica",
+              "label": "Função logarítmica",
+              "keywords": [
+                "logaritmo",
+                "função logarítmica",
+                "log",
+                "ln",
+                "propriedades logarítmicas"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de função logarítmica. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar função logarítmica para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.funcoes.geral.modular",
+              "label": "Função modular",
+              "keywords": [
+                "módulo",
+                "valor absoluto",
+                "função modular",
+                "|x|",
+                "distância no eixo"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de função modular. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar função modular para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.funcoes.geral.composicao_inversa",
+              "label": "Composição e função inversa",
+              "keywords": [
+                "composição de funções",
+                "função inversa",
+                "fog",
+                "gof"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de composição e função inversa. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar composição e função inversa para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "geometria_plana",
+      "assuntoLabel": "Geometria plana",
+      "dominios": [
+        {
+          "id": "mat.geometria_plana.figuras",
+          "label": "Áreas e perímetros",
+          "escopos": [
+            {
+              "id": "mat.geometria_plana.figuras.areas_basicas",
+              "label": "Áreas de triângulo, retângulo e círculo",
+              "keywords": [
+                "área do triângulo",
+                "área do retângulo",
+                "área do círculo",
+                "πr²",
+                "perímetro",
+                "circunferência",
+                "terreno",
+                "maior área",
+                "prefeitura",
+                "restrição"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de áreas de triângulo, retângulo e círculo. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar áreas de triângulo, retângulo e círculo para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_plana.figuras.poligonos",
+              "label": "Polígonos e áreas compostas",
+              "keywords": [
+                "polígono",
+                "hexágono",
+                "pentágono",
+                "área composta",
+                "figura composta",
+                "ladrilhamento",
+                "terreno",
+                "moradores",
+                "optar pelo terreno"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de polígonos e áreas compostas. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar polígonos e áreas compostas para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_plana.figuras.semelhanca",
+              "label": "Semelhança de triângulos",
+              "keywords": [
+                "semelhança",
+                "triângulos semelhantes",
+                "proporcionalidade",
+                "escala",
+                "homotetia"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de semelhança de triângulos. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar semelhança de triângulos para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        },
+        {
+          "id": "mat.geometria_plana.relacoes",
+          "label": "Relações métricas",
+          "escopos": [
+            {
+              "id": "mat.geometria_plana.relacoes.pitagoras",
+              "label": "Teorema de Pitágoras",
+              "keywords": [
+                "pitágoras",
+                "pitagoras",
+                "hipotenusa",
+                "catetos",
+                "triângulo retângulo"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de teorema de pitágoras. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar teorema de pitágoras para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_plana.relacoes.angulos",
+              "label": "Ângulos e retas paralelas",
+              "keywords": [
+                "ângulos",
+                "retas paralelas",
+                "transversal",
+                "alternos",
+                "correspondentes",
+                "suplementares"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de ângulos e retas paralelas. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar ângulos e retas paralelas para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_plana.relacoes.lugar_geometrico",
+              "label": "Mediatriz, bissetriz e circunferência",
+              "keywords": [
+                "mediatriz",
+                "bissetriz",
+                "circunferência inscrita",
+                "circunferência circunscrita",
+                "centro e raio"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de mediatriz, bissetriz e circunferência. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar mediatriz, bissetriz e circunferência para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "geometria_espacial",
+      "assuntoLabel": "Geometria espacial",
+      "dominios": [
+        {
+          "id": "mat.geometria_espacial.solidos",
+          "label": "Volumes e áreas de superfície",
+          "escopos": [
+            {
+              "id": "mat.geometria_espacial.solidos.prisma_cubo",
+              "label": "Prisma e cubo",
+              "keywords": [
+                "prisma",
+                "cubo",
+                "paralelepípedo",
+                "volume do prisma",
+                "área total",
+                "caixa de papelão",
+                "mudança",
+                "encaixar",
+                "aresta",
+                "espaço livre"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de prisma e cubo. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar prisma e cubo para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_espacial.solidos.cilindro",
+              "label": "Cilindro",
+              "keywords": [
+                "cilindro",
+                "volume do cilindro",
+                "πr²h",
+                "lata",
+                "tubo",
+                "garrafa",
+                "garrafas"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de cilindro. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar cilindro para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_espacial.solidos.cone",
+              "label": "Cone e tronco de cone",
+              "keywords": [
+                "cone",
+                "tronco de cone",
+                "volume do cone",
+                "1/3 πr²h",
+                "funil"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de cone e tronco de cone. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar cone e tronco de cone para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_espacial.solidos.esfera",
+              "label": "Esfera",
+              "keywords": [
+                "esfera",
+                "volume da esfera",
+                "4/3 πr³",
+                "bola",
+                "globo"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de esfera. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar esfera para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_espacial.solidos.piramide",
+              "label": "Pirâmide",
+              "keywords": [
+                "pirâmide",
+                "volume da pirâmide",
+                "base poligonal",
+                "ápice"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de pirâmide. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar pirâmide para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_espacial.solidos.planificacao",
+              "label": "Planificação de sólidos",
+              "keywords": [
+                "planificação",
+                "desenvolvimento",
+                "molde",
+                "embalagem",
+                "corte e dobra"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de planificação de sólidos. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar planificação de sólidos para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "geometria_analitica",
+      "assuntoLabel": "Geometria analítica",
+      "dominios": [
+        {
+          "id": "mat.geometria_analitica.plano",
+          "label": "Plano cartesiano",
+          "escopos": [
+            {
+              "id": "mat.geometria_analitica.plano.distancia_ponto",
+              "label": "Distância entre pontos",
+              "keywords": [
+                "distância entre pontos",
+                "plano cartesiano",
+                "coordenadas",
+                "d=√"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de distância entre pontos. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar distância entre pontos para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_analitica.plano.equacao_reta",
+              "label": "Equação da reta",
+              "keywords": [
+                "equação da reta",
+                "coeficiente angular",
+                "y=ax+b",
+                "reta no plano"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de equação da reta. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar equação da reta para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_analitica.plano.circulo",
+              "label": "Circunferência no plano",
+              "keywords": [
+                "equação da circunferência",
+                "centro",
+                "raio",
+                "(x-a)²+(y-b)²"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de circunferência no plano. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar circunferência no plano para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.geometria_analitica.plano.intersecao",
+              "label": "Interseção reta e circunferência",
+              "keywords": [
+                "interseção",
+                "ponto de tangência",
+                "secante",
+                "reta e circunferência"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de interseção reta e circunferência. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar interseção reta e circunferência para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "trigonometria",
+      "assuntoLabel": "Trigonometria",
+      "dominios": [
+        {
+          "id": "mat.trigonometria.relacoes",
+          "label": "Razões trigonométricas",
+          "escopos": [
+            {
+              "id": "mat.trigonometria.relacoes.triangulo_retangulo",
+              "label": "Seno, cosseno e tangente",
+              "keywords": [
+                "seno",
+                "cosseno",
+                "tangente",
+                "sen",
+                "cos",
+                "tg",
+                "triângulo retângulo"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de seno, cosseno e tangente. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar seno, cosseno e tangente para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.trigonometria.relacoes.identidades",
+              "label": "Relações e identidades trigonométricas",
+              "keywords": [
+                "identidade trigonométrica",
+                "sen²+cos²",
+                "arco",
+                "ângulo"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de relações e identidades trigonométricas. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar relações e identidades trigonométricas para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.trigonometria.relacoes.lei_senos_cossenos",
+              "label": "Lei dos senos e dos cossenos",
+              "keywords": [
+                "lei dos senos",
+                "lei dos cossenos",
+                "triângulo qualquer",
+                "lado oposto"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de lei dos senos e dos cossenos. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar lei dos senos e dos cossenos para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "progressoes",
+      "assuntoLabel": "Progressões",
+      "dominios": [
+        {
+          "id": "mat.progressoes.sequencias",
+          "label": "PA e PG",
+          "escopos": [
+            {
+              "id": "mat.progressoes.sequencias.pa",
+              "label": "Progressão aritmética (PA)",
+              "keywords": [
+                "progressão aritmética",
+                "PA",
+                "razão aritmética",
+                "an",
+                "termo geral",
+                "andares",
+                "edifício",
+                "andar"
+              ],
+              "descricao": "Progressão aritmética: termo geral, razão constante e soma de termos. NÃO cobre função afim quando o foco é gráfico/modelagem contínua.",
+              "exemplosEnunciado": [
+                "Em uma sequência que aumenta 5 unidades a cada termo, determine o 20º termo."
+              ],
+              "negativeHints": [
+                "função afim",
+                "gráfico em reta"
+              ],
+              "naoConfundirCom": [
+                "mat.funcoes.geral.afim"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "mat.progressoes.sequencias.pg",
+              "label": "Progressão geométrica (PG)",
+              "keywords": [
+                "progressão geométrica",
+                "PG",
+                "razão geométrica",
+                "q^n",
+                "termo geral PG"
+              ],
+              "descricao": "Progressão geométrica: razão multiplicativa, termo geral e soma. NÃO cobre função exponencial quando o foco é modelagem contínua.",
+              "exemplosEnunciado": [
+                "Uma sequência triplica a cada etapa; determine o sexto termo."
+              ],
+              "negativeHints": [
+                "função exponencial",
+                "juros compostos"
+              ],
+              "naoConfundirCom": [
+                "mat.funcoes.geral.exponencial",
+                "mat.financeira.juros.compostos"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "estatistica_probabilidade",
+      "assuntoLabel": "Estatística e probabilidade",
+      "dominios": [
+        {
+          "id": "mat.estatistica.medidas",
+          "label": "Medidas estatísticas",
+          "escopos": [
+            {
+              "id": "mat.estatistica.medidas.tendencia_central",
+              "label": "Média, mediana e moda",
+              "keywords": [
+                "média",
+                "mediana",
+                "moda",
+                "tendência central",
+                "dados estatísticos"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de média, mediana e moda. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar média, mediana e moda para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.estatistica.medidas.dispersao",
+              "label": "Amplitude e desvio",
+              "keywords": [
+                "amplitude",
+                "desvio padrão",
+                "variância",
+                "dispersão"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de amplitude e desvio. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar amplitude e desvio para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.estatistica.medidas.graficos",
+              "label": "Gráficos estatísticos",
+              "keywords": [
+                "histograma",
+                "gráfico de barras",
+                "setores",
+                "pizza",
+                "box plot",
+                "diagrama",
+                "empresa",
+                "comprar",
+                "filtro",
+                "filtros",
+                "tabela"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de gráficos estatísticos. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar gráficos estatísticos para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.estatistica.medidas.leitura_tabelas",
+              "label": "Leitura de tabelas e gráficos (decisão)",
+              "keywords": [
+                "tabela",
+                "gráfico",
+                "leitura de dados",
+                "comparar valores",
+                "empresário",
+                "empresa",
+                "lentes",
+                "espessura",
+                "filtro descartado",
+                "paciente",
+                "carpinteiro",
+                "arquiteto",
+                "peças"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de leitura de tabelas e gráficos (decisão). Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar leitura de tabelas e gráficos (decisão) para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        },
+        {
+          "id": "mat.estatistica.probabilidade",
+          "label": "Probabilidade",
+          "escopos": [
+            {
+              "id": "mat.estatistica.probabilidade.classica",
+              "label": "Probabilidade clássica",
+              "keywords": [
+                "probabilidade",
+                "espaço amostral",
+                "evento",
+                "favorável",
+                "P(A)"
+              ],
+              "descricao": "Probabilidade clássica em espaço amostral equiprovável; casos favoráveis sobre casos possíveis.",
+              "exemplosEnunciado": [
+                "Ao lançar um dado honesto, calcule a probabilidade de sair número par."
+              ],
+              "negativeHints": [
+                "arranjo",
+                "combinação"
+              ],
+              "naoConfundirCom": [
+                "mat.combinatoria.contagem.combinacao"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "mat.estatistica.probabilidade.condicional",
+              "label": "Probabilidade condicional e independentes",
+              "keywords": [
+                "probabilidade condicional",
+                "eventos independentes",
+                "P(A|B)",
+                "interseção"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de probabilidade condicional e independentes. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar probabilidade condicional e independentes para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.estatistica.probabilidade.frequencia",
+              "label": "Frequência relativa e estimativa",
+              "keywords": [
+                "frequência relativa",
+                "frequência absoluta",
+                "estimativa",
+                "amostra"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de frequência relativa e estimativa. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar frequência relativa e estimativa para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "combinatoria",
+      "assuntoLabel": "Análise combinatória",
+      "dominios": [
+        {
+          "id": "mat.combinatoria.contagem",
+          "label": "Princípios de contagem",
+          "escopos": [
+            {
+              "id": "mat.combinatoria.contagem.principio_fundamental",
+              "label": "Princípio fundamental da contagem",
+              "keywords": [
+                "princípio fundamental",
+                "contagem",
+                "possibilidades",
+                "multiplicação de opções",
+                "carpinteiro",
+                "peças",
+                "produzir peças"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de princípio fundamental da contagem. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar princípio fundamental da contagem para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.combinatoria.contagem.permutacao",
+              "label": "Permutação",
+              "keywords": [
+                "permutação",
+                "permutacao",
+                "ordem",
+                "n!",
+                "fila",
+                "arranjo total"
+              ],
+              "descricao": "Permutação: ordenação de todos ou de um conjunto fixo de elementos, com ou sem repetição.",
+              "exemplosEnunciado": [
+                "Quantos anagramas podem ser formados com as letras de uma palavra?"
+              ],
+              "negativeHints": [
+                "selecionar parte do grupo"
+              ],
+              "naoConfundirCom": [
+                "mat.combinatoria.contagem.arranjo",
+                "mat.combinatoria.contagem.combinacao"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "mat.combinatoria.contagem.arranjo",
+              "label": "Arranjo",
+              "keywords": [
+                "arranjo",
+                "A(n,p)",
+                "ordem importa",
+                "seleção ordenada"
+              ],
+              "descricao": "Arranjo: seleção de elementos com ordem relevante.",
+              "exemplosEnunciado": [
+                "Escolha presidente e vice entre 8 candidatos; quantas possibilidades existem?"
+              ],
+              "negativeHints": [
+                "ordem não importa",
+                "comissão"
+              ],
+              "naoConfundirCom": [
+                "mat.combinatoria.contagem.combinacao",
+                "mat.combinatoria.contagem.permutacao"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "mat.combinatoria.contagem.combinacao",
+              "label": "Combinação",
+              "keywords": [
+                "combinação",
+                "combinacao",
+                "C(n,p)",
+                "ordem não importa",
+                "subconjunto"
+              ],
+              "descricao": "Combinação: seleção de elementos sem ordem relevante.",
+              "exemplosEnunciado": [
+                "De 10 estudantes, escolha 3 para uma comissão; quantas comissões diferentes podem ser formadas?"
+              ],
+              "negativeHints": [
+                "ordem importa",
+                "fila",
+                "permutação"
+              ],
+              "naoConfundirCom": [
+                "mat.combinatoria.contagem.arranjo",
+                "mat.combinatoria.contagem.permutacao"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "financeira",
+      "assuntoLabel": "Matemática financeira",
+      "dominios": [
+        {
+          "id": "mat.financeira.juros",
+          "label": "Juros e aplicações",
+          "escopos": [
+            {
+              "id": "mat.financeira.juros.simples",
+              "label": "Juros simples",
+              "keywords": [
+                "juros simples",
+                "montante",
+                "capital",
+                "taxa",
+                "tempo",
+                "C×i×t"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de juros simples. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar juros simples para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.financeira.juros.compostos",
+              "label": "Juros compostos",
+              "keywords": [
+                "juros compostos",
+                "M=C(1+i)^t",
+                "capitalização",
+                "rendimento"
+              ],
+              "descricao": "Juros compostos e capitalização exponencial. NÃO cobre porcentagem simples sem recorrência temporal.",
+              "exemplosEnunciado": [
+                "Uma aplicação rende 2% ao mês por 12 meses; determine o montante final."
+              ],
+              "negativeHints": [
+                "porcentagem simples",
+                "desconto único"
+              ],
+              "naoConfundirCom": [
+                "mat.aritmetica.numeros.porcentagem",
+                "mat.funcoes.geral.exponencial"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "mat.financeira.juros.financiamento",
+              "label": "Financiamento, parcelas e tabelas",
+              "keywords": [
+                "financiamento",
+                "parcela",
+                "prestação",
+                "tabela price",
+                "amortização",
+                "empréstimo"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de financiamento, parcelas e tabelas. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar financiamento, parcelas e tabelas para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "matrizes",
+      "assuntoLabel": "Matrizes",
+      "dominios": [
+        {
+          "id": "mat.matrizes.operacoes",
+          "label": "Matrizes e determinantes",
+          "escopos": [
+            {
+              "id": "mat.matrizes.operacoes.conceito",
+              "label": "Operações com matrizes",
+              "keywords": [
+                "matriz",
+                "soma de matrizes",
+                "multiplicação de matrizes",
+                "ordem m×n"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de operações com matrizes. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar operações com matrizes para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            },
+            {
+              "id": "mat.matrizes.operacoes.determinante",
+              "label": "Determinante 2×2 e 3×3",
+              "keywords": [
+                "determinante",
+                "det",
+                "matriz 2×2",
+                "matriz 3×3",
+                "sarrus"
+              ],
+              "descricao": "Questões que exigem procedimento matemático de determinante 2×2 e 3×3. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar determinante 2×2 e 3×3 para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "__sistema",
+      "assuntoLabel": "Sistema (não temático)",
+      "dominios": [
+        {
+          "id": "mat.__sistema.fallback",
+          "label": "Fallback / revisão",
+          "escopos": [
+            {
+              "id": "mat.__nao_classificado",
+              "label": "Não classificado / revisar",
+              "descricao": "Bucket de fallback. Recebe questões com confiança máxima abaixo de confiancaMinima ou empate irresolvível. NÃO conta para maxN2PorMateria. Toda questão aqui deve ser revisada por humano.",
+              "keywords": [],
+              "keywordsContexto": [],
+              "negativeHints": [],
+              "exemplosEnunciado": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "changelog": [
+    "1.2.0: Refatoração para o padrão Química v1.2 — descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate em escopos críticos.",
+    "1.2.0: confiancaMinima elevada para 0.45; documentadas regras de multiLabel, política N3, pesos e fallback mat.__nao_classificado."
+  ]
+}

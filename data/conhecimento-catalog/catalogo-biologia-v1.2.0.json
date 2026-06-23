@@ -1,0 +1,2105 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.2.0",
+  "materiaId": "biologia",
+  "materiaLabel": "Biologia",
+  "areaEnem": "Ciências da Natureza",
+  "notas": "N0=área ENEM. Assunto=taxonomia Coach. N1=domínio. N2=escopo. N3=conhecimentoExigido livre por questão. Campos por escopo: descricao (cobre / NÃO cobre), keywords (fortes, peso 1.0), keywordsContexto (fracas, peso 0.4), exemplosEnunciado (referência semântica), negativeHints (termos que NÃO devem puxar a questão para cá), naoConfundirCom (IDs irmãos), regraDesempate, conceitoCanonic.",
+  "changelog": [
+    "1.2.0: Alinhado ao padrão Química v1.2.0, incluindo negativeHints em todos os escopos e regra global de pesos.",
+    "1.2.0: Mantidos os acréscimos da v1.1.0: aberrações cromossômicas, biomoléculas, histologia, embriologia, genética de populações, sistemática/cladogramas e zoologia.",
+    "1.2.0: Refatoração para o padrão Química v1.2 — descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate em escopos críticos.",
+    "1.2.0: confiancaMinima elevada para 0.45; documentadas regras de multiLabel, política N3, pesos e fallback bio.__nao_classificado."
+  ],
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "Aplica-se a N0–N2. Em N3 ver politicaN3.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2,
+      "nota": "Biologia é interdisciplinar (ex.: transgênico pode tocar genética + ecologia; fotossíntese pode tocar citologia + botânica). Retornar 1 primário e até 2 secundários com confiança própria."
+    },
+    "politicaN3": "A IA escolhe APENAS IDs em N0–N2. Em N3 (conhecimentoExigido) PROPÕE texto livre para revisão humana; N3 nunca é um ID.",
+    "regraDesempate": "Se ≥2 escopos irmãos disparam, aplicar negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confiança < confiancaMinima → bio.__nao_classificado.",
+    "pesos": {
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "exemplosEnunciado": "referência semântica (similaridade), não match literal",
+      "negativeHints": "penalidade: presença do termo reduz a probabilidade deste escopo"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "genetica",
+      "assuntoLabel": "Genética",
+      "dominios": [
+        {
+          "id": "bio.genetica.hereditariedade",
+          "label": "Hereditariedade e cruzamentos",
+          "escopos": [
+            {
+              "id": "bio.genetica.hereditariedade.mendel_monohibrido",
+              "label": "Leis de Mendel — cruzamento monohíbrido",
+              "descricao": "Cruzamento com 1 caractere; 1ª lei, proporções 3:1 e 1:2:1, quadro de Punnett mono. NÃO cobre 2+ caracteres (ver dihibrido).",
+              "keywords": [
+                "monohíbrido",
+                "primeira lei de Mendel",
+                "heterozigoto",
+                "homozigoto",
+                "dominante",
+                "recessivo",
+                "3:1"
+              ],
+              "keywordsContexto": [
+                "Punnett",
+                "autofecundação",
+                "fenótipo",
+                "genótipo"
+              ],
+              "exemplosEnunciado": [
+                "Do cruzamento entre dois indivíduos heterozigotos para um único gene, qual a proporção fenotípica esperada na F2?"
+              ],
+              "naoConfundirCom": [
+                "bio.genetica.hereditariedade.mendel_dihibrido"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.genetica.hereditariedade.mendel_dihibrido",
+              "label": "Leis de Mendel — cruzamento dihíbrido",
+              "descricao": "Dois caracteres simultâneos; 2ª lei (segregação independente), proporção 9:3:3:1.",
+              "keywords": [
+                "dihíbrido",
+                "diíbrido",
+                "segunda lei de Mendel",
+                "segregação independente",
+                "9:3:3:1"
+              ],
+              "keywordsContexto": [
+                "Punnett duplo",
+                "gametas independentes"
+              ],
+              "exemplosEnunciado": [
+                "Considerando dois genes em segregação independente, determine a proporção fenotípica da F2."
+              ],
+              "naoConfundirCom": [
+                "bio.genetica.hereditariedade.mendel_monohibrido",
+                "bio.genetica.hereditariedade.ligacao_epistasia"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.genetica.hereditariedade.ligacao_epistasia",
+              "label": "Linkage, epistasia e interação gênica",
+              "descricao": "Genes ligados (linkage), permutação/recombinação e interações gênicas (epistasia, gene complementar). NÃO cobre segregação independente simples.",
+              "keywords": [
+                "linkage",
+                "ligação gênica",
+                "permutação",
+                "crossing-over",
+                "epistasia",
+                "interação gênica",
+                "gene complementar",
+                "taxa de recombinação"
+              ],
+              "keywordsContexto": [
+                "centimorgan",
+                "mapa genético"
+              ],
+              "exemplosEnunciado": [
+                "A frequência de recombinação entre dois locos foi de 12%; determine a distância em centimorgans.",
+                "A cor da pelagem é definida por dois genes em que um inibe o outro — caracterize a interação."
+              ],
+              "naoConfundirCom": [
+                "bio.genetica.hereditariedade.mendel_dihibrido"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.genetica.hereditariedade.grupos_sanguineos",
+              "label": "Grupos sanguíneos e hereditariedade",
+              "descricao": "Alelos múltiplos e codominância nos sistemas ABO e Rh; herança e compatibilidade transfusional.",
+              "keywords": [
+                "sistema ABO",
+                "fator Rh",
+                "alelos múltiplos",
+                "codominância",
+                "aglutinação",
+                "tipo sanguíneo",
+                "doador universal",
+                "eritroblastose fetal"
+              ],
+              "keywordsContexto": [
+                "anticorpo anti-A",
+                "transfusão"
+              ],
+              "exemplosEnunciado": [
+                "Um casal Rh– e Rh+ teve filhos; explique o risco de eritroblastose fetal na segunda gestação."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.genetica.hereditariedade.ligada_ao_sexo",
+              "label": "Herança ligada ao sexo",
+              "descricao": "Herança ligada ao X/Y (daltonismo, hemofilia) e leitura de heredogramas. NÃO cobre aneuploidias como Down/Turner/Klinefelter (ver aberracoes_cromossomicas).",
+              "keywords": [
+                "herança ligada ao sexo",
+                "cromossomo X",
+                "daltonismo",
+                "hemofilia",
+                "heredograma",
+                "ligada ao Y",
+                "portadora"
+              ],
+              "keywordsContexto": [
+                "genealogia",
+                "probabilidade de herança"
+              ],
+              "exemplosEnunciado": [
+                "No heredograma, determine a probabilidade de um filho do casal ser daltônico."
+              ],
+              "naoConfundirCom": [
+                "bio.genetica.mutacao_biotec.aberracoes_cromossomicas"
+              ],
+              "regraDesempate": "Se o foco é um gene em um cromossomo sexual → aqui. Se é alteração no NÚMERO de cromossomos (ex.: trissomia) → aberracoes_cromossomicas.",
+              "negativeHints": [
+                "aneuploidia",
+                "cromossomo 21",
+                "síndrome de Down",
+                "trissomia"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bio.genetica.molecular",
+          "label": "Genética molecular e expressão",
+          "escopos": [
+            {
+              "id": "bio.genetica.molecular.dna_replicacao",
+              "label": "DNA — estrutura e replicação",
+              "descricao": "Estrutura do DNA (dupla-hélice, pareamento de bases) e replicação semiconservativa.",
+              "keywords": [
+                "DNA",
+                "dupla-hélice",
+                "pareamento de bases",
+                "replicação semiconservativa",
+                "DNA polimerase",
+                "nucleotídeo",
+                "adenina",
+                "timina"
+              ],
+              "keywordsContexto": [
+                "fita molde",
+                "ligação de hidrogênio"
+              ],
+              "exemplosEnunciado": [
+                "A partir da fita molde 3'-TAC-5', indique a sequência da fita complementar sintetizada."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.genetica.molecular.dogma_central",
+              "label": "Transcrição, tradução e dogma central",
+              "descricao": "Fluxo DNA→RNA→proteína: transcrição e tradução. NÃO foca a tabela do código genético (ver codigo_genetico).",
+              "keywords": [
+                "transcrição",
+                "tradução",
+                "RNA mensageiro",
+                "dogma central",
+                "RNA polimerase",
+                "splicing",
+                "éxon",
+                "íntron"
+              ],
+              "keywordsContexto": [
+                "maturação do RNA",
+                "transcrição reversa"
+              ],
+              "exemplosEnunciado": [
+                "Descreva o que ocorre desde a transcrição de um gene até a formação do polipeptídeo."
+              ],
+              "naoConfundirCom": [
+                "bio.genetica.molecular.codigo_genetico"
+              ],
+              "regraDesempate": "Se o foco é o PROCESSO (transcrição/tradução) → aqui. Se é a CORRESPONDÊNCIA códon–aminoácido → codigo_genetico.",
+              "negativeHints": []
+            },
+            {
+              "id": "bio.genetica.molecular.codigo_genetico",
+              "label": "Código genético e síntese proteica",
+              "descricao": "Códons, anticódons, degeneração do código e leitura na síntese proteica.",
+              "keywords": [
+                "código genético",
+                "códon",
+                "anticódon",
+                "tRNA",
+                "ribossomo",
+                "degeneração do código",
+                "quadro de leitura"
+              ],
+              "keywordsContexto": [
+                "aminoácido",
+                "códon de parada",
+                "AUG"
+              ],
+              "exemplosEnunciado": [
+                "Dada a sequência de mRNA AUG-GCU-UAA, determine os aminoácidos codificados e o ponto de término."
+              ],
+              "naoConfundirCom": [
+                "bio.genetica.molecular.dogma_central"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.genetica.molecular.regulacao_genica",
+              "label": "Regulação da expressão gênica",
+              "descricao": "Controle da expressão (óperon, epigenética, diferenciação celular a partir do mesmo genoma).",
+              "keywords": [
+                "regulação gênica",
+                "óperon",
+                "operon",
+                "expressão diferencial",
+                "epigenética",
+                "metilação",
+                "fator de transcrição"
+              ],
+              "keywordsContexto": [
+                "repressor",
+                "indutor",
+                "diferenciação celular"
+              ],
+              "exemplosEnunciado": [
+                "Explique como células com o mesmo genoma se diferenciam em tecidos distintos."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "bio.genetica.mutacao_biotec",
+          "label": "Mutação e biotecnologia",
+          "escopos": [
+            {
+              "id": "bio.genetica.mutacao_biotec.tipos_mutacao",
+              "label": "Tipos de mutação gênica e consequências",
+              "descricao": "Mutações gênicas (pontual, frameshift, silenciosa) e seus efeitos no fenótipo. NÃO cobre alteração no número de cromossomos (ver aberracoes_cromossomicas).",
+              "keywords": [
+                "mutação gênica",
+                "substituição de base",
+                "deleção",
+                "inserção",
+                "mutação pontual",
+                "frameshift",
+                "mutação silenciosa",
+                "mutação sem sentido"
+              ],
+              "keywordsContexto": [
+                "agente mutagênico",
+                "anemia falciforme"
+              ],
+              "exemplosEnunciado": [
+                "A troca de uma base alterou um códon mas não o aminoácido correspondente; classifique a mutação."
+              ],
+              "naoConfundirCom": [
+                "bio.genetica.mutacao_biotec.aberracoes_cromossomicas"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.genetica.mutacao_biotec.engenharia_transgenicos",
+              "label": "Engenharia genética e transgênicos",
+              "descricao": "DNA recombinante, OGM/transgênicos, enzimas de restrição, vetores e edição gênica.",
+              "keywords": [
+                "transgênico",
+                "OGM",
+                "DNA recombinante",
+                "enzima de restrição",
+                "plasmídeo",
+                "engenharia genética",
+                "organismo geneticamente modificado",
+                "CRISPR"
+              ],
+              "keywordsContexto": [
+                "vetor",
+                "insulina recombinante",
+                "gene de interesse"
+              ],
+              "exemplosEnunciado": [
+                "Descreva como um gene humano é inserido em uma bactéria para produção de insulina."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.genetica.mutacao_biotec.clonagem_terapia",
+              "label": "Clonagem e terapia gênica",
+              "descricao": "Clonagem (reprodutiva e terapêutica), células-tronco e terapia gênica/celular.",
+              "keywords": [
+                "clonagem",
+                "terapia gênica",
+                "célula-tronco",
+                "terapia celular",
+                "transferência nuclear",
+                "clonagem reprodutiva",
+                "clonagem terapêutica"
+              ],
+              "keywordsContexto": [
+                "regeneração de tecidos",
+                "célula-tronco embrionária"
+              ],
+              "exemplosEnunciado": [
+                "Diferencie clonagem reprodutiva de clonagem terapêutica quanto ao destino do embrião."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.genetica.mutacao_biotec.pcr_eletroforese",
+              "label": "PCR, eletroforese e técnicas de laboratório",
+              "descricao": "COMO as técnicas funcionam: PCR (amplificação) e eletroforese (separação). NÃO cobre o diagnóstico clínico da doença (ver doencas_infecciosas).",
+              "keywords": [
+                "PCR",
+                "eletroforese",
+                "amplificação de DNA",
+                "sequenciamento",
+                "perfil genético",
+                "gel de agarose",
+                "primer",
+                "termociclador"
+              ],
+              "keywordsContexto": [
+                "desnaturação",
+                "anelamento",
+                "extensão"
+              ],
+              "exemplosEnunciado": [
+                "O termociclador alterna temperaturas para desnaturar e replicar o DNA; explique cada etapa da PCR."
+              ],
+              "naoConfundirCom": [
+                "bio.fisiologia.saude_imunidade.doencas_infecciosas"
+              ],
+              "regraDesempate": "Se o foco é COMO a técnica funciona → aqui. Se é detecção/diagnóstico de um patógeno → doencas_infecciosas.",
+              "negativeHints": [
+                "epidemia",
+                "sintomas",
+                "tratamento"
+              ]
+            },
+            {
+              "id": "bio.genetica.mutacao_biotec.aberracoes_cromossomicas",
+              "label": "Aberrações cromossômicas e aneuploidias",
+              "descricao": "Alterações numéricas/estruturais de cromossomos: aneuploidias (Síndrome de Down/trissomia do 21, Turner, Klinefelter, Edwards, Patau), não disjunção e cariótipo. É AQUI que entra a Síndrome de Down.",
+              "keywords": [
+                "aneuploidia",
+                "trissomia",
+                "síndrome de Down",
+                "cromossomo 21",
+                "síndrome de Turner",
+                "síndrome de Klinefelter",
+                "não disjunção",
+                "cariótipo",
+                "monossomia",
+                "euploidia"
+              ],
+              "keywordsContexto": [
+                "meiose anormal",
+                "47 cromossomos"
+              ],
+              "exemplosEnunciado": [
+                "Um cariótipo apresenta 47 cromossomos com trissomia do par 21; identifique a síndrome e sua origem na meiose."
+              ],
+              "naoConfundirCom": [
+                "bio.genetica.hereditariedade.ligada_ao_sexo",
+                "bio.genetica.mutacao_biotec.tipos_mutacao"
+              ],
+              "negativeHints": [
+                "daltonismo",
+                "gene ligado ao X",
+                "hemofilia"
+              ],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "ecologia",
+      "assuntoLabel": "Ecologia",
+      "dominios": [
+        {
+          "id": "bio.ecologia.ecossistemas",
+          "label": "Ecossistemas e relações ecológicas",
+          "escopos": [
+            {
+              "id": "bio.ecologia.ecossistemas.cadeia_alimentar",
+              "label": "Cadeia alimentar e fluxo de energia",
+              "descricao": "Transferência de matéria/energia entre níveis tróficos em cadeias e teias; produtores, consumidores e decompositores.",
+              "keywords": [
+                "cadeia alimentar",
+                "teia alimentar",
+                "níveis tróficos",
+                "decompositor",
+                "consumidor",
+                "produtor",
+                "fluxo de energia"
+              ],
+              "keywordsContexto": [
+                "herbívoro",
+                "carnívoro",
+                "ciclagem de nutrientes"
+              ],
+              "exemplosEnunciado": [
+                "Em uma teia, a remoção dos decompositores compromete a ciclagem de nutrientes porque..."
+              ],
+              "naoConfundirCom": [
+                "bio.ecologia.ecossistemas.piramide_trofica"
+              ],
+              "regraDesempate": "Se o foco é a SEQUÊNCIA/quem-come-quem → aqui. Se é a REPRESENTAÇÃO quantitativa em níveis → piramide_trofica.",
+              "negativeHints": []
+            },
+            {
+              "id": "bio.ecologia.ecossistemas.piramide_trofica",
+              "label": "Pirâmide ecológica e relações tróficas",
+              "descricao": "Pirâmides ecológicas (energia, biomassa, números) e a perda de ~90% de energia entre níveis.",
+              "keywords": [
+                "pirâmide ecológica",
+                "pirâmide trófica",
+                "biomassa",
+                "pirâmide de energia",
+                "pirâmide de números",
+                "perda de energia",
+                "relações tróficas"
+              ],
+              "keywordsContexto": [
+                "produtividade",
+                "nível trófico"
+              ],
+              "exemplosEnunciado": [
+                "Por que a pirâmide de energia nunca aparece invertida?"
+              ],
+              "naoConfundirCom": [
+                "bio.ecologia.ecossistemas.cadeia_alimentar"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.ecologia.ecossistemas.ciclos_biogeoquimicos",
+              "label": "Ciclos biogeoquímicos (água, carbono, nitrogênio)",
+              "descricao": "Ciclagem da matéria nos ciclos do carbono, nitrogênio e água; papel de microrganismos.",
+              "keywords": [
+                "ciclo do carbono",
+                "ciclo do nitrogênio",
+                "ciclo da água",
+                "biogeoquímico",
+                "fixação de nitrogênio",
+                "nitrificação",
+                "desnitrificação"
+              ],
+              "keywordsContexto": [
+                "bactéria fixadora",
+                "decomposição"
+              ],
+              "exemplosEnunciado": [
+                "A fixação biológica do N2 atmosférico por bactérias o torna assimilável pelas plantas; explique a etapa."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.ecologia.ecossistemas.sucessao",
+              "label": "Sucessão ecológica",
+              "descricao": "Sucessão primária e secundária; comunidade pioneira → comunidade clímax.",
+              "keywords": [
+                "sucessão ecológica",
+                "comunidade clímax",
+                "comunidade pioneira",
+                "sucessão primária",
+                "sucessão secundária",
+                "espécie pioneira"
+              ],
+              "keywordsContexto": [
+                "recuperação de ecossistema",
+                "biodiversidade crescente"
+              ],
+              "exemplosEnunciado": [
+                "Após uma queimada, a recolonização gradual da área caracteriza a sucessão ecológica do tipo..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.ecologia.ecossistemas.relacoes_interspecificas",
+              "label": "Relações interespecíficas (predação, mutualismo, parasitismo)",
+              "descricao": "Interações entre espécies diferentes, harmônicas e desarmônicas. NÃO cobre relações intraespecíficas (mesma espécie).",
+              "keywords": [
+                "mutualismo",
+                "predação",
+                "parasitismo",
+                "comensalismo",
+                "amensalismo",
+                "competição interespecífica",
+                "inquilinismo",
+                "simbiose"
+              ],
+              "keywordsContexto": [
+                "relação harmônica",
+                "relação desarmônica",
+                "protocooperação"
+              ],
+              "exemplosEnunciado": [
+                "O líquen resulta da associação entre fungo e alga, ambos beneficiados; classifique a relação."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "bio.ecologia.populacoes_comunidades",
+          "label": "Populações, comunidades e biomas",
+          "escopos": [
+            {
+              "id": "bio.ecologia.populacoes_comunidades.crescimento_populacional",
+              "label": "Crescimento populacional e dinâmica",
+              "descricao": "Dinâmica populacional, curvas J e S, capacidade de suporte (K), densidade, natalidade e mortalidade.",
+              "keywords": [
+                "crescimento populacional",
+                "taxa de natalidade",
+                "taxa de mortalidade",
+                "curva sigmoide",
+                "capacidade de suporte",
+                "densidade populacional",
+                "resistência ambiental"
+              ],
+              "keywordsContexto": [
+                "curva J",
+                "curva S",
+                "potencial biótico"
+              ],
+              "exemplosEnunciado": [
+                "A curva sigmoide de crescimento estabiliza ao atingir a capacidade de suporte (K) porque..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.ecologia.populacoes_comunidades.biomas_brasil",
+              "label": "Biomas brasileiros e hotspots",
+              "descricao": "Biomas brasileiros (Amazônia, Cerrado, Caatinga, Mata Atlântica, Pampa, Pantanal), suas fitofisionomias e adaptações. O Brasil NÃO possui bioma desértico.",
+              "conceitoCanonic": "biomas_brasil",
+              "keywords": [
+                "bioma",
+                "caatinga",
+                "cerrado",
+                "pampa",
+                "pantanal",
+                "mata atlântica",
+                "amazônia",
+                "hotspot",
+                "fitofisionomia",
+                "vegetação xerófita"
+              ],
+              "keywordsContexto": [
+                "caducifólia",
+                "alagado",
+                "savana"
+              ],
+              "exemplosEnunciado": [
+                "Vegetação adaptada à seca, com plantas xerófitas e folhas caducas, é típica do bioma..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.ecologia.populacoes_comunidades.niveis_organizacao",
+              "label": "Níveis de organização ecológica",
+              "descricao": "Hierarquia ecológica: indivíduo → população → comunidade → ecossistema → biosfera.",
+              "keywords": [
+                "indivíduo",
+                "população",
+                "comunidade",
+                "ecossistema",
+                "biosfera",
+                "níveis de organização",
+                "habitat",
+                "nicho ecológico"
+              ],
+              "keywordsContexto": [
+                "bioma",
+                "biótopo"
+              ],
+              "exemplosEnunciado": [
+                "O conjunto de todas as populações que interagem em uma mesma área forma a..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "bio.ecologia.impactos",
+          "label": "Impactos humanos e conservação",
+          "escopos": [
+            {
+              "id": "bio.ecologia.impactos.poluicao_clima",
+              "label": "Poluição, efeito estufa e mudanças climáticas",
+              "descricao": "Poluição (ar, água, solo), efeito estufa, aquecimento global e mudanças climáticas; biorremediação como mitigação.",
+              "keywords": [
+                "efeito estufa",
+                "aquecimento global",
+                "mudanças climáticas",
+                "gases de efeito estufa",
+                "poluição",
+                "chuva ácida",
+                "eutrofização",
+                "biorremediação"
+              ],
+              "keywordsContexto": [
+                "CO2",
+                "metano",
+                "inversão térmica"
+              ],
+              "exemplosEnunciado": [
+                "O aumento de CO2 e CH4 intensifica o efeito estufa porque esses gases..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.ecologia.impactos.conservacao_ucs",
+              "label": "Conservação e unidades de conservação",
+              "descricao": "Estratégias de conservação e unidades de conservação (proteção integral x uso sustentável).",
+              "keywords": [
+                "unidade de conservação",
+                "parque nacional",
+                "reserva biológica",
+                "conservação",
+                "proteção integral",
+                "uso sustentável",
+                "corredor ecológico"
+              ],
+              "keywordsContexto": [
+                "manejo",
+                "APA",
+                "área protegida"
+              ],
+              "exemplosEnunciado": [
+                "A criação de corredores ecológicos entre fragmentos florestais favorece a conservação ao..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.ecologia.impactos.desmatamento_biodiversidade",
+              "label": "Desmatamento e perda de biodiversidade",
+              "descricao": "Desmatamento, fragmentação de habitat, extinção e perda de biodiversidade.",
+              "keywords": [
+                "desmatamento",
+                "biodiversidade",
+                "extinção",
+                "espécie ameaçada",
+                "fragmentação de habitat",
+                "perda de habitat"
+              ],
+              "keywordsContexto": [
+                "efeito de borda",
+                "espécie endêmica"
+              ],
+              "exemplosEnunciado": [
+                "A fragmentação de habitat reduz a biodiversidade ao isolar populações e..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "citologia",
+      "assuntoLabel": "Citologia",
+      "dominios": [
+        {
+          "id": "bio.citologia.bioquimica",
+          "label": "Bases químicas da vida",
+          "escopos": [
+            {
+              "id": "bio.citologia.bioquimica.biomoleculas",
+              "label": "Composição química da célula (biomoléculas)",
+              "descricao": "Água, sais minerais, carboidratos, lipídios, proteínas, ácidos nucleicos e vitaminas: estrutura e função. Enzimas têm escopo próprio.",
+              "keywords": [
+                "água",
+                "carboidrato",
+                "lipídio",
+                "proteína",
+                "ácido nucleico",
+                "vitamina",
+                "sais minerais",
+                "glicídio",
+                "aminoácido",
+                "macromolécula"
+              ],
+              "keywordsContexto": [
+                "polissacarídeo",
+                "glicogênio",
+                "monômero",
+                "polímero"
+              ],
+              "exemplosEnunciado": [
+                "O polissacarídeo de reserva energética das células animais é o...",
+                "A desnaturação de uma proteína altera principalmente qual nível de estrutura?"
+              ],
+              "naoConfundirCom": [
+                "bio.citologia.metabolismo.enzimas"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            }
+          ]
+        },
+        {
+          "id": "bio.citologia.organizacao",
+          "label": "Organização celular",
+          "escopos": [
+            {
+              "id": "bio.citologia.organizacao.procarionte_eucarionte",
+              "label": "Células procariontes e eucariontes",
+              "descricao": "Diferenças entre células procariontes e eucariontes; presença/ausência de carioteca e organelas membranosas.",
+              "keywords": [
+                "procarionte",
+                "eucarionte",
+                "carioteca",
+                "nucleoide",
+                "parede celular",
+                "núcleo organizado",
+                "célula bacteriana"
+              ],
+              "keywordsContexto": [
+                "ribossomo",
+                "envoltório nuclear"
+              ],
+              "exemplosEnunciado": [
+                "A ausência de envoltório nuclear e de organelas membranosas é característica de células..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.citologia.organizacao.organelas",
+              "label": "Organelas e funções",
+              "descricao": "Identificação e função das organelas citoplasmáticas. Quando o foco é a VIA metabólica da organela (respiração/fotossíntese), ver metabolismo.",
+              "keywords": [
+                "organela",
+                "retículo endoplasmático",
+                "complexo golgiense",
+                "lisossomo",
+                "peroxissomo",
+                "vacúolo",
+                "ribossomo",
+                "centríolo"
+              ],
+              "keywordsContexto": [
+                "cloroplasto",
+                "mitocôndria",
+                "pigmento",
+                "ATP sintase",
+                "termogenina"
+              ],
+              "exemplosEnunciado": [
+                "A organela responsável pela digestão intracelular é o..."
+              ],
+              "naoConfundirCom": [
+                "bio.citologia.metabolismo.respiracao_celular",
+                "bio.citologia.metabolismo.fotossintese"
+              ],
+              "regraDesempate": "Se a pergunta é 'qual organela / que função' → aqui. Se é a BIOQUÍMICA (etapas de respiração/fotossíntese) → metabolismo.",
+              "negativeHints": []
+            },
+            {
+              "id": "bio.citologia.organizacao.membrana_transporte",
+              "label": "Membrana plasmática e transporte",
+              "descricao": "Estrutura da membrana e tipos de transporte (passivo/ativo, osmose, difusão, endocitose/exocitose).",
+              "keywords": [
+                "membrana plasmática",
+                "transporte ativo",
+                "transporte passivo",
+                "osmose",
+                "difusão",
+                "difusão facilitada",
+                "bomba de sódio e potássio",
+                "endocitose"
+              ],
+              "keywordsContexto": [
+                "fagocitose",
+                "pinocitose",
+                "meio hipertônico",
+                "mosaico fluido"
+              ],
+              "exemplosEnunciado": [
+                "Uma célula colocada em meio hipertônico perde água por osmose, sofrendo..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "bio.citologia.metabolismo",
+          "label": "Metabolismo energético",
+          "escopos": [
+            {
+              "id": "bio.citologia.metabolismo.respiracao_celular",
+              "label": "Respiração celular",
+              "descricao": "Etapas da respiração aeróbia (glicólise, ciclo de Krebs, cadeia respiratória) e produção de ATP na mitocôndria.",
+              "keywords": [
+                "respiração celular",
+                "glicólise",
+                "ciclo de Krebs",
+                "cadeia respiratória",
+                "fosforilação oxidativa",
+                "aeróbia",
+                "saldo de ATP"
+              ],
+              "keywordsContexto": [
+                "mitocôndria",
+                "termogenina",
+                "NADH",
+                "aceptor de elétrons"
+              ],
+              "exemplosEnunciado": [
+                "O saldo energético da oxidação completa de uma molécula de glicose por respiração aeróbia é de aproximadamente..."
+              ],
+              "naoConfundirCom": [
+                "bio.citologia.organizacao.organelas",
+                "bio.citologia.metabolismo.fermentacao"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.citologia.metabolismo.fotossintese",
+              "label": "Fotossíntese",
+              "descricao": "Etapas bioquímicas (fase clara/escura, ciclo de Calvin, fotólise), organela e produtos. NÃO cobre fatores limitantes/produtividade (ver botanica.fotossintese_fatores).",
+              "conceitoCanonic": "fotossintese",
+              "keywords": [
+                "fotossíntese",
+                "fase clara",
+                "fase escura",
+                "ciclo de Calvin",
+                "fotofosforilação",
+                "fotólise da água"
+              ],
+              "keywordsContexto": [
+                "clorofila",
+                "cloroplasto",
+                "tilacoide",
+                "NADPH"
+              ],
+              "exemplosEnunciado": [
+                "Nas reações dependentes de luz, a fotólise da água é responsável pela liberação de..."
+              ],
+              "naoConfundirCom": [
+                "bio.botanica.fisiologia_vegetal.fotossintese_fatores"
+              ],
+              "regraDesempate": "Se o foco é a VIA/reações/organela → aqui. Se varia luz/CO2/temperatura medindo a TAXA → botanica.fotossintese_fatores.",
+              "negativeHints": [
+                "fator limitante",
+                "produtividade vegetal",
+                "taxa fotossintética"
+              ]
+            },
+            {
+              "id": "bio.citologia.metabolismo.fermentacao",
+              "label": "Fermentação e vias anaeróbias",
+              "descricao": "Vias anaeróbias (fermentação lática e alcoólica) e aplicações (biodigestor, biogás).",
+              "keywords": [
+                "fermentação",
+                "anaeróbia",
+                "fermentação lática",
+                "fermentação alcoólica",
+                "biogás",
+                "biodigestor",
+                "metano"
+              ],
+              "keywordsContexto": [
+                "ácido lático",
+                "etanol",
+                "levedura"
+              ],
+              "exemplosEnunciado": [
+                "Na ausência de O2, o músculo gera ATP por fermentação lática, acumulando..."
+              ],
+              "naoConfundirCom": [
+                "bio.citologia.metabolismo.respiracao_celular"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.citologia.metabolismo.enzimas",
+              "label": "Enzimas e catálise biológica",
+              "descricao": "Enzimas como catalisadores biológicos: especificidade, sítio ativo, energia de ativação e efeito de pH/temperatura. NÃO é sobre proteína estrutural em geral (ver biomoleculas).",
+              "keywords": [
+                "enzima",
+                "sítio ativo",
+                "substrato",
+                "catalisador biológico",
+                "energia de ativação",
+                "desnaturação enzimática",
+                "especificidade",
+                "cofator"
+              ],
+              "keywordsContexto": [
+                "pH ótimo",
+                "temperatura ótima",
+                "chave-fechadura"
+              ],
+              "exemplosEnunciado": [
+                "A elevação da temperatura acima do ótimo reduz a atividade enzimática porque..."
+              ],
+              "naoConfundirCom": [
+                "bio.citologia.bioquimica.biomoleculas"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            }
+          ]
+        },
+        {
+          "id": "bio.citologia.histologia",
+          "label": "Histologia animal",
+          "escopos": [
+            {
+              "id": "bio.citologia.histologia.tecidos_animais",
+              "label": "Tecidos animais",
+              "descricao": "Tecidos animais: epitelial, conjuntivo (e variedades: ósseo, sanguíneo, adiposo, cartilaginoso), muscular e nervoso.",
+              "keywords": [
+                "tecido epitelial",
+                "tecido conjuntivo",
+                "tecido muscular",
+                "tecido nervoso",
+                "tecido ósseo",
+                "tecido adiposo",
+                "matriz extracelular",
+                "histologia"
+              ],
+              "keywordsContexto": [
+                "fibra colágena",
+                "músculo estriado",
+                "epitélio glandular"
+              ],
+              "exemplosEnunciado": [
+                "O tecido com abundante matriz extracelular e função de sustentação é o...",
+                "As células musculares estriadas cardíacas diferem das esqueléticas por..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "bio.citologia.ciclo_celular",
+          "label": "Ciclo celular e divisão",
+          "escopos": [
+            {
+              "id": "bio.citologia.ciclo_celular.mitose",
+              "label": "Mitose e crescimento",
+              "descricao": "Divisão equacional: fases (prófase a telófase), manutenção do número cromossômico, crescimento e reparo.",
+              "keywords": [
+                "mitose",
+                "prófase",
+                "metáfase",
+                "anáfase",
+                "telófase",
+                "células-filhas idênticas",
+                "crescimento",
+                "reparo tecidual"
+              ],
+              "keywordsContexto": [
+                "cromátides-irmãs",
+                "fuso mitótico"
+              ],
+              "exemplosEnunciado": [
+                "A separação das cromátides-irmãs para polos opostos da célula ocorre na fase..."
+              ],
+              "naoConfundirCom": [
+                "bio.citologia.ciclo_celular.meiose"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.citologia.ciclo_celular.meiose",
+              "label": "Meiose e gametogênese",
+              "descricao": "Divisão reducional, formação de gametas e geração de variabilidade (crossing-over).",
+              "keywords": [
+                "meiose",
+                "redução cromossômica",
+                "gameta",
+                "crossing-over",
+                "variabilidade genética",
+                "meiose I",
+                "meiose II",
+                "bivalente"
+              ],
+              "keywordsContexto": [
+                "gametogênese",
+                "n e 2n"
+              ],
+              "exemplosEnunciado": [
+                "A redução de 2n para n e a recombinação gênica caracterizam a divisão por..."
+              ],
+              "naoConfundirCom": [
+                "bio.citologia.ciclo_celular.mitose"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.citologia.ciclo_celular.regulacao",
+              "label": "Regulação do ciclo celular",
+              "descricao": "Controle do ciclo, pontos de checagem, apoptose e relação com câncer.",
+              "keywords": [
+                "ciclo celular",
+                "ponto de checagem",
+                "interfase",
+                "ciclina",
+                "apoptose",
+                "câncer",
+                "proto-oncogene",
+                "gene supressor de tumor"
+              ],
+              "keywordsContexto": [
+                "proliferação descontrolada",
+                "tumor"
+              ],
+              "exemplosEnunciado": [
+                "A falha nos pontos de checagem pode levar à proliferação descontrolada, associada ao..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "fisiologia_humana",
+      "assuntoLabel": "Fisiologia Humana",
+      "dominios": [
+        {
+          "id": "bio.fisiologia.sistemas",
+          "label": "Sistemas do corpo humano",
+          "escopos": [
+            {
+              "id": "bio.fisiologia.sistemas.digestorio",
+              "label": "Sistema digestório e nutrição",
+              "descricao": "Digestão, absorção e nutrição humana; enzimas digestivas e órgãos do tubo digestório.",
+              "keywords": [
+                "sistema digestório",
+                "digestão",
+                "absorção",
+                "enzima digestiva",
+                "estômago",
+                "intestino delgado",
+                "bile",
+                "nutriente"
+              ],
+              "keywordsContexto": [
+                "amilase",
+                "pepsina",
+                "vilosidade"
+              ],
+              "exemplosEnunciado": [
+                "A emulsificação das gorduras no intestino delgado é realizada pela..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.fisiologia.sistemas.circulatorio",
+              "label": "Sistema circulatório e sangue",
+              "descricao": "Coração, vasos, sangue e circulação (grande/pequena); inclui ECG e coagulação.",
+              "keywords": [
+                "sistema circulatório",
+                "coração",
+                "sangue",
+                "artéria",
+                "veia",
+                "circulação",
+                "hemácia",
+                "plaqueta",
+                "coagulação"
+              ],
+              "keywordsContexto": [
+                "eletrocardiograma",
+                "ECG",
+                "sístole",
+                "diástole",
+                "hemorragia"
+              ],
+              "exemplosEnunciado": [
+                "O traçado do eletrocardiograma representa a atividade elétrica do...",
+                "Na pequena circulação, o sangue segue do coração aos pulmões para..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.fisiologia.sistemas.respiratorio",
+              "label": "Sistema respiratório e trocas gasosas",
+              "descricao": "Ventilação pulmonar e trocas gasosas (hematose); transporte de O2 e CO2.",
+              "keywords": [
+                "sistema respiratório",
+                "hematose",
+                "alvéolo",
+                "trocas gasosas",
+                "ventilação pulmonar",
+                "difusão de gases",
+                "hemoglobina"
+              ],
+              "keywordsContexto": [
+                "diafragma",
+                "transporte de gases"
+              ],
+              "exemplosEnunciado": [
+                "A hematose ocorre nos alvéolos por difusão de gases entre o ar e o sangue dos capilares..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.fisiologia.sistemas.excretor",
+              "label": "Sistema excretor e homeostase hídrica",
+              "descricao": "Filtração renal, formação da urina, osmorregulação e excreção nitrogenada.",
+              "keywords": [
+                "sistema excretor",
+                "rim",
+                "néfron",
+                "filtração glomerular",
+                "urina",
+                "osmorregulação",
+                "ureia",
+                "reabsorção"
+              ],
+              "keywordsContexto": [
+                "ADH",
+                "túbulo renal",
+                "homeostase"
+              ],
+              "exemplosEnunciado": [
+                "A reabsorção de água nos túbulos renais é intensificada pelo hormônio..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.fisiologia.sistemas.nervoso",
+              "label": "Sistema nervoso e integração",
+              "descricao": "Neurônio, impulso nervoso, sinapse, arco reflexo, SNC/SNP e órgãos dos sentidos (olho, etc.).",
+              "keywords": [
+                "sistema nervoso",
+                "neurônio",
+                "sinapse",
+                "impulso nervoso",
+                "arco reflexo",
+                "SNC",
+                "SNP",
+                "potencial de ação"
+              ],
+              "keywordsContexto": [
+                "reflexo patelar",
+                "retina",
+                "córnea",
+                "visão",
+                "neurotransmissor"
+              ],
+              "exemplosEnunciado": [
+                "No arco reflexo patelar, o estímulo é conduzido inicialmente pelo neurônio...",
+                "A formação nítida da imagem no olho humano ocorre sobre a..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.fisiologia.sistemas.reprodutor",
+              "label": "Sistema reprodutor humano",
+              "descricao": "Anatomia/fisiologia reprodutiva, gametogênese, ciclo menstrual e fecundação. Desenvolvimento embrionário inicial → ver embriologia_desenvolvimento.",
+              "keywords": [
+                "sistema reprodutor",
+                "gametogênese",
+                "espermatozoide",
+                "óvulo",
+                "fecundação",
+                "ovulação",
+                "ciclo menstrual"
+              ],
+              "keywordsContexto": [
+                "fertilização in vitro",
+                "gestação",
+                "espermatogênese"
+              ],
+              "exemplosEnunciado": [
+                "A fecundação humana normalmente ocorre na porção inicial da..."
+              ],
+              "naoConfundirCom": [
+                "bio.fisiologia.sistemas.embriologia_desenvolvimento"
+              ],
+              "regraDesempate": "Se o foco é gameta/fecundação/órgãos reprodutores → aqui. Se é o que acontece DEPOIS (clivagem, folhetos, anexos) → embriologia_desenvolvimento.",
+              "negativeHints": []
+            },
+            {
+              "id": "bio.fisiologia.sistemas.embriologia_desenvolvimento",
+              "label": "Embriologia e desenvolvimento embrionário",
+              "descricao": "Desenvolvimento embrionário: clivagem, mórula, blástula, gástrula, folhetos germinativos e anexos embrionários.",
+              "keywords": [
+                "embriologia",
+                "clivagem",
+                "blástula",
+                "gástrula",
+                "mórula",
+                "folheto germinativo",
+                "ectoderme",
+                "mesoderme",
+                "endoderme",
+                "anexos embrionários"
+              ],
+              "keywordsContexto": [
+                "âmnio",
+                "cório",
+                "placenta",
+                "nêurula"
+              ],
+              "exemplosEnunciado": [
+                "A formação dos três folhetos germinativos ocorre na etapa denominada...",
+                "O âmnio e o cório são exemplos de anexos..."
+              ],
+              "naoConfundirCom": [
+                "bio.fisiologia.sistemas.reprodutor"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            }
+          ]
+        },
+        {
+          "id": "bio.fisiologia.endocrino",
+          "label": "Regulação hormonal",
+          "escopos": [
+            {
+              "id": "bio.fisiologia.endocrino.hormonios_feedback",
+              "label": "Hormônios e feedback",
+              "descricao": "Glândulas, hormônios e regulação por feedback (eixo hipotálamo-hipófise).",
+              "keywords": [
+                "hormônio",
+                "glândula endócrina",
+                "feedback negativo",
+                "hipófise",
+                "tireoide",
+                "hipotálamo",
+                "regulação hormonal"
+              ],
+              "keywordsContexto": [
+                "TSH",
+                "adrenalina",
+                "eixo endócrino"
+              ],
+              "exemplosEnunciado": [
+                "O excesso de hormônio tireoidiano circulante inibe a liberação de TSH por meio de..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.fisiologia.endocrino.diabetes_metabolismo",
+              "label": "Diabetes e regulação da glicose",
+              "descricao": "Controle da glicemia por insulina e glucagon; diabetes e resistência à insulina.",
+              "keywords": [
+                "insulina",
+                "glucagon",
+                "glicemia",
+                "diabetes",
+                "pâncreas",
+                "glicose sanguínea",
+                "resistência à insulina"
+              ],
+              "keywordsContexto": [
+                "ilhotas de Langerhans",
+                "hiperglicemia"
+              ],
+              "exemplosEnunciado": [
+                "Após uma refeição rica em carboidratos, a redução da glicemia é promovida pela..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "bio.fisiologia.saude_imunidade",
+          "label": "Saúde, doenças e imunidade",
+          "escopos": [
+            {
+              "id": "bio.fisiologia.saude_imunidade.imunidade_vacinas",
+              "label": "Imunidade, antígenos e vacinas",
+              "descricao": "MECANISMO de defesa: resposta imune, antígeno/anticorpo, imunização ativa x passiva, soro x vacina, memória imunológica.",
+              "keywords": [
+                "imunidade",
+                "anticorpo",
+                "antígeno",
+                "vacina",
+                "soro",
+                "linfócito",
+                "resposta imune",
+                "imunização ativa",
+                "imunização passiva",
+                "memória imunológica"
+              ],
+              "keywordsContexto": [
+                "linfócito B",
+                "linfócito T",
+                "fagocitose"
+              ],
+              "exemplosEnunciado": [
+                "A vacina confere imunidade ativa porque estimula o organismo a produzir..."
+              ],
+              "naoConfundirCom": [
+                "bio.fisiologia.saude_imunidade.doencas_infecciosas"
+              ],
+              "regraDesempate": "Se o foco é o MECANISMO de defesa/vacina → aqui. Se é o AGENTE/doença em si → doencas_infecciosas.",
+              "negativeHints": []
+            },
+            {
+              "id": "bio.fisiologia.saude_imunidade.doencas_infecciosas",
+              "label": "Doenças infecciosas (vírus, bactérias)",
+              "descricao": "Doenças causadas por vírus/bactérias, transmissão e diagnóstico. NÃO cobre o mecanismo imune (ver imunidade_vacinas) nem a técnica de PCR em si (ver pcr_eletroforese).",
+              "keywords": [
+                "doença infecciosa",
+                "infecção",
+                "antibiótico",
+                "antimicrobiano",
+                "dengue",
+                "covid",
+                "diagnóstico",
+                "transmissão"
+              ],
+              "keywordsContexto": [
+                "coronavírus",
+                "zika",
+                "ebola",
+                "vírus",
+                "bactéria"
+              ],
+              "exemplosEnunciado": [
+                "O uso indiscriminado de antibióticos favorece a seleção de bactérias...",
+                "A transmissão da dengue ao ser humano ocorre pela picada do mosquito..."
+              ],
+              "naoConfundirCom": [
+                "bio.fisiologia.saude_imunidade.imunidade_vacinas",
+                "bio.genetica.mutacao_biotec.pcr_eletroforese",
+                "bio.microbiologia.diversidade.reinos_virus"
+              ],
+              "negativeHints": [
+                "como funciona a PCR",
+                "eletroforese",
+                "primer"
+              ],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.fisiologia.saude_imunidade.saude_publica",
+              "label": "Saúde pública e epidemiologia básica",
+              "descricao": "Epidemiologia básica (epidemia/endemia/pandemia), profilaxia e controle de vetores.",
+              "keywords": [
+                "epidemia",
+                "endemia",
+                "pandemia",
+                "saúde pública",
+                "profilaxia",
+                "controle de vetor",
+                "vacinação em massa"
+              ],
+              "keywordsContexto": [
+                "aedes aegypti",
+                "wolbachia",
+                "notificação compulsória"
+              ],
+              "exemplosEnunciado": [
+                "A introdução de mosquitos infectados com Wolbachia tem como objetivo reduzir a transmissão de..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "evolucao",
+      "assuntoLabel": "Evolução",
+      "dominios": [
+        {
+          "id": "bio.evolucao.teorias",
+          "label": "Teorias e evidências da evolução",
+          "escopos": [
+            {
+              "id": "bio.evolucao.teorias.selecao_natural",
+              "label": "Seleção natural e Darwinismo",
+              "descricao": "Seleção natural e darwinismo: variação, adaptação e sobrevivência diferencial; contraste com lamarckismo. NÃO cobre genética de populações (ver genetica_populacoes).",
+              "keywords": [
+                "seleção natural",
+                "darwinismo",
+                "darwin",
+                "adaptação",
+                "sobrevivência diferencial",
+                "pressão seletiva",
+                "lamarckismo",
+                "uso e desuso"
+              ],
+              "keywordsContexto": [
+                "aptidão",
+                "variação favorável"
+              ],
+              "exemplosEnunciado": [
+                "Mariposas de coloração escura tornaram-se mais frequentes em áreas industrializadas por ação da seleção..."
+              ],
+              "naoConfundirCom": [
+                "bio.evolucao.teorias.neodarwinismo",
+                "bio.evolucao.mecanismos.genetica_populacoes"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.evolucao.teorias.evidencias_fosseis",
+              "label": "Evidências — fósseis, anatomia comparada, embriologia",
+              "descricao": "Evidências da evolução: fósseis e datação, anatomia comparada (homologia/analogia, órgãos vestigiais) e embriologia comparada.",
+              "keywords": [
+                "fóssil",
+                "datação",
+                "carbono-14",
+                "meia-vida",
+                "anatomia comparada",
+                "órgão homólogo",
+                "órgão análogo",
+                "órgão vestigial",
+                "embriologia comparada"
+              ],
+              "keywordsContexto": [
+                "mamute",
+                "emissão beta",
+                "convergência adaptativa"
+              ],
+              "exemplosEnunciado": [
+                "Órgãos homólogos, como o braço humano e a asa do morcego, evidenciam...",
+                "A datação de um fóssil por carbono-14 baseia-se na meia-vida do isótopo..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.evolucao.teorias.neodarwinismo",
+              "label": "Neodarwinismo e síntese evolutiva",
+              "descricao": "Teoria sintética: integra seleção natural com mutação, recombinação e deriva como fontes/forças sobre a variabilidade.",
+              "keywords": [
+                "neodarwinismo",
+                "teoria sintética",
+                "síntese evolutiva",
+                "mutação",
+                "recombinação",
+                "deriva genética",
+                "fluxo gênico"
+              ],
+              "keywordsContexto": [
+                "variabilidade genética",
+                "genética mendeliana"
+              ],
+              "exemplosEnunciado": [
+                "A teoria sintética acrescentou ao darwinismo o conhecimento sobre as fontes de..."
+              ],
+              "naoConfundirCom": [
+                "bio.evolucao.teorias.selecao_natural"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            }
+          ]
+        },
+        {
+          "id": "bio.evolucao.mecanismos",
+          "label": "Mecanismos evolutivos",
+          "escopos": [
+            {
+              "id": "bio.evolucao.mecanismos.variacao_mutacao",
+              "label": "Variação, mutação e recombinação",
+              "descricao": "Fontes de variabilidade genética (mutação como fonte primária, recombinação) e seu papel evolutivo.",
+              "keywords": [
+                "variabilidade genética",
+                "mutação",
+                "recombinação gênica",
+                "fonte de variação",
+                "deriva genética",
+                "fluxo gênico"
+              ],
+              "keywordsContexto": [
+                "efeito gargalo",
+                "efeito fundador"
+              ],
+              "exemplosEnunciado": [
+                "A fonte primária de variabilidade genética, sobre a qual a seleção atua, é a..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.evolucao.mecanismos.especiacao",
+              "label": "Especiação e isolamento reprodutivo",
+              "descricao": "Formação de espécies, isolamento reprodutivo (pré e pós-zigótico), especiação alopátrica e simpátrica.",
+              "keywords": [
+                "especiação",
+                "isolamento reprodutivo",
+                "especiação alopátrica",
+                "especiação simpátrica",
+                "barreira geográfica",
+                "conceito biológico de espécie",
+                "isolamento pré-zigótico"
+              ],
+              "keywordsContexto": [
+                "radiação adaptativa",
+                "híbrido estéril"
+              ],
+              "exemplosEnunciado": [
+                "A separação de uma população por uma barreira geográfica pode levar à especiação do tipo..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.evolucao.mecanismos.resistencia_antibioticos",
+              "label": "Seleção artificial e resistência a antibióticos",
+              "descricao": "Seleção artificial e evolução de resistência (antibióticos, agrotóxicos) como exemplos de seleção atuando.",
+              "keywords": [
+                "resistência a antibióticos",
+                "seleção artificial",
+                "resistência a agrotóxicos",
+                "superbactéria",
+                "domesticação",
+                "pressão seletiva"
+              ],
+              "keywordsContexto": [
+                "uso indiscriminado",
+                "linhagem resistente"
+              ],
+              "exemplosEnunciado": [
+                "O surgimento de bactérias resistentes após o uso prolongado de antibióticos exemplifica a seleção..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.evolucao.mecanismos.genetica_populacoes",
+              "label": "Genética de populações e Hardy-Weinberg",
+              "descricao": "Frequências alélicas e genotípicas; equilíbrio de Hardy-Weinberg, suas condições e cálculos (p² + 2pq + q²).",
+              "keywords": [
+                "genética de populações",
+                "Hardy-Weinberg",
+                "frequência alélica",
+                "frequência genotípica",
+                "equilíbrio gênico",
+                "pool gênico",
+                "p2 2pq q2"
+              ],
+              "keywordsContexto": [
+                "população em equilíbrio",
+                "alelo recessivo"
+              ],
+              "exemplosEnunciado": [
+                "Em uma população em equilíbrio de Hardy-Weinberg, a frequência do alelo recessivo é 0,3; calcule a proporção de heterozigotos."
+              ],
+              "naoConfundirCom": [
+                "bio.evolucao.teorias.selecao_natural"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            }
+          ]
+        },
+        {
+          "id": "bio.evolucao.origem_vida",
+          "label": "Origem da vida e evolução humana",
+          "escopos": [
+            {
+              "id": "bio.evolucao.origem_vida.teorias_abiogenese",
+              "label": "Origem da vida e teorias históricas",
+              "descricao": "Origem da vida: abiogênese x biogênese, experimentos clássicos (Redi, Pasteur, Miller) e hipóteses (heterotrófica, coacervatos).",
+              "keywords": [
+                "origem da vida",
+                "abiogênese",
+                "biogênese",
+                "Pasteur",
+                "Redi",
+                "Miller",
+                "coacervatos",
+                "hipótese heterotrófica",
+                "panspermia"
+              ],
+              "keywordsContexto": [
+                "geração espontânea",
+                "atmosfera primitiva"
+              ],
+              "exemplosEnunciado": [
+                "O experimento de Pasteur com balões de pescoço de cisne refutou a hipótese da..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.evolucao.origem_vida.evolucao_humana",
+              "label": "Evolução humana e primatas",
+              "descricao": "Evolução dos hominídeos e relação evolutiva com os primatas.",
+              "keywords": [
+                "evolução humana",
+                "hominídeo",
+                "Homo sapiens",
+                "Australopithecus",
+                "primata",
+                "ancestral comum",
+                "bipedismo"
+              ],
+              "keywordsContexto": [
+                "capacidade craniana",
+                "Homo erectus"
+              ],
+              "exemplosEnunciado": [
+                "O aumento da capacidade craniana ao longo dos hominídeos está associado ao desenvolvimento de..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "microbiologia",
+      "assuntoLabel": "Microbiologia e Parasitologia",
+      "dominios": [
+        {
+          "id": "bio.microbiologia.diversidade",
+          "label": "Diversidade e classificação dos seres vivos",
+          "escopos": [
+            {
+              "id": "bio.microbiologia.diversidade.reinos_virus",
+              "label": "Reinos, vírus, bactérias e fungos",
+              "descricao": "CLASSIFICAÇÃO em reinos/domínios e características de vírus, bactérias, protistas e fungos. NÃO cobre a doença causada (ver doencas_infecciosas).",
+              "keywords": [
+                "reino",
+                "domínio",
+                "vírus",
+                "bactéria",
+                "fungo",
+                "protista",
+                "monera",
+                "retrovírus",
+                "cinco reinos",
+                "classificação dos seres vivos"
+              ],
+              "keywordsContexto": [
+                "acelular",
+                "heterótrofo por absorção",
+                "capsídeo"
+              ],
+              "exemplosEnunciado": [
+                "Vírus são considerados acelulares porque...",
+                "Os fungos são heterótrofos por absorção e armazenam energia na forma de..."
+              ],
+              "naoConfundirCom": [
+                "bio.fisiologia.saude_imunidade.doencas_infecciosas"
+              ],
+              "regraDesempate": "Se o foco é a CLASSIFICAÇÃO/características do grupo → aqui. Se é a DOENÇA causada e seu manejo → doencas_infecciosas.",
+              "negativeHints": []
+            },
+            {
+              "id": "bio.microbiologia.diversidade.parasitos_vetores",
+              "label": "Parasitos, vetores e doenças tropicais",
+              "descricao": "Parasitoses e ciclos parasito-hospedeiro-vetor; doenças tropicais (Chagas, malária, leishmaniose, esquistossomose).",
+              "keywords": [
+                "leishmaniose",
+                "doença de Chagas",
+                "malária",
+                "esquistossomose",
+                "parasita",
+                "vetor",
+                "zoonose",
+                "protozoário",
+                "hospedeiro intermediário",
+                "ciclo do parasita"
+              ],
+              "keywordsContexto": [
+                "barbeiro",
+                "caramujo",
+                "Trypanosoma",
+                "Plasmodium"
+              ],
+              "exemplosEnunciado": [
+                "O ciclo do Schistosoma envolve o caramujo como hospedeiro...",
+                "A transmissão da doença de Chagas pelo barbeiro ocorre por meio das fezes contaminadas durante o..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.microbiologia.diversidade.sistematica_cladogramas",
+              "label": "Sistemática, filogenia e cladogramas",
+              "descricao": "Sistemática filogenética: leitura de cladogramas, ancestralidade comum, grupos monofiléticos, caráter derivado e nomenclatura.",
+              "keywords": [
+                "cladograma",
+                "filogenia",
+                "sistemática",
+                "ancestral comum",
+                "grupo monofilético",
+                "táxon",
+                "nomenclatura binomial",
+                "caráter derivado",
+                "clado"
+              ],
+              "keywordsContexto": [
+                "árvore filogenética",
+                "sinapomorfia",
+                "categoria taxonômica"
+              ],
+              "exemplosEnunciado": [
+                "No cladograma, os dois táxons que compartilham o ancestral comum mais recente são...",
+                "A característica derivada compartilhada que define um clado é denominada..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "zoologia",
+      "assuntoLabel": "Zoologia",
+      "dominios": [
+        {
+          "id": "bio.zoologia.diversidade_animal",
+          "label": "Diversidade animal",
+          "escopos": [
+            {
+              "id": "bio.zoologia.diversidade_animal.invertebrados",
+              "label": "Invertebrados",
+              "descricao": "Filos de invertebrados (poríferos a artrópodes e equinodermos): características, simetria, novidades evolutivas e respiração/excreção.",
+              "keywords": [
+                "invertebrado",
+                "porífero",
+                "cnidário",
+                "platelminto",
+                "nematódeo",
+                "anelídeo",
+                "molusco",
+                "artrópode",
+                "equinodermo",
+                "exoesqueleto"
+              ],
+              "keywordsContexto": [
+                "simetria radial",
+                "metameria",
+                "cnidócito",
+                "celoma"
+              ],
+              "exemplosEnunciado": [
+                "A presença de patas articuladas e exoesqueleto quitinoso caracteriza o filo dos...",
+                "Os cnidários apresentam simetria radial e células urticantes denominadas..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.zoologia.diversidade_animal.vertebrados",
+              "label": "Vertebrados",
+              "descricao": "Classes de vertebrados (peixes, anfíbios, répteis, aves, mamíferos): adaptações ao ambiente, reprodução e termorregulação.",
+              "keywords": [
+                "vertebrado",
+                "peixe",
+                "anfíbio",
+                "réptil",
+                "ave",
+                "mamífero",
+                "ovo amniótico",
+                "ectotérmico",
+                "endotérmico",
+                "glândula mamária"
+              ],
+              "keywordsContexto": [
+                "anuro",
+                "independência da água",
+                "âmnio"
+              ],
+              "exemplosEnunciado": [
+                "O surgimento do ovo amniótico permitiu aos répteis a conquista plena do ambiente...",
+                "Anfíbios anuros dependem da água para a reprodução porque seus ovos..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "botanica",
+      "assuntoLabel": "Botânica",
+      "dominios": [
+        {
+          "id": "bio.botanica.morfologia",
+          "label": "Morfologia e anatomia vegetal",
+          "escopos": [
+            {
+              "id": "bio.botanica.morfologia.tecidos_vegetais",
+              "label": "Tecidos vegetais",
+              "descricao": "Tecidos vegetais: meristemas, de revestimento (epiderme, súber), de sustentação e condutores (xilema, floema). O transporte de seiva em si tem escopo próprio.",
+              "keywords": [
+                "tecido vegetal",
+                "meristema",
+                "epiderme",
+                "parênquima",
+                "xilema",
+                "floema",
+                "súber",
+                "colênquima",
+                "esclerênquima"
+              ],
+              "keywordsContexto": [
+                "câmbio",
+                "felogênio",
+                "estômato"
+              ],
+              "exemplosEnunciado": [
+                "O crescimento em espessura do caule deve-se à atividade do meristema..."
+              ],
+              "naoConfundirCom": [
+                "bio.botanica.fisiologia_vegetal.transpiracao_seiva"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.botanica.morfologia.orgaos_vegetais",
+              "label": "Órgãos vegetais (raiz, caule, folha)",
+              "descricao": "Órgãos vegetativos: raiz, caule e folha; morfologia e adaptações ao ambiente.",
+              "keywords": [
+                "raiz",
+                "caule",
+                "folha",
+                "órgão vegetal",
+                "gema",
+                "nó",
+                "entrenó",
+                "adaptação foliar",
+                "raiz tuberosa"
+              ],
+              "keywordsContexto": [
+                "espinho",
+                "gavinha",
+                "bulbo"
+              ],
+              "exemplosEnunciado": [
+                "O cacto apresenta folhas modificadas em espinhos como adaptação para reduzir a..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "bio.botanica.fisiologia_vegetal",
+          "label": "Fisiologia vegetal",
+          "escopos": [
+            {
+              "id": "bio.botanica.fisiologia_vegetal.fotossintese_fatores",
+              "label": "Fotossíntese e fatores limitantes",
+              "descricao": "Fatores que afetam a TAXA de fotossíntese (luz, CO2, temperatura) e a produtividade vegetal. NÃO cobre as reações bioquímicas em si (ver citologia.fotossintese).",
+              "conceitoCanonic": "fotossintese",
+              "keywords": [
+                "fator limitante",
+                "taxa de fotossíntese",
+                "intensidade luminosa",
+                "concentração de CO2",
+                "ponto de compensação",
+                "produtividade primária",
+                "saturação luminosa"
+              ],
+              "keywordsContexto": [
+                "temperatura",
+                "gráfico de taxa"
+              ],
+              "exemplosEnunciado": [
+                "No gráfico, a taxa de fotossíntese deixa de aumentar com a luz porque outro fator passou a ser..."
+              ],
+              "naoConfundirCom": [
+                "bio.citologia.metabolismo.fotossintese"
+              ],
+              "regraDesempate": "Se varia luz/CO2/temperatura medindo a TAXA → aqui. Se descreve as REAÇÕES (fase clara/escura, Calvin) → citologia.fotossintese.",
+              "negativeHints": [
+                "ciclo de Calvin",
+                "fase clara",
+                "fase escura"
+              ]
+            },
+            {
+              "id": "bio.botanica.fisiologia_vegetal.transpiracao_seiva",
+              "label": "Transpiração e transporte de seiva",
+              "descricao": "Transporte de seiva bruta e elaborada; transpiração, teoria da coesão-tensão e abertura estomática.",
+              "keywords": [
+                "transpiração",
+                "seiva bruta",
+                "seiva elaborada",
+                "coesão-tensão",
+                "estômato",
+                "pressão radicular",
+                "transporte de seiva"
+              ],
+              "keywordsContexto": [
+                "xilema",
+                "floema",
+                "guttação"
+              ],
+              "exemplosEnunciado": [
+                "A perda de água pelos estômatos gera a tensão que puxa a coluna de água através do..."
+              ],
+              "naoConfundirCom": [
+                "bio.botanica.morfologia.tecidos_vegetais"
+              ],
+              "negativeHints": [],
+              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+            },
+            {
+              "id": "bio.botanica.fisiologia_vegetal.hormonios_vegetais",
+              "label": "Hormônios vegetais e tropismos",
+              "descricao": "Fito-hormônios (auxina, giberelina, citocinina, etileno, ácido abscísico) e tropismos.",
+              "keywords": [
+                "hormônio vegetal",
+                "auxina",
+                "giberelina",
+                "citocinina",
+                "etileno",
+                "ácido abscísico",
+                "fototropismo",
+                "gravitropismo",
+                "tropismo"
+              ],
+              "keywordsContexto": [
+                "dominância apical",
+                "amadurecimento de fruto"
+              ],
+              "exemplosEnunciado": [
+                "A curvatura do caule em direção à luz (fototropismo) decorre da distribuição assimétrica de..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        },
+        {
+          "id": "bio.botanica.reproducao",
+          "label": "Reprodução e grupos botânicos",
+          "escopos": [
+            {
+              "id": "bio.botanica.reproducao.polinizacao_fruto",
+              "label": "Polinização, fruto e semente",
+              "descricao": "Reprodução das angiospermas: polinização, dupla fecundação, formação de fruto e semente; reprodução assexuada vegetal.",
+              "keywords": [
+                "polinização",
+                "dupla fecundação",
+                "fruto",
+                "semente",
+                "reprodução assexuada",
+                "estaquia",
+                "propagação vegetativa"
+              ],
+              "keywordsContexto": [
+                "dispersão de sementes",
+                "enxertia"
+              ],
+              "exemplosEnunciado": [
+                "O fruto desenvolve-se a partir do amadurecimento do...",
+                "A propagação por estaquia é uma forma de reprodução..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            },
+            {
+              "id": "bio.botanica.reproducao.grupos_gimno_angio",
+              "label": "Grupos botânicos e conquista do ambiente terrestre",
+              "descricao": "Grupos vegetais (briófitas, pteridófitas, gimnospermas, angiospermas) e novidades evolutivas na conquista do ambiente terrestre.",
+              "keywords": [
+                "briófita",
+                "pteridófita",
+                "gimnosperma",
+                "angiosperma",
+                "grupo vegetal",
+                "vaso condutor",
+                "grão de pólen",
+                "flor",
+                "fruto"
+              ],
+              "keywordsContexto": [
+                "independência da água",
+                "semente",
+                "conquista do ambiente terrestre"
+              ],
+              "exemplosEnunciado": [
+                "A presença de flores e frutos é exclusiva das...",
+                "As briófitas dependem da água para a reprodução por não possuírem..."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "__sistema",
+      "assuntoLabel": "Sistema (não temático)",
+      "dominios": [
+        {
+          "id": "bio.__sistema.fallback",
+          "label": "Fallback / revisão",
+          "escopos": [
+            {
+              "id": "bio.__nao_classificado",
+              "label": "Não classificado / revisar",
+              "descricao": "Bucket de fallback. Receber questões cuja confiança máxima ficou abaixo de confiancaMinima ou com empate irresolvível entre escopos. NÃO conta para maxN2PorMateria. Toda questão aqui deve ser revisada por humano.",
+              "exemplosEnunciado": [
+                "Uma questão apresenta uma situação-problema e pede aplicar não classificado / revisar para chegar à alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "keywords": [],
+              "keywordsContexto": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

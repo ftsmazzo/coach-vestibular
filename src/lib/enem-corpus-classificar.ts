@@ -11,6 +11,7 @@ import {
 import {
   CLASSIFICADOR_CATALOGO_V11,
   classificarLoteCatalogoV11,
+  type ClassificarV11Opts,
 } from "@/lib/enem-classificar/classificar-catalogo-v11";
 import {
   classificarLoteIA,
@@ -31,12 +32,18 @@ import {
 } from "@/lib/enem-classificar/triagem-natureza";
 import { CORPUS_MATERIA_CONFIG } from "@/lib/enem-corpus-materia";
 import {
-  assuntoElegivelTrilha,
-  filtrarEscoposLinguagens,
   instrucaoIaLinguagens,
-  trilhaLinguagensEfetiva,
   type IdiomaTrilhaLinguagens,
 } from "@/lib/enem-classificar/linguagens-rota";
+import {
+  routeLanguageDiscipline,
+  filtrarEscoposPorRota,
+  validarEscopoNaRota,
+  versaoClassificacaoComRota,
+  type DisciplinaLinguagens,
+  type RotaLinguagens,
+} from "@/lib/enem-classificar/route-language-discipline";
+import { idFallbackNaoClassificado } from "@/lib/conhecimento-catalog/load";
 import { CLASSIFICACAO_CONFIANCA_MIN } from "@/lib/enem-corpus-stats";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
 
@@ -166,6 +173,7 @@ async function classificarLoteQuestoes(
     catalogLabel: string;
     catalog?: MateriaCatalogo;
     instrucaoExtra?: string;
+    v11Opts?: ClassificarV11Opts;
   }
 ): Promise<Array<{ fonteId: string; resultado: ResultadoClassificacao }>> {
   const resultados: Array<{ fonteId: string; resultado: ResultadoClassificacao }> = [];
@@ -186,7 +194,8 @@ async function classificarLoteQuestoes(
                 gabarito: q.gabarito,
               })),
               opts.catalog,
-              opts.escopos
+              opts.escopos,
+              opts.v11Opts
             )
           : await classificarLoteIA(
               lote.map((q) => ({ fonteId: q.fonteId, texto: q.texto })),
@@ -340,19 +349,74 @@ async function classificarDisciplinaUnica(
   };
 }
 
-function n2ValidoTrilha(
+function n2ValidoRota(
   escopoId: string | null,
   confianca: number | null,
-  trilha: IdiomaTrilhaLinguagens,
+  rota: RotaLinguagens,
   escopos: ReturnType<typeof indexarEscopos>,
   confiancaMinima: number,
   prefixoN2: string
 ): boolean {
   if (!escopoId?.startsWith(`${prefixoN2}.`)) return false;
   if ((confianca ?? 0) < confiancaMinima) return false;
-  const entry = escopos.get(escopoId);
-  if (!entry) return false;
-  return assuntoElegivelTrilha(entry.assuntoId, trilha);
+  return validarEscopoNaRota(
+    { escopoId, assuntoId: escopos.get(escopoId)?.assuntoId ?? null },
+    rota,
+    escopos,
+    idFallbackNaoClassificado("linguagens")
+  );
+}
+
+function disciplinaParaTrilha(d: DisciplinaLinguagens): IdiomaTrilhaLinguagens {
+  if (d === "ingles") return "ingles";
+  if (d === "espanhol") return "espanhol";
+  return "COMUM";
+}
+
+function aplicarRotaAoResultado(
+  resultado: ResultadoClassificacao,
+  rota: RotaLinguagens,
+  escopos: ReturnType<typeof indexarEscopos>,
+  fallbackId: string,
+  confiancaMinima: number
+): ResultadoClassificacao {
+  const ok = validarEscopoNaRota(resultado, rota, escopos, fallbackId);
+  const base = {
+    ...resultado,
+    disciplinaOriginalId: rota.disciplinaOriginalId,
+    rotaCriterio: rota.criterio,
+  };
+
+  if (
+    ok &&
+    !rota.sinalizadorRevisao &&
+    resultado.escopoId !== fallbackId &&
+    (resultado.confianca ?? 0) >= confiancaMinima
+  ) {
+    return base;
+  }
+
+  if (!ok && resultado.escopoId && resultado.escopoId !== fallbackId) {
+    return {
+      ...base,
+      status: "review",
+      escopoId: fallbackId,
+      assuntoId: null,
+      dominioId: null,
+      sinalizadorRevisao: true,
+      motivo: `escopo fora da rota ${rota.disciplinaOriginalId}: ${resultado.motivo}`,
+    };
+  }
+
+  if (rota.sinalizadorRevisao || rota.disciplinaOriginalId === "indefinido") {
+    return {
+      ...base,
+      status: "review",
+      sinalizadorRevisao: true,
+    };
+  }
+
+  return base;
 }
 
 async function classificarLinguagensTrilhas(
@@ -365,11 +429,17 @@ async function classificarLinguagensTrilhas(
   const catalog = carregarCatalogoMateria(materiaId);
   const escopos = indexarEscopos(catalog);
   const confiancaMinima = catalog.regras?.confiancaMinima ?? CLASSIFICACAO_CONFIANCA_MIN;
+  const fallbackId = idFallbackNaoClassificado(materiaId);
   const limit = Math.min(opts.limit ?? LIMITE_MAX, LIMITE_MAX);
   const persistir = opts.persistir ?? true;
   const modo =
     opts.modo === "ia" && iaClassificacaoDisponivel() ? "ia" : "heuristica";
-  const versaoClass = modo === "ia" ? "ia-ling-v1" : "heuristica-ling-v1";
+  const usaV11 = catalogoUsaClassificadorV11(catalog);
+  const versaoBase =
+    modo === "ia" ?
+      usaV11 ? `${CLASSIFICADOR_CATALOGO_V11}-ling`
+      : "ia-ling-v1"
+    : "heuristica-ling-v1";
 
   const questoes = await prisma.enemQuestaoCorpus.findMany({
     where: {
@@ -384,6 +454,7 @@ async function classificarLinguagensTrilhas(
       enunciadoMd: true,
       introducaoAlternativas: true,
       alternativas: true,
+      gabarito: true,
       conhecimentoEscopoId: true,
       classificacaoConfianca: true,
     },
@@ -391,61 +462,164 @@ async function classificarLinguagensTrilhas(
     take: limit,
   });
 
-  const trilhas: IdiomaTrilhaLinguagens[] = ["COMUM", "ingles", "espanhol"];
-  const porTrilha = new Map<
-    IdiomaTrilhaLinguagens,
-    Array<{ id: string; fonteId: string; texto: string }>
-  >();
-  for (const t of trilhas) porTrilha.set(t, []);
+  type ItemRota = {
+    id: string;
+    fonteId: string;
+    texto: string;
+    enunciado: string;
+    alternativas: string;
+    gabarito: string;
+    rota: RotaLinguagens;
+  };
 
-  const contagemTrilha = { portugues: 0, ingles: 0, espanhol: 0 };
+  const porDisciplina = new Map<DisciplinaLinguagens, ItemRota[]>();
+  const indefinidos: ItemRota[] = [];
+  for (const d of ["portugues", "ingles", "espanhol", "indefinido"] as const) {
+    porDisciplina.set(d, []);
+  }
+
+  const contagemTrilha = { portugues: 0, ingles: 0, espanhol: 0, indefinido: 0 };
 
   if (!opts.soTriagem) {
     for (const q of questoes) {
       const texto = montarTextoQuestaoCorpus(q);
-      const trilha = trilhaLinguagensEfetiva(q.idioma, q.numero, texto);
-      if (trilha === "ingles") contagemTrilha.ingles++;
-      else if (trilha === "espanhol") contagemTrilha.espanhol++;
-      else contagemTrilha.portugues++;
+      const partes = montarPartesQuestaoCorpus(q);
+      const enunciado = partes.enunciado;
+      const alternativas = partes.alternativas;
 
-      const jaTemN2 = n2ValidoTrilha(
+      const rota = routeLanguageDiscipline(
+        {
+          idioma: q.idioma,
+          numero: q.numero,
+          enunciado,
+          alternativas,
+          textoBase: enunciado,
+          origem: "enem_api",
+        },
+        catalog
+      );
+
+      if (rota.disciplinaOriginalId === "ingles") contagemTrilha.ingles++;
+      else if (rota.disciplinaOriginalId === "espanhol") contagemTrilha.espanhol++;
+      else if (rota.disciplinaOriginalId === "portugues") contagemTrilha.portugues++;
+      else contagemTrilha.indefinido++;
+
+      const jaTemN2 = n2ValidoRota(
         q.conhecimentoEscopoId,
         q.classificacaoConfianca,
-        trilha,
+        rota,
         escopos,
         confiancaMinima,
         prefixoN2
       );
+
+      const item: ItemRota = {
+        id: q.id,
+        fonteId: q.fonteId,
+        texto,
+        enunciado,
+        alternativas,
+        gabarito: q.gabarito,
+        rota,
+      };
+
       if (!jaTemN2) {
-        porTrilha.get(trilha)!.push({ id: q.id, fonteId: q.fonteId, texto });
+        if (rota.disciplinaOriginalId === "indefinido") {
+          indefinidos.push(item);
+        } else {
+          porDisciplina.get(rota.disciplinaOriginalId)!.push(item);
+        }
       }
     }
   }
 
   const resultados: Array<{ fonteId: string; resultado: ResultadoClassificacao }> = [];
 
-  for (const trilha of trilhas) {
-    const lote = porTrilha.get(trilha)!;
-    if (lote.length === 0) continue;
-
-    const escoposTrilha = filtrarEscoposLinguagens(escopos, trilha);
-    const parcial = await classificarLoteQuestoes(prisma, lote, {
-      modo,
-      escopos: escoposTrilha,
-      confiancaMinima,
-      assuntoId: opts.assuntoId,
-      persistir,
-      versaoClass,
-      materiaLabel,
+  for (const item of indefinidos) {
+    const resultado: ResultadoClassificacao = {
+      status: "review",
+      confianca: 0,
       materiaId,
-      catalogLabel: catalog.materiaLabel,
-      instrucaoExtra: instrucaoIaLinguagens(trilha),
-    });
-    resultados.push(...parcial);
+      assuntoId: null,
+      dominioId: null,
+      escopoId: fallbackId,
+      conceitoCanonic: null,
+      motivo: `rota incerta: ${item.rota.justificativa}`,
+      disciplinaOriginalId: "indefinido",
+      rotaCriterio: item.rota.criterio,
+      sinalizadorRevisao: true,
+    };
+    resultados.push({ fonteId: item.fonteId, resultado });
+    if (persistir) {
+      await persistirResultado(
+        prisma,
+        item.id,
+        resultado,
+        versaoClassificacaoComRota(versaoBase, item.rota),
+        materiaLabel
+      );
+    }
+  }
+
+  for (const [disciplina, itens] of porDisciplina) {
+    if (disciplina === "indefinido" || itens.length === 0) continue;
+
+    const rotaRef = itens[0]!.rota;
+    const escoposRota = filtrarEscoposPorRota(escopos, rotaRef);
+    const trilha = disciplinaParaTrilha(disciplina);
+
+    const parcial = await classificarLoteQuestoes(
+      prisma,
+      itens.map((i) => ({
+        id: i.id,
+        fonteId: i.fonteId,
+        texto: i.texto,
+        enunciado: i.enunciado,
+        alternativas: i.alternativas,
+        gabarito: i.gabarito,
+      })),
+      {
+        modo,
+        escopos: escoposRota,
+        confiancaMinima,
+        assuntoId: opts.assuntoId,
+        persistir: false,
+        versaoClass: versaoClassificacaoComRota(versaoBase, rotaRef),
+        materiaLabel,
+        materiaId,
+        catalogLabel: catalog.materiaLabel,
+        catalog,
+        instrucaoExtra: instrucaoIaLinguagens(trilha),
+        v11Opts: { rotaDisciplina: disciplina, instrucaoExtra: rotaRef.justificativa },
+      }
+    );
+
+    for (const row of parcial) {
+      const item = itens.find((i) => i.fonteId === row.fonteId)!;
+      const resultado = aplicarRotaAoResultado(
+        row.resultado,
+        item.rota,
+        escopos,
+        fallbackId,
+        confiancaMinima
+      );
+      resultados.push({ fonteId: row.fonteId, resultado });
+      if (persistir) {
+        await persistirResultado(
+          prisma,
+          item.id,
+          resultado,
+          versaoClassificacaoComRota(versaoBase, item.rota),
+          materiaLabel
+        );
+      }
+    }
   }
 
   const bench = agregarBenchmark(resultados);
-  const totalClassificar = [...porTrilha.values()].reduce((s, a) => s + a.length, 0);
+  const totalClassificar =
+    indefinidos.length +
+    [...porDisciplina.values()].reduce((s, a) => s + a.length, 0);
 
   return {
     processadas: questoes.length,
@@ -463,7 +637,7 @@ async function classificarLinguagensTrilhas(
       biologia: contagemTrilha.portugues,
       quimica: contagemTrilha.ingles,
       fisica: contagemTrilha.espanhol,
-      indefinida: 0,
+      indefinida: contagemTrilha.indefinido,
     },
     triagemIa: 0,
     materiaProcessadas: totalClassificar,
