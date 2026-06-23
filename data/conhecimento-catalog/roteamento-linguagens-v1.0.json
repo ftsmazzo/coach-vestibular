@@ -1,54 +1,84 @@
 {
-  "version": "1.1.0",
-  "service": "routeLanguageDiscipline",
-  "description": "Roteamento estrutural antes da classificação IA de escopo em Linguagens. Sem heurística de palavras.",
+  "version": "1.0.0",
+  "service": "classificarLinguagensV12",
+  "description": "Especificação prova-agnóstica de roteamento (PT/EN/ES) + escopo N2 em Linguagens. Implementação: classificarLoteLinguagensV12 + catálogo/prompt v1.2.",
   "inputFields": [
     "disciplinaOriginalId",
     "idioma",
+    "banca",
     "numero",
+    "textoBase",
+    "enunciado",
+    "alternativas",
+    "gabarito",
     "origem"
   ],
   "outputSchema": {
     "catalogoMateriaId": "linguagens",
-    "disciplinaOriginalId": "portugues|ingles|espanhol|indefinido",
-    "allowedAssuntoIds": ["string"],
-    "criterio": "metadata|posicao_enem|incerto",
-    "confianca": "number 0-1",
+    "rota": {
+      "disciplinaOriginalId": "portugues|ingles|espanhol|indefinido",
+      "criterio": "metadata|idioma_texto_base|conteudo_cobrado|inferido|incerto",
+      "confianca": "number 0-1",
+      "justificativa": "string"
+    },
+    "primario": {
+      "id": "escopoId N2",
+      "assuntoId": "string",
+      "confianca": "number 0-1"
+    },
     "sinalizadorRevisao": "boolean"
   },
   "rules": [
-    "idioma=ingles ou espanhol (enem.dev) → rota ingles/l2_en ou espanhol/l2_es.",
-    "Q6–Q45 idioma COMUM → portugues (pt_*).",
-    "Q1–5 idioma COMUM → indefinido (sync enem.dev; não inferir idioma por palavras).",
-    "Nunca alterar idioma no corpus por contagem de palavras.",
-    "Classificação N2: IA + catálogo v1.2 dentro da rota permitida."
+    "Uma passagem IA: primeiro rota (portugues|ingles|espanhol), depois primario.id no catálogo.",
+    "Se disciplinaOriginalId ou idioma vier explícito da fonte (ingles/espanhol/portugues/redacao/literatura/gramatica/artes), usar como hint — a IA confirma pelo texto-base.",
+    "Ignorar o idioma do comando/instrução quando for só instrução em português; decidir pela língua dominante do texto-base e alternativas.",
+    "Conteúdo cobrado: literatura/gramática/artes/tecnologias da linguagem → portugues; reading comprehension → ingles; comprensión lectora → espanhol.",
+    "Usar catálogo v1.2: descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom, regraDesempate.",
+    "Validar programaticamente: primario.assuntoId deve pertencer à rota (pt_* | l2_en | l2_es).",
+    "Confiança baixa ou rota incerta → primario.id = ling.__nao_classificado.",
+    "PROIBIDO nesta spec: posição fixa no caderno (Q1–5, Q6–45), heurística de palavras-chave, ou regras exclusivas de um vestibular."
   ],
   "examples": [
     {
-      "input": { "idioma": "ingles", "numero": 3 },
+      "input": {
+        "idioma": "ingles",
+        "enunciado": "No texto, a expressão...",
+        "textoBase": "The author argues that..."
+      },
       "output": {
-        "disciplinaOriginalId": "ingles",
-        "allowedAssuntoIds": ["l2_en"],
-        "criterio": "metadata",
-        "confianca": 0.99
+        "rota": {
+          "disciplinaOriginalId": "ingles",
+          "criterio": "metadata",
+          "confianca": 0.99
+        },
+        "primario": { "assuntoId": "l2_en" }
       }
     },
     {
-      "input": { "idioma": "COMUM", "numero": 22 },
+      "input": {
+        "textoBase": "El texto trata de la inmigración en América Latina..."
+      },
       "output": {
+        "rota": {
+          "disciplinaOriginalId": "espanhol",
+          "criterio": "idioma_texto_base",
+          "confianca": 0.9
+        },
+        "primario": { "assuntoId": "l2_es" }
+      }
+    },
+    {
+      "input": {
         "disciplinaOriginalId": "portugues",
-        "allowedAssuntoIds": ["pt_interp", "pt_lit", "pt_gram", "pt_sem", "pt_art", "pt_tec"],
-        "criterio": "posicao_enem",
-        "confianca": 0.95
-      }
-    },
-    {
-      "input": { "idioma": "COMUM", "numero": 3 },
+        "textoBase": "Texto de Machado de Assis sobre costumes..."
+      },
       "output": {
-        "disciplinaOriginalId": "indefinido",
-        "allowedAssuntoIds": [],
-        "criterio": "incerto",
-        "confianca": 0.2
+        "rota": {
+          "disciplinaOriginalId": "portugues",
+          "criterio": "metadata",
+          "confianca": 0.99
+        },
+        "primario": { "assuntoId": "pt_lit" }
       }
     }
   ]

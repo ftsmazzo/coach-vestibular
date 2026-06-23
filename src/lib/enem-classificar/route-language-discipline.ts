@@ -1,5 +1,4 @@
 import type { EscopoIndexEntry, MateriaCatalogo } from "@/lib/conhecimento-catalog/types";
-import { naFaixaL2Enem } from "./linguagens-rota";
 
 export type DisciplinaLinguagens = "portugues" | "ingles" | "espanhol" | "indefinido";
 
@@ -9,8 +8,8 @@ type RotasLinguagens = Record<DisciplinaLinguagensRoteada, string[]>;
 
 export type CriterioRotaLinguagens =
   | "metadata"
-  | "posicao_enem"
   | "idioma_texto_base"
+  | "conteudo_cobrado"
   | "inferido"
   | "incerto";
 
@@ -50,148 +49,6 @@ function rotasDoCatalogo(catalog?: MateriaCatalogo): RotasLinguagens {
   };
 }
 
-function metadadoL2Explicito(
-  input: QuestaoRotaInput
-): { disciplina: DisciplinaLinguagensRoteada; confianca: number } | null {
-  const raw = (input.disciplinaOriginalId ?? "").toLowerCase().trim();
-  if (
-    raw === "ingles" ||
-    raw === "english" ||
-    raw === "en" ||
-    raw.includes("lingua_inglesa")
-  ) {
-    return { disciplina: "ingles", confianca: 0.99 };
-  }
-  if (
-    raw === "espanhol" ||
-    raw === "spanish" ||
-    raw === "es" ||
-    raw.includes("lingua_espanhola")
-  ) {
-    return { disciplina: "espanhol", confianca: 0.99 };
-  }
-
-  const idioma = input.idioma?.toLowerCase();
-  if (idioma === "ingles") return { disciplina: "ingles", confianca: 0.99 };
-  if (idioma === "espanhol") return { disciplina: "espanhol", confianca: 0.99 };
-
-  return null;
-}
-
-function metadadoPortuguesExplicito(
-  input: QuestaoRotaInput
-): { disciplina: DisciplinaLinguagensRoteada; confianca: number } | null {
-  const raw = (input.disciplinaOriginalId ?? "").toLowerCase().trim();
-  if (
-    raw === "portugues" ||
-    raw === "redacao" ||
-    raw === "literatura" ||
-    raw === "gramatica" ||
-    raw === "artes" ||
-    raw === "lp"
-  ) {
-    return { disciplina: "portugues", confianca: 0.99 };
-  }
-  return null;
-}
-
-function montarRota(
-  rotas: RotasLinguagens,
-  disciplina: DisciplinaLinguagens,
-  criterio: CriterioRotaLinguagens,
-  confianca: number,
-  sinalizadorRevisao: boolean,
-  justificativa: string
-): RotaLinguagens {
-  if (disciplina === "indefinido") {
-    return {
-      catalogoMateriaId: "linguagens",
-      disciplinaOriginalId: "indefinido",
-      allowedAssuntoIds: [],
-      criterio,
-      confianca,
-      sinalizadorRevisao,
-      justificativa,
-    };
-  }
-  return {
-    catalogoMateriaId: "linguagens",
-    disciplinaOriginalId: disciplina,
-    allowedAssuntoIds: rotas[disciplina],
-    criterio,
-    confianca,
-    sinalizadorRevisao,
-    justificativa,
-  };
-}
-
-/**
- * @deprecated Não usar para classificar — Linguagens usa classificarLoteLinguagensV12 (IA).
- * Mantido apenas para referência de validação de escopos por assuntoId.
- */
-export function routeLanguageDiscipline(
-  input: QuestaoRotaInput,
-  catalog?: MateriaCatalogo
-): RotaLinguagens {
-  const rotas = rotasDoCatalogo(catalog);
-  const numero = input.numero;
-
-  const metaL2 = metadadoL2Explicito(input);
-  if (metaL2) {
-    return montarRota(
-      rotas,
-      metaL2.disciplina,
-      "metadata",
-      metaL2.confianca,
-      false,
-      `Metadado enem.dev: idioma=${input.idioma ?? "—"}`
-    );
-  }
-
-  const metaPt = metadadoPortuguesExplicito(input);
-  if (metaPt) {
-    return montarRota(
-      rotas,
-      metaPt.disciplina,
-      "metadata",
-      metaPt.confianca,
-      false,
-      `Metadado PT: disciplina=${input.disciplinaOriginalId ?? "—"}`
-    );
-  }
-
-  if (numero != null && !naFaixaL2Enem(numero)) {
-    return montarRota(
-      rotas,
-      "portugues",
-      "posicao_enem",
-      0.95,
-      false,
-      `Q${numero} (Q6–45) idioma COMUM → português/artes/tecnologias.`
-    );
-  }
-
-  if (numero != null && naFaixaL2Enem(numero)) {
-    return montarRota(
-      rotas,
-      "indefinido",
-      "incerto",
-      0.2,
-      true,
-      `Q${numero} (Q1–5) idioma COMUM — reimportar/sync enem.dev (ES ou EN).`
-    );
-  }
-
-  return montarRota(
-    rotas,
-    "indefinido",
-    "incerto",
-    0.15,
-    true,
-    "Sem metadado de idioma nem posição ENEM."
-  );
-}
-
 /** Filtra escopos N2 permitidos para a rota (inclui fallback). */
 export function filtrarEscoposPorRota(
   escopos: Map<string, EscopoIndexEntry>,
@@ -228,6 +85,37 @@ export function validarEscopoNaRota(
   if (entry.ehFallback) return true;
   if (rota.disciplinaOriginalId === "indefinido") return false;
   return rota.allowedAssuntoIds.includes(entry.assuntoId);
+}
+
+/** Monta objeto RotaLinguagens a partir da saída IA v12 (validação pós-classificação). */
+export function rotaFromIaV12(
+  disciplina: DisciplinaLinguagens,
+  criterio: CriterioRotaLinguagens,
+  confianca: number,
+  justificativa: string,
+  catalog?: MateriaCatalogo
+): RotaLinguagens {
+  const rotas = rotasDoCatalogo(catalog);
+  if (disciplina === "indefinido") {
+    return {
+      catalogoMateriaId: "linguagens",
+      disciplinaOriginalId: "indefinido",
+      allowedAssuntoIds: [],
+      criterio,
+      confianca,
+      sinalizadorRevisao: true,
+      justificativa,
+    };
+  }
+  return {
+    catalogoMateriaId: "linguagens",
+    disciplinaOriginalId: disciplina,
+    allowedAssuntoIds: rotas[disciplina],
+    criterio,
+    confianca,
+    sinalizadorRevisao: confianca < 0.45,
+    justificativa,
+  };
 }
 
 export function versaoClassificacaoComRota(

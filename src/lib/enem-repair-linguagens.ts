@@ -23,9 +23,8 @@ function escopoCompativelIdioma(assuntoId: string, idioma: string): boolean {
 }
 
 /**
- * Reparo estrutural do corpus ENEM — não classifica.
- * - L2 (ingles/espanhol) só na faixa Q1–5
- * - Limpa N2 cujo assuntoId não combina com idioma persistido
+ * Reparo do corpus ENEM (camada import) — não é roteamento de classificação.
+ * Garante idioma L2 só na faixa Q1–5 da API enem.dev.
  */
 export async function repararIdiomaLinguagensCorpus(
   prisma: PrismaClient,

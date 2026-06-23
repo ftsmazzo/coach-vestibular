@@ -50,7 +50,7 @@ Responda somente com JSON válido, sem markdown.
 {
   "rota": {
     "disciplinaOriginalId": "portugues|ingles|espanhol|indefinido",
-    "criterio": "metadata|posicao_enem|idioma_texto_base|inferido|incerto",
+    "criterio": "metadata|idioma_texto_base|conteudo_cobrado|inferido|incerto",
     "confianca": 0.0,
     "justificativa": "frase curta explicando a rota"
   },

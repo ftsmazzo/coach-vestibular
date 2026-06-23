@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "notas": "Arquivo ativo por materiaId. roteamentoLinguagens aponta para a spec de routeLanguageDiscipline.",
+  "notas": "Arquivo ativo por materiaId. roteamentoLinguagens → spec prova-agnóstica (classificarLinguagensV12).",
   "active": {
     "biologia": "catalogo-biologia-v1.2.0.json",
     "quimica": "catalogo-quimica-v1.2.1.json",

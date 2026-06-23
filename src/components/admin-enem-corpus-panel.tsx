@@ -468,11 +468,11 @@ export function AdminEnemCorpusPanel() {
         <>
           <Card className="border-indigo-200 bg-indigo-50/60">
             <p className="text-sm text-indigo-900">
-              <strong>3 trilhas ortogonais.</strong> Sync unificado: listagem padrão (ES + PT) + passagem{" "}
-              <code>?language=ingles</code>. Q6+ = português (<code>idioma:COMUM</code>). A IA (Fase 2)
-              só vê N2 da trilha.
+              <strong>Linguagens.</strong> Import ENEM: 3 variantes de idioma na API (ES listagem + EN{" "}
+              <code>?language=ingles</code> + COMUM). Classificação: IA v12 + catálogo — rota PT/EN/ES e N2
+              pelo texto-base (prova-agnóstico, sem regra de posição no caderno).
               {linguagensRotaVersion != null && (
-                <span className="ml-1 text-xs text-indigo-700">· rota v{linguagensRotaVersion}</span>
+                <span className="ml-1 text-xs text-indigo-700">· motor v{linguagensRotaVersion}</span>
               )}
             </p>
           </Card>

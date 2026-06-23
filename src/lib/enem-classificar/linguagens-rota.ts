@@ -2,9 +2,10 @@ import type { EscopoIndexEntry } from "@/lib/conhecimento-catalog/types";
 
 export type IdiomaTrilhaLinguagens = "COMUM" | "ingles" | "espanhol";
 
-/** Faixa de idioma estrangeiro opcional no caderno ENEM (dia 1). */
+/** @deprecated Só import/sync ENEM — não usar em roteamento de classificação. */
 export const FAIXA_L2_ENEM = { inicio: 1, fim: 5 } as const;
 
+/** @deprecated Só import/sync ENEM — não usar em roteamento de classificação. */
 export function naFaixaL2Enem(numero: number): boolean {
   return numero >= FAIXA_L2_ENEM.inicio && numero <= FAIXA_L2_ENEM.fim;
 }
@@ -78,7 +79,7 @@ export function instrucaoIaLinguagens(trilha: IdiomaTrilhaLinguagens): string {
     );
   }
   return (
-    "Trilha PORTUGUÊS (bloco comum ENEM, ~Q6–45). " +
+    "Trilha PORTUGUÊS. " +
     "Separe: interpretação/gêneros ≠ literatura (autor/período) ≠ gramática (regra explícita) ≠ artes/códigos. " +
     "NUNCA escolha N2 de inglês ou espanhol (L2)."
   );

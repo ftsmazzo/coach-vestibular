@@ -1,6 +1,5 @@
 /**
- * Corrige idioma/fonteId e limpa N2 fora da rota em Linguagens.
- * Inclui COMUM com texto EN/ES (Q6+ ou Q1–5) e N2 pt_* em questões L2.
+ * Reparo import ENEM: alinha idioma persistido e limpa N2 incompatível com assuntoId.
  *
  * Uso: npx tsx scripts/repair-idioma-linguagens.ts [--dry-run]
  */

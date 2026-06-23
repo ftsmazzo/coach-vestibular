@@ -8,7 +8,7 @@
   "changelog": [
     "1.2.0: Refatorado no padrão Química v1.2 com descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate.",
     "1.2.0: Adicionado roteamento obrigatório de disciplina/idioma antes da escolha do escopo para reduzir erros grosseiros entre Português, Inglês e Espanhol.",
-    "1.2.0: Documentada regra crítica: ignorar o português do comando/instrução ao detectar idioma; considerar texto-base, metadados e posição da questão.",
+    "1.2.0: Documentada regra crítica: ignorar o português do comando/instrução; rota pela IA + texto-base e catálogo (prova-agnóstico).",
     "1.2.0: Reforçados escopos L2_EN e L2_ES com negativeHints cruzados e naoConfundirCom contra português e entre si.",
     "1.2.0: Adicionado fallback ling.__nao_classificado para baixa confiança, texto-base ausente, imagem ilegível ou rota incerta."
   ],
