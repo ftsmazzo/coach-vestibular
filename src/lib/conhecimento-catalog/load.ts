@@ -5,33 +5,36 @@ import type {
   EscopoIndexEntry,
   MateriaCatalogo,
 } from "./types";
+import {
+  CORPUS_MATERIA_CONFIG,
+  MATERIAS_CORPUS,
+  type MateriaCorpusId,
+} from "@/lib/enem-corpus-materia";
 
 const CATALOG_DIR = join(process.cwd(), "data", "conhecimento-catalog");
 
-/** Prefixo de IDs N2 por matéria (bio., quim., fis., …). */
-export const PREFIXO_MATERIA: Record<string, string> = {
-  biologia: "bio",
-  quimica: "quim",
-  fisica: "fis",
-};
+/** Prefixo de IDs N2 por matéria (bio., quim., mat., …). */
+export const PREFIXO_MATERIA: Record<string, string> = Object.fromEntries(
+  Object.values(CORPUS_MATERIA_CONFIG).map((c) => [c.materiaId, c.prefixo])
+);
 
 export function prefixoCatalogoMateria(materiaId: string): string {
   return PREFIXO_MATERIA[materiaId] ?? materiaId;
 }
 
-/** Rótulo persistido em EnemQuestaoCorpus.materia (triagem Natureza). */
-export const MATERIA_CORPUS_LABEL: Record<string, string> = {
-  biologia: "Biologia",
-  quimica: "Química",
-  fisica: "Física",
-};
+/** Rótulo persistido em EnemQuestaoCorpus.materia. */
+export const MATERIA_CORPUS_LABEL: Record<string, string> = Object.fromEntries(
+  Object.values(CORPUS_MATERIA_CONFIG).map((c) => [c.materiaId, c.label])
+);
 
 export function labelMateriaCorpus(materiaId: string): string {
   return MATERIA_CORPUS_LABEL[materiaId] ?? materiaId;
 }
 
+export { MATERIAS_CORPUS, type MateriaCorpusId };
+
+/** @deprecated use MATERIAS_CORPUS */
 export const MATERIAS_CORPUS_NATUREZA = ["biologia", "quimica", "fisica"] as const;
-export type MateriaCorpusId = (typeof MATERIAS_CORPUS_NATUREZA)[number];
 
 function readJson<T>(fileName: string): T {
   const raw = readFileSync(join(CATALOG_DIR, fileName), "utf-8");

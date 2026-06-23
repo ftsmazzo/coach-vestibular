@@ -1,0 +1,170 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "1.0.0-alpha",
+  "materiaId": "humanas",
+  "materiaLabel": "Humanas",
+  "areaEnem": "Ciências Humanas e suas Tecnologias",
+  "notas": "Catálogo único para toda a área ENEM Humanas (História, Geografia, Filosofia, Sociologia).",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "maxN2PorMateria": 80,
+    "confiancaMinima": 0.35
+  },
+  "assuntos": [
+    {
+      "assuntoId": "historia_brasil",
+      "assuntoLabel": "História do Brasil",
+      "dominios": [
+        {
+          "id": "hum.historia_brasil.colonizacao",
+          "label": "Colonização e escravidão",
+          "escopos": [
+            { "id": "hum.historia_brasil.colonizacao.povoamento", "label": "Povoamento e economia colonial", "keywords": ["colonização", "colonizacao", "engenhos", "açúcar", "acucar", "capitanias", "Brasil colonial"] },
+            { "id": "hum.historia_brasil.colonizacao.escravidao", "label": "Escravidão e resistências", "keywords": ["escravidão", "escravidao", "quilombo", "tráfico", "trafico", "africanos", "senzala", "abolicao"] },
+            { "id": "hum.historia_brasil.colonizacao.jesuitas_indigenas", "label": "Jesuítas e povos indígenas", "keywords": ["jesuítas", "jesuitas", "indígenas", "indigenas", "aldeias", "catequese", "bandeirantes"] }
+          ]
+        },
+        {
+          "id": "hum.historia_brasil.imperio",
+          "label": "Império e Primeira República",
+          "escopos": [
+            { "id": "hum.historia_brasil.imperio.independencia", "label": "Independência e Primeiro Reinado", "keywords": ["independência", "independencia", "1822", "D. Pedro", "Primeiro Reinado", "Grito do Ipiranga"] },
+            { "id": "hum.historia_brasil.imperio.segundo_reinado", "label": "Segundo Reinado e abolição", "keywords": ["Segundo Reinado", "Lei Áurea", "Lei Aurea", "1888", "Paraná", "Parana", "monarquia"] },
+            { "id": "hum.historia_brasil.imperio.republica_velha", "label": "República Velha e oligarchias", "keywords": ["República Velha", "República Velha", "coronelismo", "voto de cabresto", "política do café com leite", "oligarquias"] }
+          ]
+        },
+        {
+          "id": "hum.historia_brasil.contemporanea",
+          "label": "Brasil contemporâneo",
+          "escopos": [
+            { "id": "hum.historia_brasil.contemporanea.vargas", "label": "Era Vargas e industrialização", "keywords": ["Getúlio Vargas", "Getulio Vargas", "Estado Novo", "CLT", "industrialização", "1930"] },
+            { "id": "hum.historia_brasil.contemporanea.ditadura", "label": "Regime militar e redemocratização", "keywords": ["ditadura militar", "1964", "AI-5", "abertura política", "Constituição 1988", "redemocratização"] },
+            { "id": "hum.historia_brasil.contemporanea.republica_recente", "label": "Brasil recente (1990–hoje)", "keywords": ["Plano Real", "globalização", "democracia", "políticas sociais", "Bolsa Família", "crise econômica"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "historia_geral",
+      "assuntoLabel": "História geral",
+      "dominios": [
+        {
+          "id": "hum.historia_geral.antiga_medieval",
+          "label": "Antiguidade e Idade Média",
+          "escopos": [
+            { "id": "hum.historia_geral.antiga_medieval.antiguidade", "label": "Grécia, Roma e civilizações antigas", "keywords": ["Grécia", "Grecia", "Roma", "democracia ateniense", "Império Romano", "antiguidade"] },
+            { "id": "hum.historia_geral.antiga_medieval.medieval", "label": "Feudalismo e Idade Média", "keywords": ["feudalismo", "Idade Média", "Idade Media", "senhor feudal", "Igreja Católica", "cruzadas"] }
+          ]
+        },
+        {
+          "id": "hum.historia_geral.moderna",
+          "label": "Idade Moderna",
+          "escopos": [
+            { "id": "hum.historia_geral.moderna.absolutismo", "label": "Absolutismo e mercantilismo", "keywords": ["absolutismo", "Luís XIV", "mercantilismo", "monarquia absoluta", "Estado moderno"] },
+            { "id": "hum.historia_geral.moderna.revolutions", "label": "Revoluções e Iluminismo", "keywords": ["Revolução Francesa", "Revolucao Francesa", "Iluminismo", "Revolução Industrial", "Revolucao Industrial", "1789"] },
+            { "id": "hum.historia_geral.moderna.imperialismo", "label": "Imperialismo e nacionalismos", "keywords": ["imperialismo", "colonialismo", "partilha da África", "nacionalismo", "neocolonialismo"] }
+          ]
+        },
+        {
+          "id": "hum.historia_geral.contemporanea",
+          "label": "História contemporânea global",
+          "escopos": [
+            { "id": "hum.historia_geral.contemporanea.guerras", "label": "Guerras mundiais e Guerra Fria", "keywords": ["Primeira Guerra", "Segunda Guerra", "Guerra Fria", "nazismo", "fascismo", "holocausto"] },
+            { "id": "hum.historia_geral.contemporanea.globalizacao", "label": "Globalização e conflitos recentes", "keywords": ["globalização", "globalizacao", "ONU", "terrorismo", "conflitos contemporâneos", "multipolaridade"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "geografia",
+      "assuntoLabel": "Geografia",
+      "dominios": [
+        {
+          "id": "hum.geografia.fisica",
+          "label": "Geografia física",
+          "escopos": [
+            { "id": "hum.geografia.fisica.clima", "label": "Clima e tempo atmosférico", "keywords": ["clima", "tempo atmosférico", "massas de ar", "frentes", "El Niño", "La Niña", "chuva"] },
+            { "id": "hum.geografia.fisica.relevo_hidrografia", "label": "Relevo e hidrografia", "keywords": ["relevo", "planície", "planicie", "planalto", "bacia hidrográfica", "rios", "aquífero"] },
+            { "id": "hum.geografia.fisica.biomas", "label": "Biomas e vegetação", "keywords": ["bioma", "Amazônia", "Amazonia", "Cerrado", "Caatinga", "Mata Atlântica", "desertificação"] }
+          ]
+        },
+        {
+          "id": "hum.geografia.humana",
+          "label": "Geografia humana",
+          "escopos": [
+            { "id": "hum.geografia.humana.urbanizacao", "label": "Urbanização e metropolização", "keywords": ["urbanização", "urbanizacao", "metrópole", "metropole", "êxodo rural", "exodo rural", "favela"] },
+            { "id": "hum.geografia.humana.industrializacao", "label": "Industrialização e economia", "keywords": ["industrialização", "industrializacao", "setor terciário", "economia", "desenvolvimento", "PIB"] },
+            { "id": "hum.geografia.humana.globalizacao", "label": "Globalização e fluxos", "keywords": ["globalização", "fluxos migratórios", "fronteiras", "blocos econômicos", "Mercosul", "UE"] },
+            { "id": "hum.geografia.humana.agricultura", "label": "Agricultura e uso do solo", "keywords": ["agricultura", "agronegócio", "agronegocio", "latifúndio", "reforma agrária", "soja", "canavial"] }
+          ]
+        },
+        {
+          "id": "hum.geografia.brasil",
+          "label": "Geografia do Brasil",
+          "escopos": [
+            { "id": "hum.geografia.brasil.regioes", "label": "Regiões e desigualdades regionais", "keywords": ["regiões do Brasil", "regioes", "Nordeste", "Sudeste", "desigualdade regional", "IBGE"] },
+            { "id": "hum.geografia.brasil.ambiental", "label": "Questões ambientais brasileiras", "keywords": ["desmatamento", "queimadas", "sustentabilidade", "recursos hídricos", "energia", "petróleo"] },
+            { "id": "hum.geografia.brasil.demografia", "label": "Demografia e população", "keywords": ["população", "populacao", "crescimento demográfico", "envelhecimento", "migração interna", "censos"] }
+          ]
+        },
+        {
+          "id": "hum.geografia.cartografia",
+          "label": "Cartografia e representação",
+          "escopos": [
+            { "id": "hum.geografia.cartografia.mapas", "label": "Mapas, projeções e coordenadas", "keywords": ["mapa", "projeção cartográfica", "projecao", "escala cartográfica", "coordenadas", "latitude", "longitude"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "filosofia",
+      "assuntoLabel": "Filosofia",
+      "dominios": [
+        {
+          "id": "hum.filosofia.classica_moderna",
+          "label": "Filosofia clássica e moderna",
+          "escopos": [
+            { "id": "hum.filosofia.classica_moderna.antiga", "label": "Filosofia antiga", "keywords": ["Sócrates", "Socrates", "Platão", "Platao", "Aristóteles", "Aristoteles", "filosofia antiga", "polis"] },
+            { "id": "hum.filosofia.classica_moderna.moderna", "label": "Racionalismo, empirismo e iluminismo", "keywords": ["Descartes", "Locke", "Kant", "racionalismo", "empirismo", "Iluminismo filosófico"] }
+          ]
+        },
+        {
+          "id": "hum.filosofia.contemporanea",
+          "label": "Ética, política e epistemologia",
+          "escopos": [
+            { "id": "hum.filosofia.contemporanea.etica", "label": "Ética e moral", "keywords": ["ética", "etica", "moral", "virtude", "dever", "utilitarismo", "Kantiano", "bem e mal"] },
+            { "id": "hum.filosofia.contemporanea.politica", "label": "Filosofia política", "keywords": ["contrato social", "Rousseau", "Hobbes", "liberdade", "justiça", "justica", "democracia", "Estado"] },
+            { "id": "hum.filosofia.contemporanea.epistemologia", "label": "Conhecimento e ciência", "keywords": ["conhecimento", "verdade", "epistemologia", "ciência", "ciencia", "método científico", "relativismo"] },
+            { "id": "hum.filosofia.contemporanea.existencialismo", "label": "Existencialismo e fenomenologia", "keywords": ["existencialismo", "Sartre", "Heidegger", "existência", "existencia", "autenticidade", "angústia"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "sociologia",
+      "assuntoLabel": "Sociologia",
+      "dominios": [
+        {
+          "id": "hum.sociologia.classicos",
+          "label": "Teoria sociológica clássica",
+          "escopos": [
+            { "id": "hum.sociologia.classicos.durkheim_weber", "label": "Durkheim, Weber e Marx", "keywords": ["Durkheim", "Weber", "Marx", "fato social", "capitalismo", "proletariado", "burocracia"] },
+            { "id": "hum.sociologia.classicos.conceitos", "label": "Conceitos sociológicos básicos", "keywords": ["sociedade", "cultura", "norma", "instituição", "instituicao", "socialização", "socializacao"] }
+          ]
+        },
+        {
+          "id": "hum.sociologia.contemporanea",
+          "label": "Sociedade contemporânea",
+          "escopos": [
+            { "id": "hum.sociologia.contemporanea.estratiificacao", "label": "Estratificação social e desigualdade", "keywords": ["estratificação", "estratificacao", "classe social", "desigualdade", "mobilidade social", "pobreza"] },
+            { "id": "hum.sociologia.contemporanea.trabalho", "label": "Trabalho, produção e consumo", "keywords": ["trabalho", "mundo do trabalho", "desemprego", "terceirização", "terceirizacao", "consumo", "mercado"] },
+            { "id": "hum.sociologia.contemporanea.movimentos", "label": "Movimentos sociais e cidadania", "keywords": ["movimento social", "cidadania", "direitos civis", "manifestação", "manifestacao", "participação política"] },
+            { "id": "hum.sociologia.contemporanea.cultura_midia", "label": "Cultura, mídia e identidade", "keywords": ["mídia", "midia", "identidade", "cultura de massa", "indústria cultural", "redes sociais", "patrimônio cultural"] },
+            { "id": "hum.sociologia.contemporanea.cidade", "label": "Sociologia urbana", "keywords": ["cidade", "espaço urbano", "segregação", "segregacao", "violência urbana", "periferia", "gentrificação"] }
+          ]
+        }
+      ]
+    }
+  ]
+}

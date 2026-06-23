@@ -8,22 +8,18 @@ import {
 } from "@/lib/enem-corpus-stats";
 import {
   carregarCatalogoMateria,
-  MATERIAS_CORPUS_NATUREZA,
+  MATERIAS_CORPUS,
   validarCatalogo,
   type MateriaCorpusId,
 } from "@/lib/conhecimento-catalog";
+import { parseMateriaCorpusId } from "@/lib/enem-corpus-materia";
 import { prisma } from "@/lib/prisma";
-
-function parseMateriaId(raw: string | null): MateriaCorpusId {
-  if (raw === "quimica" || raw === "fisica" || raw === "biologia") return raw;
-  return "biologia";
-}
 
 export async function GET(req: Request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
-  const materiaId = parseMateriaId(new URL(req.url).searchParams.get("materiaId"));
+  const materiaId = parseMateriaCorpusId(new URL(req.url).searchParams.get("materiaId"));
 
   const [stats, fila] = await Promise.all([
     obterStatsCorpusEnem(prisma, materiaId),
@@ -63,16 +59,18 @@ export async function GET(req: Request) {
     catalogo,
     catalogoErro,
     materiaId,
-    materiasDisponiveis: [...MATERIAS_CORPUS_NATUREZA],
+    materiasDisponiveis: [...MATERIAS_CORPUS],
     iaDisponivel: Boolean(process.env.OPENAI_API_KEY?.trim()),
   });
 }
 
 const classificarSchema = z.object({
-  materiaId: z.enum(["biologia", "quimica", "fisica"]).optional(),
+  materiaId: z
+    .enum(["biologia", "quimica", "fisica", "matematica", "humanas", "linguagens"])
+    .optional(),
   assuntoId: z.string().optional(),
   ano: z.number().int().min(2009).max(2030).optional(),
-  limit: z.number().int().min(1).max(700).optional(),
+  limit: z.number().int().min(1).max(900).optional(),
   soTriagem: z.boolean().optional(),
   retriagem: z.boolean().optional(),
   modo: z.enum(["heuristica", "ia"]).optional(),
@@ -87,7 +85,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
   }
 
-  const materiaId = body.data.materiaId ?? "biologia";
+  const materiaId = (body.data.materiaId ?? "biologia") as MateriaCorpusId;
 
   try {
     carregarCatalogoMateria(materiaId);

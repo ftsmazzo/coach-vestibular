@@ -1,10 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Badge, Button, Card } from "@/components/ui";
 
-type MateriaCorpusId = "biologia" | "quimica" | "fisica";
+type MateriaCorpusId =
+  | "biologia"
+  | "quimica"
+  | "fisica"
+  | "matematica"
+  | "humanas"
+  | "linguagens";
 
 type MateriaStats = {
   materiaId: MateriaCorpusId;
@@ -48,11 +53,16 @@ type Catalogo = {
   validacao: Array<{ nivel: string; ok: boolean; mensagem: string }>;
 };
 
-const MATERIA_TAB: Array<{ id: MateriaCorpusId; label: string }> = [
-  { id: "biologia", label: "Biologia" },
-  { id: "quimica", label: "Química" },
-  { id: "fisica", label: "Física" },
+const MATERIA_TAB: Array<{ id: MateriaCorpusId; label: string; grupo?: string }> = [
+  { id: "biologia", label: "Biologia", grupo: "Natureza" },
+  { id: "quimica", label: "Química", grupo: "Natureza" },
+  { id: "fisica", label: "Física", grupo: "Natureza" },
+  { id: "matematica", label: "Matemática" },
+  { id: "humanas", label: "Humanas" },
+  { id: "linguagens", label: "Linguagens" },
 ];
+
+const NATUREZA_IDS = new Set<MateriaCorpusId>(["biologia", "quimica", "fisica"]);
 
 const DISCIPLINA_LABEL: Record<string, string> = {
   linguagens: "Linguagens",
@@ -62,7 +72,7 @@ const DISCIPLINA_LABEL: Record<string, string> = {
 };
 
 export function AdminEnemCorpusPanel() {
-  const [materiaId, setMateriaId] = useState<MateriaCorpusId>("fisica");
+  const [materiaId, setMateriaId] = useState<MateriaCorpusId>("matematica");
   const [stats, setStats] = useState<Stats | null>(null);
   const [fila, setFila] = useState<FilaItem[]>([]);
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null);
@@ -74,6 +84,7 @@ export function AdminEnemCorpusPanel() {
   const [iaDisponivel, setIaDisponivel] = useState(false);
 
   const materiaLabel = MATERIA_TAB.find((t) => t.id === materiaId)?.label ?? materiaId;
+  const ehNatureza = NATUREZA_IDS.has(materiaId);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -110,7 +121,7 @@ export function AdminEnemCorpusPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           materiaId,
-          limit: 700,
+          limit: 900,
           soTriagem: opts.triagemOnly ?? false,
           retriagem: opts.retriagem ?? false,
           modo: iaDisponivel && (opts.modo ?? "ia") === "ia" ? "ia" : "heuristica",
@@ -126,10 +137,16 @@ export function AdminEnemCorpusPanel() {
           `Triagem: Bio ${r.triagem.biologia} · Quím ${r.triagem.quimica} · Fís ${r.triagem.fisica} · ? ${r.triagem.indefinida}` +
             (r.triagemIa ? ` · +${r.triagemIa} via IA` : "")
         );
+      } else if (ehNatureza) {
+        const triKey =
+          materiaId === "biologia" ? "biologia" : materiaId === "quimica" ? "quimica" : "fisica";
+        setUltimoRun(
+          `${matNome}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · triadas ${r.triagem[triKey]}` +
+            (r.triagemIa ? ` · triagem IA +${r.triagemIa}` : "")
+        );
       } else {
         setUltimoRun(
-          `${matNome}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · triadas ${r.triagem[materiaId === "biologia" ? "biologia" : materiaId === "quimica" ? "quimica" : "fisica"]}` +
-            (r.triagemIa ? ` · triagem IA +${r.triagemIa}` : "")
+          `${matNome}: ${r.classified}/${r.materiaProcessadas} novas com N2 (${r.pctClassified}%) · ${r.processadas} no bloco`
         );
       }
       await load();
@@ -168,14 +185,23 @@ export function AdminEnemCorpusPanel() {
         ))}
       </div>
 
-      <Card className="border-sky-200 bg-sky-50/60">
-        <p className="text-sm text-sky-900">
-          <strong>Natureza ≠ uma matéria.</strong> Triagem Bio/Quím/Fís já feita (~619). Cada aba
-          classifica só a matéria selecionada — não sobrescreve N2 de outras matérias.
-        </p>
-      </Card>
+      {ehNatureza ? (
+        <Card className="border-sky-200 bg-sky-50/60">
+          <p className="text-sm text-sky-900">
+            <strong>Natureza ≠ uma matéria.</strong> Triagem Bio/Quím/Fís concluída (~619). Cada aba
+            classifica só a matéria selecionada — não sobrescreve N2 de outras.
+          </p>
+        </Card>
+      ) : (
+        <Card className="border-violet-200 bg-violet-50/60">
+          <p className="text-sm text-violet-900">
+            <strong>Disciplina única.</strong> Todo o bloco ENEM {materiaLabel} usa um catálogo só (
+            {catalogo?.totalN2 ?? "…"} N2). Classificação direta, sem triagem B/Q/F.
+          </p>
+        </Card>
+      )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-4 sm:grid-cols-2 ${ehNatureza ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         <Card>
           <p className="text-sm text-slate-500">Questões no corpus</p>
           <p className="text-3xl font-bold text-slate-900">{stats?.total ?? 0}</p>
@@ -187,7 +213,7 @@ export function AdminEnemCorpusPanel() {
           <p className="text-sm text-slate-500">{mat?.materiaLabel ?? "Matéria"} com N2</p>
           <p className="text-3xl font-bold text-teal-700">{mat?.classificadas ?? 0}</p>
           <p className="text-xs text-slate-500">
-            {mat?.pctClassificadas ?? 0}% das {mat?.triadas ?? 0} triadas
+            {mat?.pctClassificadas ?? 0}% das {mat?.triadas ?? 0} no bloco
           </p>
         </Card>
         <Card>
@@ -195,16 +221,18 @@ export function AdminEnemCorpusPanel() {
           <p className="text-3xl font-bold text-amber-700">{mat?.fila ?? 0}</p>
           <p className="text-xs text-slate-500">buracos no catálogo</p>
         </Card>
-        <Card>
-          <p className="text-sm text-slate-500">Triagem Natureza</p>
-          <p className="text-lg font-bold text-slate-900">
-            B {stats?.natureza?.triagem.biologia ?? 0} · Q {stats?.natureza?.triagem.quimica ?? 0} · F{" "}
-            {stats?.natureza?.triagem.fisica ?? 0}
-          </p>
-          <p className="text-xs text-slate-500">
-            ? {stats?.natureza?.triagem.indefinida ?? 0} · total {stats?.natureza?.total ?? 0}
-          </p>
-        </Card>
+        {ehNatureza && (
+          <Card>
+            <p className="text-sm text-slate-500">Triagem Natureza</p>
+            <p className="text-lg font-bold text-slate-900">
+              B {stats?.natureza?.triagem.biologia ?? 0} · Q {stats?.natureza?.triagem.quimica ?? 0} · F{" "}
+              {stats?.natureza?.triagem.fisica ?? 0}
+            </p>
+            <p className="text-xs text-slate-500">
+              ? {stats?.natureza?.triagem.indefinida ?? 0} · total {stats?.natureza?.total ?? 0}
+            </p>
+          </Card>
+        )}
       </div>
 
       {catalogoErro && (
@@ -226,10 +254,7 @@ export function AdminEnemCorpusPanel() {
       )}
 
       <div className="flex flex-wrap gap-3">
-        <Button
-          onClick={() => rodarClassificacao({ modo: "ia" })}
-          disabled={!podeClassificar}
-        >
+        <Button onClick={() => rodarClassificacao({ modo: "ia" })} disabled={!podeClassificar}>
           {classificando
             ? "Processando…"
             : iaDisponivel
@@ -245,19 +270,25 @@ export function AdminEnemCorpusPanel() {
             Só heurística (rápido)
           </Button>
         )}
-        <Button
-          variant="secondary"
-          onClick={() => rodarClassificacao({ triagemOnly: true, retriagem: true, modo: "ia" })}
-          disabled={classificando || !stats?.total}
-        >
-          Retriagem Natureza (IA)
-        </Button>
+        {ehNatureza && (
+          <Button
+            variant="secondary"
+            onClick={() => rodarClassificacao({ triagemOnly: true, retriagem: true, modo: "ia" })}
+            disabled={classificando || !stats?.total}
+          >
+            Retriagem Natureza (IA)
+          </Button>
+        )}
         <Button variant="secondary" onClick={load} disabled={loading}>
           Atualizar
         </Button>
       </div>
 
-      {ultimoRun && <p className="text-sm text-slate-600">Última execução: <strong>{ultimoRun}</strong></p>}
+      {ultimoRun && (
+        <p className="text-sm text-slate-600">
+          Última execução: <strong>{ultimoRun}</strong>
+        </p>
+      )}
 
       {catalogo && (
         <Card>
@@ -342,8 +373,8 @@ export function AdminEnemCorpusPanel() {
       </Card>
 
       <p className="text-xs text-slate-500">
-        Scripts: <code>npm run catalog:validate fisica</code>,{" "}
-        <code>npm run enem:benchmark -- --materia=fisica</code>
+        Scripts: <code>npm run catalog:validate {materiaId}</code>,{" "}
+        <code>npm run enem:benchmark -- --materia={materiaId}</code>
       </p>
     </div>
   );

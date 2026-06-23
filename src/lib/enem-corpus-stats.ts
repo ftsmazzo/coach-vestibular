@@ -4,6 +4,7 @@ import {
   prefixoCatalogoMateria,
   type MateriaCorpusId,
 } from "@/lib/conhecimento-catalog";
+import { whereCorpusMateria } from "@/lib/enem-corpus-materia";
 
 export const ENEM_CORPUS_MINIMO = Number(process.env.ENEM_CORPUS_MIN ?? "2500");
 export const CLASSIFICACAO_CONFIANCA_MIN = 0.35;
@@ -42,19 +43,20 @@ async function statsMateria(
 ): Promise<MateriaCorpusStats> {
   const materiaLabel = labelMateriaCorpus(materiaId);
   const prefixo = prefixoCatalogoMateria(materiaId);
+  const baseWhere = whereCorpusMateria(materiaId);
 
   const [triadas, classificadas, fila, topEscoposRaw] = await Promise.all([
-    prisma.enemQuestaoCorpus.count({ where: { materia: materiaLabel } }),
+    prisma.enemQuestaoCorpus.count({ where: baseWhere }),
     prisma.enemQuestaoCorpus.count({
       where: {
-        materia: materiaLabel,
+        ...baseWhere,
         conhecimentoEscopoId: { not: null, startsWith: `${prefixo}.` },
         classificacaoConfianca: { gte: CLASSIFICACAO_CONFIANCA_MIN },
       },
     }),
     prisma.enemQuestaoCorpus.count({
       where: {
-        materia: materiaLabel,
+        ...baseWhere,
         OR: [
           { conhecimentoEscopoId: null },
           { classificacaoConfianca: { lt: CLASSIFICACAO_CONFIANCA_MIN } },
@@ -65,7 +67,7 @@ async function statsMateria(
     prisma.enemQuestaoCorpus.groupBy({
       by: ["conhecimentoEscopoId"],
       where: {
-        materia: materiaLabel,
+        ...baseWhere,
         conhecimentoEscopoId: { startsWith: `${prefixo}.` },
       },
       _count: { _all: true },
@@ -195,12 +197,12 @@ export async function listarFilaRevisaoEnem(
   materiaId: MateriaCorpusId = "biologia",
   limit = 20
 ): Promise<FilaEnemItem[]> {
-  const materiaLabel = labelMateriaCorpus(materiaId);
   const prefixo = prefixoCatalogoMateria(materiaId);
+  const baseWhere = whereCorpusMateria(materiaId);
 
   const rows = await prisma.enemQuestaoCorpus.findMany({
     where: {
-      materia: materiaLabel,
+      ...baseWhere,
       OR: [
         { conhecimentoEscopoId: null },
         { classificacaoConfianca: { lt: CLASSIFICACAO_CONFIANCA_MIN } },

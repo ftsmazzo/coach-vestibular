@@ -18,6 +18,9 @@
     "catalog:validate": "npx tsx scripts/validate-catalog.ts biologia",
     "catalog:validate:quimica": "npx tsx scripts/validate-catalog.ts quimica",
     "catalog:validate:fisica": "npx tsx scripts/validate-catalog.ts fisica",
+    "catalog:validate:matematica": "npx tsx scripts/validate-catalog.ts matematica",
+    "catalog:validate:humanas": "npx tsx scripts/validate-catalog.ts humanas",
+    "catalog:validate:linguagens": "npx tsx scripts/validate-catalog.ts linguagens",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
   },

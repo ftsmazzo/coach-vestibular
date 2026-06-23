@@ -1,0 +1,240 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "1.0.0-alpha",
+  "materiaId": "matematica",
+  "materiaLabel": "Matemática",
+  "areaEnem": "Matemática e suas Tecnologias",
+  "notas": "Catálogo único para toda a área ENEM Matemática. N0=área. Assunto→N1→N2. N3=conhecimentoExigido livre.",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "maxN2PorMateria": 80,
+    "confiancaMinima": 0.35
+  },
+  "assuntos": [
+    {
+      "assuntoId": "aritmetica",
+      "assuntoLabel": "Aritmética e números",
+      "dominios": [
+        {
+          "id": "mat.aritmetica.numeros",
+          "label": "Operações e razões",
+          "escopos": [
+            { "id": "mat.aritmetica.numeros.operacoes", "label": "Operações com números reais", "keywords": ["soma", "subtração", "multiplicação", "divisão", "números reais", "operacao", "calculo"] },
+            { "id": "mat.aritmetica.numeros.razao_proporcao", "label": "Razão, proporção e regra de três", "keywords": ["razão", "proporção", "regra de três", "regra de tres", "grandezas proporcionais", "inversamente proporcional"] },
+            { "id": "mat.aritmetica.numeros.porcentagem", "label": "Porcentagem e variação percentual", "keywords": ["porcentagem", "percentual", "aumento", "desconto", "variação percentual", "lucro", "prejuízo"] },
+            { "id": "mat.aritmetica.numeros.escala", "label": "Escala e mapas", "keywords": ["escala", "mapa", "representação gráfica", "proporcionalidade em mapas"] },
+            { "id": "mat.aritmetica.numeros.mmc_mdc", "label": "MMC, MDC e divisibilidade", "keywords": ["mmc", "mdc", "mínimo múltiplo", "máximo divisor", "divisibilidade", "números primos"] }
+          ]
+        },
+        {
+          "id": "mat.aritmetica.potencias",
+          "label": "Potenciação e radiciação",
+          "escopos": [
+            { "id": "mat.aritmetica.potencias.potenciacao", "label": "Potenciação e propriedades", "keywords": ["potência", "potencia", "expoente", "base", "propriedades de potências"] },
+            { "id": "mat.aritmetica.potencias.radiciacao", "label": "Radiciação e irracionais", "keywords": ["raiz quadrada", "raiz cúbica", "radiciação", "irracional", "√", "simplificar radical"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "algebra",
+      "assuntoLabel": "Álgebra",
+      "dominios": [
+        {
+          "id": "mat.algebra.equacoes",
+          "label": "Equações e sistemas",
+          "escopos": [
+            { "id": "mat.algebra.equacoes.primeiro_grau", "label": "Equações do 1º grau", "keywords": ["equação do primeiro grau", "1º grau", "ax+b", "incógnita", "resolver equação"] },
+            { "id": "mat.algebra.equacoes.segundo_grau", "label": "Equações do 2º grau", "keywords": ["equação do segundo grau", "2º grau", "bhaskara", "delta", "raízes", "parábola"] },
+            { "id": "mat.algebra.equacoes.sistemas_lineares", "label": "Sistemas lineares 2×2", "keywords": ["sistema de equações", "substituição", "adição", "duas incógnitas", "sistema linear"] },
+            { "id": "mat.algebra.equacoes.inequacoes", "label": "Inequações", "keywords": ["inequação", "desigualdade", "intervalo", "maior que", "menor que", "≤", "≥"] }
+          ]
+        },
+        {
+          "id": "mat.algebra.polinomios",
+          "label": "Polinômios e produtos",
+          "escopos": [
+            { "id": "mat.algebra.polinomios.fatoracao", "label": "Fatoração e produtos notáveis", "keywords": ["fatoração", "fatoracao", "produtos notáveis", "trinômio quadrado perfeito", "diferença de quadrados"] },
+            { "id": "mat.algebra.polinomios.fracao_algebraica", "label": "Frações algébricas", "keywords": ["fração algébrica", "simplificação algébrica", "MMC de denominadores"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "funcoes",
+      "assuntoLabel": "Funções",
+      "dominios": [
+        {
+          "id": "mat.funcoes.geral",
+          "label": "Conceito e tipos de função",
+          "escopos": [
+            { "id": "mat.funcoes.geral.conceito_grafico", "label": "Domínio, imagem e gráfico", "keywords": ["domínio", "imagem", "gráfico de função", "eixo x", "eixo y", "ponto no gráfico"] },
+            { "id": "mat.funcoes.geral.afim", "label": "Função afim e linear", "keywords": ["função afim", "função linear", "f(x)=ax+b", "coeficiente angular", "reta crescente"] },
+            { "id": "mat.funcoes.geral.quadratica", "label": "Função quadrática", "keywords": ["função quadrática", "parábola", "vértice", "concavidade", "f(x)=ax²", "zeros da função"] },
+            { "id": "mat.funcoes.geral.exponencial", "label": "Função exponencial", "keywords": ["função exponencial", "crescimento exponencial", "decaimento", "a^x", "juros compostos"] },
+            { "id": "mat.funcoes.geral.logaritmica", "label": "Função logarítmica", "keywords": ["logaritmo", "função logarítmica", "log", "ln", "propriedades logarítmicas"] },
+            { "id": "mat.funcoes.geral.modular", "label": "Função modular", "keywords": ["módulo", "valor absoluto", "função modular", "|x|", "distância no eixo"] },
+            { "id": "mat.funcoes.geral.composicao_inversa", "label": "Composição e função inversa", "keywords": ["composição de funções", "função inversa", "fog", "gof"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "geometria_plana",
+      "assuntoLabel": "Geometria plana",
+      "dominios": [
+        {
+          "id": "mat.geometria_plana.figuras",
+          "label": "Áreas e perímetros",
+          "escopos": [
+            { "id": "mat.geometria_plana.figuras.areas_basicas", "label": "Áreas de triângulo, retângulo e círculo", "keywords": ["área do triângulo", "área do retângulo", "área do círculo", "πr²", "perímetro", "circunferência"] },
+            { "id": "mat.geometria_plana.figuras.poligonos", "label": "Polígonos e áreas compostas", "keywords": ["polígono", "hexágono", "pentágono", "área composta", "figura composta", "ladrilhamento"] },
+            { "id": "mat.geometria_plana.figuras.semelhanca", "label": "Semelhança de triângulos", "keywords": ["semelhança", "triângulos semelhantes", "proporcionalidade", "escala", "homotetia"] }
+          ]
+        },
+        {
+          "id": "mat.geometria_plana.relacoes",
+          "label": "Relações métricas",
+          "escopos": [
+            { "id": "mat.geometria_plana.relacoes.pitagoras", "label": "Teorema de Pitágoras", "keywords": ["pitágoras", "pitagoras", "hipotenusa", "catetos", "triângulo retângulo"] },
+            { "id": "mat.geometria_plana.relacoes.angulos", "label": "Ângulos e retas paralelas", "keywords": ["ângulos", "retas paralelas", "transversal", "alternos", "correspondentes", "suplementares"] },
+            { "id": "mat.geometria_plana.relacoes.lugar_geometrico", "label": "Mediatriz, bissetriz e circunferência", "keywords": ["mediatriz", "bissetriz", "circunferência inscrita", "circunferência circunscrita", "centro e raio"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "geometria_espacial",
+      "assuntoLabel": "Geometria espacial",
+      "dominios": [
+        {
+          "id": "mat.geometria_espacial.solidos",
+          "label": "Volumes e áreas de superfície",
+          "escopos": [
+            { "id": "mat.geometria_espacial.solidos.prisma_cubo", "label": "Prisma e cubo", "keywords": ["prisma", "cubo", "paralelepípedo", "volume do prisma", "área total"] },
+            { "id": "mat.geometria_espacial.solidos.cilindro", "label": "Cilindro", "keywords": ["cilindro", "volume do cilindro", "πr²h", "lata", "tubo"] },
+            { "id": "mat.geometria_espacial.solidos.cone", "label": "Cone e tronco de cone", "keywords": ["cone", "tronco de cone", "volume do cone", "1/3 πr²h", "funil"] },
+            { "id": "mat.geometria_espacial.solidos.esfera", "label": "Esfera", "keywords": ["esfera", "volume da esfera", "4/3 πr³", "bola", "globo"] },
+            { "id": "mat.geometria_espacial.solidos.piramide", "label": "Pirâmide", "keywords": ["pirâmide", "volume da pirâmide", "base poligonal", "ápice"] },
+            { "id": "mat.geometria_espacial.solidos.planificacao", "label": "Planificação de sólidos", "keywords": ["planificação", "desenvolvimento", "molde", "embalagem", "corte e dobra"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "geometria_analitica",
+      "assuntoLabel": "Geometria analítica",
+      "dominios": [
+        {
+          "id": "mat.geometria_analitica.plano",
+          "label": "Plano cartesiano",
+          "escopos": [
+            { "id": "mat.geometria_analitica.plano.distancia_ponto", "label": "Distância entre pontos", "keywords": ["distância entre pontos", "plano cartesiano", "coordenadas", "d=√"] },
+            { "id": "mat.geometria_analitica.plano.equacao_reta", "label": "Equação da reta", "keywords": ["equação da reta", "coeficiente angular", "y=ax+b", "reta no plano"] },
+            { "id": "mat.geometria_analitica.plano.circulo", "label": "Circunferência no plano", "keywords": ["equação da circunferência", "centro", "raio", "(x-a)²+(y-b)²"] },
+            { "id": "mat.geometria_analitica.plano.intersecao", "label": "Interseção reta e circunferência", "keywords": ["interseção", "ponto de tangência", "secante", "reta e circunferência"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "trigonometria",
+      "assuntoLabel": "Trigonometria",
+      "dominios": [
+        {
+          "id": "mat.trigonometria.relacoes",
+          "label": "Razões trigonométricas",
+          "escopos": [
+            { "id": "mat.trigonometria.relacoes.triangulo_retangulo", "label": "Seno, cosseno e tangente", "keywords": ["seno", "cosseno", "tangente", "sen", "cos", "tg", "triângulo retângulo"] },
+            { "id": "mat.trigonometria.relacoes.identidades", "label": "Relações e identidades trigonométricas", "keywords": ["identidade trigonométrica", "sen²+cos²", "arco", "ângulo"] },
+            { "id": "mat.trigonometria.relacoes.lei_senos_cossenos", "label": "Lei dos senos e dos cossenos", "keywords": ["lei dos senos", "lei dos cossenos", "triângulo qualquer", "lado oposto"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "progressoes",
+      "assuntoLabel": "Progressões",
+      "dominios": [
+        {
+          "id": "mat.progressoes.sequencias",
+          "label": "PA e PG",
+          "escopos": [
+            { "id": "mat.progressoes.sequencias.pa", "label": "Progressão aritmética (PA)", "keywords": ["progressão aritmética", "PA", "razão aritmética", "an", "termo geral"] },
+            { "id": "mat.progressoes.sequencias.pg", "label": "Progressão geométrica (PG)", "keywords": ["progressão geométrica", "PG", "razão geométrica", "q^n", "termo geral PG"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "estatistica_probabilidade",
+      "assuntoLabel": "Estatística e probabilidade",
+      "dominios": [
+        {
+          "id": "mat.estatistica.medidas",
+          "label": "Medidas estatísticas",
+          "escopos": [
+            { "id": "mat.estatistica.medidas.tendencia_central", "label": "Média, mediana e moda", "keywords": ["média", "mediana", "moda", "tendência central", "dados estatísticos"] },
+            { "id": "mat.estatistica.medidas.dispersao", "label": "Amplitude e desvio", "keywords": ["amplitude", "desvio padrão", "variância", "dispersão"] },
+            { "id": "mat.estatistica.medidas.graficos", "label": "Gráficos estatísticos", "keywords": ["histograma", "gráfico de barras", "setores", "pizza", "box plot", "diagrama"] }
+          ]
+        },
+        {
+          "id": "mat.estatistica.probabilidade",
+          "label": "Probabilidade",
+          "escopos": [
+            { "id": "mat.estatistica.probabilidade.classica", "label": "Probabilidade clássica", "keywords": ["probabilidade", "espaço amostral", "evento", "favorável", "P(A)"] },
+            { "id": "mat.estatistica.probabilidade.condicional", "label": "Probabilidade condicional e independentes", "keywords": ["probabilidade condicional", "eventos independentes", "P(A|B)", "interseção"] },
+            { "id": "mat.estatistica.probabilidade.frequencia", "label": "Frequência relativa e estimativa", "keywords": ["frequência relativa", "frequência absoluta", "estimativa", "amostra"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "combinatoria",
+      "assuntoLabel": "Análise combinatória",
+      "dominios": [
+        {
+          "id": "mat.combinatoria.contagem",
+          "label": "Princípios de contagem",
+          "escopos": [
+            { "id": "mat.combinatoria.contagem.principio_fundamental", "label": "Princípio fundamental da contagem", "keywords": ["princípio fundamental", "contagem", "possibilidades", "multiplicação de opções"] },
+            { "id": "mat.combinatoria.contagem.permutacao", "label": "Permutação", "keywords": ["permutação", "permutacao", "ordem", "n!", "fila", "arranjo total"] },
+            { "id": "mat.combinatoria.contagem.arranjo", "label": "Arranjo", "keywords": ["arranjo", "A(n,p)", "ordem importa", "seleção ordenada"] },
+            { "id": "mat.combinatoria.contagem.combinacao", "label": "Combinação", "keywords": ["combinação", "combinacao", "C(n,p)", "ordem não importa", "subconjunto"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "matematica_financeira",
+      "assuntoLabel": "Matemática financeira",
+      "dominios": [
+        {
+          "id": "mat.financeira.juros",
+          "label": "Juros e aplicações",
+          "escopos": [
+            { "id": "mat.financeira.juros.simples", "label": "Juros simples", "keywords": ["juros simples", "montante", "capital", "taxa", "tempo", "C×i×t"] },
+            { "id": "mat.financeira.juros.compostos", "label": "Juros compostos", "keywords": ["juros compostos", "M=C(1+i)^t", "capitalização", "rendimento"] },
+            { "id": "mat.financeira.juros.financiamento", "label": "Financiamento, parcelas e tabelas", "keywords": ["financiamento", "parcela", "prestação", "tabela price", "amortização", "empréstimo"] }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "matrizes",
+      "assuntoLabel": "Matrizes",
+      "dominios": [
+        {
+          "id": "mat.matrizes.operacoes",
+          "label": "Matrizes e determinantes",
+          "escopos": [
+            { "id": "mat.matrizes.operacoes.conceito", "label": "Operações com matrizes", "keywords": ["matriz", "soma de matrizes", "multiplicação de matrizes", "ordem m×n"] },
+            { "id": "mat.matrizes.operacoes.determinante", "label": "Determinante 2×2 e 3×3", "keywords": ["determinante", "det", "matriz 2×2", "matriz 3×3", "sarrus"] }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -21,6 +21,7 @@ import {
   validarCatalogo,
   type MateriaCorpusId,
 } from "../src/lib/conhecimento-catalog";
+import { CORPUS_MATERIA_CONFIG, whereCorpusMateria } from "../src/lib/enem-corpus-materia";
 
 function parseArgs() {
   const materiaArg = process.argv.find((a) => a.startsWith("--materia="));
@@ -65,8 +66,7 @@ async function main() {
   try {
     const questoes = await prisma.enemQuestaoCorpus.findMany({
       where: {
-        disciplina: "ciencias_natureza",
-        materia: materiaLabel,
+        ...whereCorpusMateria(materiaId),
         ...(ano ? { ano } : {}),
       },
       select: {
@@ -79,7 +79,10 @@ async function main() {
     });
 
     if (questoes.length === 0) {
-      console.log(`\nNenhuma questão triada como ${materiaLabel}. Rode triagem Natureza primeiro.`);
+      const cfg = CORPUS_MATERIA_CONFIG[materiaId];
+      console.log(
+        `\nNenhuma questão no corpus para ${materiaLabel} (${cfg.disciplina}${cfg.naturezaSub ? " · triadas" : ""}).`
+      );
       return;
     }
 

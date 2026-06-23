@@ -21,6 +21,7 @@ export {
   labelMateriaCorpus,
   mapaConceitoPorEscopo,
   MATERIA_CORPUS_LABEL,
+  MATERIAS_CORPUS,
   MATERIAS_CORPUS_NATUREZA,
   prefixoCatalogoMateria,
   PREFIXO_MATERIA,
