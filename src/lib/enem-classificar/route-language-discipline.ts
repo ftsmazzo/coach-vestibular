@@ -3,6 +3,10 @@ import { naFaixaL2Enem } from "./linguagens-rota";
 
 export type DisciplinaLinguagens = "portugues" | "ingles" | "espanhol" | "indefinido";
 
+export type DisciplinaLinguagensRoteada = Exclude<DisciplinaLinguagens, "indefinido">;
+
+type RotasLinguagens = Record<DisciplinaLinguagensRoteada, string[]>;
+
 export type CriterioRotaLinguagens =
   | "metadata"
   | "posicao_enem"
@@ -30,7 +34,7 @@ export type QuestaoRotaInput = {
   origem?: string;
 };
 
-const ROTAS_PADRAO: Record<Exclude<DisciplinaLinguagens, "indefinido">, string[]> = {
+const ROTAS_PADRAO: RotasLinguagens = {
   portugues: ["pt_interp", "pt_lit", "pt_gram", "pt_sem", "pt_art", "pt_tec"],
   ingles: ["l2_en"],
   espanhol: ["l2_es"],
@@ -74,7 +78,7 @@ function norm(s: string): string {
     .replace(/\p{Diacritic}/gu, "");
 }
 
-function rotasDoCatalogo(catalog?: MateriaCatalogo): typeof ROTAS_PADRAO {
+function rotasDoCatalogo(catalog?: MateriaCatalogo): RotasLinguagens {
   const rotas = catalog?.regras?.roteamentoObrigatorio?.rotas;
   if (!rotas) return ROTAS_PADRAO;
   return {
@@ -86,7 +90,7 @@ function rotasDoCatalogo(catalog?: MateriaCatalogo): typeof ROTAS_PADRAO {
 
 function disciplinaPorMetadado(
   input: QuestaoRotaInput
-): { disciplina: DisciplinaLinguagens; confianca: number } | null {
+): { disciplina: DisciplinaLinguagensRoteada; confianca: number } | null {
   const raw = (input.disciplinaOriginalId ?? "").toLowerCase().trim();
   if (
     raw === "ingles" ||
@@ -141,7 +145,7 @@ function contarMarcadores(texto: string, marcadores: string[]): number {
 
 function detectarIdiomaTextoBase(
   input: QuestaoRotaInput
-): { disciplina: DisciplinaLinguagens; confianca: number } | null {
+): { disciplina: DisciplinaLinguagensRoteada; confianca: number } | null {
   const texto = textoParaDeteccao(input);
   if (texto.length < 40) return null;
 
