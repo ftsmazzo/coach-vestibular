@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "1.0.0",
+  "notas": "Ponte entre taxonomy.json (diagnóstico/simulado: materiaId + temaId) e conhecimento-catalog (classificação: materiaId corpus + assuntoId/N2). Sem este arquivo, relatórios de erro e classificador IA medem coisas diferentes.",
+  "materiaParaCatalogo": {
+    "biologia": { "catalogMateriaId": "biologia" },
+    "quimica": { "catalogMateriaId": "quimica" },
+    "fisica": { "catalogMateriaId": "fisica" },
+    "matematica": { "catalogMateriaId": "matematica" },
+    "portugues": { "catalogMateriaId": "linguagens", "trilhaCatalogo": "pt" },
+    "ingles": { "catalogMateriaId": "linguagens", "trilhaCatalogo": "l2_en" },
+    "espanhol": { "catalogMateriaId": "linguagens", "trilhaCatalogo": "l2_es" },
+    "historia": { "catalogMateriaId": "humanas" },
+    "geografia": { "catalogMateriaId": "humanas" },
+    "filosofia": { "catalogMateriaId": "humanas" },
+    "sociologia": { "catalogMateriaId": "humanas" }
+  },
+  "temaParaCatalogo": [
+    { "taxonomyMateriaId": "biologia", "temaId": "genetica", "catalogAssuntoId": "genetica" },
+    { "taxonomyMateriaId": "biologia", "temaId": "ecologia", "catalogAssuntoId": "ecologia" },
+    { "taxonomyMateriaId": "biologia", "temaId": "citologia", "catalogAssuntoId": "citologia" },
+    { "taxonomyMateriaId": "biologia", "temaId": "fisiologia_humana", "catalogAssuntoId": "fisiologia_humana" },
+    { "taxonomyMateriaId": "biologia", "temaId": "evolucao", "catalogAssuntoId": "evolucao" },
+    { "taxonomyMateriaId": "biologia", "temaId": "botanica", "catalogAssuntoId": "botanica" },
+
+    { "taxonomyMateriaId": "quimica", "temaId": "estequiometria", "catalogAssuntoId": "estequiometria" },
+    { "taxonomyMateriaId": "quimica", "temaId": "termoquimica", "catalogAssuntoId": "termoquimica" },
+    { "taxonomyMateriaId": "quimica", "temaId": "equilibrio", "catalogAssuntoId": "equilibrio" },
+    { "taxonomyMateriaId": "quimica", "temaId": "eletroquimica", "catalogAssuntoId": "eletroquimica" },
+    { "taxonomyMateriaId": "quimica", "temaId": "organica", "catalogAssuntoId": "organica" },
+    { "taxonomyMateriaId": "quimica", "temaId": "atomistica", "catalogAssuntoId": "atomistica" },
+
+    { "taxonomyMateriaId": "fisica", "temaId": "cinematica", "catalogDominioPrefix": "fis.mecanica.cinematica" },
+    { "taxonomyMateriaId": "fisica", "temaId": "dinamica", "catalogDominioPrefix": "fis.mecanica.dinamica" },
+    { "taxonomyMateriaId": "fisica", "temaId": "energia", "catalogDominioPrefix": "fis.mecanica.energia" },
+    { "taxonomyMateriaId": "fisica", "temaId": "eletricidade", "catalogAssuntoId": "eletrodinamica" },
+    { "taxonomyMateriaId": "fisica", "temaId": "ondas", "catalogAssuntoId": "ondulatoria" },
+    { "taxonomyMateriaId": "fisica", "temaId": "optica", "catalogAssuntoId": "optica" },
+
+    { "taxonomyMateriaId": "matematica", "temaId": "funcoes", "catalogAssuntoId": "funcoes" },
+    { "taxonomyMateriaId": "matematica", "temaId": "geometria", "catalogEscopoContem": "geometria_" },
+    { "taxonomyMateriaId": "matematica", "temaId": "probabilidade", "catalogAssuntoId": "estatistica_probabilidade" },
+    { "taxonomyMateriaId": "matematica", "temaId": "trigonometria", "catalogAssuntoId": "trigonometria" },
+    { "taxonomyMateriaId": "matematica", "temaId": "algebra", "catalogAssuntoId": "algebra" },
+    { "taxonomyMateriaId": "matematica", "temaId": "matrizes", "catalogAssuntoId": "matrizes" },
+
+    { "taxonomyMateriaId": "portugues", "temaId": "interpretacao_texto", "catalogAssuntoId": "pt_interp" },
+    { "taxonomyMateriaId": "portugues", "temaId": "gramatica", "catalogAssuntoId": "pt_gram" },
+    { "taxonomyMateriaId": "portugues", "temaId": "literatura", "catalogAssuntoId": "pt_lit" },
+    { "taxonomyMateriaId": "portugues", "temaId": "redacao", "catalogAssuntoId": "pt_tec" },
+
+    { "taxonomyMateriaId": "ingles", "temaId": "compreensao_texto", "catalogAssuntoId": "l2_en" },
+    { "taxonomyMateriaId": "ingles", "temaId": "gramatica_vocabulario", "catalogAssuntoId": "l2_en" },
+    { "taxonomyMateriaId": "espanhol", "temaId": "compreensao_texto", "catalogAssuntoId": "l2_es" },
+    { "taxonomyMateriaId": "espanhol", "temaId": "gramatica_vocabulario", "catalogAssuntoId": "l2_es" },
+
+    { "taxonomyMateriaId": "historia", "temaId": "brasil_republica", "catalogAssuntoId": "historia_brasil" },
+    { "taxonomyMateriaId": "historia", "temaId": "geral_contemporanea", "catalogAssuntoId": "historia_geral" },
+    { "taxonomyMateriaId": "geografia", "temaId": "humanos", "catalogAssuntoId": "geografia" },
+    { "taxonomyMateriaId": "geografia", "temaId": "fisicos", "catalogAssuntoId": "geografia" },
+    { "taxonomyMateriaId": "filosofia", "temaId": "etica", "catalogAssuntoId": "filosofia" },
+    { "taxonomyMateriaId": "filosofia", "temaId": "politica", "catalogAssuntoId": "filosofia" },
+    { "taxonomyMateriaId": "filosofia", "temaId": "geral", "catalogAssuntoId": "filosofia" },
+    { "taxonomyMateriaId": "sociologia", "temaId": "sociedade_cultura", "catalogAssuntoId": "sociologia" },
+    { "taxonomyMateriaId": "sociologia", "temaId": "movimentos_sociais", "catalogAssuntoId": "sociologia" },
+    { "taxonomyMateriaId": "sociologia", "temaId": "geral", "catalogAssuntoId": "sociologia" }
+  ]
+}

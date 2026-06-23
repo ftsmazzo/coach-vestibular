@@ -139,12 +139,23 @@ model ProvaQuestao {
   enunciado           String?   @db.Text
   gabarito            String?
 
+  /// Classificação pedagógica Coach (N1/N2) — espelha EnemQuestaoCorpus
+  conhecimentoDominioId        String?
+  conhecimentoEscopoId         String?
+  classificacaoVersao          String?
+  classificacaoConfianca       Float?
+  /// JSON: [{ escopoId, confianca }] — escopos secundários (multi-label)
+  classificacaoSecundariosJson String? @db.Text
+  /// JSON: ids de conceitos-canonicos.json
+  conceitosCanonicosJson       String? @db.Text
+
   prova     Prova              @relation(fields: [provaId], references: [id], onDelete: Cascade)
   tentativas QuestionAttempt[]
   sugestoes  SugestaoClassificacao[]
 
   @@unique([provaId, numero, idiomaVariante])
   @@index([provaId, materia])
+  @@index([conhecimentoEscopoId])
 }
 
 model User {

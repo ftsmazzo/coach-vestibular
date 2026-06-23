@@ -39,6 +39,7 @@ export type QuestionAttemptMultidia = {
   provaQuestao?: {
     materia: string;
     assunto: string;
+    conhecimentoEscopoId?: string | null;
     conhecimentoExigido?: string | null;
     nivelDificuldade?: string | null;
   } | null;

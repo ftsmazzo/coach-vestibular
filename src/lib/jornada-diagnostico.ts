@@ -3,7 +3,7 @@ import { buildDiagnosis, aplicarPlanoCoachIA } from "@/lib/diagnosis";
 import { prisma } from "@/lib/prisma";
 import { pesoBancaParaMeta } from "@/lib/meta-vestibular";
 import { pesoModoUso } from "@/lib/modo-uso";
-import { mapMateriaAssuntoToTaxonomy } from "@/lib/prova-catalog";
+import { taxonomyFromQuestao } from "@/lib/canonical-question/taxonomy-from-questao";
 import { historicalAttemptsDaJornada } from "@/lib/jornada-plano";
 import {
   agruparUnidadesJornada,
@@ -16,7 +16,11 @@ type QuestionAttemptsJornada = Array<{
   materiaId: string | null;
   temaId: string | null;
   tipoErro: string | null;
-  provaQuestao?: { materia: string; assunto: string } | null;
+  provaQuestao?: {
+    materia: string;
+    assunto: string;
+    conhecimentoEscopoId?: string | null;
+  } | null;
 }>;
 
 function attemptsFromExam(
@@ -27,7 +31,11 @@ function attemptsFromExam(
   return exam.questionAttempts.map((a) => {
     const mapped =
       a.provaQuestao &&
-      mapMateriaAssuntoToTaxonomy(a.provaQuestao.materia, a.provaQuestao.assunto);
+      taxonomyFromQuestao({
+        materia: a.provaQuestao.materia,
+        assunto: a.provaQuestao.assunto,
+        conhecimentoEscopoId: a.provaQuestao.conhecimentoEscopoId,
+      });
     return {
       numero: a.numero,
       correto: a.correto,

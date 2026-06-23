@@ -111,3 +111,36 @@ export function mapaConceitoPorEscopo(
   }
   return map;
 }
+
+export type EscopoIndexGlobalEntry = EscopoIndexEntry & {
+  areaEnem?: string;
+  catalogVersion: string;
+};
+
+let cacheIndexGlobal: Map<string, EscopoIndexGlobalEntry> | null = null;
+
+/** Índice N2 de todas as matérias do corpus — base para derivarClassNode. */
+export function indexGlobalEscopos(): Map<string, EscopoIndexGlobalEntry> {
+  if (cacheIndexGlobal) return cacheIndexGlobal;
+
+  const map = new Map<string, EscopoIndexGlobalEntry>();
+  for (const materiaId of MATERIAS_CORPUS) {
+    const catalog = carregarCatalogoMateria(materiaId);
+    const local = indexarEscopos(catalog);
+    for (const [escopoId, entry] of local) {
+      map.set(escopoId, {
+        ...entry,
+        areaEnem: catalog.areaEnem,
+        catalogVersion: catalog.catalogVersion,
+      });
+    }
+  }
+
+  cacheIndexGlobal = map;
+  return map;
+}
+
+/** Limpa cache (testes ou hot-reload de catálogo). */
+export function limparCacheIndexGlobalEscopos(): void {
+  cacheIndexGlobal = null;
+}

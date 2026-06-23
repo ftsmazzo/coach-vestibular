@@ -2,7 +2,8 @@ import type { ErrorType } from "@/generated/prisma/client";
 import { prisma } from "./prisma";
 import { aplicarPlanoCoachIA, buildDiagnosis, type AttemptInput } from "./diagnosis";
 import { enriquecerDiagnosticoComProva } from "./diagnosis-prova";
-import { mapMateriaAssuntoToTaxonomy, syncProvaGabaritoStatus } from "./prova-catalog";
+import { taxonomyFromQuestao } from "./canonical-question/taxonomy-from-questao";
+import { syncProvaGabaritoStatus } from "./prova-catalog";
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
 import { normalizarMapaGabarito, normalizarNumerosInformados, resolverNumerosGradeProva } from "./prova-numeracao";
 import { parseDataAplicacao } from "./data-prova";
@@ -54,6 +55,7 @@ function buildAttemptsFromProva(
     numero: number;
     materia: string;
     assunto: string;
+    conhecimentoEscopoId?: string | null;
     gabarito: string | null;
   }>,
   respostasPorNumero: Map<number, string>,
@@ -99,7 +101,7 @@ function buildAttemptsFromProva(
         correto = true;
       }
 
-      const { materiaId, temaId } = mapMateriaAssuntoToTaxonomy(q.materia, q.assunto);
+      const { materiaId, temaId } = taxonomyFromQuestao(q);
 
       const row: AttemptWithMeta = {
         numero: q.numero,
@@ -240,7 +242,11 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     e.questionAttempts.map((a) => {
       const mapped =
         a.provaQuestao &&
-        mapMateriaAssuntoToTaxonomy(a.provaQuestao.materia, a.provaQuestao.assunto);
+        taxonomyFromQuestao({
+          materia: a.provaQuestao.materia,
+          assunto: a.provaQuestao.assunto,
+          conhecimentoEscopoId: a.provaQuestao.conhecimentoEscopoId,
+        });
       return {
         numero: a.numero,
         correto: a.correto,
@@ -323,7 +329,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
       questionAttempts: {
         create: rawAttempts.map((a) => {
           const q = questoesEfetivas.find((pq) => pq.numero === a.numero)!;
-          const { materiaId, temaId } = mapMateriaAssuntoToTaxonomy(q.materia, q.assunto);
+          const { materiaId, temaId } = taxonomyFromQuestao(q);
           const ext = a as AttemptWithMeta;
           return {
             numero: a.numero,
@@ -546,7 +552,14 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
     e.questionAttempts.map((a) => {
       const mat = a.materiaCorrigida || a.provaQuestao?.materia;
       const ass = a.assuntoCorrigido || a.provaQuestao?.assunto;
-      const mapped = (mat && ass) ? mapMateriaAssuntoToTaxonomy(mat, ass) : undefined;
+      const mapped =
+        mat && ass
+          ? taxonomyFromQuestao({
+              materia: mat,
+              assunto: ass,
+              conhecimentoEscopoId: a.provaQuestao?.conhecimentoEscopoId,
+            })
+          : undefined;
       return {
         numero: a.numero,
         correto: a.correto,
@@ -569,7 +582,14 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
       questaoPorNumeroETentativa(prova.questoes, a.numero, prova, exam.idiomaEstrangeiro);
     const mat = a.materiaCorrigida || pq?.materia;
     const ass = a.assuntoCorrigido || pq?.assunto;
-    const mapped = (mat && ass) ? mapMateriaAssuntoToTaxonomy(mat, ass) : undefined;
+    const mapped =
+      mat && ass
+        ? taxonomyFromQuestao({
+            materia: mat,
+            assunto: ass,
+            conhecimentoEscopoId: pq?.conhecimentoEscopoId,
+          })
+        : undefined;
     return {
       numero: a.numero,
       correto: a.correto,
