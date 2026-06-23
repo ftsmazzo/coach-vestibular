@@ -1,5 +1,4 @@
 import type { EnemDevDiscipline, EnemDevLanguage, EnemDevQuestion } from "./types";
-import { inferirIdiomaCorpusLinguagens } from "@/lib/enem-classificar/linguagens-rota";
 
 /** Dia do ENEM inferido pelo número global (1–90 / 91–180). */
 export function inferirDiaEnem(numero: number): 1 | 2 {
@@ -24,11 +23,20 @@ export function disciplinaParaEnum(
   return discipline.replace(/-/g, "_") as ReturnType<typeof disciplinaParaEnum>;
 }
 
+/** Mapeamento direto do campo `language` da API — sem heurística. */
+export function idiomaFromApi(
+  language: EnemDevLanguage | null
+): "COMUM" | "ingles" | "espanhol" {
+  if (language === "ingles") return "ingles";
+  if (language === "espanhol") return "espanhol";
+  return "COMUM";
+}
+
+/** @deprecated Use idiomaFromApi */
 export function idiomaParaEnum(
   language: EnemDevLanguage | null
 ): "COMUM" | "ingles" | "espanhol" {
-  if (!language) return "COMUM";
-  return language;
+  return idiomaFromApi(language);
 }
 
 export function montarFonteId(
@@ -57,11 +65,7 @@ export type EnemCorpusEstrutural = {
 
 /** Extrai somente campos estruturais da questão — sem matéria/assunto/N1/N2. */
 export function mapearQuestaoEstrutural(q: EnemDevQuestion): EnemCorpusEstrutural {
-  const textoBase = [q.context, q.alternativesIntroduction].filter(Boolean).join("\n");
-  const idioma =
-    q.discipline === "linguagens"
-      ? inferirIdiomaCorpusLinguagens(q.index, q.language, textoBase || q.context)
-      : idiomaParaEnum(q.language);
+  const idioma = idiomaFromApi(q.language);
   return {
     ano: q.year,
     numero: q.index,

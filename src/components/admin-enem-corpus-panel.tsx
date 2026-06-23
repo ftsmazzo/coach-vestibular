@@ -57,6 +57,14 @@ type Catalogo = {
   validacao: Array<{ nivel: string; ok: boolean; mensagem: string }>;
 };
 
+type EstruturalValidacao = {
+  completo: boolean;
+  total: number;
+  anomaliasQ1a5Comum: number;
+  linguagens: { comum: number; ingles: number; espanhol: number };
+  itens: Array<{ ok: boolean; nivel: string; mensagem: string }>;
+};
+
 const MATERIA_TAB: Array<{ id: MateriaCorpusId; label: string; grupo?: string }> = [
   { id: "biologia", label: "Biologia", grupo: "Natureza" },
   { id: "quimica", label: "Química", grupo: "Natureza" },
@@ -82,11 +90,14 @@ export function AdminEnemCorpusPanel() {
   const [catalogo, setCatalogo] = useState<Catalogo | null>(null);
   const [loading, setLoading] = useState(true);
   const [classificando, setClassificando] = useState(false);
+  const [sincronizando, setSincronizando] = useState(false);
   const [ultimoRun, setUltimoRun] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [catalogoErro, setCatalogoErro] = useState<string | null>(null);
   const [iaDisponivel, setIaDisponivel] = useState(false);
   const [linguagensRotaVersion, setLinguagensRotaVersion] = useState<number | null>(null);
+  const [estrutural, setEstrutural] = useState<EstruturalValidacao | null>(null);
+  const [corpusSyncVersion, setCorpusSyncVersion] = useState<string | null>(null);
 
   const materiaLabel = MATERIA_TAB.find((t) => t.id === materiaId)?.label ?? materiaId;
   const ehNatureza = NATUREZA_IDS.has(materiaId);
@@ -108,6 +119,10 @@ export function AdminEnemCorpusPanel() {
       setLinguagensRotaVersion(
         typeof data.linguagensRotaVersion === "number" ? data.linguagensRotaVersion : null
       );
+      setEstrutural((data.estrutural as EstruturalValidacao) ?? null);
+      setCorpusSyncVersion(
+        typeof data.corpusSyncVersion === "string" ? data.corpusSyncVersion : null
+      );
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro");
     } finally {
@@ -118,6 +133,57 @@ export function AdminEnemCorpusPanel() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function rodarSync() {
+    setSincronizando(true);
+    setErro(null);
+    const inicio = Date.now();
+    try {
+      const res = await fetch("/api/admin/enem-corpus/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      let data: Record<string, unknown>;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(
+          res.ok
+            ? "Resposta inválida do servidor"
+            : `Falha HTTP ${res.status} — sync pode levar vários minutos`
+        );
+      }
+      if (!res.ok) {
+        throw new Error(typeof data.error === "string" ? data.error : `Sync falhou (HTTP ${res.status})`);
+      }
+
+      const r = data.resultado as {
+        processadas: number;
+        criadas: number;
+        atualizadas: number;
+        validacao: { completo: boolean; totalApi: number; totalBanco: number; delta: number };
+        avisos?: string[];
+      };
+      if (data.stats) setStats(data.stats as Stats);
+      if (data.estrutural) setEstrutural(data.estrutural as EstruturalValidacao);
+
+      const segundos = ((Date.now() - inicio) / 1000).toFixed(1);
+      const v = r.validacao;
+      setUltimoRun(
+        `Sync API (${segundos}s): ${r.criadas} novas · ${r.atualizadas} atualizadas · ` +
+          `${r.processadas} da API · banco ${v.totalBanco}/${v.totalApi}` +
+          (v.completo ? " ✓" : ` · delta ${v.delta}`)
+      );
+      if (!v.completo) {
+        setErro("Sync concluído mas corpus ainda incompleto — rode novamente ou veja logs.");
+      }
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Erro no sync");
+    } finally {
+      setSincronizando(false);
+    }
+  }
 
   async function rodarClassificacao(
     opts: {
@@ -280,7 +346,12 @@ export function AdminEnemCorpusPanel() {
   const validacaoE1Ok = catalogo?.validacao.filter((v) => v.nivel === "E1").every((v) => v.ok) ?? false;
   const catalogoOk = validacaoE0Ok && validacaoE1Ok;
   const podeClassificar =
-    Boolean(catalogo) && validacaoE0Ok && !classificando && (stats?.total ?? 0) > 0;
+    Boolean(catalogo) &&
+    validacaoE0Ok &&
+    !classificando &&
+    !sincronizando &&
+    (stats?.total ?? 0) > 0 &&
+    (estrutural?.completo ?? false);
 
   if (loading && !stats) {
     return <p className="text-slate-500">Carregando corpus ENEM…</p>;
@@ -302,6 +373,53 @@ export function AdminEnemCorpusPanel() {
           </p>
         </Card>
       )}
+
+      {sincronizando && (
+        <Card className="border-blue-200 bg-blue-50/80">
+          <p className="text-sm text-blue-900">
+            <strong>Sincronizando com enem.dev…</strong> Espelho 1:1 da API (PT + EN + ES). Pode levar
+            15–30 min por rate limit. Não feche esta aba.
+          </p>
+        </Card>
+      )}
+
+      <Card className="border-slate-200">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-slate-900">Base estrutural (Fase 1)</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Import 1:1 da API enem.dev — idioma direto de <code>language</code>, sem heurística.
+              {corpusSyncVersion && (
+                <span className="ml-1 text-xs text-slate-500">· sync v{corpusSyncVersion}</span>
+              )}
+            </p>
+          </div>
+          <Button
+            type="button"
+            onClick={rodarSync}
+            disabled={sincronizando || classificando}
+          >
+            {sincronizando ? "Sincronizando…" : "Sincronizar corpus (API completa)"}
+          </Button>
+        </div>
+        {estrutural && (
+          <ul className="mt-4 space-y-1 text-sm">
+            {estrutural.itens.map((item) => (
+              <li key={`${item.nivel}-${item.mensagem}`} className="flex gap-2">
+                <Badge tone={item.ok ? "success" : item.nivel === "info" ? "neutral" : "danger"}>
+                  {item.nivel}
+                </Badge>
+                <span className={item.ok ? "text-slate-600" : "text-red-700"}>{item.mensagem}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {estrutural && !estrutural.completo && (
+          <p className="mt-3 text-sm text-amber-800">
+            Complete a base estrutural antes da classificação IA (Fase 2).
+          </p>
+        )}
+      </Card>
 
       <div className="flex flex-wrap gap-2">
         {MATERIA_TAB.map((t) => (
@@ -326,27 +444,19 @@ export function AdminEnemCorpusPanel() {
         <>
           <Card className="border-indigo-200 bg-indigo-50/60">
             <p className="text-sm text-indigo-900">
-              <strong>3 trilhas ortogonais.</strong> enem.dev: espanhol na listagem padrão (Q1–5),{" "}
-              <strong>inglês só com</strong> <code>?language=ingles</code> (import separado). Q6+ =
-              português (<code>idioma:COMUM</code>). A IA só vê N2 da trilha.
+              <strong>3 trilhas ortogonais.</strong> Sync unificado: listagem padrão (ES + PT) + passagem{" "}
+              <code>?language=ingles</code>. Q6+ = português (<code>idioma:COMUM</code>). A IA (Fase 2)
+              só vê N2 da trilha.
               {linguagensRotaVersion != null && (
                 <span className="ml-1 text-xs text-indigo-700">· rota v{linguagensRotaVersion}</span>
               )}
             </p>
           </Card>
-          {linguagensRotaVersion !== 3 && (
+          {!estrutural?.completo && (stats?.linguagens?.trilhas.ingles ?? 0) < 50 && (
             <Card className="border-amber-300 bg-amber-50/90">
               <p className="text-sm text-amber-950">
-                <strong>Deploy desatualizado (rota v3).</strong> Falta importar inglês via enem.dev.
-                Use <strong>Importar inglês Q1–5</strong> e depois Classificar com IA.
-              </p>
-            </Card>
-          )}
-          {(stats?.linguagens?.trilhas.ingles ?? 0) === 0 && linguagensRotaVersion === 3 && (
-            <Card className="border-amber-300 bg-amber-50/90">
-              <p className="text-sm text-amber-950">
-                <strong>EN = 0 no banco.</strong> Clique <strong>Importar inglês Q1–5</strong> (~75
-                questões, leva ~2 min por rate limit da API).
+                <strong>Base incompleta.</strong> Use <strong>Sincronizar corpus (API completa)</strong>{" "}
+                para trazer EN/ES/PT da API antes de classificar.
               </p>
             </Card>
           )}
@@ -451,9 +561,10 @@ export function AdminEnemCorpusPanel() {
               type="button"
               variant="secondary"
               onClick={() => rodarClassificacao({ importarLinguagensIngles: true })}
-              disabled={classificando || linguagensRotaVersion !== 3}
+              disabled={classificando || sincronizando}
+              title="Legado — prefira Sincronizar corpus"
             >
-              Importar inglês Q1–5
+              Importar inglês (legado)
             </Button>
             <Button
               type="button"
@@ -466,7 +577,7 @@ export function AdminEnemCorpusPanel() {
                   modo: "ia",
                 })
               }
-              disabled={!podeClassificar || linguagensRotaVersion !== 3}
+              disabled={!podeClassificar}
             >
               Importar EN + classificar
             </Button>
@@ -492,7 +603,7 @@ export function AdminEnemCorpusPanel() {
             Retriagem Natureza (IA)
           </Button>
         )}
-        <Button type="button" variant="secondary" onClick={load} disabled={loading || classificando}>
+        <Button type="button" variant="secondary" onClick={load} disabled={loading || classificando || sincronizando}>
           Atualizar
         </Button>
       </div>
@@ -586,7 +697,7 @@ export function AdminEnemCorpusPanel() {
       </Card>
 
       <p className="text-xs text-slate-500">
-        Scripts: <code>npm run catalog:validate {materiaId}</code>,{" "}
+        Scripts: <code>npm run enem:sync</code>, <code>npm run catalog:validate {materiaId}</code>,{" "}
         <code>npm run enem:benchmark -- --materia={materiaId}</code>
       </p>
     </div>

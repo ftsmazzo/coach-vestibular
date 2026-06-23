@@ -18,6 +18,8 @@ import {
   repararIdiomaLinguagensCorpus,
 } from "@/lib/enem-repair-linguagens";
 import { importarL2InglesCorpus } from "@/lib/enem-import-l2-ingles";
+import { validarCorpusEstruturalBanco } from "@/lib/enem-corpus-validacao";
+import { ENEM_CORPUS_SYNC_VERSION } from "@/lib/enem-corpus-sync";
 import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 600;
@@ -28,9 +30,10 @@ export async function GET(req: Request) {
 
   const materiaId = parseMateriaCorpusId(new URL(req.url).searchParams.get("materiaId"));
 
-  const [stats, fila] = await Promise.all([
+  const [stats, fila, estrutural] = await Promise.all([
     obterStatsCorpusEnem(prisma, materiaId),
     listarFilaRevisaoEnem(prisma, materiaId, 15),
+    validarCorpusEstruturalBanco(prisma),
   ]);
 
   let catalogo: {
@@ -63,12 +66,14 @@ export async function GET(req: Request) {
   return NextResponse.json({
     stats,
     fila,
+    estrutural,
     catalogo,
     catalogoErro,
     materiaId,
     materiasDisponiveis: [...MATERIAS_CORPUS],
     iaDisponivel: Boolean(process.env.OPENAI_API_KEY?.trim()),
     linguagensRotaVersion: LINGUAGENS_ROTA_VERSION,
+    corpusSyncVersion: ENEM_CORPUS_SYNC_VERSION,
   });
 }
 

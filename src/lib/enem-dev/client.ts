@@ -86,6 +86,52 @@ export async function* iterarQuestoesL2Ingles(
   }
 }
 
+/**
+ * Todas as questões de um ano na API: listagem padrão (ES + PT + demais)
+ * + passagem `?language=ingles` quando a prova declara suporte.
+ */
+export async function* iterarQuestoesAnoCompleto(
+  ano: number,
+  prova: EnemDevExam
+): AsyncGenerator<EnemDevQuestionsPage["questions"][number]> {
+  for await (const q of iterarQuestoesAno(ano)) {
+    yield q;
+  }
+
+  if (!prova.languages.some((l) => l.value === "ingles")) return;
+
+  let inglesPaginado = 0;
+  try {
+    for await (const q of iterarQuestoesAno(ano, DEFAULT_PAGE_SIZE, 0, "ingles")) {
+      inglesPaginado++;
+      yield q;
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (!enemDevErroIgnoravel(msg)) throw e;
+  }
+
+  if (inglesPaginado === 0) {
+    for await (const q of iterarQuestoesL2Ingles(ano)) {
+      yield q;
+    }
+  }
+}
+
+/** Itera todas as questões de todos os anos (fonte completa enem.dev). */
+export async function* iterarCorpusEnemCompleto(): AsyncGenerator<{
+  ano: number;
+  questao: EnemDevQuestionsPage["questions"][number];
+}> {
+  const provas = await listarProvasEnem();
+  const anos = [...provas].sort((a, b) => a.year - b.year);
+  for (const prova of anos) {
+    for await (const questao of iterarQuestoesAnoCompleto(prova.year, prova)) {
+      yield { ano: prova.year, questao };
+    }
+  }
+}
+
 /** Itera todas as questões de um ano respeitando paginação e rate limit. */
 export async function* iterarQuestoesAno(
   ano: number,

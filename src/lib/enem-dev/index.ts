@@ -10,7 +10,9 @@ export type {
 export {
   anosComL2Ingles,
   buscarQuestaoEnem,
+  iterarCorpusEnemCompleto,
   iterarQuestoesAno,
+  iterarQuestoesAnoCompleto,
   iterarQuestoesL2Ingles,
   listarProvasEnem,
   listarQuestoesAno,
@@ -18,6 +20,7 @@ export {
 
 export {
   areaBlocoDeDisciplina,
+  idiomaFromApi,
   inferirDiaEnem,
   mapearQuestaoEstrutural,
   montarFonteId,

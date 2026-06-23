@@ -13,6 +13,7 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:limpar-demo": "npx tsx scripts/limpar-demo-aluno.ts",
     "enem:import": "npx tsx scripts/import-enem-corpus.ts",
+    "enem:sync": "npx tsx scripts/sync-enem-corpus.ts",
     "enem:import-l2-ingles": "npx tsx scripts/import-enem-l2-ingles.ts",
     "enem:benchmark-bio": "npx tsx scripts/benchmark-enem-biologia.ts",
     "enem:benchmark": "npx tsx scripts/benchmark-enem-materia.ts",
