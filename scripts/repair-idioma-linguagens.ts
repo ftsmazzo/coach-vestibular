@@ -1,6 +1,6 @@
 /**
- * Corrige idioma/fonteId das questões L2 (Q1–5) em Linguagens.
- * enem.dev envia inglês com language=null → import antigo gravava COMUM.
+ * Corrige idioma/fonteId e limpa N2 fora da rota em Linguagens.
+ * Inclui COMUM com texto EN/ES (Q6+ ou Q1–5) e N2 pt_* em questões L2.
  *
  * Uso: npx tsx scripts/repair-idioma-linguagens.ts [--dry-run]
  */

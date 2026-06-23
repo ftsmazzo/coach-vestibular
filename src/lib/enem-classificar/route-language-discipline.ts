@@ -1,5 +1,8 @@
 import type { EscopoIndexEntry, MateriaCatalogo } from "@/lib/conhecimento-catalog/types";
-import { naFaixaL2Enem } from "./linguagens-rota";
+import {
+  detectarIdiomaTextoQuestao,
+  naFaixaL2Enem,
+} from "./linguagens-rota";
 
 export type DisciplinaLinguagens = "portugues" | "ingles" | "espanhol" | "indefinido";
 
@@ -40,44 +43,6 @@ const ROTAS_PADRAO: RotasLinguagens = {
   espanhol: ["l2_es"],
 };
 
-const MARCADORES_EN = [
-  "the",
-  "of",
-  "and",
-  "to",
-  "with",
-  "should",
-  "would",
-  "that",
-  "this",
-  "from",
-  "their",
-  "which",
-];
-const MARCADORES_ES = [
-  "el",
-  "la",
-  "los",
-  "las",
-  "que",
-  "para",
-  "una",
-  "porque",
-  "según",
-  "también",
-  "del",
-  "como",
-  "está",
-  "son",
-];
-
-function norm(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "");
-}
-
 function rotasDoCatalogo(catalog?: MateriaCatalogo): RotasLinguagens {
   const rotas = catalog?.regras?.roteamentoObrigatorio?.rotas;
   if (!rotas) return ROTAS_PADRAO;
@@ -88,7 +53,8 @@ function rotasDoCatalogo(catalog?: MateriaCatalogo): RotasLinguagens {
   };
 }
 
-function disciplinaPorMetadado(
+/** Metadado explícito de L2 — não inclui `idioma:comum` (neutro). */
+function metadadoL2Explicito(
   input: QuestaoRotaInput
 ): { disciplina: DisciplinaLinguagensRoteada; confianca: number } | null {
   const raw = (input.disciplinaOriginalId ?? "").toLowerCase().trim();
@@ -108,6 +74,19 @@ function disciplinaPorMetadado(
   ) {
     return { disciplina: "espanhol", confianca: 0.99 };
   }
+
+  const idioma = input.idioma?.toLowerCase();
+  if (idioma === "ingles") return { disciplina: "ingles", confianca: 0.99 };
+  if (idioma === "espanhol") return { disciplina: "espanhol", confianca: 0.99 };
+
+  return null;
+}
+
+/** Metadado explícito de português/artes — não infere PT a partir de `idioma:comum`. */
+function metadadoPortuguesExplicito(
+  input: QuestaoRotaInput
+): { disciplina: DisciplinaLinguagensRoteada; confianca: number } | null {
+  const raw = (input.disciplinaOriginalId ?? "").toLowerCase().trim();
   if (
     raw === "portugues" ||
     raw === "redacao" ||
@@ -118,55 +97,42 @@ function disciplinaPorMetadado(
   ) {
     return { disciplina: "portugues", confianca: 0.99 };
   }
-
-  const idioma = input.idioma?.toLowerCase();
-  if (idioma === "ingles") return { disciplina: "ingles", confianca: 0.99 };
-  if (idioma === "espanhol") return { disciplina: "espanhol", confianca: 0.99 };
-  if (idioma === "comum") return { disciplina: "portugues", confianca: 0.95 };
-
   return null;
 }
 
-function textoParaDeteccao(input: QuestaoRotaInput): string {
-  const partes = [input.textoBase, input.enunciado, input.alternativas].filter(Boolean);
-  return norm(partes.join(" "));
-}
-
-function contarMarcadores(texto: string, marcadores: string[]): number {
-  let n = 0;
-  for (const m of marcadores) {
-    const re = new RegExp(`\\b${m}\\b`, "g");
-    const matches = texto.match(re);
-    if (matches) n += matches.length;
+function montarRota(
+  rotas: RotasLinguagens,
+  disciplina: DisciplinaLinguagens,
+  criterio: CriterioRotaLinguagens,
+  confianca: number,
+  sinalizadorRevisao: boolean,
+  justificativa: string
+): RotaLinguagens {
+  if (disciplina === "indefinido") {
+    return {
+      catalogoMateriaId: "linguagens",
+      disciplinaOriginalId: "indefinido",
+      allowedAssuntoIds: [],
+      criterio,
+      confianca,
+      sinalizadorRevisao,
+      justificativa,
+    };
   }
-  if (texto.includes("¿") || texto.includes("¡")) n += 3;
-  return n;
-}
-
-function detectarIdiomaTextoBase(
-  input: QuestaoRotaInput
-): { disciplina: DisciplinaLinguagensRoteada; confianca: number } | null {
-  const texto = textoParaDeteccao(input);
-  if (texto.length < 40) return null;
-
-  const en = contarMarcadores(texto, MARCADORES_EN);
-  const es = contarMarcadores(texto, MARCADORES_ES);
-
-  if (en >= 4 && en > es * 1.5) {
-    return { disciplina: "ingles", confianca: Math.min(0.92, 0.55 + en * 0.04) };
-  }
-  if (es >= 4 && es > en * 1.5) {
-    return { disciplina: "espanhol", confianca: Math.min(0.92, 0.55 + es * 0.04) };
-  }
-  if (en >= 2 && es === 0) return { disciplina: "ingles", confianca: 0.72 };
-  if (es >= 2 && en === 0) return { disciplina: "espanhol", confianca: 0.72 };
-
-  return null;
+  return {
+    catalogoMateriaId: "linguagens",
+    disciplinaOriginalId: disciplina,
+    allowedAssuntoIds: rotas[disciplina],
+    criterio,
+    confianca,
+    sinalizadorRevisao,
+    justificativa,
+  };
 }
 
 /**
  * Etapa 1 — roteamento obrigatório antes de classificar escopo N2 em Linguagens.
- * O comando em português NÃO define a rota; prioriza metadado, posição ENEM e texto-base.
+ * Texto dominante EN/ES vence posição Q6+ e `idioma:COMUM` incorreto no corpus.
  */
 export function routeLanguageDiscipline(
   input: QuestaoRotaInput,
@@ -175,67 +141,76 @@ export function routeLanguageDiscipline(
   const rotas = rotasDoCatalogo(catalog);
   const numero = input.numero;
 
-  const meta = disciplinaPorMetadado(input);
-  if (meta) {
-    return {
-      catalogoMateriaId: "linguagens",
-      disciplinaOriginalId: meta.disciplina,
-      allowedAssuntoIds: rotas[meta.disciplina],
-      criterio: "metadata",
-      confianca: meta.confianca,
-      sinalizadorRevisao: false,
-      justificativa: `Metadado: idioma=${input.idioma ?? "—"} disciplina=${input.disciplinaOriginalId ?? "—"}`,
-    };
+  const metaL2 = metadadoL2Explicito(input);
+  if (metaL2) {
+    return montarRota(
+      rotas,
+      metaL2.disciplina,
+      "metadata",
+      metaL2.confianca,
+      false,
+      `Metadado L2: idioma=${input.idioma ?? "—"} disciplina=${input.disciplinaOriginalId ?? "—"}`
+    );
+  }
+
+  const metaPt = metadadoPortuguesExplicito(input);
+  if (metaPt) {
+    return montarRota(
+      rotas,
+      metaPt.disciplina,
+      "metadata",
+      metaPt.confianca,
+      false,
+      `Metadado PT: disciplina=${input.disciplinaOriginalId ?? "—"}`
+    );
+  }
+
+  const detectado = detectarIdiomaTextoQuestao(input);
+  if (detectado) {
+    const revisao = detectado.confianca < 0.75;
+    const foraFaixaL2 = numero != null && !naFaixaL2Enem(numero);
+    return montarRota(
+      rotas,
+      detectado.disciplina,
+      "idioma_texto_base",
+      detectado.confianca,
+      revisao,
+      foraFaixaL2
+        ? `Texto-base/alternativas em ${detectado.disciplina === "ingles" ? "inglês" : "espanhol"} (vence Q${numero} e idioma COMUM).`
+        : `Idioma dominante no texto-base/alternativas (EN/ES), ignorando comando PT.`
+    );
   }
 
   if (numero != null && !naFaixaL2Enem(numero)) {
-    return {
-      catalogoMateriaId: "linguagens",
-      disciplinaOriginalId: "portugues",
-      allowedAssuntoIds: rotas.portugues,
-      criterio: "posicao_enem",
-      confianca: 0.88,
-      sinalizadorRevisao: false,
-      justificativa: `Questão ${numero} fora da faixa L2 (Q6+ → português/artes/tecnologias).`,
-    };
-  }
-
-  const detectado = detectarIdiomaTextoBase(input);
-  if (detectado) {
-    const revisao =
-      numero != null && naFaixaL2Enem(numero) && detectado.confianca < 0.8;
-    return {
-      catalogoMateriaId: "linguagens",
-      disciplinaOriginalId: detectado.disciplina,
-      allowedAssuntoIds: rotas[detectado.disciplina],
-      criterio: "idioma_texto_base",
-      confianca: detectado.confianca,
-      sinalizadorRevisao: revisao,
-      justificativa: `Idioma dominante no texto-base/alternativas (EN/ES), ignorando comando PT.`,
-    };
+    return montarRota(
+      rotas,
+      "portugues",
+      "posicao_enem",
+      0.88,
+      false,
+      `Questão ${numero} sem texto L2 detectável → português/artes/tecnologias (Q6+).`
+    );
   }
 
   if (numero != null && naFaixaL2Enem(numero)) {
-    return {
-      catalogoMateriaId: "linguagens",
-      disciplinaOriginalId: "indefinido",
-      allowedAssuntoIds: [],
-      criterio: "incerto",
-      confianca: 0.2,
-      sinalizadorRevisao: true,
-      justificativa: `Q${numero} na faixa L2 sem metadado de idioma nem texto detectável.`,
-    };
+    return montarRota(
+      rotas,
+      "indefinido",
+      "incerto",
+      0.2,
+      true,
+      `Q${numero} na faixa L2 sem metadado de idioma nem texto detectável.`
+    );
   }
 
-  return {
-    catalogoMateriaId: "linguagens",
-    disciplinaOriginalId: "indefinido",
-    allowedAssuntoIds: [],
-    criterio: "incerto",
-    confianca: 0.15,
-    sinalizadorRevisao: true,
-    justificativa: "Rota incerta — sem metadado, posição ou texto-base suficiente.",
-  };
+  return montarRota(
+    rotas,
+    "indefinido",
+    "incerto",
+    0.15,
+    true,
+    "Rota incerta — sem metadado, posição ou texto-base suficiente."
+  );
 }
 
 /** Filtra escopos N2 permitidos para a rota (inclui fallback). */

@@ -33,5 +33,9 @@ echo "==> Corpus ENEM (enem.dev) — sync unificado em background se necessário
 npx tsx scripts/sync-enem-corpus.ts --if-incomplete >> /tmp/enem-sync.log 2>&1 &
 echo "==> Sync ENEM rodando em background (log: /tmp/enem-sync.log). App sobe sem aguardar."
 
+echo "==> Linguagens — reparo de rota + reclassificação IA em background..."
+npx tsx scripts/deploy-enem-linguagens.ts >> /tmp/enem-linguagens.log 2>&1 &
+echo "==> Manutenção Linguagens em background (log: /tmp/enem-linguagens.log)."
+
 echo "==> Iniciando Next.js na porta ${PORT:-3000}..."
 exec npm run start

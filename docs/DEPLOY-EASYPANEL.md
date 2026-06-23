@@ -53,7 +53,7 @@ RUN_SEED=true
 | `JWT_SECRET` | Segredo forte; não reutilize em outros projetos |
 | `RUN_SEED` | `true` só no **primeiro** deploy; depois mude para `false` |
 | `RUN_ENEM_IMPORT` | Opcional: `true` força re-sync do corpus ENEM no próximo deploy |
-| `OPENAI_API_KEY` | Opcional (Fase 2) |
+| `OPENAI_API_KEY` | Necessária para classificação IA do corpus no deploy (Linguagens em background) |
 
 ### Após o primeiro deploy com sucesso
 
@@ -70,7 +70,8 @@ O script `scripts/docker-entrypoint.sh` executa automaticamente:
 1. `npx prisma migrate deploy` — aplica migrations no Postgres
 2. Seed (se `RUN_SEED=true`)
 3. **Corpus ENEM** — import estrutural de [enem.dev](https://api.enem.dev) em **background** se o banco tiver menos de ~2.500 questões (idempotente; não bloqueia o startup)
-4. `npm run start` — sobe o Next.js
+4. **Linguagens** — reparo de rota/idioma + reclassificação IA em **background** (só questões sem N2 válido; exige `OPENAI_API_KEY`)
+5. `npm run start` — sobe o Next.js
 
 Não é necessário rodar migrations manualmente na VPS após configurar o env — cada **redeploy com rebuild** aplica migrations no startup (entrypoint + `prestart`).
 

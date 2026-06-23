@@ -88,7 +88,7 @@ const classificarSchema = z.object({
   retriagem: z.boolean().optional(),
   modo: z.enum(["heuristica", "ia"]).optional(),
   repairLinguagensIdioma: z.boolean().optional(),
-  /** Só corrige idioma Q1–5 (Linguagens), sem classificar. */
+  /** Só corrige idioma/rota em Linguagens, sem classificar. */
   soRepararIdioma: z.boolean().optional(),
   importarLinguagensIngles: z.boolean().optional(),
 });

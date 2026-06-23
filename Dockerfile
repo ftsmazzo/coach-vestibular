@@ -36,10 +36,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/src/generated ./src/generated
-COPY --from=builder /app/src/lib/enem-dev ./src/lib/enem-dev
-COPY --from=builder /app/src/lib/conhecimento-catalog ./src/lib/conhecimento-catalog
-COPY --from=builder /app/src/lib/enem-classificar ./src/lib/enem-classificar
-COPY --from=builder /app/src/lib/lacuna-n2.ts ./src/lib/lacuna-n2.ts
+COPY --from=builder /app/src/lib ./src/lib
 
 RUN chmod +x scripts/docker-entrypoint.sh
 

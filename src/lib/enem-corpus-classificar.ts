@@ -31,6 +31,7 @@ import {
   type TriagemNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
 import { CORPUS_MATERIA_CONFIG } from "@/lib/enem-corpus-materia";
+import { repararIdiomaLinguagensCorpus } from "@/lib/enem-repair-linguagens";
 import {
   instrucaoIaLinguagens,
   type IdiomaTrilhaLinguagens,
@@ -424,6 +425,10 @@ async function classificarLinguagensTrilhas(
   prisma: PrismaClient,
   opts: ClassificarCorpusOpts
 ): Promise<ClassificarCorpusResultado> {
+  if (opts.persistir ?? true) {
+    await repararIdiomaLinguagensCorpus(prisma);
+  }
+
   const materiaId = "linguagens" as const;
   const materiaLabel = labelMateriaCorpus(materiaId);
   const prefixoN2 = prefixoCatalogoMateria(materiaId);

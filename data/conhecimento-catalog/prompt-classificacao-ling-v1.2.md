@@ -20,10 +20,10 @@ No ENEM, o comando costuma estar em português; quem define a rota é o texto-ba
 campo idioma/disciplinaOriginalId ou posição da questão.
 
 ORDEM DE DECISÃO DA ROTA
-1. Se houver disciplinaOriginalId/idioma na fonte, use esse valor.
-2. Se houver posição ENEM: Q1–Q5 costumam ser língua estrangeira; Q6–Q45 Português/Artes/Tecnologias.
-3. Se não houver metadado, detecte o idioma dominante do texto-base e alternativas, ignorando o comando.
-4. Se a rota continuar incerta, use ling.__nao_classificado com sinalizadorRevisao=true.
+1. Se houver disciplinaOriginalId/idioma explícito (ingles/espanhol), use esse valor.
+2. Detecte o idioma dominante do texto-base e alternativas (vence posição Q6+ e idioma:COMUM errado no corpus).
+3. Se Q6–Q45 sem texto L2 detectável → português/artes/tecnologias.
+4. Se Q1–Q5 sem metadado nem texto L2 claro → ling.__nao_classificado com sinalizadorRevisao=true.
 
 ESCOPO PERMITIDO POR ROTA
 - portugues: apenas assuntos pt_interp, pt_lit, pt_gram, pt_sem, pt_art, pt_tec.
