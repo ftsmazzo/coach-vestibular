@@ -124,14 +124,17 @@ export function labelsLegadosFromResultado(resultado: ResultadoClassificacao): {
     };
   }
 
-  const cfg = CORPUS_MATERIA_CONFIG[resultado.materiaId as MateriaCorpusId];
-  const materia = cfg?.label ?? normalizarLabelMateria(resultado.materiaId);
-  const tax = resultado.escopoId
-    ? escopoIdParaTaxonomy(
-        resultado.escopoId,
-        resultado.materiaId as MateriaCorpusId
-      )
-    : null;
+  const catalogMateriaId =
+    (resultado.materiaId as MateriaCorpusId | null) ??
+    (entry?.materiaId as MateriaCorpusId | undefined);
+  const cfg = catalogMateriaId ? CORPUS_MATERIA_CONFIG[catalogMateriaId] : undefined;
+  const materia =
+    cfg?.label ??
+    normalizarLabelMateria(resultado.materiaId ?? entry?.materiaId ?? "A classificar");
+  const tax =
+    resultado.escopoId && catalogMateriaId
+      ? escopoIdParaTaxonomy(resultado.escopoId, catalogMateriaId)
+      : null;
   if (tax?.temaId) {
     const mat = taxonomy.materias.find((m) => m.id === tax.materiaId);
     const tema = mat?.temas.find((t) => t.id === tax.temaId);
@@ -305,7 +308,11 @@ export async function classificarRowsProvaComCatalogo(
     const versao =
       resultado.materiaId === "linguagens"
         ? versaoClassificacaoLingV12(resultado)
-        : versaoCatalogoV11(resultado.materiaId as MateriaCorpusId);
+        : versaoCatalogoV11(
+            (resultado.materiaId ??
+              indexGlobalEscopos().get(resultado.escopoId ?? "")?.materiaId ??
+              "biologia") as MateriaCorpusId
+          );
 
     return aplicarResultadoNaRow(row, resultado, versao);
   });
