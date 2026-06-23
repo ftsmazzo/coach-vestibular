@@ -14,13 +14,23 @@ import {
   type ManifestoCorpus,
   type ValidacaoCorpus,
 } from "@/lib/enem-corpus-validacao";
+import { zerarCorpusEnem, type ZerarCorpusResultado } from "@/lib/enem-corpus-reset";
 
 export const ENEM_CORPUS_SYNC_VERSION = "1.0";
+export const ENEM_CORPUS_RESET_TOKEN = "ZERAR_CORPUS_ENEM";
 
 export type SyncCorpusOpts = {
   anos?: number[];
   dryRun?: boolean;
   onProgress?: (msg: string) => void;
+};
+
+export type ResetSyncCorpusOpts = SyncCorpusOpts & {
+  reset?: boolean;
+};
+
+export type ResetSyncCorpusResultado = SyncCorpusResultado & {
+  reset: ZerarCorpusResultado | null;
 };
 
 export type SyncCorpusResultado = {
@@ -206,3 +216,16 @@ export async function sincronizarCorpusEnem(
 }
 
 export { corpusPrecisaSync, construirManifestoApi } from "@/lib/enem-corpus-validacao";
+export { zerarCorpusEnem } from "@/lib/enem-corpus-reset";
+
+/**
+ * Zera o banco e importa de novo da API — começo limpo sem dados legados errados.
+ */
+export async function resetarESincronizarCorpusEnem(
+  prisma: PrismaClient,
+  opts: SyncCorpusOpts = {}
+): Promise<ResetSyncCorpusResultado> {
+  const reset = await zerarCorpusEnem(prisma);
+  const resultado = await sincronizarCorpusEnem(prisma, opts);
+  return { ...resultado, reset };
+}

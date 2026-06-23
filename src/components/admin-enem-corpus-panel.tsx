@@ -65,7 +65,7 @@ type EstruturalValidacao = {
   itens: Array<{ ok: boolean; nivel: string; mensagem: string }>;
 };
 
-const MATERIA_TAB: Array<{ id: MateriaCorpusId; label: string; grupo?: string }> = [
+const ENEM_CORPUS_RESET_TOKEN = "ZERAR_CORPUS_ENEM";
   { id: "biologia", label: "Biologia", grupo: "Natureza" },
   { id: "quimica", label: "Química", grupo: "Natureza" },
   { id: "fisica", label: "Física", grupo: "Natureza" },
@@ -134,7 +134,14 @@ export function AdminEnemCorpusPanel() {
     load();
   }, [load]);
 
-  async function rodarSync() {
+  async function rodarSync(reset = false) {
+    if (reset) {
+      const ok = window.confirm(
+        `Apagar TODAS as ${stats?.total ?? "?"} questões do corpus (estrutura + classificações N2) e reimportar da API enem.dev?\n\nEsta ação não pode ser desfeita.`
+      );
+      if (!ok) return;
+    }
+
     setSincronizando(true);
     setErro(null);
     const inicio = Date.now();
@@ -142,7 +149,9 @@ export function AdminEnemCorpusPanel() {
       const res = await fetch("/api/admin/enem-corpus/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify(
+          reset ? { reset: true, confirmar: ENEM_CORPUS_RESET_TOKEN } : {}
+        ),
       });
       let data: Record<string, unknown>;
       try {
@@ -164,15 +173,17 @@ export function AdminEnemCorpusPanel() {
         atualizadas: number;
         validacao: { completo: boolean; totalApi: number; totalBanco: number; delta: number };
         avisos?: string[];
+        reset?: { removidas: number } | null;
       };
       if (data.stats) setStats(data.stats as Stats);
       if (data.estrutural) setEstrutural(data.estrutural as EstruturalValidacao);
 
       const segundos = ((Date.now() - inicio) / 1000).toFixed(1);
       const v = r.validacao;
+      const resetTxt = reset && r.reset ? `Reset ${r.reset.removidas} removidas · ` : "";
       setUltimoRun(
-        `Sync API (${segundos}s): ${r.criadas} novas · ${r.atualizadas} atualizadas · ` +
-          `${r.processadas} da API · banco ${v.totalBanco}/${v.totalApi}` +
+        `${reset ? "Rebuild" : "Sync"} API (${segundos}s): ${resetTxt}${r.criadas} novas · ` +
+          `${r.atualizadas} atualizadas · ${r.processadas} da API · banco ${v.totalBanco}/${v.totalApi}` +
           (v.completo ? " ✓" : ` · delta ${v.delta}`)
       );
       if (!v.completo) {
@@ -389,18 +400,29 @@ export function AdminEnemCorpusPanel() {
             <h2 className="font-semibold text-slate-900">Base estrutural (Fase 1)</h2>
             <p className="mt-1 text-sm text-slate-600">
               Import 1:1 da API enem.dev — idioma direto de <code>language</code>, sem heurística.
+              Dados legados errados devem ser zerados antes do primeiro sync limpo.
               {corpusSyncVersion && (
                 <span className="ml-1 text-xs text-slate-500">· sync v{corpusSyncVersion}</span>
               )}
             </p>
           </div>
-          <Button
-            type="button"
-            onClick={rodarSync}
-            disabled={sincronizando || classificando}
-          >
-            {sincronizando ? "Sincronizando…" : "Sincronizar corpus (API completa)"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => rodarSync(true)}
+              disabled={sincronizando || classificando}
+            >
+              {sincronizando ? "Processando…" : "Zerar e reimportar"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => rodarSync(false)}
+              disabled={sincronizando || classificando}
+            >
+              {sincronizando ? "Sincronizando…" : "Sincronizar corpus"}
+            </Button>
+          </div>
         </div>
         {estrutural && (
           <ul className="mt-4 space-y-1 text-sm">
@@ -697,7 +719,8 @@ export function AdminEnemCorpusPanel() {
       </Card>
 
       <p className="text-xs text-slate-500">
-        Scripts: <code>npm run enem:sync</code>, <code>npm run catalog:validate {materiaId}</code>,{" "}
+        Scripts: <code>npm run enem:rebuild</code> (zerar+sync), <code>npm run enem:sync</code>,{" "}
+        <code>npm run catalog:validate {materiaId}</code>,{" "}
         <code>npm run enem:benchmark -- --materia={materiaId}</code>
       </p>
     </div>
