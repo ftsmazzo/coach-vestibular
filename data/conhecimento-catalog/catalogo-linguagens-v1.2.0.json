@@ -24,9 +24,10 @@
       "etapa2": "Enviar ao classificador apenas os escopos permitidos para a rota escolhida.",
       "regraCritica": "A língua do COMANDO/INSTRUÇÃO geralmente é português e não deve definir a rota. A rota é definida pelo texto-base, metadado da prova, número da questão ou campo idioma/disciplinaOriginalId.",
       "ordemDePreferencia": [
-        "campo disciplinaOriginalId ou idioma da fonte (ingles/espanhol explícitos)",
-        "idioma dominante do texto-base e alternativas — vence posição Q6+ e idioma:COMUM errado no corpus",
-        "número/posição ENEM: Q6–Q45 sem texto L2 → português/artes/tecnologias; Q1–Q5 sem sinal → revisão",
+        "campo disciplinaOriginalId ou idioma da fonte (ingles/espanhol explícitos da API enem.dev)",
+        "número/posição ENEM: Q6–Q45 idioma COMUM → português/artes/tecnologias",
+        "exceção Q6+: texto claramente em inglês (marcadores EN, sem PT) → ingles na classificação, sem alterar idioma COMUM no corpus",
+        "idioma dominante do texto-base na faixa L2 (Q1–5) — heurística conservadora; NUNCA usar que/para/como como marcador ES",
         "conteúdo cobrado: literatura/gramática/PT/arte/tecnologia → portugues; reading comprehension → ingles; comprensión lectora → espanhol"
       ],
       "rotas": {

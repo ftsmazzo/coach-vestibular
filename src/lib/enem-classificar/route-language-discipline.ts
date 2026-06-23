@@ -53,7 +53,6 @@ function rotasDoCatalogo(catalog?: MateriaCatalogo): RotasLinguagens {
   };
 }
 
-/** Metadado explícito de L2 — não inclui `idioma:comum` (neutro). */
 function metadadoL2Explicito(
   input: QuestaoRotaInput
 ): { disciplina: DisciplinaLinguagensRoteada; confianca: number } | null {
@@ -82,7 +81,6 @@ function metadadoL2Explicito(
   return null;
 }
 
-/** Metadado explícito de português/artes — não infere PT a partir de `idioma:comum`. */
 function metadadoPortuguesExplicito(
   input: QuestaoRotaInput
 ): { disciplina: DisciplinaLinguagensRoteada; confianca: number } | null {
@@ -131,8 +129,8 @@ function montarRota(
 }
 
 /**
- * Etapa 1 — roteamento obrigatório antes de classificar escopo N2 em Linguagens.
- * Texto dominante EN/ES vence posição Q6+ e `idioma:COMUM` incorreto no corpus.
+ * Roteamento Linguagens — metadado enem.dev vence; Q6+ COMUM = português;
+ * heurística de texto só Q1–5 (ES) ou inglês forte em qualquer posição.
  */
 export function routeLanguageDiscipline(
   input: QuestaoRotaInput,
@@ -165,30 +163,37 @@ export function routeLanguageDiscipline(
     );
   }
 
-  const detectado = detectarIdiomaTextoQuestao(input);
-  if (detectado) {
-    const revisao = detectado.confianca < 0.75;
-    const foraFaixaL2 = numero != null && !naFaixaL2Enem(numero);
-    return montarRota(
-      rotas,
-      detectado.disciplina,
-      "idioma_texto_base",
-      detectado.confianca,
-      revisao,
-      foraFaixaL2
-        ? `Texto-base/alternativas em ${detectado.disciplina === "ingles" ? "inglês" : "espanhol"} (vence Q${numero} e idioma COMUM).`
-        : `Idioma dominante no texto-base/alternativas (EN/ES), ignorando comando PT.`
-    );
-  }
-
   if (numero != null && !naFaixaL2Enem(numero)) {
+    const inglesQ6 = detectarIdiomaTextoQuestao(input, { numero });
+    if (inglesQ6?.disciplina === "ingles") {
+      return montarRota(
+        rotas,
+        "ingles",
+        "idioma_texto_base",
+        inglesQ6.confianca,
+        inglesQ6.confianca < 0.8,
+        `Q${numero} COMUM com texto claramente em inglês (exceção corpus).`
+      );
+    }
     return montarRota(
       rotas,
       "portugues",
       "posicao_enem",
       0.88,
       false,
-      `Questão ${numero} sem texto L2 detectável → português/artes/tecnologias (Q6+).`
+      `Questão ${numero} (Q6+) idioma COMUM → português/artes/tecnologias.`
+    );
+  }
+
+  const detectado = detectarIdiomaTextoQuestao(input, { numero });
+  if (detectado) {
+    return montarRota(
+      rotas,
+      detectado.disciplina,
+      "idioma_texto_base",
+      detectado.confianca,
+      detectado.confianca < 0.75,
+      `Idioma no texto-base (faixa L2 Q${numero ?? "?"}), ignorando comando PT.`
     );
   }
 
@@ -199,7 +204,7 @@ export function routeLanguageDiscipline(
       "incerto",
       0.2,
       true,
-      `Q${numero} na faixa L2 sem metadado de idioma nem texto detectável.`
+      `Q${numero} na faixa L2 sem metadado de idioma nem texto L2 detectável.`
     );
   }
 

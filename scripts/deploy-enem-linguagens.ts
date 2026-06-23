@@ -1,13 +1,11 @@
 /**
- * Manutenção automática de Linguagens no deploy (EasyPanel).
- * 1. Repara idioma/rota e limpa N2 fora da trilha
- * 2. Reclassifica com IA só questões sem N2 válido (se OPENAI_API_KEY)
+ * No deploy: reverte idioma corrompido (Q6+ → COMUM) e limpa N2 fora da rota.
+ * Não dispara classificação IA em massa — use o admin quando quiser.
  */
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { classificarCorpusEnem } from "../src/lib/enem-corpus-classificar";
 import {
   LINGUAGENS_ROTA_VERSION,
   repararIdiomaLinguagensCorpus,
@@ -38,32 +36,6 @@ async function main() {
       `  reparo: corrigidas=${repair.corrigidas} n2Limpos=${repair.n2Limpos} ignoradas=${repair.ignoradas}`
     );
     for (const linha of repair.amostra) console.log(`    ${linha}`);
-
-    if (!process.env.OPENAI_API_KEY?.trim()) {
-      console.log("  OPENAI_API_KEY ausente — reclassificação IA ignorada.");
-      return;
-    }
-
-    if (repair.corrigidas === 0 && repair.n2Limpos === 0) {
-      const semN2 = await prisma.enemQuestaoCorpus.count({
-        where: { disciplina: "linguagens", conhecimentoEscopoId: null },
-      });
-      if (semN2 === 0) {
-        console.log("  Linguagens com N2 ok — classificação IA ignorada.");
-        return;
-      }
-      console.log(`  ${semN2} questões sem N2 — classificando…`);
-    } else {
-      console.log("  reparo alterou corpus — reclassificando pendências…");
-    }
-
-    const resultado = await classificarCorpusEnem(prisma, {
-      materiaId: "linguagens",
-      modo: "ia",
-      limit: 900,
-      persistir: true,
-    });
-    console.log("  classificação:", JSON.stringify(resultado));
   } finally {
     await prisma.$disconnect();
     await pool.end();

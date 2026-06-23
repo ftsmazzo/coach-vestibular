@@ -4,7 +4,10 @@ import {
   idFallbackNaoClassificado,
   indexarEscopos,
 } from "@/lib/conhecimento-catalog";
-import { inferirIdiomaCorpusLinguagens } from "@/lib/enem-classificar/linguagens-rota";
+import {
+  detectarIdiomaTextoQuestao,
+  naFaixaL2Enem,
+} from "@/lib/enem-classificar/linguagens-rota";
 import {
   routeLanguageDiscipline,
   validarEscopoNaRota,
@@ -12,7 +15,7 @@ import {
 import { montarFonteId } from "@/lib/enem-dev/estrutural";
 
 /** Bump quando mudar regra de roteamento L2 — admin exibe para confirmar deploy. */
-export const LINGUAGENS_ROTA_VERSION = 4;
+export const LINGUAGENS_ROTA_VERSION = 5;
 
 export type RepairLinguagensResultado = {
   corrigidas: number;
@@ -41,9 +44,40 @@ function montarPartesRepair(row: {
   return { enunciado, alternativas: altLinhas.join("\n") };
 }
 
+function idiomaCorretoPorPosicao(
+  numero: number,
+  idiomaAtual: string,
+  enunciado: string,
+  alternativas: string
+): "COMUM" | "ingles" | "espanhol" {
+  if (idiomaAtual === "ingles" || idiomaAtual === "espanhol") {
+    if (!naFaixaL2Enem(numero) && idiomaAtual === "espanhol") {
+      return "COMUM";
+    }
+    if (!naFaixaL2Enem(numero) && idiomaAtual === "ingles") {
+      const det = detectarIdiomaTextoQuestao(
+        { enunciado, alternativas, textoBase: enunciado },
+        { numero }
+      );
+      return det?.disciplina === "ingles" ? "ingles" : "COMUM";
+    }
+    return idiomaAtual as "ingles" | "espanhol";
+  }
+
+  if (naFaixaL2Enem(numero)) {
+    const det = detectarIdiomaTextoQuestao(
+      { enunciado, alternativas, textoBase: enunciado },
+      { numero }
+    );
+    if (det?.disciplina === "ingles") return "ingles";
+  }
+
+  return "COMUM";
+}
+
 /**
- * Corrige idioma/fonteId e limpa N2 fora da rota em Linguagens.
- * Inclui COMUM Q6+ com texto EN/ES (corpus enem.dev pode marcar errado).
+ * Reverte corrupção de idioma (Q6+ marcado espanhol por heurística errada) e limpa N2 fora da rota.
+ * Não reescreve idioma por heurística agressiva — confia em enem.dev + posição ENEM.
  */
 export async function repararIdiomaLinguagensCorpus(
   prisma: PrismaClient,
@@ -76,14 +110,7 @@ export async function repararIdiomaLinguagensCorpus(
 
   for (const r of rows) {
     const { enunciado, alternativas } = montarPartesRepair(r);
-    const texto = [enunciado, alternativas].filter(Boolean).join("\n");
-    const idiomaDb =
-      r.idioma === "ingles" || r.idioma === "espanhol" ? r.idioma : "COMUM";
-    const idiomaNovo = inferirIdiomaCorpusLinguagens(
-      r.numero,
-      idiomaDb === "COMUM" ? null : idiomaDb,
-      texto
-    );
+    const idiomaNovo = idiomaCorretoPorPosicao(r.numero, r.idioma, enunciado, alternativas);
     const fonteIdNovo = montarFonteId(r.ano, r.numero, idiomaNovo);
 
     const rota = routeLanguageDiscipline(
@@ -127,11 +154,11 @@ export async function repararIdiomaLinguagensCorpus(
       }
     }
 
-    if (amostra.length < 8) {
+    if (amostra.length < 10) {
       amostra.push(
-        `${r.fonteId} → ${fonteIdNovo} (${r.idioma}→${idiomaNovo}, rota=${rota.disciplinaOriginalId})` +
+        `${r.fonteId} → ${fonteIdNovo} (${r.idioma}→${idiomaNovo}, Q${r.numero})` +
           (limparN2 ? " · N2 limpo" : "") +
-          (conflitoFonteId ? " · fonteId conflito" : "")
+          (conflitoFonteId ? " · conflito fonteId" : "")
       );
     }
 
@@ -148,10 +175,7 @@ export async function repararIdiomaLinguagensCorpus(
 
       if (conflitoFonteId) {
         if (limparN2) {
-          await prisma.enemQuestaoCorpus.update({
-            where: { id: r.id },
-            data: dataN2,
-          });
+          await prisma.enemQuestaoCorpus.update({ where: { id: r.id }, data: dataN2 });
         } else {
           ignoradas++;
           continue;

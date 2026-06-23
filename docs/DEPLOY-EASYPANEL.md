@@ -70,7 +70,7 @@ O script `scripts/docker-entrypoint.sh` executa automaticamente:
 1. `npx prisma migrate deploy` — aplica migrations no Postgres
 2. Seed (se `RUN_SEED=true`)
 3. **Corpus ENEM** — import estrutural de [enem.dev](https://api.enem.dev) em **background** se o banco tiver menos de ~2.500 questões (idempotente; não bloqueia o startup)
-4. **Linguagens** — reparo de rota/idioma + reclassificação IA em **background** (só questões sem N2 válido; exige `OPENAI_API_KEY`)
+4. **Linguagens** — reverte idioma corrompido (Q6+ espanhol → COMUM) e limpa N2 fora da rota em **background**
 5. `npm run start` — sobe o Next.js
 
 Não é necessário rodar migrations manualmente na VPS após configurar o env — cada **redeploy com rebuild** aplica migrations no startup (entrypoint + `prestart`).
