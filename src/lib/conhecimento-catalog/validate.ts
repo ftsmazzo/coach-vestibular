@@ -29,7 +29,8 @@ export function validarE0(catalog: MateriaCatalogo): ResultadoValidacao[] {
   }
 
   const max = catalog.regras?.maxN2PorMateria ?? 80;
-  const totalN2 = escopos.size;
+  const excluirFallback = catalog.regras?.fallbackNaoContaNoMax ?? false;
+  const totalN2 = [...escopos.values()].filter((e) => !(excluirFallback && e.ehFallback)).length;
 
   results.push(
     resultado("E0", duplicatas === 0, duplicatas === 0 ? "IDs únicos" : `${duplicatas} IDs duplicados`)

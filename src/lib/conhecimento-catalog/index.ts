@@ -17,6 +17,8 @@ export type {
 export {
   carregarCatalogoMateria,
   carregarConceitosCanonicos,
+  catalogoUsaClassificadorV11,
+  idFallbackNaoClassificado,
   indexarEscopos,
   labelMateriaCorpus,
   mapaConceitoPorEscopo,
@@ -29,3 +31,8 @@ export {
 export type { MateriaCorpusId } from "./load";
 
 export { validarCatalogo, validarE0, validarE1, validarE2 } from "./validate";
+export {
+  montarBlocoQuestaoV11,
+  montarCatalogoReduzido,
+  montarSystemClassificacaoV11,
+} from "./prompt-classificacao";

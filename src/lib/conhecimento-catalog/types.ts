@@ -1,10 +1,29 @@
-/** Contrato do catálogo fechado N1/N2 — schema v1.0.0 */
+/** Contrato do catálogo fechado N1/N2 — schema v1.0+ (v1.1: campos ricos para IA) */
+
+export type CatalogMultiLabel = {
+  permitido: boolean;
+  maxPrimarios: number;
+  maxSecundarios: number;
+  nota?: string;
+};
 
 export type CatalogRegras = {
   idImutavel: boolean;
   iaSoEscolheIds: boolean;
   maxN2PorMateria: number;
   confiancaMinima: number;
+  iaSoEscolheIdsNota?: string;
+  confiancaMinimaNota?: string;
+  fallbackNaoContaNoMax?: boolean;
+  multiLabel?: CatalogMultiLabel;
+  politicaN3?: string;
+  regraDesempate?: string;
+  conceitoCanonicNota?: string;
+  pesos?: {
+    keywords?: number;
+    keywordsContexto?: number;
+    exemplosEnunciado?: string;
+  };
 };
 
 export type CatalogMeta = {
@@ -14,6 +33,7 @@ export type CatalogMeta = {
   materiaLabel: string;
   areaEnem?: string;
   notas?: string;
+  changelog?: string[];
   regras: CatalogRegras;
 };
 
@@ -23,7 +43,12 @@ export type EscopoCatalogo = {
   deprecated?: boolean;
   supersededBy?: string;
   conceitoCanonic?: string;
+  descricao?: string;
   keywords?: string[];
+  keywordsContexto?: string[];
+  exemplosEnunciado?: string[];
+  naoConfundirCom?: string[];
+  regraDesempate?: string;
 };
 
 export type DominioCatalogo = {
@@ -52,8 +77,14 @@ export type EscopoIndexEntry = {
   assuntoLabel: string;
   materiaId: string;
   keywords: string[];
+  keywordsContexto: string[];
+  descricao?: string;
+  exemplosEnunciado: string[];
+  naoConfundirCom: string[];
+  regraDesempate?: string;
   conceitoCanonic?: string;
   deprecated: boolean;
+  ehFallback: boolean;
 };
 
 export type ConceitoCanonico = {
@@ -88,4 +119,9 @@ export type ResultadoClassificacao = {
   escopoId: string | null;
   conceitoCanonic: string | null;
   motivo: string;
+  /** N3 — texto livre proposto pela IA (revisão humana) */
+  conhecimentoExigido?: string | null;
+  escoposSecundarios?: Array<{ escopoId: string; confianca: number }>;
+  sinalizadorRevisao?: boolean;
+  justificativa?: string | null;
 };

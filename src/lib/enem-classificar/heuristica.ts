@@ -24,14 +24,23 @@ const DEFAULT_OPTS: ClassificarHeuristicaOpts = {
   confiancaMinima: 0.28,
 };
 
-function termosDoEscopo(entry: EscopoIndexEntry): string[] {
-  const base = [
-    ...entry.keywords,
-    ...tokensDeTexto(entry.escopoLabel, 4),
-    ...tokensDeTexto(entry.dominioLabel, 4),
-    ...tokensDeTexto(entry.assuntoLabel, 4),
+function termosDoEscopo(entry: EscopoIndexEntry): Array<{ termo: string; peso: number }> {
+  const pesoForte = 1;
+  const pesoCtx = 0.4;
+  const base: Array<{ termo: string; peso: number }> = [
+    ...entry.keywords.map((k) => ({ termo: k, peso: pesoForte })),
+    ...entry.keywordsContexto.map((k) => ({ termo: k, peso: pesoCtx })),
+    ...tokensDeTexto(entry.escopoLabel, 4).map((t) => ({ termo: t, peso: pesoForte })),
+    ...tokensDeTexto(entry.dominioLabel, 4).map((t) => ({ termo: t, peso: pesoCtx })),
+    ...tokensDeTexto(entry.assuntoLabel, 4).map((t) => ({ termo: t, peso: pesoCtx })),
   ];
-  return [...new Set(base.map(normalizarTexto))].filter((t) => t.length >= 3);
+  const seen = new Set<string>();
+  return base.filter(({ termo }) => {
+    const n = normalizarTexto(termo);
+    if (n.length < 3 || seen.has(n)) return false;
+    seen.add(n);
+    return true;
+  });
 }
 
 /** Classificador v1 — score ≥ 1 com candidato líder → N2 (review se empate). */
@@ -58,14 +67,16 @@ export function classificarPorKeywords(
 
   for (const entry of escopos.values()) {
     if (opts.assuntoId && entry.assuntoId !== opts.assuntoId) continue;
+    if (entry.ehFallback) continue;
 
     const hits: string[] = [];
     let score = 0;
 
-    for (const termo of termosDoEscopo(entry)) {
-      if (texto.includes(termo)) {
+    for (const { termo, peso } of termosDoEscopo(entry)) {
+      const n = normalizarTexto(termo);
+      if (texto.includes(n)) {
         hits.push(termo);
-        score += termo.length >= 8 ? 2 : 1;
+        score += (n.length >= 8 ? 2 : 1) * peso;
       }
     }
 

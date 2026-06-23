@@ -72,14 +72,32 @@ export function indexarEscopos(catalog: MateriaCatalogo): Map<string, EscopoInde
           assuntoLabel: assunto.assuntoLabel,
           materiaId: catalog.materiaId,
           keywords: escopo.keywords ?? [],
+          keywordsContexto: escopo.keywordsContexto ?? [],
+          descricao: escopo.descricao,
+          exemplosEnunciado: escopo.exemplosEnunciado ?? [],
+          naoConfundirCom: escopo.naoConfundirCom ?? [],
+          regraDesempate: escopo.regraDesempate,
           conceitoCanonic: escopo.conceitoCanonic,
           deprecated: false,
+          ehFallback: escopo.id.endsWith(".__nao_classificado"),
         });
       }
     }
   }
 
   return map;
+}
+
+/** Catálogo v1.1+ com campos ricos para classificação IA estruturada. */
+export function catalogoUsaClassificadorV11(catalog: MateriaCatalogo): boolean {
+  const v = catalog.schemaVersion ?? catalog.catalogVersion ?? "1.0.0";
+  const [major, minor] = v.split(".").map(Number);
+  return major > 1 || (major === 1 && (minor ?? 0) >= 1);
+}
+
+export function idFallbackNaoClassificado(materiaId: string): string {
+  const prefixo = prefixoCatalogoMateria(materiaId);
+  return `${prefixo}.__nao_classificado`;
 }
 
 export function mapaConceitoPorEscopo(
