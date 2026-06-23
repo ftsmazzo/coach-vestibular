@@ -21,6 +21,7 @@
     "catalog:validate:matematica": "npx tsx scripts/validate-catalog.ts matematica",
     "catalog:validate:humanas": "npx tsx scripts/validate-catalog.ts humanas",
     "catalog:validate:linguagens": "npx tsx scripts/validate-catalog.ts linguagens",
+    "enem:repair-linguagens-idioma": "npx tsx scripts/repair-idioma-linguagens.ts",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
   },

@@ -28,7 +28,7 @@ import {
   assuntoElegivelTrilha,
   filtrarEscoposLinguagens,
   instrucaoIaLinguagens,
-  trilhaLinguagensPorIdioma,
+  trilhaLinguagensEfetiva,
   type IdiomaTrilhaLinguagens,
 } from "@/lib/enem-classificar/linguagens-rota";
 import { CLASSIFICACAO_CONFIANCA_MIN } from "@/lib/enem-corpus-stats";
@@ -320,6 +320,7 @@ async function classificarLinguagensTrilhas(
     select: {
       id: true,
       fonteId: true,
+      numero: true,
       idioma: true,
       enunciadoMd: true,
       introducaoAlternativas: true,
@@ -342,12 +343,12 @@ async function classificarLinguagensTrilhas(
 
   if (!opts.soTriagem) {
     for (const q of questoes) {
-      const trilha = trilhaLinguagensPorIdioma(q.idioma);
+      const texto = montarTextoQuestaoCorpus(q);
+      const trilha = trilhaLinguagensEfetiva(q.idioma, q.numero, texto);
       if (trilha === "ingles") contagemTrilha.ingles++;
       else if (trilha === "espanhol") contagemTrilha.espanhol++;
       else contagemTrilha.portugues++;
 
-      const texto = montarTextoQuestaoCorpus(q);
       const jaTemN2 = n2ValidoTrilha(
         q.conhecimentoEscopoId,
         q.classificacaoConfianca,

@@ -207,10 +207,9 @@ export function AdminEnemCorpusPanel() {
       ) : ehLinguagens ? (
         <Card className="border-indigo-200 bg-indigo-50/60">
           <p className="text-sm text-indigo-900">
-            <strong>3 trilhas ortogonais.</strong> Roteamento pelo campo{" "}
-            <code className="text-xs">idioma</code> do corpus (COMUM / inglês / espanhol). A IA só
-            vê N2 da trilha — português (interpretação, literatura, gramática, artes) ≠ L2 EN ≠ L2
-            ES.
+            <strong>3 trilhas ortogonais (contagem efetiva).</strong> Roteamento por{" "}
+            <code className="text-xs">idioma</code> + inferência na faixa Q1–5 (inglês vinha como
+            COMUM no banco). A IA só vê N2 da trilha PT / EN / ES.
           </p>
         </Card>
       ) : (
@@ -246,7 +245,7 @@ export function AdminEnemCorpusPanel() {
         </Card>
         {ehLinguagens && (
           <Card>
-            <p className="text-sm text-slate-500">Trilhas Linguagens</p>
+            <p className="text-sm text-slate-500">Trilhas (efetivas)</p>
             <p className="text-lg font-bold text-slate-900">
               PT {stats?.linguagens?.trilhas.portugues ?? 0} · EN{" "}
               {stats?.linguagens?.trilhas.ingles ?? 0} · ES{" "}

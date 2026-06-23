@@ -1,4 +1,5 @@
 import type { EnemDevDiscipline, EnemDevLanguage, EnemDevQuestion } from "./types";
+import { inferirIdiomaCorpusLinguagens } from "@/lib/enem-classificar/linguagens-rota";
 
 /** Dia do ENEM inferido pelo número global (1–90 / 91–180). */
 export function inferirDiaEnem(numero: number): 1 | 2 {
@@ -56,7 +57,11 @@ export type EnemCorpusEstrutural = {
 
 /** Extrai somente campos estruturais da questão — sem matéria/assunto/N1/N2. */
 export function mapearQuestaoEstrutural(q: EnemDevQuestion): EnemCorpusEstrutural {
-  const idioma = idiomaParaEnum(q.language);
+  const textoBase = [q.context, q.alternativesIntroduction].filter(Boolean).join("\n");
+  const idioma =
+    q.discipline === "linguagens"
+      ? inferirIdiomaCorpusLinguagens(q.index, q.language, textoBase || q.context)
+      : idiomaParaEnum(q.language);
   return {
     ano: q.year,
     numero: q.index,

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.1.0-alpha",
+  "catalogVersion": "1.1.1-alpha",
   "materiaId": "linguagens",
   "materiaLabel": "Linguagens",
   "areaEnem": "Linguagens, Códigos e suas Tecnologias",
@@ -43,6 +43,7 @@
             { "id": "ling.pt_interp.generos.artigo_opiniao", "label": "Artigo de opinião e editorial", "keywords": ["artigo de opinião", "editorial", "argumentação", "ponto de vista", "tese", "colunista"] },
             { "id": "ling.pt_interp.generos.publicidade_propaganda", "label": "Publicidade, propaganda e marketing", "keywords": ["publicidade", "propaganda", "anúncio", "anuncio", "slogan", "campanha", "persuasão"] },
             { "id": "ling.pt_interp.generos.carta_documento", "label": "Carta, e-mail e documentos", "keywords": ["carta", "e-mail", "email", "ofício", "oficio", "memorando", "documento oficial"] },
+            { "id": "ling.pt_interp.generos.divulgacao_cientifica", "label": "Divulgação científica e texto instrucional", "keywords": ["exercício", "exercicio", "saúde", "saude", "fisiológicos", "fisiologicos", "efeitos", "adaptado", "livro", "Nieman", "científico", "cientifico", "trecho", "manual"] },
             { "id": "ling.pt_interp.generos.multimodalidade", "label": "Texto multimodal e hipertexto", "keywords": ["multimodal", "hipertexto", "imagem e texto", "infográfico", "charge", "tirinha", "meme"] }
           ]
         }

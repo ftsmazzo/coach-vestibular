@@ -5,6 +5,7 @@ import {
   type MateriaCorpusId,
 } from "@/lib/conhecimento-catalog";
 import { whereCorpusMateria } from "@/lib/enem-corpus-materia";
+import { trilhaLinguagensEfetiva } from "@/lib/enem-classificar/linguagens-rota";
 
 export const ENEM_CORPUS_MINIMO = Number(process.env.ENEM_CORPUS_MIN ?? "2500");
 export const CLASSIFICACAO_CONFIANCA_MIN = 0.35;
@@ -96,6 +97,29 @@ async function statsMateria(
   };
 }
 
+async function contarTrilhasLinguagens(prisma: PrismaClient) {
+  const rows = await prisma.enemQuestaoCorpus.findMany({
+    where: { disciplina: "linguagens" },
+    select: {
+      idioma: true,
+      numero: true,
+      enunciadoMd: true,
+      introducaoAlternativas: true,
+    },
+  });
+  let portugues = 0;
+  let ingles = 0;
+  let espanhol = 0;
+  for (const r of rows) {
+    const texto = [r.enunciadoMd, r.introducaoAlternativas].filter(Boolean).join("\n");
+    const trilha = trilhaLinguagensEfetiva(r.idioma, r.numero, texto);
+    if (trilha === "ingles") ingles++;
+    else if (trilha === "espanhol") espanhol++;
+    else portugues++;
+  }
+  return { total: rows.length, portugues, ingles, espanhol };
+}
+
 export async function obterStatsCorpusEnem(
   prisma: PrismaClient,
   materiaId: MateriaCorpusId = "biologia"
@@ -111,9 +135,7 @@ export async function obterStatsCorpusEnem(
     triFis,
     triIndef,
     lingTotal,
-    lingComum,
-    lingEn,
-    lingEs,
+    lingTrilhas,
     materiaAtiva,
     porDisciplina,
     porAno,
@@ -145,9 +167,7 @@ export async function obterStatsCorpusEnem(
       where: { disciplina: "ciencias_natureza", materia: null },
     }),
     prisma.enemQuestaoCorpus.count({ where: { disciplina: "linguagens" } }),
-    prisma.enemQuestaoCorpus.count({ where: { disciplina: "linguagens", idioma: "COMUM" } }),
-    prisma.enemQuestaoCorpus.count({ where: { disciplina: "linguagens", idioma: "ingles" } }),
-    prisma.enemQuestaoCorpus.count({ where: { disciplina: "linguagens", idioma: "espanhol" } }),
+    contarTrilhasLinguagens(prisma),
     statsMateria(prisma, materiaId),
     prisma.enemQuestaoCorpus.groupBy({
       by: ["disciplina"],
@@ -183,7 +203,11 @@ export async function obterStatsCorpusEnem(
     },
     linguagens: {
       total: lingTotal,
-      trilhas: { portugues: lingComum, ingles: lingEn, espanhol: lingEs },
+      trilhas: {
+        portugues: lingTrilhas.portugues,
+        ingles: lingTrilhas.ingles,
+        espanhol: lingTrilhas.espanhol,
+      },
     },
     materiaAtiva: materiaAtiva,
     porDisciplina: porDisciplina.map((d) => ({
