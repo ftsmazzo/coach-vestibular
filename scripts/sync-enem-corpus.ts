@@ -15,7 +15,6 @@ import {
   corpusPrecisaSync,
   resetarESincronizarCorpusEnem,
   sincronizarCorpusEnem,
-  type ResetSyncCorpusResultado,
   type SyncCorpusResultado,
 } from "../src/lib/enem-corpus-sync";
 import { validarCorpusEstruturalBanco } from "../src/lib/enem-corpus-validacao";
@@ -59,15 +58,16 @@ async function main() {
       console.log("Zerando corpus e reimportando da API enem.dev…");
     }
 
-    let resultado: SyncCorpusResultado | ResetSyncCorpusResultado;
+    let resultado: SyncCorpusResultado;
 
     if (reset) {
-      resultado = await resetarESincronizarCorpusEnem(prisma, {
+      const comReset = await resetarESincronizarCorpusEnem(prisma, {
         dryRun,
         anos: ano ? [ano] : undefined,
         onProgress: (msg) => console.log(msg),
       });
-      console.log(`Reset: ${resultado.reset.removidas} questões removidas.`);
+      console.log(`Reset: ${comReset.reset.removidas} questões removidas.`);
+      resultado = comReset;
     } else {
       resultado = await sincronizarCorpusEnem(prisma, {
         dryRun,
