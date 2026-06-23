@@ -46,6 +46,7 @@ import {
 import { idFallbackNaoClassificado } from "@/lib/conhecimento-catalog/load";
 import { CLASSIFICACAO_CONFIANCA_MIN } from "@/lib/enem-corpus-stats";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
+import { sanitizarTextoPostgres } from "@/lib/sanitize-postgres-text";
 
 export type ClassificarCorpusOpts = {
   materiaId?: MateriaCorpusId;
@@ -133,20 +134,20 @@ function persistirResultado(
     where: { id },
     data: temN2
       ? {
-          materia: materiaLabel,
-          assunto: resultado.assuntoId,
-          conhecimentoDominioId: resultado.dominioId,
-          conhecimentoEscopoId: resultado.escopoId,
-          conhecimentoExigido: resultado.conhecimentoExigido ?? undefined,
+          materia: sanitizarTextoPostgres(materiaLabel),
+          assunto: sanitizarTextoPostgres(resultado.assuntoId) ?? null,
+          conhecimentoDominioId: sanitizarTextoPostgres(resultado.dominioId) ?? null,
+          conhecimentoEscopoId: sanitizarTextoPostgres(resultado.escopoId) ?? null,
+          conhecimentoExigido: sanitizarTextoPostgres(resultado.conhecimentoExigido ?? undefined),
           classificacaoConfianca: resultado.confianca,
-          classificacaoVersao: versao,
+          classificacaoVersao: sanitizarTextoPostgres(versao),
         }
       : {
           conhecimentoEscopoId: null,
           conhecimentoDominioId: null,
-          conhecimentoExigido: resultado.conhecimentoExigido ?? undefined,
+          conhecimentoExigido: sanitizarTextoPostgres(resultado.conhecimentoExigido ?? undefined),
           classificacaoConfianca: resultado.confianca || null,
-          classificacaoVersao: versao,
+          classificacaoVersao: sanitizarTextoPostgres(versao),
         },
   });
 }

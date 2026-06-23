@@ -15,6 +15,7 @@ import {
   type ValidacaoCorpus,
 } from "@/lib/enem-corpus-validacao";
 import { zerarCorpusEnem, type ZerarCorpusResultado } from "@/lib/enem-corpus-reset";
+import { sanitizarJsonPostgres, sanitizarTextoPostgres } from "@/lib/sanitize-postgres-text";
 
 export const ENEM_CORPUS_SYNC_VERSION = "1.0";
 export const ENEM_CORPUS_RESET_TOKEN = "ZERAR_CORPUS_ENEM";
@@ -52,13 +53,16 @@ function rowParaPrisma(row: EnemCorpusEstrutural) {
     idioma: row.idioma,
     dia: row.dia,
     disciplina: row.disciplina,
-    titulo: row.titulo,
-    enunciadoMd: row.enunciadoMd,
-    introducaoAlternativas: row.introducaoAlternativas,
-    alternativas: row.alternativas as Prisma.InputJsonValue,
-    gabarito: row.gabarito,
-    arquivos: row.arquivos === null ? Prisma.JsonNull : (row.arquivos as Prisma.InputJsonValue),
-    areaBloco: row.areaBloco,
+    titulo: sanitizarTextoPostgres(row.titulo) ?? null,
+    enunciadoMd: sanitizarTextoPostgres(row.enunciadoMd) ?? null,
+    introducaoAlternativas: sanitizarTextoPostgres(row.introducaoAlternativas) ?? null,
+    alternativas: sanitizarJsonPostgres(row.alternativas) as Prisma.InputJsonValue,
+    gabarito: sanitizarTextoPostgres(row.gabarito) ?? row.gabarito,
+    arquivos:
+      row.arquivos === null
+        ? Prisma.JsonNull
+        : (sanitizarJsonPostgres(row.arquivos) as Prisma.InputJsonValue),
+    areaBloco: sanitizarTextoPostgres(row.areaBloco) ?? null,
     fonte: "enem.dev",
     fonteId: row.fonteId,
   };

@@ -6,6 +6,7 @@ import {
   montarSystemClassificacaoLinguagensV12,
 } from "@/lib/conhecimento-catalog/prompt-classificacao";
 import { idFallbackNaoClassificado } from "@/lib/conhecimento-catalog/load";
+import { sanitizarTextoPostgres } from "@/lib/sanitize-postgres-text";
 import type {
   EscopoIndexEntry,
   MateriaCatalogo,
@@ -122,7 +123,11 @@ function itemParaResultado(
     .slice(0, 2)
     .map((s) => ({ escopoId: s.id, confianca: s.confianca }));
 
-  const n3 = (row.conhecimentoExigidoN3 ?? []).filter(Boolean).slice(0, 3).join(" | ");
+  const n3 = (row.conhecimentoExigidoN3 ?? [])
+    .map((s) => sanitizarTextoPostgres(s) ?? "")
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(" | ");
 
   if (!entry && !ehFallback) {
     return {
