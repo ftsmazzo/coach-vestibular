@@ -209,6 +209,39 @@ function itemParaResultado(
   };
 }
 
+function aplicarRotaDeterministicaPorIdioma(
+  item: QuestaoLinguagensV12,
+  resultado: ResultadoClassificacao,
+  escopos: Map<string, EscopoIndexEntry>,
+  fallbackId: string
+): ResultadoClassificacao {
+  const hint = item.idioma;
+  if (hint !== "ingles" && hint !== "espanhol") return resultado;
+
+  const disc = hint;
+  const allowed = ROTAS_ASSUNTOS[disc];
+  const entry = resultado.escopoId ? escopos.get(resultado.escopoId) : null;
+  const escopoOk =
+    resultado.escopoId === fallbackId ||
+    (entry != null && (entry.ehFallback || allowed.includes(entry.assuntoId)));
+
+  return {
+    ...resultado,
+    disciplinaOriginalId: disc,
+    rotaCriterio: "metadata",
+    sinalizadorRevisao:
+      resultado.sinalizadorRevisao === true ||
+      resultado.disciplinaOriginalId !== disc ||
+      !escopoOk,
+    status:
+      !escopoOk || resultado.escopoId === fallbackId ? "review" : resultado.status,
+    motivo:
+      resultado.disciplinaOriginalId !== disc
+        ? `Rota forçada por idiomaVariante (${disc}); IA sugeriu ${resultado.disciplinaOriginalId ?? "?"}.`
+        : resultado.motivo,
+  };
+}
+
 /**
  * Classificação Linguagens v1.2 — prova-agnóstica.
  * Uma chamada IA: rota (PT/EN/ES) + escopo N2 via catálogo (sem Q6+ nem heurística de palavras).
@@ -250,9 +283,11 @@ export async function classificarLoteLinguagensV12(
   });
 
   for (const row of data.classificacoes) {
+    const item = items.find((q) => q.fonteId === row.fonteId);
+    const base = itemParaResultado(row, escopos, confiancaMinima, fallbackId, ids);
     map.set(
       row.fonteId,
-      itemParaResultado(row, escopos, confiancaMinima, fallbackId, ids)
+      item ? aplicarRotaDeterministicaPorIdioma(item, base, escopos, fallbackId) : base
     );
   }
 

@@ -36,6 +36,9 @@ import { atualizarClassificacaoLote } from "@/lib/prova-questoes-persist";
 
 const LOTE_CATALOGO = 4;
 
+/** Texto mínimo para classificação N2 (enunciado + alternativas). */
+export const TEXTO_MINIMO_CLASSIFICACAO = 80;
+
 const MAP_HUMANAS_ASSUNTO: Record<string, string> = {
   historia_brasil: "História",
   historia_geral: "História",
@@ -57,10 +60,16 @@ function chunks<T>(arr: T[], size: number): T[][] {
 }
 
 function textoQuestao(row: ProvaQuestaoRow): string {
+  const partes: string[] = [];
   const en = row.enunciado?.trim();
-  if (en && en.length >= 10) return en.slice(0, 6000);
-  const obs = row.observacoes?.trim();
-  return obs ? obs.slice(0, 6000) : "";
+  if (en) partes.push(en);
+  const alt = row.alternativas?.trim();
+  if (alt) partes.push(alt);
+  if (partes.length === 0) {
+    const obs = row.observacoes?.trim();
+    if (obs) partes.push(obs);
+  }
+  return partes.join("\n\n").slice(0, 6000);
 }
 
 function hintIdioma(variante?: ProvaQuestaoRow["idiomaVariante"]): string | null {
@@ -150,12 +159,45 @@ const MAP_NATUREZA_CORPUS: Record<MateriaNatureza, MateriaCorpusId> = {
   Física: "fisica",
 };
 
-function materiaCorpusNatureza(texto: string, materiaLegada?: string): MateriaCorpusId {
+function materiaCorpusNatureza(texto: string, materiaLegada?: string): MateriaCorpusId | null {
   if (materiaLegada === "Química") return "quimica";
   if (materiaLegada === "Física") return "fisica";
   if (materiaLegada === "Biologia") return "biologia";
   const tri = triarMateriaNatureza(texto);
-  return tri.materia ? MAP_NATUREZA_CORPUS[tri.materia] : "biologia";
+  return tri.materia ? MAP_NATUREZA_CORPUS[tri.materia] : null;
+}
+
+function resolverMateriaCatalogo(
+  row: ProvaQuestaoRow,
+  texto: string
+): { materiaId: MateriaCorpusId | null; aviso?: string } {
+  const area = resolverAreaCatalogo(row);
+
+  if (area === "linguagens") return { materiaId: "linguagens" };
+  if (area === "humanas") return { materiaId: "humanas" };
+  if (area === "matematica") return { materiaId: "matematica" };
+
+  if (area === "natureza") {
+    const materiaId = materiaCorpusNatureza(texto, row.materia);
+    if (materiaId) return { materiaId };
+    return {
+      materiaId: null,
+      aviso: `Q${row.numero}: Natureza — triagem Bio/Quím/Fís inconclusiva; classificação adiada.`,
+    };
+  }
+
+  const triNat = triarMateriaNatureza(texto);
+  if (triNat.materia) {
+    return {
+      materiaId: MAP_NATUREZA_CORPUS[triNat.materia],
+      aviso: `Q${row.numero}: área indefinida — triagem Natureza → ${triNat.materia}.`,
+    };
+  }
+
+  return {
+    materiaId: null,
+    aviso: `Q${row.numero}: área indefinida — classificação adiada (sem fallback).`,
+  };
 }
 
 function resolverAreaCatalogo(row: ProvaQuestaoRow): MateriaCorpusId | "natureza" | null {
@@ -213,7 +255,7 @@ async function classificarLoteMateria(
       const payload = lote.map(({ fonteId, row }) => ({
         fonteId,
         enunciado: textoQuestao(row),
-        alternativas: "",
+        alternativas: row.alternativas?.trim() ?? "",
         gabarito: row.gabarito ?? null,
         numero: row.numero,
         idioma: hintIdioma(row.idiomaVariante),
@@ -226,7 +268,7 @@ async function classificarLoteMateria(
       const payload = lote.map(({ fonteId, row }) => ({
         fonteId,
         enunciado: textoQuestao(row),
-        alternativas: "",
+        alternativas: row.alternativas?.trim() ?? "",
         gabarito: row.gabarito ?? null,
         numero: row.numero,
         idioma: hintIdioma(row.idiomaVariante),
@@ -253,39 +295,16 @@ export async function classificarRowsProvaComCatalogo(
   for (const row of rows) {
     const fonteId = chaveQuestaoVariante(row.numero, row.idiomaVariante ?? "COMUM");
     const texto = textoQuestao(row);
-    if (texto.length < 10) {
-      avisos.push(`Q${row.numero}: texto curto — classificação N2 ignorada.`);
+    if (texto.length < TEXTO_MINIMO_CLASSIFICACAO) {
+      avisos.push(
+        `Q${row.numero}: texto insuficiente (${texto.length} chars, mín. ${TEXTO_MINIMO_CLASSIFICACAO}) — reextraia o PDF com enunciado literal.`
+      );
       continue;
     }
 
-    const area = resolverAreaCatalogo(row);
-    let materiaId: MateriaCorpusId;
-
-    if (area === "natureza") {
-      materiaId = materiaCorpusNatureza(texto, row.materia);
-    } else if (area === "linguagens") {
-      materiaId = "linguagens";
-    } else if (area === "humanas") {
-      materiaId = "humanas";
-    } else if (area === "matematica") {
-      materiaId = "matematica";
-    } else {
-      const triNat = triarMateriaNatureza(texto);
-      if (triNat.materia) {
-        materiaId =
-          triNat.materia === "Biologia"
-            ? "biologia"
-            : triNat.materia === "Química"
-              ? "quimica"
-              : "fisica";
-        avisos.push(
-          `Q${row.numero}: área indefinida — triagem Natureza → ${triNat.materia}.`
-        );
-      } else {
-        materiaId = "linguagens";
-        avisos.push(`Q${row.numero}: área indefinida — tentando Linguagens.`);
-      }
-    }
+    const { materiaId, aviso } = resolverMateriaCatalogo(row, texto);
+    if (aviso) avisos.push(aviso);
+    if (!materiaId) continue;
 
     const lista = porMateria.get(materiaId) ?? [];
     lista.push({ fonteId, row });
@@ -311,7 +330,7 @@ export async function classificarRowsProvaComCatalogo(
         : versaoCatalogoV11(
             (resultado.materiaId ??
               indexGlobalEscopos().get(resultado.escopoId ?? "")?.materiaId ??
-              "biologia") as MateriaCorpusId
+              "matematica") as MateriaCorpusId
           );
 
     return aplicarResultadoNaRow(row, resultado, versao);

@@ -4,11 +4,7 @@ import type { EtapaExtracao } from "@/lib/prova-extracao-pipeline";
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
 import { prisma } from "@/lib/prisma";
 import { chaveQuestaoVariante } from "@/lib/prova-idioma";
-import {
-  alinharLoteTaxonomia,
-  normalizarLabelAssunto,
-  normalizarLabelMateria,
-} from "@/lib/taxonomia-validacao";
+import { normalizarLabelAssunto, normalizarLabelMateria } from "@/lib/taxonomia-validacao";
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import { normalizarGabaritoOficial } from "@/lib/gabarito-anulada";
 
@@ -32,8 +28,9 @@ function whereVariante(provaId: string, numero: number, variante: IdiomaVariante
   };
 }
 
+/** Normaliza rótulos para exibição — sem reclassificar matéria/assunto por regex legado. */
 function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
-  const base = rows.map((r) => {
+  return rows.map((r) => {
     const materia = normalizarLabelMateria(r.materia);
     return {
       numero: r.numero,
@@ -45,31 +42,16 @@ function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
       nivelDificuldade: r.nivelDificuldade?.trim() || undefined,
       observacoes: r.observacoes?.trim() || undefined,
       enunciado: r.enunciado?.trim() || undefined,
-    gabarito: normalizarGabaritoOficial(r.gabarito) ?? undefined,
+      alternativas: r.alternativas?.trim() || undefined,
+      gabarito: normalizarGabaritoOficial(r.gabarito) ?? undefined,
+      conhecimentoEscopoId: r.conhecimentoEscopoId,
+      conhecimentoDominioId: r.conhecimentoDominioId,
+      classificacaoVersao: r.classificacaoVersao,
+      classificacaoConfianca: r.classificacaoConfianca,
+      classificacaoSecundariosJson: r.classificacaoSecundariosJson,
+      conceitosCanonicosJson: r.conceitosCanonicosJson,
     };
   });
-
-  const alinhadas = alinharLoteTaxonomia(
-    base.map((r) => ({
-      numero: r.numero,
-      trechoEnunciado: r.enunciado ?? "",
-      materia: r.materia,
-      assunto: r.assunto,
-      areaBloco: r.areaBloco ?? null,
-      conhecimentoExigido: r.conhecimentoExigido ?? null,
-      nivelDificuldade: r.nivelDificuldade ?? null,
-      observacoes: r.observacoes ?? null,
-    }))
-  );
-
-  return alinhadas.questoes.map((q, i) => ({
-    ...base[i],
-    materia: q.materia,
-    assunto: q.assunto,
-    areaBloco:
-      normalizarAreaBloco(q.areaBloco ?? base[i].areaBloco, q.materia) ?? undefined,
-    conhecimentoExigido: q.conhecimentoExigido ?? undefined,
-  }));
 }
 
 function camposN2(r: ProvaQuestaoRow) {
@@ -152,6 +134,8 @@ export async function persistirQuestoesClassificadas(
   return n;
 }
 
+const ENUNCIADO_MIN_RECLASSIFICAR = 80;
+
 /** Atualiza classificação N2 + rótulos legados sem apagar enunciado/gabarito existentes. */
 export async function atualizarClassificacaoLote(
   provaId: string,
@@ -174,6 +158,9 @@ export async function atualizarClassificacaoLote(
         assunto: r.assunto,
         conhecimentoExigido: r.conhecimentoExigido ?? null,
         nivelDificuldade: r.nivelDificuldade ?? null,
+        ...(r.enunciado && r.enunciado.trim().length >= ENUNCIADO_MIN_RECLASSIFICAR
+          ? { enunciado: truncarEnunciado(r.enunciado) }
+          : {}),
         ...camposN2(r),
       },
     });

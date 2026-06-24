@@ -4,7 +4,7 @@ import {
   uploadPdfBuffer,
 } from "@/lib/openai-responses-client";
 import {
-  validarExtracaoPedagogicaLote,
+  validarExtracaoLiteralLote,
   validarEstruturaProva,
 } from "@/lib/prova-pipeline-v2-validacao";
 import { parseGabaritoLote } from "@/lib/gabarito";
@@ -29,7 +29,7 @@ import {
 } from "@/lib/prova-pipeline-contexto";
 import { classificarRowsProvaComCatalogo } from "@/lib/prova-classificacao-catalogo";
 import {
-  PROMPT_SISTEMA_EXTRACAO_PEDAGOGICA,
+  PROMPT_SISTEMA_EXTRACAO_LITERAL,
   PROMPT_SISTEMA_ESTRUTURA,
 } from "@/lib/prova-pipeline-v2-prompts";
 
@@ -109,9 +109,9 @@ const SCHEMA_ESTRUTURA = {
   },
 } as const;
 
-function schemaExtracaoPedagogicaLote() {
+function schemaExtracaoLiteralLote() {
   return {
-    name: "extracao_pedagogica_questoes",
+    name: "extracao_literal_questoes",
     strict: true,
     schema: {
       type: "object",
@@ -123,16 +123,21 @@ function schemaExtracaoPedagogicaLote() {
             properties: {
               numero: { type: "integer" },
               area_bloco: { type: "string" },
-              resumo_enunciado: {
+              enunciado: {
                 type: "string",
-                description: "Uma linha: o que a questão exige (gênero, habilidade, tema).",
+                description:
+                  "Texto literal completo da questão (apoio + comando). Proibido resumir.",
+              },
+              alternativas: {
+                type: "string",
+                description: "Alternativas A–E literais, ou vazio se não houver.",
               },
               dificuldade: {
                 type: "string",
                 enum: ["facil", "media", "dificil", ""],
               },
             },
-            required: ["numero", "area_bloco", "resumo_enunciado", "dificuldade"],
+            required: ["numero", "area_bloco", "enunciado", "alternativas", "dificuldade"],
             additionalProperties: false,
           },
         },
@@ -165,8 +170,9 @@ type EstruturaRes = EstruturaProvaDetectada & {
 type QuestaoExtraidaPdf = {
   numero: number;
   area_bloco: string;
+  enunciado: string;
+  alternativas: string;
   dificuldade: string;
-  resumo_enunciado: string;
 };
 
 type ExtracaoRes = {
@@ -182,9 +188,9 @@ function chunks<T>(arr: T[], size: number): T[][] {
 }
 
 function tamanhoLote(totalNumeros: number): number {
-  const env = parseInt(process.env.PIPELINE_V2_LOTE_SIZE ?? "8", 10);
-  const base = Number.isFinite(env) && env >= 3 ? Math.min(env, 10) : 8;
-  if (totalNumeros <= 20) return Math.min(base, 6);
+  const env = parseInt(process.env.PIPELINE_V2_LOTE_SIZE ?? "4", 10);
+  const base = Number.isFinite(env) && env >= 2 ? Math.min(env, 6) : 4;
+  if (totalNumeros <= 20) return Math.min(base, 3);
   return base;
 }
 
@@ -198,7 +204,8 @@ function questaoParaRow(
     areaBlocoPorNumero(estrutura.blocos ?? [], q.numero) ||
     undefined;
   const areaBloco = normalizarAreaBloco(areaRaw) ?? undefined;
-  const resumo = q.resumo_enunciado?.trim() ?? "";
+  const enunciado = (q.enunciado ?? "").trim();
+  const alternativas = (q.alternativas ?? "").trim();
   return {
     numero: q.numero,
     idiomaVariante,
@@ -206,8 +213,8 @@ function questaoParaRow(
     materia: "A classificar",
     assunto: "A classificar",
     nivelDificuldade: normalizarDificuldade(q.dificuldade ?? ""),
-    enunciado: resumo || undefined,
-    observacoes: resumo ? resumo.slice(0, 200) : undefined,
+    enunciado: enunciado || undefined,
+    alternativas: alternativas || undefined,
   };
 }
 
@@ -279,7 +286,7 @@ function validarRows(
 }
 
 /**
- * Pipeline V2: PDF → estrutura → extração (área + resumo) → catálogo N2 v1.2 → gabarito → banco.
+ * Pipeline V2: PDF → estrutura → extração literal (enunciado + alternativas) → catálogo N2 → gabarito → banco.
  * ENEM, vestibulares, simulados e listas — layout inferido do documento.
  */
 export async function executarPipelineProvaV2(
@@ -368,9 +375,9 @@ Preencha o schema estrutural completo a partir do PDF.
   const montarInstrucaoExtracao = (numsStr: string, extra = "") => `${ctxTxt}
 
 ${resumoEstrutura ? `Contexto estrutural:\n${resumoEstrutura}\n` : ""}
-Extraia metadados SOMENTE das questões: ${numsStr}
-Para cada item: area_bloco (4 rótulos canônicos), resumo_enunciado (1 linha) e dificuldade.
-NÃO preencha matéria nem assunto — a classificação N2 é feita depois pelo catálogo Coach.
+Extraia texto LITERAL (ipsis litteris) SOMENTE das questões: ${numsStr}
+Para cada item: area_bloco (4 rótulos canônicos), enunciado completo, alternativas A–E e dificuldade.
+NÃO resuma o enunciado. NÃO preencha matéria nem assunto — a classificação N2 é feita depois pelo catálogo Coach.
 ${extra}`;
 
   async function extrairLotes(
@@ -387,10 +394,10 @@ ${extra}`;
       const extracaoExec = await responsesComPdfSchemaComValidacao<ExtracaoRes>({
         fileId,
         taskName: `extracao-${label}-${i + 1}`,
-        systemPrompt: PROMPT_SISTEMA_EXTRACAO_PEDAGOGICA,
+        systemPrompt: PROMPT_SISTEMA_EXTRACAO_LITERAL,
         instrucao: montarInstrucaoExtracao(lote.join(", "), instrucaoExtra),
-        schema: schemaExtracaoPedagogicaLote(),
-        validate: (data) => validarExtracaoPedagogicaLote(data, lote),
+        schema: schemaExtracaoLiteralLote(),
+        validate: (data) => validarExtracaoLiteralLote(data, lote),
       });
       modelExtracao = extracaoExec.model;
       aplicarQuestoesExtraidas(
@@ -439,10 +446,10 @@ ${extra}`;
       const extracaoExec = await responsesComPdfSchemaComValidacao<ExtracaoRes>({
         fileId,
         taskName: `extracao-lote-${i + 1}`,
-        systemPrompt: PROMPT_SISTEMA_EXTRACAO_PEDAGOGICA,
+        systemPrompt: PROMPT_SISTEMA_EXTRACAO_LITERAL,
         instrucao: montarInstrucaoExtracao(lote.join(", ")),
-        schema: schemaExtracaoPedagogicaLote(),
-        validate: (data) => validarExtracaoPedagogicaLote(data, lote),
+        schema: schemaExtracaoLiteralLote(),
+        validate: (data) => validarExtracaoLiteralLote(data, lote),
       });
       modelExtracao = extracaoExec.model;
       aplicarQuestoesExtraidas(

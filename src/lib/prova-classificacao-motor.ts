@@ -5,7 +5,6 @@ import {
   detectarPassagemEspanhol,
 } from "@/lib/prova-materia-ajuste";
 import {
-  alinharLoteTaxonomia,
   assuntoPertenceMateria,
   normalizarLabelAssunto,
   normalizarLabelMateria,
@@ -319,8 +318,7 @@ export async function classificarQuestaoUnica(
   const maxChars = parseInt(process.env.ENUNCIADO_PARA_CLASSIFICAR_MAX ?? "6000", 10);
   const copia = { ...q };
   await classificarUnitario(copia, maxChars);
-  const alinhada = alinharLoteTaxonomia([copia]).questoes[0];
-  return alinhada;
+  return copia;
 }
 
 export async function classificarMateriaEAssuntoMotor(
@@ -410,14 +408,6 @@ export async function classificarMateriaEAssuntoMotor(
       }
     });
     await executarEmParalelo(revTasks, Math.min(6, paralelo + 2));
-  }
-
-  const { questoes: alinhadas, corrigidas } = alinharLoteTaxonomia(resultado);
-  for (let i = 0; i < resultado.length; i++) {
-    resultado[i] = alinhadas[i];
-  }
-  if (corrigidas > 0) {
-    avisos.push(`${corrigidas} par(es) matéria/assunto alinhados à taxonomia.`);
   }
 
   const aindaSuspeitas = resultado.filter(classificacaoSuspeita).length;

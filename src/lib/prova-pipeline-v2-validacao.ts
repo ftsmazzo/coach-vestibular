@@ -5,16 +5,32 @@ import {
 
 export type { EstruturaProvaDetectada };
 
-export type ExtracaoPedagogicaLoteRes = {
+/** Mínimo de caracteres no enunciado literal para considerar extração válida. */
+export const ENUNCIADO_LITERAL_MIN_CHARS = 40;
+
+export type ExtracaoLiteralLoteRes = {
   questoes?: Array<{
     numero: number;
     area_bloco?: string;
-    resumo_enunciado?: string;
+    enunciado?: string;
+    alternativas?: string;
     dificuldade?: string;
   }>;
 };
 
-/** @deprecated use ExtracaoPedagogicaLoteRes */
+/** @deprecated use ExtracaoLiteralLoteRes */
+export type ExtracaoPedagogicaLoteRes = ExtracaoLiteralLoteRes & {
+  questoes?: Array<{
+    numero: number;
+    area_bloco?: string;
+    resumo_enunciado?: string;
+    enunciado?: string;
+    alternativas?: string;
+    dificuldade?: string;
+  }>;
+};
+
+/** @deprecated use ExtracaoLiteralLoteRes */
 export type ClassificacaoLoteRes = ExtracaoPedagogicaLoteRes & {
   questoes?: Array<{
     numero: number;
@@ -24,6 +40,8 @@ export type ClassificacaoLoteRes = ExtracaoPedagogicaLoteRes & {
     conhecimento?: string;
     dificuldade?: string;
     resumo_enunciado?: string;
+    enunciado?: string;
+    alternativas?: string;
   }>;
 };
 
@@ -63,8 +81,15 @@ export function validarEstruturaProva(
   }
 }
 
-export function validarExtracaoPedagogicaLote(
-  data: ExtracaoPedagogicaLoteRes,
+function textoEnunciadoQuestao(q: {
+  enunciado?: string;
+  resumo_enunciado?: string;
+}): string {
+  return (q.enunciado ?? q.resumo_enunciado ?? "").trim();
+}
+
+export function validarExtracaoLiteralLote(
+  data: ExtracaoLiteralLoteRes,
   numerosEsperados: number[]
 ): void {
   if (!data?.questoes || !Array.isArray(data.questoes)) {
@@ -81,36 +106,54 @@ export function validarExtracaoPedagogicaLote(
     );
   }
 
-  let semResumo = 0;
+  let semEnunciado = 0;
+  let enunciadoCurto = 0;
   let semDificuldade = 0;
   for (const q of noLote) {
     const d = (q.dificuldade ?? "").trim().toLowerCase();
     if (d && !["facil", "media", "dificil", "fácil", "média", "difícil"].includes(d)) {
       throw new Error(`Dificuldade inválida na questão ${q.numero}`);
     }
-    if (!q.resumo_enunciado?.trim()) semResumo++;
+    const en = textoEnunciadoQuestao(q);
+    if (!en) semEnunciado++;
+    else if (en.length < ENUNCIADO_LITERAL_MIN_CHARS) enunciadoCurto++;
     if (!d) semDificuldade++;
   }
 
-  const maxSemResumo = Math.ceil(noLote.length * 0.4);
-  if (semResumo > maxSemResumo) {
+  const maxSemEnunciado = Math.ceil(noLote.length * 0.15);
+  if (semEnunciado > maxSemEnunciado) {
     throw new Error(
-      `Muitas questões sem resumo_enunciado (${semResumo}/${noLote.length})`
+      `Muitas questões sem enunciado literal (${semEnunciado}/${noLote.length})`
     );
   }
 
-  const maxSemDificuldade = Math.floor(noLote.length * 0.65);
+  const maxCurto = Math.ceil(noLote.length * 0.35);
+  if (enunciadoCurto > maxCurto) {
+    throw new Error(
+      `Muitas questões com enunciado muito curto — possível resumo em vez de texto literal (${enunciadoCurto}/${noLote.length})`
+    );
+  }
+
+  const maxSemDificuldade = Math.floor(noLote.length * 0.85);
   if (semDificuldade > maxSemDificuldade) {
     throw new Error(
-      `Poucas questões com dificuldade (${noLote.length - semDificuldade}/${noLote.length}); preencha facil/media/dificil`
+      `Poucas questões com dificuldade (${noLote.length - semDificuldade}/${noLote.length}); preencha facil/media/dificil quando legível`
     );
   }
 }
 
-/** @deprecated use validarExtracaoPedagogicaLote */
+/** @deprecated use validarExtracaoLiteralLote */
+export function validarExtracaoPedagogicaLote(
+  data: ExtracaoPedagogicaLoteRes,
+  numerosEsperados: number[]
+): void {
+  validarExtracaoLiteralLote(data, numerosEsperados);
+}
+
+/** @deprecated use validarExtracaoLiteralLote */
 export function validarClassificacaoLote(
   data: ClassificacaoLoteRes,
   numerosEsperados: number[]
 ): void {
-  validarExtracaoPedagogicaLote(data, numerosEsperados);
+  validarExtracaoLiteralLote(data, numerosEsperados);
 }

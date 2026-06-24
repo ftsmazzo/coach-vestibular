@@ -10,6 +10,8 @@ export interface ProvaQuestaoRow {
   nivelDificuldade?: string;
   observacoes?: string;
   enunciado?: string;
+  /** Alternativas A–E (extração PDF; não persiste no banco hoje). */
+  alternativas?: string;
   gabarito?: string;
   /** Classificação N2 (catálogo v1.2) */
   conhecimentoEscopoId?: string | null;

@@ -161,72 +161,9 @@ export interface GroupedError {
 }
 
 function preprocessAttemptsWithOverrides(attempts: AttemptInput[]): AttemptInput[] {
-  return attempts.map((a) => {
-    if (!a.observacao) return a;
-    
-    // Normalize string to ignore accents and case
-    const obs = a.observacao.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    let materiaId = a.materiaId;
-    let temaId = a.temaId;
-
-    // 1. Identify corrected materia & tema based on student's notes
-    if (obs.includes("geografia")) {
-      materiaId = "geografia";
-      temaId = obs.includes("fisic") ? "fisicos" : "humanos";
-    } else if (obs.includes("historia")) {
-      materiaId = "historia";
-      temaId = obs.includes("brasil") ? "brasil_republica" : "geral_contemporanea";
-    } else if (obs.includes("ingles") || obs.includes("english")) {
-      // Map foreign language (English) under languages (portugues / interpretacao_texto)
-      materiaId = "portugues";
-      temaId = "interpretacao_texto";
-    } else if (obs.includes("gramatica") || obs.includes("pronome") || obs.includes("tempo verbal") || obs.includes("tempos verbais") || obs.includes("conjuncao") || obs.includes("regencia") || obs.includes("crase")) {
-      materiaId = "portugues";
-      temaId = "gramatica";
-    } else if (obs.includes("literatura")) {
-      materiaId = "portugues";
-      temaId = "literatura";
-    } else if (obs.includes("redacao")) {
-      materiaId = "portugues";
-      temaId = "redacao";
-    } else if (obs.includes("interpretacao") || obs.includes("leitura")) {
-      materiaId = "portugues";
-      temaId = "interpretacao_texto";
-    } else if (obs.includes("biologia") || obs.includes("biologica") || obs.includes("citologia") || obs.includes("genetica") || obs.includes("ecologia") || obs.includes("fisiologia") || obs.includes("evolucao") || obs.includes("botanica")) {
-      materiaId = "biologia";
-      if (obs.includes("citologia")) temaId = "citologia";
-      else if (obs.includes("genetica")) temaId = "genetica";
-      else if (obs.includes("ecologia")) temaId = "ecologia";
-      else if (obs.includes("fisiologia")) temaId = "fisiologia_humana";
-      else if (obs.includes("evolucao")) temaId = "evolucao";
-      else if (obs.includes("botanica")) temaId = "botanica";
-    } else if (obs.includes("quimica") || obs.includes("estequiometria") || obs.includes("termoquimica") || obs.includes("equilibrio") || obs.includes("eletroquimica")) {
-      materiaId = "quimica";
-      if (obs.includes("estequiometria")) temaId = "estequiometria";
-      else if (obs.includes("termoquimica")) temaId = "termoquimica";
-      else if (obs.includes("equilibrio")) temaId = "equilibrio";
-      else if (obs.includes("eletroquimica")) temaId = "eletroquimica";
-    } else if (obs.includes("fisica") || obs.includes("optica") || obs.includes("cinematica") || obs.includes("eletricidade") || obs.includes("ondas") || obs.includes("trabalho") || obs.includes("lente") || obs.includes("espelho")) {
-      materiaId = "fisica";
-      if (obs.includes("optica") || obs.includes("lente") || obs.includes("espelho")) temaId = "optica";
-      else if (obs.includes("cinematica")) temaId = "cinematica";
-      else if (obs.includes("eletricidade")) temaId = "eletricidade";
-      else if (obs.includes("ondas")) temaId = "ondas";
-    } else if (obs.includes("matematica") || obs.includes("calculo") || obs.includes("geometria") || obs.includes("trigonometria") || obs.includes("probabilidade") || obs.includes("algebra") || obs.includes("funcao")) {
-      materiaId = "matematica";
-      if (obs.includes("trigonometria")) temaId = "trigonometria";
-      else if (obs.includes("probabilidade")) temaId = "probabilidade";
-      else if (obs.includes("algebra")) temaId = "algebra";
-      else if (obs.includes("geometria")) temaId = "geometria";
-      else if (obs.includes("funcao")) temaId = "funcoes";
-    }
-
-    return {
-      ...a,
-      materiaId,
-      temaId,
-    };
-  });
+  // Sprint 0: não reescrever matéria/tema por regex na observação do aluno.
+  // A classificação canônica virá de ProvaQuestao.conhecimentoEscopoId (fase seguinte).
+  return attempts;
 }
 
 function aggregateCurrentErrors(attempts: AttemptInput[]): GroupedError[] {
