@@ -93,7 +93,10 @@ export function agregarMetadadosCognitivos(
   const estadoDominante = count(valid.map((v) => v.estadoDuranteQuestao));
   const confs = valid
     .map((v) => v.confiancaNaResposta)
-    .filter((c): c is number => c != null);
+    .filter(
+      (c): c is NonNullable<MetadadosCognitivosErro["confiancaNaResposta"]> =>
+        c != null
+    );
   const confiancaMedia =
     confs.length > 0 ? confs.reduce((a, b) => a + b, 0) / confs.length : null;
   const amostrasObservacao = valid
