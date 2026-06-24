@@ -18,6 +18,9 @@ export function modeloPipelineFallback(): string {
     process.env.OPENAI_MODEL_PASSO_2?.trim();
   const primary = modeloPipelinePrincipal();
   if (fb && fb !== primary) return fb;
+  // gpt-5 / o-series: fallback estável quando a OpenAI retorna 500 intermitente
+  if (modeloUsaApiChatNova(primary)) return "gpt-4o-mini";
+  if (primary !== "gpt-4o") return "gpt-4o";
   return primary;
 }
 

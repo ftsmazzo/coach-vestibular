@@ -66,6 +66,65 @@ export async function uploadPdfBuffer(
   return uploadFileBuffer(buffer, filename, "application/pdf");
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function retriesResponses(): number {
+  const n = parseInt(
+    process.env.OPENAI_RESPONSES_RETRIES ??
+      process.env.PIPELINE_V2_RETRIES_PRIMARY ??
+      "3",
+    10
+  );
+  return Number.isFinite(n) && n >= 1 ? n : 3;
+}
+
+const HTTP_RETRYABLE = new Set([408, 429, 500, 502, 503, 504]);
+
+function erroOpenAIResponses(model: string, status: number, body: string): Error {
+  return new Error(`OpenAI Responses (${model}): ${status} ${body.slice(0, 400)}`);
+}
+
+/** POST /v1/responses com retry + backoff em falhas transitórias (429/5xx). */
+async function postOpenAIResponses(
+  body: Record<string, unknown>,
+  model: string
+): Promise<Record<string, unknown>> {
+  const apiKey = getApiKey();
+  const maxAttempts = retriesResponses();
+  let lastErr = "";
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      return (await res.json()) as Record<string, unknown>;
+    }
+
+    lastErr = await res.text();
+    const retryable = HTTP_RETRYABLE.has(res.status);
+    if (!retryable || attempt >= maxAttempts) {
+      throw erroOpenAIResponses(model, res.status, lastErr);
+    }
+
+    const delayMs = Math.min(12_000, 800 * 2 ** (attempt - 1)) + Math.random() * 400;
+    console.warn(
+      `[openai:responses] ${model} HTTP ${res.status} — retry ${attempt}/${maxAttempts} em ${Math.round(delayMs)}ms`
+    );
+    await sleep(delayMs);
+  }
+
+  throw erroOpenAIResponses(model, 500, lastErr || "erro desconhecido");
+}
+
 function extrairTextoOutput(data: Record<string, unknown>): string {
   const direct = data.output_text;
   if (typeof direct === "string" && direct.trim()) return direct;
@@ -98,20 +157,17 @@ function extrairTextoOutput(data: Record<string, unknown>): string {
   return joined;
 }
 
-/** Chamada Responses API com conteúdo multimodal e JSON Schema rígido. */
-export async function responsesComSchema<T>(opts: {
+/** Uma chamada Responses API (modelo fixo) — retry HTTP em postOpenAIResponses. */
+async function responsesComSchemaOnce<T>(opts: {
   content: InputContentItem[];
   instrucao: string;
   systemPrompt?: string;
   schema: JsonSchemaFormat;
-  model?: string;
+  model: string;
 }): Promise<T> {
-  const apiKey = getApiKey();
-  const model = opts.model ?? modeloPipelinePrincipal();
-
   const input: Array<{
     role: string;
-    content: Array<{ type: string; text?: string; file_id?: string }>;
+    content: Array<{ type: string; text?: string; file_id?: string; image_url?: string }>;
   }> = [];
 
   if (opts.systemPrompt?.trim()) {
@@ -127,7 +183,7 @@ export async function responsesComSchema<T>(opts: {
   });
 
   const body = {
-    model,
+    model: opts.model,
     input,
     text: {
       format: {
@@ -139,23 +195,36 @@ export async function responsesComSchema<T>(opts: {
     },
   };
 
-  const res = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OpenAI Responses (${model}): ${res.status} ${err.slice(0, 400)}`);
-  }
-
-  const data = (await res.json()) as Record<string, unknown>;
+  const data = await postOpenAIResponses(body, opts.model);
   const raw = extrairTextoOutput(data);
   return JSON.parse(raw) as T;
+}
+
+/** Chamada Responses API com retry HTTP + fallback de modelo (gpt-5 → gpt-4o-mini). */
+export async function responsesComSchema<T>(opts: {
+  content: InputContentItem[];
+  instrucao: string;
+  systemPrompt?: string;
+  schema: JsonSchemaFormat;
+  model?: string;
+  taskName?: string;
+}): Promise<T> {
+  const { executarComFallback } = await import("@/lib/executar-com-fallback");
+  const primary = opts.model ?? modeloPipelinePrincipal();
+  const exec = await executarComFallback<T>({
+    taskName: opts.taskName ?? "responses-schema",
+    primaryModel: primary,
+    run: (model) =>
+      responsesComSchemaOnce<T>({
+        content: opts.content,
+        instrucao: opts.instrucao,
+        systemPrompt: opts.systemPrompt,
+        schema: opts.schema,
+        model,
+      }),
+    validate: () => {},
+  });
+  return exec.resultado;
 }
 
 /** Chamada Responses API com PDF (file_id) e JSON Schema rígido. */
@@ -166,12 +235,12 @@ export async function responsesComPdfSchema<T>(opts: {
   schema: JsonSchemaFormat;
   model?: string;
 }): Promise<T> {
-  return responsesComSchema<T>({
+  return responsesComSchemaOnce<T>({
     content: [{ type: "input_file", file_id: opts.fileId }],
     instrucao: opts.instrucao,
     systemPrompt: opts.systemPrompt,
     schema: opts.schema,
-    model: opts.model,
+    model: opts.model ?? modeloPipelinePrincipal(),
   });
 }
 
@@ -183,12 +252,12 @@ export async function responsesComImageSchema<T>(opts: {
   schema: JsonSchemaFormat;
   model?: string;
 }): Promise<T> {
-  return responsesComSchema<T>({
+  return responsesComSchemaOnce<T>({
     content: [{ type: "input_image", image_url: opts.imageDataUrl }],
     instrucao: opts.instrucao,
     systemPrompt: opts.systemPrompt,
     schema: opts.schema,
-    model: opts.model,
+    model: opts.model ?? modeloPipelinePrincipal(),
   });
 }
 
