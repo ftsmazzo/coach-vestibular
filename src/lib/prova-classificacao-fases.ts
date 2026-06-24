@@ -22,6 +22,8 @@ import {
   passoClassificacaoN3,
   type PayloadQuestaoCompleto,
 } from "@/lib/enem-classificar/classificar-pipeline-prova";
+import { CLASSIFICADOR_CATALOGO_V11 } from "@/lib/enem-classificar/classificar-catalogo-v11";
+import { versaoClassificacaoDisciplinaV10 } from "@/lib/enem-classificar/classificar-roteamento-disciplina";
 import { camposClassificacaoFromResultado } from "@/lib/canonical-question/persist-classificacao";
 import {
   labelsFromEscopoN2,
@@ -56,6 +58,7 @@ type QuestaoDb = {
   classificacaoN1Json: string | null;
   conhecimentoEscopoId: string | null;
   conhecimentoExigido: string | null;
+  classificacaoVersao: string | null;
 };
 
 function labelMateriaFromN1(n1: ClassificacaoN1): string {
