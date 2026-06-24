@@ -25,9 +25,8 @@ export async function POST(
     const resultado = await executarFaseN3Prova(provaId);
     await refreshProvaGabaritoFlag(provaId);
     return NextResponse.json({
-      ok: true,
-      fase: "N3",
       ...resultado,
+      fase: "N3",
       mensagem: `Fase N3: ${resultado.ok}/${resultado.processadas} com conhecimento exigido.`,
     });
   } catch (e) {

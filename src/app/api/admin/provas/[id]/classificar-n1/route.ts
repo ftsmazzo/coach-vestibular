@@ -25,9 +25,8 @@ export async function POST(
     const resultado = await executarFaseN1Prova(provaId);
     await refreshProvaGabaritoFlag(provaId);
     return NextResponse.json({
-      ok: true,
-      fase: "N1",
       ...resultado,
+      fase: "N1",
       mensagem: `Fase N1: ${resultado.ok}/${resultado.total} questões com catálogo destino.`,
     });
   } catch (e) {
