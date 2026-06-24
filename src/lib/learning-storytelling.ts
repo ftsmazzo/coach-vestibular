@@ -106,11 +106,15 @@ export function compararBaselineResultado(
   return mudancas;
 }
 
+export type CycleStoryInput = {
+  metaTitulo: string;
+  baselineJson?: string | null;
+  resultadoJson?: string | null;
+  storytellingJson?: string | null;
+};
+
 export function buildCycleStory(
-  cycle: Pick<
-    LearningCycle,
-    "metaTitulo" | "baselineJson" | "resultadoJson" | "storytellingJson"
-  >,
+  cycle: CycleStoryInput,
   context?: CycleContext
 ): CycleStory {
   if (cycle.storytellingJson?.trim()) {
