@@ -35,7 +35,10 @@ import {
   type MateriaNatureza,
   type TriagemNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
-import { triarQuestaoIA } from "@/lib/enem-classificar/triagem-ia";
+import {
+  fisicaPrevaleceSobreMatematica,
+  REGRA_FISICA_PREVALECE_ID,
+} from "@/lib/enem-classificar/fisica-vs-matematica";
 import type { ClassificacaoN1 } from "@/lib/classificacao-n1-types";
 import { CLASSIFICACAO_N1_VERSAO } from "@/lib/classificacao-n1-types";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
@@ -597,6 +600,31 @@ export async function executarN1Questao(
   let meta: MetaPipelineProva = { area };
 
   if (area === "exatas") {
+    const prev = fisicaPrevaleceSobreMatematica(textoCompleto(q));
+    if (prev.prevalece) {
+      const n1: ClassificacaoN1 = {
+        versao: CLASSIFICACAO_N1_VERSAO,
+        area: "natureza",
+        catalogoId: "fisica",
+        confianca: prev.confianca,
+        criterio: REGRA_FISICA_PREVALECE_ID,
+        justificativa:
+          `Área Exatas no bloco, mas fenômeno físico prevalece: ${prev.motivo}. ` +
+          "Não rotear para Matemática só por cálculo/gráfico/proporção.",
+        triagemNatureza: {
+          materia: "Física",
+          via: "heuristica",
+          motivo: prev.motivo,
+        },
+        classificadoEm,
+      };
+      etapas.push({
+        passo: "n1-cat",
+        detalhe: `Q${q.numero} → fisica (${REGRA_FISICA_PREVALECE_ID}, conf=${prev.confianca.toFixed(2)})`,
+      });
+      return { n1, etapas, avisos };
+    }
+
     const n1: ClassificacaoN1 = {
       versao: CLASSIFICACAO_N1_VERSAO,
       area,

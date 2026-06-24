@@ -1,11 +1,12 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.1",
+  "catalogVersion": "1.2.2",
   "materiaId": "quimica",
   "materiaLabel": "Química",
   "areaEnem": "Ciências da Natureza",
   "notas": "N0=área ENEM. Assunto=taxonomia Coach. N1=domínio. N2=escopo. N3=conhecimentoExigido livre por questão. Campos por escopo: descricao (cobre / NÃO cobre), keywords (fortes, peso 1.0), keywordsContexto (fracas, peso 0.4), exemplosEnunciado (referência semântica), negativeHints (termos que NÃO devem puxar a questão para cá), naoConfundirCom (IDs irmãos), regraDesempate, conceitoCanonic.",
   "changelog": [
+    "1.2.2: Refino desempate CO₂/metano vs política climática — negativeHints em escopos ambientais e sais/óxidos; crédito/mercado de carbono → Geografia (geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas).",
     "1.2.1: Correção textual no changelog do fallback; sem mudança estrutural de IDs.",
     "1.2.0: Padrão de schema unificado com Biologia v1.1+ — adicionados descricao, exemplosEnunciado, keywordsContexto, naoConfundirCom e regraDesempate a todos os escopos.",
     "1.2.0: Adicionado negativeHints (exclusão por termo) nos escopos de maior confusão (catálise, pilha x eletrólise, combustão x combustíveis, isomeria, Arrhenius x funções inorgânicas).",
@@ -545,10 +546,18 @@
                 "Indique o sal formado na reação entre ácido clorídrico e hidróxido de sódio."
               ],
               "naoConfundirCom": [
-                "quim.acidos_bases.reacoes.neutralizacao"
+                "quim.acidos_bases.reacoes.neutralizacao",
+                "geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas"
               ],
-              "regraDesempate": "Se o foco é classificar/nomear o sal ou óxido → aqui. Se é a reação de neutralização e seus cálculos → acidos_bases.reacoes.neutralizacao.",
-              "negativeHints": []
+              "regraDesempate": "Se o foco é classificar/nomear o sal ou óxido → aqui. Se é a reação de neutralização e seus cálculos → acidos_bases.reacoes.neutralizacao. Se CO₂/metano aparecem apenas como contexto de política climática ou crédito de carbono → Geografia.",
+              "negativeHints": [
+                "crédito de carbono",
+                "mercado de carbono",
+                "compensação de carbono",
+                "política climática",
+                "acordos climáticos",
+                "redução de emissões por projetos ambientais"
+              ]
             }
           ]
         }
@@ -1764,8 +1773,18 @@
               "exemplosEnunciado": [
                 "A chuva ácida resulta da reação entre água e óxidos de enxofre/nitrogênio, formando ácidos como..."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": []
+              "negativeHints": [
+                "crédito de carbono",
+                "mercado de carbono",
+                "compensação de carbono",
+                "política climática",
+                "acordos climáticos",
+                "redução de emissões por projetos ambientais"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas"
+              ],
+              "regraDesempate": "Se o foco é reação química de poluentes, propriedades ou formação de ácidos no ar → aqui. Se pergunta crédito/mercado de carbono, compensação de emissões ou política climática (mesmo citando CO₂/metano) → Geografia."
             },
             {
               "id": "quim.ambiental.poluicao.agua",
@@ -1867,9 +1886,18 @@
                 "O etanol é considerado combustível renovável porque o CO2 liberado é reabsorvido pela cana via..."
               ],
               "naoConfundirCom": [
-                "quim.termoquimica.entalpia.combustao"
+                "quim.termoquimica.entalpia.combustao",
+                "geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas"
               ],
-              "negativeHints": []
+              "negativeHints": [
+                "crédito de carbono",
+                "mercado de carbono",
+                "compensação de carbono",
+                "política climática",
+                "acordos climáticos",
+                "redução de emissões por projetos ambientais"
+              ],
+              "regraDesempate": "Se o foco é biocombustível, transesterificação ou balanço de carbono da produção → aqui. Se pergunta crédito/mercado de carbono, compensação de emissões ou instrumentos de política climática → Geografia."
             }
           ]
         }

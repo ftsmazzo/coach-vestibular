@@ -5,7 +5,11 @@ import { Button, Card } from "@/components/ui";
 import { inferirAreaBlocoPorMateria, normalizarAreaBloco, opcoesAreaBlocoAdmin } from "@/lib/areas-bloco";
 import { taxonomy } from "@/lib/taxonomy";
 import { parseClassificacaoN1, n1Completo } from "@/lib/classificacao-n1-types";
-import { opcoesCatalogoN1 } from "@/lib/catalogos-n1-destino";
+import { opcoesCatalogoN1, labelCatalogoN1, type OpcaoCatalogoN1 } from "@/lib/catalogos-n1-destino";
+import {
+  assuntoEhPlaceholderN1,
+  resolverCatalogoN1Questao,
+} from "@/lib/resolver-catalogo-n1-questao";
 import {
   marcarObservacoesConferidas,
   questaoConferidaPeloRevisor,
@@ -92,17 +96,24 @@ function rotaResumo(versao: string | null | undefined): string {
 }
 
 function formDeQuestao(q: QuestaoRow): FormEdicao {
-  const materia = q.materia;
-  const n1 = parseClassificacaoN1(q.classificacaoN1Json);
+  const catalogoN1 = resolverCatalogoN1Questao(q);
+  const materia =
+    catalogoN1 && opcoesCatalogoN1().some((o) => o.id === catalogoN1)
+      ? labelCatalogoN1(catalogoN1)
+      : q.materia;
   return {
-    catalogoN1: n1?.catalogoId ?? "",
+    catalogoN1,
     escopoN2: q.conhecimentoEscopoId?.trim() ?? "",
     areaBloco:
       normalizarAreaBloco(q.areaBloco, materia) ??
       inferirAreaBlocoPorMateria(materia) ??
       "",
-    materia: q.materia,
-    assunto: q.assunto,
+    materia,
+    assunto: assuntoEhPlaceholderN1(q.assunto)
+      ? q.conhecimentoEscopoId
+        ? q.assunto.replace(/^N1:\s*\S+/i, "").trim() || q.assunto
+        : q.assunto
+      : q.assunto,
     conhecimento: q.conhecimentoExigido ?? "",
     dificuldade: q.nivelDificuldade ?? "",
     observacoes: (q.observacoes ?? "").replace(/\[CONFERIDO\]\s*/gi, "").trim(),
@@ -127,19 +138,50 @@ export function AdminTabelaQuestoes({
   const [escoposN2, setEscoposN2] = useState<EscopoN2Opcao[]>([]);
   const [buscaEscopo, setBuscaEscopo] = useState("");
   const [carregandoEscopos, setCarregandoEscopos] = useState(false);
+  const [opcoesN1Api, setOpcoesN1Api] = useState<OpcaoCatalogoN1[]>([]);
 
   const materias = taxonomy.materias.map((m) => m.label);
   const opcoesArea = opcoesAreaBlocoAdmin();
-  const opcoesN1 = useMemo(() => opcoesCatalogoN1(), []);
+  const opcoesN1Base = useMemo(() => opcoesCatalogoN1(), []);
+  const opcoesN1 = opcoesN1Api.length > 0 ? opcoesN1Api : opcoesN1Base;
+
+  useEffect(() => {
+    fetch("/api/admin/catalogos/n1-destino")
+      .then((r) => r.json())
+      .then((data: { opcoes?: OpcaoCatalogoN1[] }) => {
+        if (data.opcoes?.length) setOpcoesN1Api(data.opcoes);
+      })
+      .catch(() => {
+        /* fallback local opcoesCatalogoN1 */
+      });
+  }, []);
+
+  const opcoesN1ComAtual = useMemo(() => {
+    const ids = new Set(opcoesN1.map((o) => o.id));
+    const atual = form?.catalogoN1?.trim();
+    if (atual && !ids.has(atual)) {
+      return [
+        ...opcoesN1,
+        {
+          id: atual,
+          label: `${atual} (valor atual)`,
+          area: "natureza" as const,
+          grupo: "Outros",
+        },
+      ];
+    }
+    return opcoesN1;
+  }, [opcoesN1, form?.catalogoN1]);
+
   const gruposN1 = useMemo(() => {
-    const map = new Map<string, typeof opcoesN1>();
-    for (const o of opcoesN1) {
+    const map = new Map<string, OpcaoCatalogoN1[]>();
+    for (const o of opcoesN1ComAtual) {
       const g = map.get(o.grupo) ?? [];
       g.push(o);
       map.set(o.grupo, g);
     }
     return map;
-  }, [opcoesN1]);
+  }, [opcoesN1ComAtual]);
 
   useEffect(() => {
     const cat = form?.catalogoN1?.trim();
@@ -238,8 +280,8 @@ export function AdminTabelaQuestoes({
     }
     setSalvando(true);
     onMensagem?.("");
-    const n1Anterior = parseClassificacaoN1(editando.classificacaoN1Json);
-    const n1Mudou = form.catalogoN1 !== (n1Anterior?.catalogoId ?? "");
+    const catalogoAnterior = resolverCatalogoN1Questao(editando);
+    const n1Mudou = form.catalogoN1.trim() !== catalogoAnterior;
     const escopoAnterior = editando.conhecimentoEscopoId?.trim() ?? "";
     const escopoMudou = form.escopoN2 !== escopoAnterior;
     try {
@@ -254,8 +296,8 @@ export function AdminTabelaQuestoes({
               ? form.escopoN2.trim() || null
               : undefined,
             areaBloco: form.areaBloco.trim() || null,
-            materia: form.materia.trim(),
-            assunto: form.assunto.trim(),
+            materia: n1Mudou ? undefined : form.materia.trim(),
+            assunto: n1Mudou || escopoMudou ? undefined : form.assunto.trim(),
             conhecimentoExigido:
               n1Mudou || escopoMudou ? null : form.conhecimento.trim() || null,
             nivelDificuldade: form.dificuldade.trim() || null,
@@ -389,7 +431,7 @@ export function AdminTabelaQuestoes({
                         )}
                       </td>
                       <td className="p-2 font-mono text-xs" title={n1?.justificativa ?? ""}>
-                        {n1?.catalogoId ?? "—"}
+                        {resolverCatalogoN1Questao(q) || "—"}
                       </td>
                       <td className="p-2">
                         <span
@@ -470,12 +512,21 @@ export function AdminTabelaQuestoes({
                 value={form.catalogoN1}
                 onChange={(e) => {
                   const catalogoN1 = e.target.value;
+                  const op = opcoesN1ComAtual.find((o) => o.id === catalogoN1);
                   setForm((f) =>
-                    f ? { ...f, catalogoN1, escopoN2: "" } : f
+                    f
+                      ? {
+                          ...f,
+                          catalogoN1,
+                          escopoN2: "",
+                          materia: op ? op.label : f.materia,
+                          assunto: op ? `N1: ${catalogoN1}` : f.assunto,
+                        }
+                      : f
                   );
                 }}
               >
-                <option value="">— Selecione —</option>
+                <option value="">— Selecione o catálogo —</option>
                 {[...gruposN1.entries()].map(([grupo, itens]) => (
                   <optgroup key={grupo} label={grupo}>
                     {itens.map((o) => (
@@ -486,8 +537,17 @@ export function AdminTabelaQuestoes({
                   </optgroup>
                 ))}
               </select>
+              {form.catalogoN1 && (
+                <code className="mt-1 block text-[10px] text-violet-800">
+                  {form.catalogoN1}
+                  {labelCatalogoN1(form.catalogoN1) !== form.catalogoN1
+                    ? ` · ${labelCatalogoN1(form.catalogoN1)}`
+                    : ""}
+                </code>
+              )}
               <span className="mt-1 block text-[11px] text-slate-500">
-                Alterar o N1 zera N2/N3 desta questão.
+                Escolha aqui para mudar de Química → Geografia etc. Alterar o N1 zera N2/N3 desta
+                questão. O campo «Assunto» abaixo não define o N1.
               </span>
             </label>
 
@@ -582,10 +642,14 @@ export function AdminTabelaQuestoes({
               </label>
               <label className="text-xs text-slate-600">
                 Assunto / label escopo
+                {assuntoEhPlaceholderN1(form.assunto) && !form.escopoN2 && (
+                  <span className="ml-1 text-amber-700">(placeholder N1 — use o dropdown acima)</span>
+                )}
                 <input
                   list="assuntos-modal"
-                  className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
+                  className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm disabled:bg-slate-100"
                   value={form.assunto}
+                  readOnly={assuntoEhPlaceholderN1(form.assunto) && !form.escopoN2}
                   onChange={(e) =>
                     setForm((f) => f && { ...f, assunto: e.target.value })
                   }

@@ -90,6 +90,10 @@ export async function triarLoteIA(
       "Biologia: seres vivos, corpo humano, ecologia, evolução, genética, microbiologia, botânica. " +
       "Química: átomos, ligações, reações, estequiometria, orgânica, soluções, pH. " +
       "Física: movimento, forças, energia, eletricidade, magnetismo, ondas, óptica, termodinâmica. " +
+      "REGRA CRÍTICA (fisica_prevalece_quando_ha_grandezas_e_fenomeno): se a questão usa números, " +
+      "equações, gráficos ou proporções para modelar grandezas físicas, unidades físicas, leis físicas " +
+      "ou fenômenos físicos (velocidade, força, energia, potência, empuxo, gás ideal, óptica, etc.), " +
+      "classifique como Física — NÃO escolha null por parecer 'matematizada'. " +
       "Use null só se realmente não der para distinguir. Prefira a matéria dominante do conteúdo exigido.",
     instrucao:
       items.length === 1

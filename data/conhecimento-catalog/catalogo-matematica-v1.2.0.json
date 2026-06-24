@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.1",
+  "catalogVersion": "1.2.2",
   "materiaId": "matematica",
   "materiaLabel": "Matemática",
   "areaEnem": "Matemática e suas Tecnologias",
@@ -19,12 +19,16 @@
       "nota": "Matemática deve ser classificada pelo método de resolução, não pelo cenário textual. Retornar secundário quando houver combinação real de modelos (ex.: porcentagem + função exponencial)."
     },
     "politicaN3": "A IA escolhe APENAS IDs em N0–N2. Em N3 (conhecimentoExigido) PROPÕE texto livre para revisão humana; N3 nunca é um ID.",
-    "regraDesempate": "Se ≥2 escopos irmãos disparam, aplicar negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confiança < confiancaMinima → mat.__nao_classificado.",
+    "regraDesempate": "Se ≥2 escopos irmãos disparam, aplicar negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confiança < confiancaMinima → mat.__nao_classificado. Não classifique aqui se houver grandezas/unidades/leis físicas (fisica_prevalece_quando_ha_grandezas_e_fenomeno) — cálculo, gráfico ou proporção sozinhos não bastam.",
     "pesos": {
-      "keywords": 1.0,
+      "keywords": 1,
       "keywordsContexto": 0.4,
       "exemplosEnunciado": "referência semântica (similaridade), não match literal",
       "negativeHints": "penalidade: presença do termo reduz a probabilidade deste escopo"
+    },
+    "fisicaPrevalece": {
+      "regraId": "fisica_prevalece_quando_ha_grandezas_e_fenomeno",
+      "nota": "Se números, equações, gráficos ou proporções modelam grandezas físicas, unidades físicas, leis ou fenômenos físicos, NÃO classifique como Matemática. Só Matemática quando o objeto central for estrutura matemática abstrata sem fenômeno físico como núcleo."
     }
   },
   "assuntos": [
@@ -52,8 +56,31 @@
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar operações com números reais para chegar à alternativa correta."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "velocidade média",
+                "km/h",
+                "força resultante",
+                "satélite",
+                "órbita",
+                "força gravitacional",
+                "empuxo",
+                "volume submerso",
+                "dilatação térmica",
+                "gás ideal",
+                "pV=nRT",
+                "espelho plano",
+                "potência elétrica",
+                "kWh",
+                "campo magnético",
+                "próton",
+                "fóton",
+                "Planck",
+                "efeito fotoelétrico"
+              ],
+              "naoConfundirCom": [
+                "fis.mecanica.cinematica.mru",
+                "fis.mecanica.cinematica.graficos"
+              ],
               "keywordsContexto": []
             },
             {
@@ -73,11 +100,32 @@
               ],
               "negativeHints": [
                 "função afim",
-                "coeficiente angular"
+                "coeficiente angular",
+                "velocidade média",
+                "km/h",
+                "força resultante",
+                "satélite",
+                "órbita",
+                "força gravitacional",
+                "empuxo",
+                "volume submerso",
+                "dilatação térmica",
+                "gás ideal",
+                "pV=nRT",
+                "espelho plano",
+                "potência elétrica",
+                "kWh",
+                "campo magnético",
+                "próton",
+                "fóton",
+                "Planck",
+                "efeito fotoelétrico"
               ],
               "naoConfundirCom": [
                 "mat.funcoes.geral.afim",
-                "mat.aritmetica.numeros.porcentagem"
+                "mat.aritmetica.numeros.porcentagem",
+                "fis.mecanica.cinematica.mru",
+                "fis.mecanica.cinematica.graficos"
               ],
               "keywordsContexto": [],
               "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
@@ -100,11 +148,32 @@
               ],
               "negativeHints": [
                 "juros compostos",
-                "crescimento exponencial"
+                "crescimento exponencial",
+                "velocidade média",
+                "km/h",
+                "força resultante",
+                "satélite",
+                "órbita",
+                "força gravitacional",
+                "empuxo",
+                "volume submerso",
+                "dilatação térmica",
+                "gás ideal",
+                "pV=nRT",
+                "espelho plano",
+                "potência elétrica",
+                "kWh",
+                "campo magnético",
+                "próton",
+                "fóton",
+                "Planck",
+                "efeito fotoelétrico"
               ],
               "naoConfundirCom": [
                 "mat.financeira.juros.compostos",
-                "mat.funcoes.geral.exponencial"
+                "mat.funcoes.geral.exponencial",
+                "fis.mecanica.cinematica.mru",
+                "fis.mecanica.cinematica.graficos"
               ],
               "keywordsContexto": [],
               "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
@@ -165,8 +234,31 @@
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar potenciação e propriedades para chegar à alternativa correta."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "velocidade média",
+                "km/h",
+                "força resultante",
+                "satélite",
+                "órbita",
+                "força gravitacional",
+                "empuxo",
+                "volume submerso",
+                "dilatação térmica",
+                "gás ideal",
+                "pV=nRT",
+                "espelho plano",
+                "potência elétrica",
+                "kWh",
+                "campo magnético",
+                "próton",
+                "fóton",
+                "Planck",
+                "efeito fotoelétrico"
+              ],
+              "naoConfundirCom": [
+                "fis.mecanica.cinematica.mru",
+                "fis.mecanica.cinematica.graficos"
+              ],
               "keywordsContexto": []
             },
             {
@@ -214,8 +306,31 @@
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar equações do 1º grau para chegar à alternativa correta."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "velocidade média",
+                "km/h",
+                "força resultante",
+                "satélite",
+                "órbita",
+                "força gravitacional",
+                "empuxo",
+                "volume submerso",
+                "dilatação térmica",
+                "gás ideal",
+                "pV=nRT",
+                "espelho plano",
+                "potência elétrica",
+                "kWh",
+                "campo magnético",
+                "próton",
+                "fóton",
+                "Planck",
+                "efeito fotoelétrico"
+              ],
+              "naoConfundirCom": [
+                "fis.mecanica.cinematica.mru",
+                "fis.mecanica.cinematica.graficos"
+              ],
               "keywordsContexto": []
             },
             {
@@ -233,8 +348,31 @@
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar equações do 2º grau para chegar à alternativa correta."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "velocidade média",
+                "km/h",
+                "força resultante",
+                "satélite",
+                "órbita",
+                "força gravitacional",
+                "empuxo",
+                "volume submerso",
+                "dilatação térmica",
+                "gás ideal",
+                "pV=nRT",
+                "espelho plano",
+                "potência elétrica",
+                "kWh",
+                "campo magnético",
+                "próton",
+                "fóton",
+                "Planck",
+                "efeito fotoelétrico"
+              ],
+              "naoConfundirCom": [
+                "fis.mecanica.cinematica.mru",
+                "fis.mecanica.cinematica.graficos"
+              ],
               "keywordsContexto": []
             },
             {
@@ -342,8 +480,31 @@
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar domínio, imagem e gráfico para chegar à alternativa correta."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "velocidade média",
+                "km/h",
+                "força resultante",
+                "satélite",
+                "órbita",
+                "força gravitacional",
+                "empuxo",
+                "volume submerso",
+                "dilatação térmica",
+                "gás ideal",
+                "pV=nRT",
+                "espelho plano",
+                "potência elétrica",
+                "kWh",
+                "campo magnético",
+                "próton",
+                "fóton",
+                "Planck",
+                "efeito fotoelétrico"
+              ],
+              "naoConfundirCom": [
+                "fis.mecanica.cinematica.mru",
+                "fis.mecanica.cinematica.graficos"
+              ],
               "keywordsContexto": []
             },
             {
@@ -362,11 +523,32 @@
               ],
               "negativeHints": [
                 "proporção simples",
-                "regra de três"
+                "regra de três",
+                "velocidade média",
+                "km/h",
+                "força resultante",
+                "satélite",
+                "órbita",
+                "força gravitacional",
+                "empuxo",
+                "volume submerso",
+                "dilatação térmica",
+                "gás ideal",
+                "pV=nRT",
+                "espelho plano",
+                "potência elétrica",
+                "kWh",
+                "campo magnético",
+                "próton",
+                "fóton",
+                "Planck",
+                "efeito fotoelétrico"
               ],
               "naoConfundirCom": [
                 "mat.aritmetica.numeros.razao_proporcao",
-                "mat.progressoes.sequencias.pa"
+                "mat.progressoes.sequencias.pa",
+                "fis.mecanica.cinematica.mru",
+                "fis.mecanica.cinematica.graficos"
               ],
               "keywordsContexto": [],
               "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
@@ -1107,8 +1289,31 @@
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar gráficos estatísticos para chegar à alternativa correta."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "velocidade média",
+                "km/h",
+                "força resultante",
+                "satélite",
+                "órbita",
+                "força gravitacional",
+                "empuxo",
+                "volume submerso",
+                "dilatação térmica",
+                "gás ideal",
+                "pV=nRT",
+                "espelho plano",
+                "potência elétrica",
+                "kWh",
+                "campo magnético",
+                "próton",
+                "fóton",
+                "Planck",
+                "efeito fotoelétrico"
+              ],
+              "naoConfundirCom": [
+                "fis.mecanica.cinematica.mru",
+                "fis.mecanica.cinematica.graficos"
+              ],
               "keywordsContexto": []
             },
             {
@@ -1133,8 +1338,31 @@
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar leitura de tabelas e gráficos (decisão) para chegar à alternativa correta."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "velocidade média",
+                "km/h",
+                "força resultante",
+                "satélite",
+                "órbita",
+                "força gravitacional",
+                "empuxo",
+                "volume submerso",
+                "dilatação térmica",
+                "gás ideal",
+                "pV=nRT",
+                "espelho plano",
+                "potência elétrica",
+                "kWh",
+                "campo magnético",
+                "próton",
+                "fóton",
+                "Planck",
+                "efeito fotoelétrico"
+              ],
+              "naoConfundirCom": [
+                "fis.mecanica.cinematica.mru",
+                "fis.mecanica.cinematica.graficos"
+              ],
               "keywordsContexto": []
             }
           ]
@@ -1457,6 +1685,7 @@
     }
   ],
   "changelog": [
+    "1.2.2: Desempate Física×Matemática (fisica_prevalece_quando_ha_grandezas_e_fenomeno) — negativeHints em escopos aritmética/funções/gráficos que roubavam Física matematizada.",
     "1.2.1: Novo domínio geometria_espacial.metricas e escopo distancia_pontos_cubo (distância entre pontos/vértices em cubo via Pitágoras). Refino de desempate em prisma_cubo, pitagoras e distancia_ponto.",
     "1.2.0: Refatoração para o padrão Química v1.2 — descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate em escopos críticos.",
     "1.2.0: confiancaMinima elevada para 0.45; documentadas regras de multiLabel, política N3, pesos e fallback mat.__nao_classificado."

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.0.1",
   "materiaId": "geografia",
   "materiaLabel": "Geografia",
   "areaEnem": "Ciências Humanas e suas Tecnologias",
@@ -328,33 +328,62 @@
             {
               "id": "geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas",
               "label": "Mudanças climáticas e efeito estufa",
-              "descricao": "Cobre aquecimento global, gases de efeito estufa, política climática, vulnerabilidade territorial e acordos climáticos. NÃO cobre tempo atmosférico cotidiano sem escala climática.",
+              "descricao": "Cobre aquecimento global, gases de efeito estufa, política climática, mercado/crédito de carbono, mitigação e acordos climáticos. NÃO cobre propriedades químicas do CO₂, reações, estequiometria ou estrutura molecular — termos químicos podem aparecer como contexto. NÃO cobre tempo atmosférico cotidiano sem escala climática.",
               "keywords": [
                 "mudanças climáticas",
                 "aquecimento global",
                 "efeito estufa",
                 "gases de efeito estufa",
                 "Acordo de Paris",
-                "Protocolo de Kyoto"
+                "Protocolo de Kyoto",
+                "crédito de carbono",
+                "mercado de carbono",
+                "compensação de carbono",
+                "compensações de carbono",
+                "redução de emissões",
+                "emissões de carbono",
+                "mitigação climática"
               ],
               "keywordsContexto": [
                 "emissões",
                 "carbono",
                 "adaptação",
-                "mitigação"
+                "mitigação",
+                "dióxido de carbono",
+                "CO2",
+                "metano",
+                "aterros sanitários",
+                "energia renovável",
+                "eficiência energética",
+                "reflorestamento",
+                "captura de metano",
+                "tonelada de dióxido de carbono",
+                "projetos ambientais"
               ],
               "exemplosEnunciado": [
-                "Uma questão exige aplicar mudanças climáticas e efeito estufa para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+                "Uma questão exige aplicar mudanças climáticas e efeito estufa para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico.",
+                "O que é crédito de carbono e como funciona a compensação de emissões de gases de efeito estufa em projetos ambientais?"
               ],
               "negativeHints": [
                 "frente fria",
                 "massa de ar",
-                "tempo atmosférico"
+                "tempo atmosférico",
+                "reação química",
+                "estequiometria",
+                "massa molar",
+                "concentração molar",
+                "estrutura molecular",
+                "geometria molecular",
+                "ligações químicas",
+                "balanceamento químico"
               ],
               "naoConfundirCom": [
-                "geo.fisica_ambiental.climatologia.tempo_clima"
+                "geo.fisica_ambiental.climatologia.tempo_clima",
+                "quim.ambiental.poluicao.atmosferica",
+                "quim.ambiental.combustiveis.renovavel",
+                "quim.inorganica.funcoes.sais_oxidos"
               ],
-              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "regraDesempate": "Se a questão pergunta o que é crédito de carbono, mercado de carbono, compensação de carbono, redução de emissões ou política climática, classifique aqui, mesmo que apareçam termos químicos como CO₂, dióxido de carbono ou metano. Só classifique como Química se a resolução exigir propriedades químicas, reações, cálculos, estrutura molecular ou transformação da matéria. Classifique aqui quando o procedimento central for geográfico-ambiental: política climática, mitigação, compensação de emissões ou impactos territoriais.",
               "conceitoCanonic": "mudancas_climaticas"
             },
             {

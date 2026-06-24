@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.0",
+  "catalogVersion": "1.2.1",
   "materiaId": "fisica",
   "materiaLabel": "Física",
   "areaEnem": "Ciências da Natureza",
@@ -21,10 +21,14 @@
     "politicaN3": "A IA escolhe APENAS IDs em N0–N2. Em N3 (conhecimentoExigido) PROPÕE texto livre para revisão humana; N3 nunca é um ID.",
     "regraDesempate": "Se ≥2 escopos irmãos disparam, aplicar negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confiança < confiancaMinima → fis.__nao_classificado.",
     "pesos": {
-      "keywords": 1.0,
+      "keywords": 1,
       "keywordsContexto": 0.4,
       "exemplosEnunciado": "referência semântica (similaridade), não match literal",
       "negativeHints": "penalidade: presença do termo reduz a probabilidade deste escopo"
+    },
+    "fisicaPrevalece": {
+      "regraId": "fisica_prevalece_quando_ha_grandezas_e_fenomeno",
+      "nota": "Muitas questões usam cálculo, gráficos, proporções, porcentagens, fórmulas e álgebra. Isso NÃO transforma a questão em Matemática. Classifique como Física quando o conhecimento exigido envolver grandezas físicas, unidades físicas, leis físicas ou interpretação de fenômenos físicos."
     }
   },
   "assuntos": [
@@ -1586,6 +1590,7 @@
     }
   ],
   "changelog": [
+    "1.2.1: Regra global fisica_prevalece_quando_ha_grandezas_e_fenomeno — Física matematizada (FAMERP) não deve ir para Matemática no N1/N2.",
     "1.2.0: Refatoração para o padrão Química v1.2 — descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate em escopos críticos.",
     "1.2.0: confiancaMinima elevada para 0.45; documentadas regras de multiLabel, política N3, pesos e fallback fis.__nao_classificado."
   ]

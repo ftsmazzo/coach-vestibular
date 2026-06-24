@@ -135,10 +135,18 @@ export async function PATCH(
 
   const materiaFinal =
     (n2Patch.materia as string | undefined) ??
-    (body.materia != null ? materia : n1Manual ? labelCatalogoN1(n1Manual.catalogoId) : existente.materia);
+    (n1Manual
+      ? labelCatalogoN1(n1Manual.catalogoId)
+      : body.materia != null
+        ? materia
+        : existente.materia);
   const assuntoFinal =
     (n2Patch.assunto as string | undefined) ??
-    (body.assunto != null ? assunto : n1Manual ? `N1: ${n1Manual.catalogoId}` : existente.assunto);
+    (n1Manual
+      ? `N1: ${n1Manual.catalogoId}`
+      : body.assunto != null
+        ? assunto
+        : existente.assunto);
 
   const atualizada = await prisma.provaQuestao.update({
     where: { id: questaoIdEfetivo },
