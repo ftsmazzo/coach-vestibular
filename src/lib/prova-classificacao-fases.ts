@@ -211,8 +211,9 @@ export async function executarFaseN2Prova(provaId: string): Promise<ResultadoFas
 
   const semN1 = questoes.filter((q) => !n1Completo(parseClassificacaoN1(q.classificacaoN1Json)));
   if (semN1.length > 0) {
-    avisos.push(
-      `${semN1.length} questão(ões) sem N1 — rode a Fase N1 primeiro ou corrija manualmente.`
+    throw new Error(
+      `N1 incompleto: ${semN1.length}/${questoes.length} questão(ões) sem catálogo destino. ` +
+        `Complete e valide o N1 em todas antes de rodar N2 — o N2 usa mat/bio/hist… definido no N1.`
     );
   }
 
@@ -276,13 +277,18 @@ export async function executarFaseN3Prova(provaId: string): Promise<ResultadoFas
   let ok = 0;
   let processadas = 0;
 
+  const semN2 = questoes.filter((q) => !q.conhecimentoEscopoId?.trim());
+  if (semN2.length > 0) {
+    throw new Error(
+      `N2 incompleto: ${semN2.length}/${questoes.length} questão(ões) sem escopo. ` +
+        `Rode e valide o N2 em todas antes do N3.`
+    );
+  }
+
   for (const q of questoes) {
     const n1 = parseClassificacaoN1(q.classificacaoN1Json);
     const escopoId = q.conhecimentoEscopoId?.trim();
-    if (!n1Completo(n1) || !n1 || !escopoId) {
-      if (!escopoId) avisos.push(`Q${q.numero}: sem escopo N2 — rode Fase N2.`);
-      continue;
-    }
+    if (!n1Completo(n1) || !n1 || !escopoId) continue;
 
     const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined);
     const meta = metaFromClassificacaoN1(n1);

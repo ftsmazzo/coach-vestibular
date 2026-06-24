@@ -40,6 +40,11 @@ export function AdminClassificacaoProva({
   const [rodando, setRodando] = useState<Fase | null>(null);
   const [ultimo, setUltimo] = useState<ResultadoFase | null>(null);
 
+  const n1CompletoTodas = totalQuestoes > 0 && comN1 === totalQuestoes;
+  const n2CompletoTodas =
+    totalQuestoes > 0 && comN2Real + comN2Fallback === totalQuestoes;
+  const faltamN1 = totalQuestoes - comN1;
+
   async function rodarFase(fase: Fase) {
     setRodando(fase);
     setUltimo(null);
@@ -76,9 +81,10 @@ export function AdminClassificacaoProva({
     <Card className="border-violet-200 bg-violet-50/40">
       <h2 className="mb-2 font-semibold text-violet-900">Passo 5 — Classificação em 3 fases</h2>
       <p className="text-sm text-violet-800">
-        <strong>N1</strong> roteamento → valide na tabela → <strong>N2</strong> escopo no catálogo →
-        valide → <strong>N3</strong> conhecimento exigido. Uma fase por vez; cada fase grava no banco
-        antes da próxima. Texto integral; 1 questão = 1 chamada IA por fase.
+        Fluxo sequencial: <strong>N1</strong> define o catálogo destino (mat, bio, hist…) em{" "}
+        <em>todas</em> as questões → você valida → <strong>N2</strong> classifica o escopo dentro
+        desse catálogo → valida → <strong>N3</strong> conhecimento exigido. Uma fase por vez; 1
+        questão = 1 chamada IA por fase.
       </p>
 
       <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2 lg:grid-cols-5">
@@ -86,7 +92,10 @@ export function AdminClassificacaoProva({
           Total: <strong>{totalQuestoes}</strong>
         </span>
         <span>
-          N1 ok: <strong className="text-violet-700">{comN1}</strong>
+          N1 ok:{" "}
+          <strong className={n1CompletoTodas ? "text-emerald-700" : "text-violet-700"}>
+            {comN1}/{totalQuestoes}
+          </strong>
         </span>
         <span>
           N2 real: <strong className="text-emerald-700">{comN2Real}</strong>
@@ -110,7 +119,7 @@ export function AdminClassificacaoProva({
         <Button
           type="button"
           variant="secondary"
-          disabled={rodando !== null || totalQuestoes === 0 || comN1 === 0}
+          disabled={rodando !== null || totalQuestoes === 0 || !n1CompletoTodas}
           onClick={() => rodarFase("N2")}
         >
           {rodando === "N2" ? "N2 rodando…" : "2 · Rodar N2 (escopo)"}
@@ -118,25 +127,28 @@ export function AdminClassificacaoProva({
         <Button
           type="button"
           variant="secondary"
-          disabled={
-            rodando !== null ||
-            totalQuestoes === 0 ||
-            comN2Real + comN2Fallback === 0
-          }
+          disabled={rodando !== null || totalQuestoes === 0 || !n2CompletoTodas}
           onClick={() => rodarFase("N3")}
         >
           {rodando === "N3" ? "N3 rodando…" : "3 · Rodar N3 (conhecimento)"}
         </Button>
       </div>
 
-      {comN1 === 0 && (
+      {faltamN1 > 0 && (
         <p className="mt-2 text-xs text-amber-800">
-          Comece pela Fase N1. Só rode N2 depois de revisar o catálogo destino na tabela.
+          Fase atual: <strong>N1</strong>. Faltam {faltamN1} questão(ões) — use «Sem N1» na tabela
+          ou edite manualmente. Só libera N2 quando {comN1}/{totalQuestoes} tiverem catálogo destino.
         </p>
       )}
-      {comN1 > 0 && comN2Real + comN2Fallback === 0 && (
-        <p className="mt-2 text-xs text-amber-800">
-          N1 gravado. Revise e rode N2.
+      {n1CompletoTodas && !n2CompletoTodas && (
+        <p className="mt-2 text-xs text-emerald-800">
+          N1 completo em todas. Revise a coluna «N1 catálogo» e rode N2 — a IA já sabe se é mat,
+          bio, hist… e classifica o escopo dentro desse catálogo.
+        </p>
+      )}
+      {n2CompletoTodas && comN3 < totalQuestoes && (
+        <p className="mt-2 text-xs text-emerald-800">
+          N2 completo. Revise escopos na tabela e rode N3.
         </p>
       )}
 
