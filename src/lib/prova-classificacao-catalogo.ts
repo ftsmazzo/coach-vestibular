@@ -324,6 +324,20 @@ export async function classificarRowsProvaComCatalogo(
 }
 
 /** Reclassificação unitária na auditoria — catálogo N2 (substitui taxonomy legada). */
+export type QuestaoProvaClassificadaCatalogo = QuestaoExtraida &
+  Pick<
+    ProvaQuestaoRow,
+    | "idiomaVariante"
+    | "enunciado"
+    | "gabarito"
+    | "conhecimentoEscopoId"
+    | "conhecimentoDominioId"
+    | "classificacaoVersao"
+    | "classificacaoConfianca"
+    | "classificacaoSecundariosJson"
+    | "conceitosCanonicosJson"
+  >;
+
 export async function classificarQuestaoProvaComCatalogo(input: {
   numero: number;
   idiomaVariante?: IdiomaVarianteQuestao;
@@ -333,7 +347,7 @@ export async function classificarQuestaoProvaComCatalogo(input: {
   gabarito?: string | null;
   banca?: string | null;
   observacoes?: string | null;
-}): Promise<QuestaoExtraida & ProvaQuestaoRow> {
+}): Promise<QuestaoProvaClassificadaCatalogo> {
   const textoBase = input.trechoEnunciado.trim();
   const textoCatalogo = input.observacoes?.trim()
     ? `${input.observacoes.trim()}\n\n${textoBase}`
@@ -360,19 +374,19 @@ export async function classificarQuestaoProvaComCatalogo(input: {
     trechoEnunciado: input.trechoEnunciado.trim(),
     materia: classificada.materia,
     assunto: classificada.assunto,
-    areaBloco: classificada.areaBloco ?? null,
-    conhecimentoExigido: classificada.conhecimentoExigido ?? null,
-    nivelDificuldade: classificada.nivelDificuldade ?? null,
-    observacoes: classificada.observacoes ?? input.observacoes ?? null,
+    areaBloco: classificada.areaBloco,
+    conhecimentoExigido: classificada.conhecimentoExigido,
+    nivelDificuldade: classificada.nivelDificuldade,
+    observacoes: classificada.observacoes ?? input.observacoes?.trim() ?? undefined,
     idiomaVariante: classificada.idiomaVariante,
     enunciado: classificada.enunciado,
     gabarito: classificada.gabarito,
-    conhecimentoEscopoId: classificada.conhecimentoEscopoId,
-    conhecimentoDominioId: classificada.conhecimentoDominioId,
-    classificacaoVersao: classificada.classificacaoVersao,
-    classificacaoConfianca: classificada.classificacaoConfianca,
-    classificacaoSecundariosJson: classificada.classificacaoSecundariosJson,
-    conceitosCanonicosJson: classificada.conceitosCanonicosJson,
+    conhecimentoEscopoId: classificada.conhecimentoEscopoId ?? undefined,
+    conhecimentoDominioId: classificada.conhecimentoDominioId ?? undefined,
+    classificacaoVersao: classificada.classificacaoVersao ?? undefined,
+    classificacaoConfianca: classificada.classificacaoConfianca ?? undefined,
+    classificacaoSecundariosJson: classificada.classificacaoSecundariosJson ?? undefined,
+    conceitosCanonicosJson: classificada.conceitosCanonicosJson ?? undefined,
   };
 }
 
