@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.0",
+  "catalogVersion": "1.2.1",
   "materiaId": "matematica",
   "materiaLabel": "Matemática",
   "areaEnem": "Matemática e suas Tecnologias",
@@ -564,12 +564,22 @@
                 "catetos",
                 "triângulo retângulo"
               ],
-              "descricao": "Questões que exigem procedimento matemático de teorema de pitágoras. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "descricao": "Teorema de Pitágoras em triângulo retângulo no plano, sem contexto de sólido 3D. NÃO cobre distância entre pontos em cubo/paralelepípedo nem distância com coordenadas cartesianas.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar teorema de pitágoras para chegar à alternativa correta."
+                "Num triângulo retângulo, os catetos medem 3 cm e 4 cm. Determine a hipotenusa."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "cubo",
+                "paralelepípedo",
+                "face do cubo",
+                "diagonal espacial",
+                "plano cartesiano"
+              ],
+              "naoConfundirCom": [
+                "mat.geometria_espacial.metricas.distancia_pontos_cubo",
+                "mat.geometria_analitica.plano.distancia_ponto"
+              ],
+              "regraDesempate": "Se há sólido (cubo/paralelepípedo) e distância entre pontos no sólido → mat.geometria_espacial.metricas.distancia_pontos_cubo. Se há coordenadas no plano → geometria analítica. Se é triângulo retângulo plano isolado → aqui.",
               "keywordsContexto": []
             },
             {
@@ -630,19 +640,37 @@
                 "paralelepípedo",
                 "volume do prisma",
                 "área total",
+                "área lateral",
                 "caixa de papelão",
                 "mudança",
                 "encaixar",
-                "aresta",
-                "espaço livre"
+                "espaço livre",
+                "capacidade"
               ],
-              "descricao": "Questões que exigem procedimento matemático de prisma e cubo. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "descricao": "Volume, área total ou área lateral de prisma, cubo ou paralelepípedo; encaixe ou capacidade volumétrica. NÃO cobre distância/comprimento de segmentos entre pontos, vértices ou pontos em arestas/faces do sólido.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar prisma e cubo para chegar à alternativa correta."
+                "Calcule o volume de um paralelepípedo retângulo com dimensões dadas.",
+                "Determine a área total de papelão necessária para confeccionar uma caixa cúbica."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "distância entre pontos",
+                "distancia AP",
+                "comprimento do segmento",
+                "diagonal da face",
+                "diagonal espacial",
+                "razão na aresta",
+                "ponto na aresta",
+                "pitágoras",
+                "pitagoras"
+              ],
+              "naoConfundirCom": [
+                "mat.geometria_espacial.metricas.distancia_pontos_cubo"
+              ],
+              "regraDesempate": "Se pede volume ou área de superfície → aqui. Se pede distância/comprimento entre pontos, vértices ou pontos em arestas/faces do cubo → mat.geometria_espacial.metricas.distancia_pontos_cubo.",
+              "keywordsContexto": [
+                "aresta",
+                "dimensões"
+              ]
             },
             {
               "id": "mat.geometria_espacial.solidos.cilindro",
@@ -736,6 +764,63 @@
               "keywordsContexto": []
             }
           ]
+        },
+        {
+          "id": "mat.geometria_espacial.metricas",
+          "label": "Relações métricas em sólidos",
+          "escopos": [
+            {
+              "id": "mat.geometria_espacial.metricas.distancia_pontos_cubo",
+              "label": "Distância entre pontos em cubo ou paralelepípedo",
+              "keywords": [
+                "distância",
+                "distancia",
+                "cubo",
+                "paralelepípedo",
+                "paralelepipedo",
+                "aresta",
+                "vértice",
+                "vertice",
+                "face do cubo",
+                "diagonal da face",
+                "diagonal espacial",
+                "pitágoras",
+                "pitagoras",
+                "razão na aresta",
+                "ponto na aresta",
+                "segmento AP",
+                "comprimento AP"
+              ],
+              "keywordsContexto": [
+                "triângulo retângulo",
+                "decomposição",
+                "comprimento",
+                "medida",
+                "sólido"
+              ],
+              "descricao": "Cobre cálculo de distância entre pontos, vértices ou pontos em arestas/faces de cubo ou paralelepípedo, usando decomposição em triângulos retângulos, razão em arestas, diagonal de face, diagonal espacial ou Teorema de Pitágoras. NÃO cobre volume, área total, planificação, nem distância entre pontos no plano cartesiano abstrato.",
+              "exemplosEnunciado": [
+                "Num cubo de aresta a, P divide uma aresta na razão 1:3. Calcule a distância AP, onde A é vértice da mesma face.",
+                "Dados vértices de um paralelepípedo retângulo, determine o comprimento de um segmento ligando um ponto de uma aresta a um vértice em outra face."
+              ],
+              "negativeHints": [
+                "volume",
+                "área total",
+                "área da superfície",
+                "planificação",
+                "plano cartesiano",
+                "coordenadas x",
+                "coordenadas y"
+              ],
+              "naoConfundirCom": [
+                "mat.geometria_espacial.solidos.prisma_cubo",
+                "mat.geometria_plana.relacoes.pitagoras",
+                "mat.geometria_analitica.plano.distancia_ponto",
+                "mat.aritmetica.numeros.razao_proporcao"
+              ],
+              "regraDesempate": "Se o sólido é cubo/paralelepípedo e a pergunta pede distância/comprimento de segmento entre pontos, vértices ou pontos em arestas/faces, classifique aqui. Se pede volume ou área de superfície, use prisma_cubo. Se é triângulo retângulo plano sem sólido, use Pitágoras em geometria plana. Se há coordenadas no plano cartesiano, use distância entre pontos em geometria analítica."
+            }
+          ]
         }
       ]
     },
@@ -756,12 +841,22 @@
                 "coordenadas",
                 "d=√"
               ],
-              "descricao": "Questões que exigem procedimento matemático de distância entre pontos. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "descricao": "Distância entre dois pontos dados por coordenadas no plano cartesiano (fórmula d=√((x₂−x₁)²+(y₂−y₁)²)). NÃO cobre distância em sólidos 3D (cubo, paralelepípedo).",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar distância entre pontos para chegar à alternativa correta."
+                "Calcule a distância entre A(1, 2) e B(4, 6) no plano cartesiano."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "cubo",
+                "paralelepípedo",
+                "face do cubo",
+                "aresta do cubo",
+                "diagonal espacial"
+              ],
+              "naoConfundirCom": [
+                "mat.geometria_espacial.metricas.distancia_pontos_cubo",
+                "mat.geometria_plana.relacoes.pitagoras"
+              ],
+              "regraDesempate": "Se há coordenadas (x, y) no plano → aqui. Se o contexto é cubo/paralelepípedo com segmentos no sólido → mat.geometria_espacial.metricas.distancia_pontos_cubo.",
               "keywordsContexto": []
             },
             {
@@ -1362,6 +1457,7 @@
     }
   ],
   "changelog": [
+    "1.2.1: Novo domínio geometria_espacial.metricas e escopo distancia_pontos_cubo (distância entre pontos/vértices em cubo via Pitágoras). Refino de desempate em prisma_cubo, pitagoras e distancia_ponto.",
     "1.2.0: Refatoração para o padrão Química v1.2 — descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate em escopos críticos.",
     "1.2.0: confiancaMinima elevada para 0.45; documentadas regras de multiLabel, política N3, pesos e fallback mat.__nao_classificado."
   ]
