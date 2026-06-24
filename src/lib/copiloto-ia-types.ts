@@ -11,6 +11,11 @@ export type QuestGerada = {
   ordem: number;
   rotulo: string;
   materiaId?: string;
+  conhecimentoEscopoId?: string;
+  conhecimentoDominioId?: string;
+  conceitosCanonicosJson?: string;
+  fonteDiagnosticoJson?: string;
+  tipoQuest?: string;
 };
 
 /** Narrativa humana gravada para a Home e o Plano (não regenera no render). */

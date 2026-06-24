@@ -450,6 +450,11 @@ export async function persistirQuestsIA(
         q.rotulo
       ),
       materiaId: q.materiaId,
+      conhecimentoEscopoId: q.conhecimentoEscopoId ?? null,
+      conhecimentoDominioId: q.conhecimentoDominioId ?? null,
+      conceitosCanonicosJson: q.conceitosCanonicosJson ?? null,
+      fonteDiagnosticoJson: q.fonteDiagnosticoJson ?? null,
+      tipoQuest: q.tipoQuest ?? null,
       duracaoMin: q.duracaoMin,
       rewardMsg: "Passo a passo feito com correção vale mais que lista sem olhar o erro.",
     })),

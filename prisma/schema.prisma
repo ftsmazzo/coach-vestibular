@@ -326,10 +326,25 @@ model QuestionAttempt {
   numero         Int
   correto        Boolean
   respostaAluno  String?
+
+  /// legado/UI
   materiaId      String?
   temaId         String?
-  tipoErro       ErrorType?
-  observacao     String?    @db.Text
+
+  /// snapshot pedagógico fino (N2/N3 da ProvaQuestao no momento do registro)
+  conhecimentoDominioId        String?
+  conhecimentoEscopoId         String?
+  conhecimentoExigido          String? @db.Text
+  classificacaoVersao          String?
+  classificacaoConfianca       Float?
+  conceitosCanonicosJson       String? @db.Text
+  classificacaoSecundariosJson String? @db.Text
+
+  /// metadados cognitivos do erro
+  tipoErro                ErrorType?
+  observacao              String? @db.Text
+  metadadosCognitivosJson String? @db.Text
+
   materiaCorrigida String?
   assuntoCorrigido String?
 
@@ -337,6 +352,7 @@ model QuestionAttempt {
   provaQuestao ProvaQuestao? @relation(fields: [provaQuestaoId], references: [id], onDelete: SetNull)
 
   @@unique([examId, numero])
+  @@index([conhecimentoEscopoId])
 }
 
 model DiagnosticSnapshot {
@@ -378,8 +394,18 @@ model Quest {
   cicloId     String?
   titulo      String
   descricao   String?
+
+  /// legado/UI
   materiaId   String?
   temaId      String?
+
+  /// vínculo pedagógico (motor v1)
+  conhecimentoDominioId  String?
+  conhecimentoEscopoId   String?
+  conceitosCanonicosJson String? @db.Text
+  fonteDiagnosticoJson   String? @db.Text
+  tipoQuest              String?
+
   duracaoMin  Int         @default(30)
   status      QuestStatus @default(pending)
   rewardMsg   String?
@@ -392,6 +418,7 @@ model Quest {
   ciclo LearningCycle? @relation(fields: [cicloId], references: [id], onDelete: SetNull)
 
   @@index([cicloId])
+  @@index([conhecimentoEscopoId])
 }
 
 /// Ciclo de aprendizagem (semana): meta mensurável, prazo, baseline e resultado.
@@ -402,13 +429,25 @@ model LearningCycle {
   status        CicloStatus @default(ATIVO)
   startAt       DateTime    @default(now())
   endAt         DateTime
+
+  /// legado
   metaClusterId String?
   metaMateria   String?
+
+  /// alvo pedagógico (motor v1)
+  metaEscopoId      String?
+  metaDominioId     String?
+  metaConceitosJson String? @db.Text
+  metaCognitivaJson String? @db.Text
+
   metaTitulo    String
-  /// Snapshot do alvo no início (pct/erros do cluster e matéria)
+  /// Snapshot do alvo no início (pct/erros do cluster e matéria ou escopo)
   baselineJson  String?     @db.Text
   /// Resultado no fechamento (mini-quiz, antes x depois)
   resultadoJson String?     @db.Text
+  narrativaInicioJson String? @db.Text
+  narrativaFimJson    String? @db.Text
+  storytellingJson    String? @db.Text
   fechadoEm     DateTime?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -418,6 +457,7 @@ model LearningCycle {
   quizzes CicloQuiz[]
 
   @@index([userId, status])
+  @@index([metaEscopoId])
 }
 
 /// Mini-quiz dirigido de fechamento do ciclo (questões do banco no padrão-alvo).

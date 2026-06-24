@@ -1,11 +1,20 @@
 import type { ErrorType, ModoUsoRegistro } from "@/generated/prisma/client";
 import { pesoModoUso } from "@/lib/modo-uso";
 import { getMateriaLabel, getTemaLabel } from "./taxonomy";
+import type { ClassificacaoSecundaria } from "./json-snapshot-utils";
+import type { MetadadosCognitivosErro } from "./metadados-cognitivos";
+import {
+  buildEscopoScores,
+  buildFocosPedagogicos,
+  type AnamneseContext,
+  type EscopoScore,
+  type FocoPedagogico,
+} from "./diagnosis-escopo";
+import type { StudyPlanItem } from "./study-plan";
 
 function pesoModoUsoFromOptions(modo: ModoUsoRegistro): number {
   return pesoModoUso(modo);
 }
-import type { StudyPlanItem } from "./study-plan";
 
 export interface TemaScore {
   materiaId: string;
@@ -33,6 +42,9 @@ export interface DiagnosisResult {
   overallAcerto: number;
   materiaScores: MateriaScore[];
   temaScores: TemaScore[];
+  /** Eixo principal do motor v1 — desempenho por escopo N2 */
+  escopoScores?: EscopoScore[];
+  focosPedagogicos?: FocoPedagogico[];
   focos: Array<{
     materiaId: string;
     temaId: string;
@@ -61,10 +73,28 @@ export interface DiagnosisResult {
 export interface AttemptInput {
   numero: number;
   correto: boolean;
+
+  /** legado/UI */
   materiaId?: string | null;
   temaId?: string | null;
+
+  /** classificação fina (snapshot da ProvaQuestao) */
+  conhecimentoDominioId?: string | null;
+  conhecimentoEscopoId?: string | null;
+  conhecimentoExigido?: string | null;
+  conceitosCanonicos?: string[];
+  classificacaoVersao?: string | null;
+  classificacaoConfianca?: number | null;
+  classificacaoSecundarios?: ClassificacaoSecundaria[];
+
+  /** erro do aluno */
   tipoErro?: ErrorType | null;
   observacao?: string | null;
+  metadadosCognitivos?: MetadadosCognitivosErro | null;
+
+  /** auditoria */
+  provaQuestaoId?: string;
+  respostaAluno?: string | null;
 }
 
 function getProvaTipoWeight(tipo?: string | null): number {
@@ -212,6 +242,7 @@ export async function buildDiagnosis(
     examLabel?: string;
     provaTipo?: string | null;
     modoUso?: ModoUsoRegistro | null;
+    anamnese?: AnamneseContext;
   }
 ): Promise<DiagnosisResult> {
   // Pre-process current and historical attempts with student's overrides
@@ -296,7 +327,35 @@ export async function buildDiagnosis(
     }));
 
   const focosFinal = focos.length > 0 ? focos : focosFromMateria;
-  const focosTexto = focosFinal
+
+  const escopoScores = buildEscopoScores(cleanCurrentAttempts, cleanHistoricalAttempts, {
+    weight,
+    anamnese: options?.anamnese,
+  });
+  const focosPedagogicos = buildFocosPedagogicos(
+    escopoScores,
+    cleanCurrentAttempts,
+    options?.anamnese
+  ).slice(0, 3);
+
+  /** Enriquece focos legados quando há escopo classificado */
+  const focosEnriquecidos =
+    focosPedagogicos.length > 0
+      ? focosPedagogicos.map((fp) => ({
+          materiaId: fp.materiaId,
+          temaId: fp.escopoId,
+          label: `${fp.materiaLabel} — ${fp.escopoLabel}`,
+          prioridade: (fp.prioridade === "manutencao" ? "media" : fp.prioridade) as
+            | "alta"
+            | "media",
+          motivo: fp.hipoteseCausa,
+          tipoErroDominante: fp.tipoErroDominante ?? undefined,
+          conhecimentoExigido: fp.conhecimentoExigido[0] ?? null,
+          numerosErrados: fp.numerosErrados,
+        }))
+      : focosFinal;
+
+  const focosTexto = (focosPedagogicos.length > 0 ? focosEnriquecidos : focosFinal)
     .map((f) => f.label.split(" — ")[1] ?? f.label)
     .join(", ");
   const melhoraMateria = materiaScores.find((m) => m.taxaAcerto >= 0.65);
@@ -339,7 +398,9 @@ export async function buildDiagnosis(
     overallAcerto,
     materiaScores,
     temaScores,
-    focos: focosFinal,
+    escopoScores,
+    focosPedagogicos,
+    focos: focosEnriquecidos,
     fortes,
     fracos,
     recoveryMode,

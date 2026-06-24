@@ -3,47 +3,17 @@ import { buildDiagnosis, aplicarPlanoCoachIA } from "@/lib/diagnosis";
 import { prisma } from "@/lib/prisma";
 import { pesoBancaParaMeta } from "@/lib/meta-vestibular";
 import { pesoModoUso } from "@/lib/modo-uso";
-import { taxonomyFromQuestao } from "@/lib/canonical-question/taxonomy-from-questao";
 import { historicalAttemptsDaJornada } from "@/lib/jornada-plano";
+import { mapQuestionAttemptToInput } from "@/lib/question-attempt-input";
 import {
   agruparUnidadesJornada,
   PROVA_SELECT_MULTIDIA,
 } from "@/lib/prova-multidia";
 
-type QuestionAttemptsJornada = Array<{
-  numero: number;
-  correto: boolean;
-  materiaId: string | null;
-  temaId: string | null;
-  tipoErro: string | null;
-  provaQuestao?: {
-    materia: string;
-    assunto: string;
-    conhecimentoEscopoId?: string | null;
-  } | null;
-}>;
+type QuestionAttemptsJornada = Parameters<typeof mapQuestionAttemptToInput>[0];
 
-function attemptsFromExam(
-  exam: {
-    questionAttempts: QuestionAttemptsJornada;
-  }
-): AttemptInput[] {
-  return exam.questionAttempts.map((a) => {
-    const mapped =
-      a.provaQuestao &&
-      taxonomyFromQuestao({
-        materia: a.provaQuestao.materia,
-        assunto: a.provaQuestao.assunto,
-        conhecimentoEscopoId: a.provaQuestao.conhecimentoEscopoId,
-      });
-    return {
-      numero: a.numero,
-      correto: a.correto,
-      materiaId: a.materiaId ?? mapped?.materiaId,
-      temaId: a.temaId ?? mapped?.temaId,
-      tipoErro: a.tipoErro as AttemptInput["tipoErro"],
-    };
-  });
+function attemptsFromExam(exam: { questionAttempts: QuestionAttemptsJornada[] }): AttemptInput[] {
+  return exam.questionAttempts.map((a) => mapQuestionAttemptToInput(a));
 }
 
 /** Monta lista ponderada: cada questão entra N vezes conforme peso do registro (oficial pesa mais). */

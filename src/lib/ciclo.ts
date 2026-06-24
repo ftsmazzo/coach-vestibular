@@ -6,6 +6,10 @@ import { prisma } from "@/lib/prisma";
 import { buildDiagnosticoMotor } from "@/lib/diagnostic-motor";
 import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
 import { isQuestCopiloto } from "@/lib/quests-alavanca";
+import {
+  baselineCicloFromFoco,
+  getFocoPedagogicoPrincipal,
+} from "@/lib/learning-motor-foco";
 
 const DIAS_CICLO = 7;
 
@@ -40,6 +44,38 @@ export async function abrirOuRenovarCiclo(userId: string) {
     proxIndice = ativo.indice + 1;
   } else {
     proxIndice = (await prisma.learningCycle.count({ where: { userId } })) + 1;
+  }
+
+  const focoEscopo = await getFocoPedagogicoPrincipal(userId);
+
+  if (focoEscopo) {
+    const baseline = baselineCicloFromFoco(focoEscopo);
+    const endAt = new Date(agora);
+    endAt.setDate(endAt.getDate() + DIAS_CICLO);
+
+    return prisma.learningCycle.create({
+      data: {
+        userId,
+        indice: proxIndice,
+        status: "ATIVO",
+        startAt: agora,
+        endAt,
+        metaEscopoId: focoEscopo.escopoId,
+        metaDominioId: focoEscopo.dominioId,
+        metaMateria: focoEscopo.materiaLabel,
+        metaConceitosJson: JSON.stringify(focoEscopo.conceitosCanonicos),
+        metaCognitivaJson: focoEscopo.metadadosCognitivosResumo
+          ? JSON.stringify(focoEscopo.metadadosCognitivosResumo)
+          : null,
+        metaTitulo: `Dominar: ${focoEscopo.escopoLabel}`,
+        baselineJson: JSON.stringify(baseline),
+        narrativaInicioJson: JSON.stringify({
+          hipotese: focoEscopo.hipoteseCausa,
+          objetivo: focoEscopo.objetivoDaSemana,
+          estrategia: focoEscopo.estrategiaRecomendada,
+        }),
+      },
+    });
   }
 
   const motor = await buildDiagnosticoMotor(userId);

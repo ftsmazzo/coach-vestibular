@@ -38,6 +38,9 @@ export interface PlanoCoachIAResponse {
     temaId?: string;
     estrategiaInterna?: "lacuna" | "reversa" | "velocidade";
     numerosQuestoes?: number[];
+    escopoId?: string;
+    dominioId?: string;
+    conceitosCanonicos?: string[];
   }>;
 }
 
@@ -53,6 +56,24 @@ function sanitizarParaAluno(texto: string): string {
     .replace(/Modelo\s+[ABC]\b/gi, "")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+function montarFocosPedagogicos(diagnosis: DiagnosisResult): string {
+  const focos = diagnosis.focosPedagogicos;
+  if (!focos?.length) return "Nenhum foco por escopo N2 (prova ainda sem classificação fina ou só erros em escopos fallback).";
+  return focos
+    .map(
+      (f, i) =>
+        `${i + 1}. [${f.prioridade}] ${f.escopoLabel} (${f.materiaLabel})
+   escopoId: ${f.escopoId}
+   erros: ${f.totalErros} | questões: ${f.numerosErrados.join(", ")}
+   taxa acerto: ${Math.round(f.taxaAcerto * 100)}%
+   hipótese: ${f.hipoteseCausa}
+   objetivo da semana: ${f.objetivoDaSemana}
+   estratégia: ${f.estrategiaRecomendada}
+   conhecimento exigido: ${f.conhecimentoExigido.slice(0, 2).join(" | ") || "—"}`
+    )
+    .join("\n\n");
 }
 
 function montarResumoMaterias(diagnosis: DiagnosisResult): string {
@@ -95,6 +116,12 @@ ${anot}`;
 const SYSTEM_PROMPT = `Você é o Coach Vestibular — mentor para vestibulandos de Medicina (alto nível), empático e analítico.
 
 Gere um PLANO SEMANAL em JSON. Separe claramente NARRATIVA (plano) de TAREFAS (quests).
+
+## REGRA — FOCOS PEDAGÓGICOS (OBRIGATÓRIO)
+
+Os focos pedagógicos já foram calculados por um motor determinístico (escopo N2, histórico, metadados cognitivos).
+Sua função é transformar esses focos em linguagem humana, plano semanal e quests acionáveis.
+Nunca substitua um foco por outro assunto inventado. Nunca troque a disciplina ou escopo.
 
 ## PARTE 1 — PLANO (texto para o aluno ler)
 
@@ -262,6 +289,9 @@ Check-in emocional (1-5): ${input.checkInScore ?? "não informado"}
 Desempenho por matéria:
 ${montarResumoMaterias(input.diagnosis)}
 
+Focos pedagógicos (calculados — NÃO invente outros):
+${montarFocosPedagogicos(input.diagnosis)}
+
 Erros e metacognição:
 ${montarCausasMetacognitivas(input.groupedErrors)}
 
@@ -395,6 +425,30 @@ export function planoCoachFallbackLocal(
 
   const quests: PlanoCoachIAResponse["quests"] = [];
   const maxQ = diagnosis.recoveryMode ? 5 : 8;
+
+  if (diagnosis.focosPedagogicos?.length) {
+    for (const fp of diagnosis.focosPedagogicos.slice(0, maxQ)) {
+      quests.push({
+        titulo: `${fp.materiaLabel} — ${fp.escopoLabel}`,
+        descricao:
+          `${fp.hipoteseCausa} Objetivo: ${fp.objetivoDaSemana} ` +
+          `Refaça as questões ${fp.numerosErrados.join(", ")} e consolide com 3 exercícios do mesmo escopo.`,
+        duracaoMin: fp.prioridade === "alta" ? 50 : 35,
+        materiaId: fp.materiaId,
+        numerosQuestoes: fp.numerosErrados,
+        estrategiaInterna:
+          fp.estrategiaRecomendada === "treino_cronometrado"
+            ? "velocidade"
+            : fp.estrategiaRecomendada === "engenharia_reversa"
+              ? "reversa"
+              : "lacuna",
+        escopoId: fp.escopoId,
+        dominioId: fp.dominioId,
+        conceitosCanonicos: fp.conceitosCanonicos,
+      } as PlanoCoachIAResponse["quests"][0]);
+    }
+  }
+
   const porMateria = new Map<string, GroupedError[]>();
   for (const g of grouped) {
     const list = porMateria.get(g.materia) ?? [];
@@ -402,6 +456,7 @@ export function planoCoachFallbackLocal(
     porMateria.set(g.materia, list);
   }
 
+  if (quests.length === 0) {
   for (const [materia, grupos] of porMateria) {
     if (quests.length >= maxQ) break;
     const nums = [...new Set(grupos.flatMap((g) => g.questoesNumeros))].sort((a, b) => a - b);
@@ -420,6 +475,7 @@ export function planoCoachFallbackLocal(
       numerosQuestoes: nums,
       estrategiaInterna: at.estrategia,
     });
+  }
   }
 
   if (quests.length === 0 && resumo) {

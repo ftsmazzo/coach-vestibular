@@ -1,8 +1,12 @@
-import type { ErrorType } from "@/generated/prisma/client";
 import { prisma } from "./prisma";
 import { aplicarPlanoCoachIA, buildDiagnosis, type AttemptInput } from "./diagnosis";
 import { enriquecerDiagnosticoComProva } from "./diagnosis-prova";
 import { taxonomyFromQuestao } from "./canonical-question/taxonomy-from-questao";
+import {
+  mapQuestionAttemptToInput,
+  snapshotFromProvaQuestao,
+  type ProvaQuestaoSnapshot,
+} from "./question-attempt-input";
 import { syncProvaGabaritoStatus } from "./prova-catalog";
 import { parseGabaritoLote, sequenciaParaMapaPorNumero } from "./gabarito";
 import { normalizarMapaGabarito, normalizarNumerosInformados, resolverNumerosGradeProva } from "./prova-numeracao";
@@ -50,14 +54,7 @@ type AttemptWithMeta = AttemptInput & {
 };
 
 function buildAttemptsFromProva(
-  questoes: Array<{
-    id: string;
-    numero: number;
-    materia: string;
-    assunto: string;
-    conhecimentoEscopoId?: string | null;
-    gabarito: string | null;
-  }>,
+  questoes: ProvaQuestaoSnapshot[],
   respostasPorNumero: Map<number, string>,
   apenasErros?: number[]
 ): { attempts: AttemptWithMeta[]; analiseCompleta: boolean; avisos: string[] } {
@@ -102,6 +99,7 @@ function buildAttemptsFromProva(
       }
 
       const { materiaId, temaId } = taxonomyFromQuestao(q);
+      const snap = snapshotFromProvaQuestao(q);
 
       const row: AttemptWithMeta = {
         numero: q.numero,
@@ -110,6 +108,13 @@ function buildAttemptsFromProva(
         temaId: temaId ?? undefined,
         provaQuestaoId: q.id,
         respostaAluno,
+        conhecimentoDominioId: snap.conhecimentoDominioId,
+        conhecimentoEscopoId: snap.conhecimentoEscopoId,
+        conhecimentoExigido: snap.conhecimentoExigido,
+        classificacaoVersao: snap.classificacaoVersao,
+        classificacaoConfianca: snap.classificacaoConfianca,
+        conceitosCanonicos: snap.conceitosCanonicos,
+        classificacaoSecundarios: snap.classificacaoSecundarios,
       };
       return row;
     })
@@ -239,22 +244,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
   });
 
   const historicalMesmaProva: AttemptInput[][] = historicalExams.map((e) =>
-    e.questionAttempts.map((a) => {
-      const mapped =
-        a.provaQuestao &&
-        taxonomyFromQuestao({
-          materia: a.provaQuestao.materia,
-          assunto: a.provaQuestao.assunto,
-          conhecimentoEscopoId: a.provaQuestao.conhecimentoEscopoId,
-        });
-      return {
-        numero: a.numero,
-        correto: a.correto,
-        materiaId: a.materiaId ?? mapped?.materiaId,
-        temaId: a.temaId ?? mapped?.temaId,
-        tipoErro: a.tipoErro,
-      };
-    })
+    e.questionAttempts.map((a) => mapQuestionAttemptToInput(a))
   );
   const historicalJornada = await historicalAttemptsDaJornada(input.userId);
   const historicalAttempts = mergeHistoricalAttempts(
@@ -281,22 +271,12 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     modoUso === "OFICIAL" ? "prova_oficial" : "simulado"
   );
 
-  let diagnosis = await buildDiagnosis(
-    rawAttempts.map(({ numero, correto, materiaId, temaId, tipoErro }) => ({
-      numero,
-      correto,
-      materiaId,
-      temaId,
-      tipoErro: tipoErro as ErrorType | null | undefined,
-    })),
-    historicalAttempts,
-    {
+  let diagnosis = await buildDiagnosis(rawAttempts, historicalAttempts, {
       checkInScore: input.checkInScore,
       examLabel: rotulos.curto,
       provaTipo: prova.tipo,
       modoUso,
-    }
-  );
+    });
 
   diagnosis = enriquecerDiagnosticoComProva(
     diagnosis,
@@ -330,6 +310,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
         create: rawAttempts.map((a) => {
           const q = questoesEfetivas.find((pq) => pq.numero === a.numero)!;
           const { materiaId, temaId } = taxonomyFromQuestao(q);
+          const snap = snapshotFromProvaQuestao(q);
           const ext = a as AttemptWithMeta;
           return {
             numero: a.numero,
@@ -339,6 +320,16 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
             materiaId,
             temaId,
             tipoErro: a.tipoErro,
+            conhecimentoDominioId: snap.conhecimentoDominioId,
+            conhecimentoEscopoId: snap.conhecimentoEscopoId,
+            conhecimentoExigido: snap.conhecimentoExigido,
+            classificacaoVersao: snap.classificacaoVersao,
+            classificacaoConfianca: snap.classificacaoConfianca,
+            conceitosCanonicosJson: snap.conceitosCanonicosJson,
+            classificacaoSecundariosJson: snap.classificacaoSecundariosJson,
+            metadadosCognitivosJson: ext.metadadosCognitivos
+              ? JSON.stringify(ext.metadadosCognitivos)
+              : null,
           };
         }),
       },
@@ -349,11 +340,17 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
             overallAcerto: diagnosis.overallAcerto,
             materiaScores: diagnosis.materiaScores,
             temaScores: diagnosis.temaScores,
+            escopoScores: diagnosis.escopoScores,
+            focosPedagogicos: diagnosis.focosPedagogicos,
             resumoProva: diagnosis.resumoProva,
             provaId: prova.id,
             analiseCompleta,
           }),
-          focosJson: JSON.stringify(diagnosis.focos),
+          focosJson: JSON.stringify(
+            diagnosis.focosPedagogicos?.length
+              ? { legado: diagnosis.focos, pedagogicos: diagnosis.focosPedagogicos }
+              : diagnosis.focos
+          ),
           mensagem: diagnosis.mensagem,
           recoveryMode: diagnosis.recoveryMode,
         },
@@ -365,19 +362,11 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     include: { diagnosticSnapshot: true },
   });
 
-  const rawForPlano = rawAttempts.map(({ numero, correto, materiaId, temaId, tipoErro }) => ({
-    numero,
-    correto,
-    materiaId,
-    temaId,
-    tipoErro: tipoErro as ErrorType | null | undefined,
-  }));
-
   await aplicarPlanoEQuests(
     input.userId,
     diagnosis,
     provaEhOficial(prova.tipo),
-    rawForPlano
+    rawAttempts
   );
 
   await prisma.exam.update({
@@ -549,26 +538,7 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
   });
 
   const historicalMesmaProva: AttemptInput[][] = historicalExams.map((e) =>
-    e.questionAttempts.map((a) => {
-      const mat = a.materiaCorrigida || a.provaQuestao?.materia;
-      const ass = a.assuntoCorrigido || a.provaQuestao?.assunto;
-      const mapped =
-        mat && ass
-          ? taxonomyFromQuestao({
-              materia: mat,
-              assunto: ass,
-              conhecimentoEscopoId: a.provaQuestao?.conhecimentoEscopoId,
-            })
-          : undefined;
-      return {
-        numero: a.numero,
-        correto: a.correto,
-        materiaId: a.materiaId ?? mapped?.materiaId,
-        temaId: a.temaId ?? mapped?.temaId,
-        tipoErro: a.tipoErro,
-        observacao: a.observacao,
-      };
-    })
+    e.questionAttempts.map((a) => mapQuestionAttemptToInput(a))
   );
   const historicalJornada = await historicalAttemptsDaJornada(userId, examId);
   const historicalAttempts = mergeHistoricalAttempts(
@@ -576,29 +546,9 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
     historicalJornada
   );
 
-  const rawAttempts: AttemptInput[] = exam.questionAttempts.map((a) => {
-    const pq =
-      a.provaQuestao ??
-      questaoPorNumeroETentativa(prova.questoes, a.numero, prova, exam.idiomaEstrangeiro);
-    const mat = a.materiaCorrigida || pq?.materia;
-    const ass = a.assuntoCorrigido || pq?.assunto;
-    const mapped =
-      mat && ass
-        ? taxonomyFromQuestao({
-            materia: mat,
-            assunto: ass,
-            conhecimentoEscopoId: pq?.conhecimentoEscopoId,
-          })
-        : undefined;
-    return {
-      numero: a.numero,
-      correto: a.correto,
-      materiaId: a.materiaId ?? mapped?.materiaId,
-      temaId: a.temaId ?? mapped?.temaId,
-      tipoErro: a.tipoErro,
-      observacao: a.observacao,
-    };
-  });
+  const rawAttempts: AttemptInput[] = exam.questionAttempts.map((a) =>
+    mapQuestionAttemptToInput(a)
+  );
 
   const questoesPedagogicas = exam.questionAttempts.map((a) => {
     const q =
@@ -642,11 +592,17 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
           overallAcerto: diagnosis.overallAcerto,
           materiaScores: diagnosis.materiaScores,
           temaScores: diagnosis.temaScores,
+          escopoScores: diagnosis.escopoScores,
+          focosPedagogicos: diagnosis.focosPedagogicos,
           resumoProva: diagnosis.resumoProva,
           provaId: prova.id,
           analiseCompleta,
         }),
-        focosJson: JSON.stringify(diagnosis.focos),
+        focosJson: JSON.stringify(
+          diagnosis.focosPedagogicos?.length
+            ? { legado: diagnosis.focos, pedagogicos: diagnosis.focosPedagogicos }
+            : diagnosis.focos
+        ),
         mensagem: diagnosis.mensagem,
         recoveryMode: diagnosis.recoveryMode,
       },
