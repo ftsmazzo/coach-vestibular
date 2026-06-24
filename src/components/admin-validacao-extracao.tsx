@@ -8,6 +8,8 @@ import { ENUNCIADO_VALIDACAO_MIN_CHARS } from "@/lib/prova-texto-prova";
 interface Props {
   provaId: string;
   extracaoValidada: boolean;
+  /** Muda após gravar extração ou editar questão — força recarregar relatório. */
+  refreshKey?: string;
   onMensagem: (msg: string) => void;
   onAtualizado: () => void;
 }
@@ -47,6 +49,7 @@ function rotuloQuestao(linha: LinhaExtracaoRelatorio): string {
 export function AdminValidacaoExtracao({
   provaId,
   extracaoValidada,
+  refreshKey,
   onMensagem,
   onAtualizado,
 }: Props) {
@@ -70,6 +73,10 @@ export function AdminValidacaoExtracao({
         return;
       }
       setRelatorio(data.relatorio ?? null);
+      const r = data.relatorio as RelatorioExtracaoProva | undefined;
+      if (r && r.curto + r.faltando === 0 && r.ok > 0) {
+        setFiltro("todos");
+      }
     } catch {
       onMensagem("Falha de rede ao carregar extração.");
     } finally {
@@ -79,7 +86,7 @@ export function AdminValidacaoExtracao({
 
   useEffect(() => {
     void carregar();
-  }, [carregar, extracaoValidada]);
+  }, [carregar, extracaoValidada, refreshKey]);
 
   function abrirEdicao(linha: LinhaExtracaoRelatorio) {
     setEditando(linha.chave);
@@ -166,10 +173,17 @@ export function AdminValidacaoExtracao({
     <Card className="border-teal-200 bg-teal-50/40">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-teal-900">Validar extração</h2>
+          <h2 className="font-semibold text-teal-900">Passo 3 — Validar extração</h2>
           <p className="mt-1 text-sm text-teal-800">
             Revise enunciados e alternativas antes de qualquer classificação. Mínimo{" "}
             {ENUNCIADO_VALIDACAO_MIN_CHARS} caracteres no enunciado.
+            {relatorio.linhasNoBanco > relatorio.linhasEsperadas && (
+              <span className="block text-xs text-teal-700 mt-1">
+                {relatorio.linhasNoBanco} linhas no banco ({relatorio.linhasEsperadas} esperadas
+                {relatorio.linhasEsperadas < relatorio.totalEsperado + 5 ? " com EN+ES na faixa" : ""}
+                ).
+              </span>
+            )}
           </p>
           <p className="mt-2 text-sm font-medium text-slate-800">
             {relatorio.ok}/{relatorio.linhasEsperadas} OK · {relatorio.curto} curto(s) ·{" "}

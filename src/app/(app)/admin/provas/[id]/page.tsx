@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminAuditoriaProva } from "@/components/admin-auditoria-prova";
 import { AdminTabelaQuestoes } from "@/components/admin-tabela-questoes";
-import { AdminExtracaoPipeline } from "@/components/admin-extracao-pipeline";
 import { AdminProvaPipelineV2 } from "@/components/admin-prova-pipeline-v2";
 import { AdminValidacaoExtracao } from "@/components/admin-validacao-extracao";
 import { GabaritoRevisaoGrid } from "@/components/gabarito-revisao-grid";
@@ -72,6 +71,68 @@ interface Prova {
       email: string;
     };
   }[];
+}
+
+function PassosProvaAdmin({
+  extracaoValidada,
+  temQuestoes,
+  gabaritoCompleto,
+}: {
+  extracaoValidada: boolean;
+  temQuestoes: boolean;
+  gabaritoCompleto: boolean;
+}) {
+  const itens = [
+    { n: 1, label: "Cadastro", estado: "done" as const },
+    {
+      n: 2,
+      label: "Extrair PDF",
+      estado: temQuestoes ? ("done" as const) : ("active" as const),
+    },
+    {
+      n: 3,
+      label: "Validar extração",
+      estado: extracaoValidada
+        ? ("done" as const)
+        : temQuestoes
+          ? ("active" as const)
+          : ("pending" as const),
+    },
+    {
+      n: 4,
+      label: "Gabarito",
+      estado: gabaritoCompleto ? ("done" as const) : temQuestoes ? ("active" as const) : ("pending" as const),
+    },
+    {
+      n: 5,
+      label: "Classificar",
+      estado: extracaoValidada ? ("pending" as const) : ("locked" as const),
+    },
+  ];
+
+  return (
+    <ol className="flex flex-wrap gap-2">
+      {itens.map((p) => {
+        const cls =
+          p.estado === "done"
+            ? "bg-emerald-100 text-emerald-900 border-emerald-200"
+            : p.estado === "active"
+              ? "bg-indigo-100 text-indigo-900 border-indigo-300 ring-1 ring-indigo-300"
+              : p.estado === "locked"
+                ? "bg-slate-100 text-slate-400 border-slate-200"
+                : "bg-white text-slate-500 border-slate-200";
+        return (
+          <li
+            key={p.n}
+            className={`rounded-full border px-3 py-1 text-xs font-medium ${cls}`}
+          >
+            {p.n}. {p.label}
+            {p.estado === "done" ? " ✓" : p.estado === "locked" ? " 🔒" : ""}
+          </li>
+        );
+      })}
+    </ol>
+  );
 }
 
 function ForcarRecalculoButton({ examId }: { examId: string }) {
@@ -150,8 +211,6 @@ export default function AdminProvaDetailPage() {
   const [salvandoCaderno, setSalvandoCaderno] = useState(false);
   const [textoProva, setTextoProva] = useState("");
   const [salvandoTexto, setSalvandoTexto] = useState(false);
-  const [textoFaltantes, setTextoFaltantes] = useState("");
-  const [extraindo, setExtraindo] = useState(false);
   const [msg, setMsg] = useState("");
   const [alertaChaves, setAlertaChaves] = useState<string[]>([]);
   const [editarQuestaoAlvo, setEditarQuestaoAlvo] = useState<{
@@ -177,6 +236,13 @@ export default function AdminProvaDetailPage() {
         .map((q) => [q.numero, q.observacoes!.trim()])
     );
   }, [prova?.questoes]);
+
+  /** Recarrega validação quando questões/enunciados mudam após extração. */
+  const extracaoRefreshKey = useMemo(() => {
+    if (!prova) return "init";
+    const chars = prova.questoes.reduce((s, q) => s + (q.enunciado?.length ?? 0), 0);
+    return `${prova.questoes.length}:${prova.politicaIdiomas ?? ""}:${chars}:${prova.extracaoValidada ?? false}`;
+  }, [prova]);
 
   const numerosGrade = useMemo(() => {
     if (!prova) return [];
@@ -360,35 +426,6 @@ export default function AdminProvaDetailPage() {
     }
   }
 
-  async function classificarTextoParcial(
-    texto: string,
-    vazioMsg: string,
-    onOk?: () => void
-  ) {
-    if (!texto.trim()) {
-      setMsg(vazioMsg);
-      return;
-    }
-    setExtraindo(true);
-    setMsg("");
-    const fd = new FormData();
-    fd.append("aplicar", "true");
-    fd.append("modo", "adicionar");
-    fd.append("texto", texto.trim());
-    const res = await fetch(`/api/admin/provas/${id}/extrair`, { method: "POST", body: fd });
-    const data = await res.json();
-    setExtraindo(false);
-    if (!res.ok) {
-      setMsg(data.error ?? "Erro");
-      return;
-    }
-    onOk?.();
-    setMsg(
-      `Atualizada(s) ${data.adicionadas ?? data.questoes?.length ?? 0} questão(ões) no banco. As demais não foram alteradas. Clique em «Auditar» de novo para ver se a inconsistência sumiu.`
-    );
-    load();
-  }
-
   async function salvarTextoFonte() {
     if (!textoProva.trim()) {
       setMsg("Cole o texto da prova antes de salvar.");
@@ -440,14 +477,6 @@ export default function AdminProvaDetailPage() {
     const data = await res.json();
     setMsg(res.ok ? data.mensagem ?? "Caderno removido." : data.error ?? "Erro");
     if (res.ok) load();
-  }
-
-  async function completarFaltantes() {
-    await classificarTextoParcial(
-      textoFaltantes,
-      "Cole o texto das questões que faltam no banco.",
-      () => setTextoFaltantes("")
-    );
   }
 
   async function limparGabaritos() {
@@ -568,35 +597,14 @@ export default function AdminProvaDetailPage() {
         </p>
       )}
 
-      {prova.bancoIncompleto && prova.questoesFaltando && prova.questoesFaltando.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/60">
-          <h2 className="mb-2 font-semibold text-amber-900">Completar questões faltantes</h2>
-          <p className="mb-2 text-sm text-amber-900">
-            Não precisa reescanear o PDF inteiro. Cole aqui só o enunciado/texto das questões que
-            faltam (nº {prova.questoesFaltando.slice(0, 15).join(", ")}
-            {prova.questoesFaltando.length > 15 ? "…" : ""}). A IA classifica e{" "}
-            <strong>adiciona</strong> sem apagar as que já estão corretas.
-          </p>
-          <textarea
-            className="w-full rounded-xl border border-amber-200 bg-white p-3 text-sm"
-            rows={6}
-            placeholder="Questão 12\n(enunciado completo...)\n\nQuestão 45\n..."
-            value={textoFaltantes}
-            onChange={(e) => setTextoFaltantes(e.target.value)}
-          />
-          <Button
-            type="button"
-            className="mt-3"
-            disabled={extraindo}
-            onClick={completarFaltantes}
-          >
-            {extraindo ? "Classificando..." : "Classificar e adicionar faltantes"}
-          </Button>
-        </Card>
-      )}
+      <PassosProvaAdmin
+        extracaoValidada={prova.extracaoValidada ?? false}
+        temQuestoes={prova.questoes.length > 0}
+        gabaritoCompleto={prova.gabaritoCompleto}
+      />
 
       <Card>
-        <h2 className="mb-2 font-semibold">Registro da prova</h2>
+        <h2 className="mb-2 font-semibold">Passo 1 — Registro da prova</h2>
         <p className="mb-3 text-sm text-slate-600">
           Vestibular, ano e caderno ficam aqui — o aluno escolhe esta prova ao registrar o simulado.
           A IA não repete esses dados por questão.
@@ -693,56 +701,23 @@ export default function AdminProvaDetailPage() {
       </Card>
 
       <Card>
-        <h2 className="mb-2 font-semibold text-slate-800">PDF da prova</h2>
+        <h2 className="mb-2 font-semibold text-slate-800">Passo 2 — PDF da prova</h2>
         <p className="mb-3 text-sm text-slate-600">
-          Envie o PDF editado (questões 1–{prova.totalQuestoes}). A classificação usa a OpenAI
-          Responses API direto no arquivo — como o seu agente GPT. Requer{" "}
-          <code className="text-xs">OPENAI_API_KEY</code>.
+          Selecione o PDF e use o bloco abaixo para extrair enunciados e alternativas (OpenAI
+          Responses API — requer <code className="text-xs">OPENAI_API_KEY</code>).
         </p>
-        <div className="space-y-3">
-          <div>
-            <Label>Arquivo PDF</Label>
-            <Input
-              type="file"
-              accept=".pdf,application/pdf"
-              onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
-            />
-            {pdfFile && (
-              <p className="mt-1 text-xs text-slate-600">
-                Selecionado: {pdfFile.name} ({(pdfFile.size / 1024).toFixed(0)} KB)
-              </p>
-            )}
-          </div>
-          <div>
-            <Label>Ou cole o texto da prova (recomendado: prova inteira, questões 1–65)</Label>
-            <textarea
-              className="mt-1 w-full rounded-xl border p-3 text-sm font-mono"
-              rows={12}
-              placeholder="Cole aqui o texto completo da prova (Ctrl+A do PDF). O sistema precisa de dezenas de milhares de caracteres, não só um resumo."
-              value={textoProva}
-              onChange={(e) => setTextoProva(e.target.value)}
-            />
+        <div>
+          <Label>Arquivo PDF</Label>
+          <Input
+            type="file"
+            accept=".pdf,application/pdf"
+            onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
+          />
+          {pdfFile && (
             <p className="mt-1 text-xs text-slate-600">
-              {textoProva.trim().length > 0
-                ? `${textoProva.trim().length.toLocaleString("pt-BR")} caracteres no campo`
-                : "Nenhum texto colado — sem isso, o sistema pode usar um texto antigo truncado (~600 caracteres) do servidor."}
+              Selecionado: {pdfFile.name} ({(pdfFile.size / 1024).toFixed(0)} KB)
             </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={salvandoTexto || !textoProva.trim()}
-                onClick={salvarTextoFonte}
-              >
-                {salvandoTexto ? "Salvando…" : "Salvar texto no servidor"}
-              </Button>
-              {prova?.temTextoFonte && (
-                <Button type="button" variant="secondary" onClick={limparTextoFonte}>
-                  Limpar texto salvo
-                </Button>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       </Card>
 
@@ -796,101 +771,17 @@ export default function AdminProvaDetailPage() {
         <AdminValidacaoExtracao
           provaId={prova.id}
           extracaoValidada={prova.extracaoValidada ?? false}
+          refreshKey={extracaoRefreshKey}
           onMensagem={setMsg}
           onAtualizado={load}
         />
       )}
 
-      <details className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">
-          Fluxo antigo (extração de enunciados + etapas) — legado
-        </summary>
-        <div className="mt-3 space-y-3">
-          <AdminExtracaoPipeline
-            provaId={prova.id}
-            textoProva={textoProva}
-            pdfFile={pdfFile}
-            questoesNoBanco={prova.questoes.length}
-            totalQuestoes={prova.totalQuestoes}
-            temTextoFonte={prova.temTextoFonte}
-            tamanhoTextoFonte={prova.tamanhoTextoFonte ?? 0}
-            onMensagem={setMsg}
-            onAtualizado={load}
-          />
-        </div>
-      </details>
-
-      {prova.questoes.length > 0 && (
-        <AdminTabelaQuestoes
-          provaId={prova.id}
-          questoes={prova.questoes}
-          alertaChaves={alertaChaves}
-          abrirEdicao={editarQuestaoAlvo}
-          onEdicaoAberta={() => setEditarQuestaoAlvo(null)}
-          onAtualizado={aoAtualizarQuestoes}
-          onMensagem={setMsg}
-        />
-      )}
-
-      {prova.questoes.length > 0 && (
-        <AdminAuditoriaProva
-          provaId={prova.id}
-          textoFonteColado={textoProva}
-          orientacoesSalvas={orientacoesSalvas}
-          onQuestoesAtualizadas={aoAtualizarQuestoes}
-          onAlertasChange={setAlertaChaves}
-          onEditarQuestao={(numero, idiomaVariante) =>
-            setEditarQuestaoAlvo({ numero, idiomaVariante })
-          }
-          atualizarAuditoria={atualizarAuditoria}
-        />
-      )}
-
       <Card>
-        <h2 className="mb-2 font-semibold">Importar planilha CSV (alternativa)</h2>
-        <p className="mb-3 text-sm text-slate-600">
-          Se você já classificou no ChatGPT e exportou CSV, importe aqui — mesmo destino: banco de
-          questões. Ou use «Já tenho CSV do ChatGPT» no bloco roxo acima. Template:{" "}
-          <code className="text-xs">docs/templates/prova-questoes.csv</code>
-        </p>
-        <input
-          ref={csvInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-teal-800"
-          onChange={(e) => setCsvFileName(e.target.files?.[0]?.name ?? "")}
-        />
-        {csvFileName && (
-          <p className="mt-1 text-xs text-slate-600">Arquivo selecionado: {csvFileName}</p>
-        )}
-        <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-          <input
-            type="checkbox"
-            checked={csvSoAtualizar}
-            onChange={(e) => setCsvSoAtualizar(e.target.checked)}
-          />
-          Só atualizar questões do CSV (recomendado após auditoria — não apaga as demais)
-        </label>
-        <Button
-          type="button"
-          className="mt-3"
-          onClick={importCsv}
-          disabled={importandoCsv || !csvFileName}
-        >
-          {importandoCsv
-            ? "Importando..."
-            : csvSoAtualizar
-              ? "Importar CSV (atualizar linhas do arquivo)"
-              : "Importar CSV (substitui todas as questões)"}
-        </Button>
-      </Card>
-
-      <Card>
-        <h2 className="mb-2 font-semibold">Gabarito oficial (somente admin)</h2>
+        <h2 className="mb-2 font-semibold">Passo 4 — Gabarito oficial (somente admin)</h2>
         <p className="mb-2 text-sm text-slate-600">
-          O pipeline de classificação <strong>não inventa</strong> gabarito. Envie foto/PDF do
-          oficial, revise no grid ou cole texto — e marque «Aplicar gabarito ao gravar» para cruzar
-          ao gravar PDF ou CSV.
+          A extração <strong>não inventa</strong> gabarito. Envie foto/PDF do oficial, revise no grid
+          ou cole texto — opcionalmente marque «Aplicar gabarito ao gravar» ao extrair o PDF.
         </p>
         <label className="mb-2 flex items-center gap-2 text-sm text-slate-600">
           <input
@@ -982,6 +873,114 @@ export default function AdminProvaDetailPage() {
           Salvar gabarito oficial
         </Button>
       </Card>
+
+      {prova.extracaoValidada ? (
+        <>
+          <Card className="border-violet-200 bg-violet-50/40">
+            <h2 className="mb-2 font-semibold text-violet-900">Passo 5 — Classificação (em breve)</h2>
+            <p className="text-sm text-violet-800">
+              Extração validada. O roteamento por disciplina e a classificação N2 serão liberados no
+              próximo sprint. Enquanto isso, use a auditoria abaixo se precisar revisar áreas.
+            </p>
+          </Card>
+
+          {prova.questoes.length > 0 && (
+            <AdminAuditoriaProva
+              provaId={prova.id}
+              textoFonteColado={textoProva}
+              orientacoesSalvas={orientacoesSalvas}
+              onQuestoesAtualizadas={aoAtualizarQuestoes}
+              onAlertasChange={setAlertaChaves}
+              onEditarQuestao={(numero, idiomaVariante) =>
+                setEditarQuestaoAlvo({ numero, idiomaVariante })
+              }
+              atualizarAuditoria={atualizarAuditoria}
+            />
+          )}
+
+          {prova.questoes.length > 0 && (
+            <AdminTabelaQuestoes
+              provaId={prova.id}
+              questoes={prova.questoes}
+              alertaChaves={alertaChaves}
+              abrirEdicao={editarQuestaoAlvo}
+              onEdicaoAberta={() => setEditarQuestaoAlvo(null)}
+              onAtualizado={aoAtualizarQuestoes}
+              onMensagem={setMsg}
+            />
+          )}
+
+          <details className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+            <summary className="cursor-pointer text-sm font-medium text-slate-700">
+              Importar CSV / texto colado (alternativas legadas)
+            </summary>
+            <div className="mt-3 space-y-4">
+              <div>
+                <Label>Ou cole o texto da prova no servidor</Label>
+                <textarea
+                  className="mt-1 w-full rounded-xl border p-3 text-sm font-mono"
+                  rows={6}
+                  placeholder="Texto completo da prova (legado)…"
+                  value={textoProva}
+                  onChange={(e) => setTextoProva(e.target.value)}
+                />
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={salvandoTexto || !textoProva.trim()}
+                    onClick={salvarTextoFonte}
+                  >
+                    {salvandoTexto ? "Salvando…" : "Salvar texto no servidor"}
+                  </Button>
+                  {prova.temTextoFonte && (
+                    <Button type="button" variant="secondary" onClick={limparTextoFonte}>
+                      Limpar texto salvo
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div>
+                <p className="mb-2 text-sm text-slate-600">
+                  CSV exportado do ChatGPT — template:{" "}
+                  <code className="text-xs">docs/templates/prova-questoes.csv</code>
+                </p>
+                <input
+                  ref={csvInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  onChange={(e) => setCsvFileName(e.target.files?.[0]?.name ?? "")}
+                />
+                <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={csvSoAtualizar}
+                    onChange={(e) => setCsvSoAtualizar(e.target.checked)}
+                  />
+                  Só atualizar questões do CSV
+                </label>
+                <Button
+                  type="button"
+                  className="mt-2"
+                  onClick={importCsv}
+                  disabled={importandoCsv || !csvFileName}
+                >
+                  {importandoCsv ? "Importando…" : "Importar CSV"}
+                </Button>
+              </div>
+            </div>
+          </details>
+        </>
+      ) : (
+        <Card className="border-slate-200 bg-slate-50/80">
+          <h2 className="mb-2 font-semibold text-slate-700">Passo 5 — Classificação 🔒</h2>
+          <p className="text-sm text-slate-600">
+            Confirme a extração completa no passo 3 para liberar classificação, auditoria e import
+            CSV.
+          </p>
+        </Card>
+      )}
 
       {/* Histórico de Tentativas dos Alunos */}
       <Card>

@@ -8,6 +8,7 @@ import {
 import {
   chaveQuestaoVariante,
   compararQuestoesPorNumeroEOrdem,
+  temDuplicataEnEs,
   variantesExigidasPorNumero,
   type MetaPoliticaIdiomas,
 } from "@/lib/prova-idioma";
@@ -46,11 +47,37 @@ type QuestaoDb = {
   alternativas?: string | null;
 };
 
+/** Se o banco tem linhas EN/ES mas a prova ainda não tem politicaIdiomas gravada, infere a faixa. */
+export function inferirMetaPoliticaIdiomas(
+  questoes: QuestaoDb[],
+  meta: MetaPoliticaIdiomas
+): MetaPoliticaIdiomas {
+  if (temDuplicataEnEs(meta)) return meta;
+
+  const numerosComVariante = new Set<number>();
+  for (const q of questoes) {
+    const v = q.idiomaVariante ?? "COMUM";
+    if (v === "INGLES" || v === "ESPANHOL") numerosComVariante.add(q.numero);
+  }
+  if (numerosComVariante.size === 0) return meta;
+
+  const nums = [...numerosComVariante].sort((a, b) => a - b);
+  return {
+    ...meta,
+    politicaIdiomas: "DUPLICATA_EN_ES",
+    idiomaQuestaoInicio: meta.idiomaQuestaoInicio ?? nums[0],
+    idiomaQuestaoFim: meta.idiomaQuestaoFim ?? nums[nums.length - 1],
+    ordemIdiomasFaixa: meta.ordemIdiomasFaixa ?? "INGLES_PRIMEIRO",
+  };
+}
+
 export function montarRelatorioExtracao(
   questoes: QuestaoDb[],
   totalEsperado: number,
   meta: MetaPoliticaIdiomas & { dia?: number | null; banca?: string; ordemIdiomasFaixa?: string | null }
 ): RelatorioExtracaoProva {
+  const metaEfetiva = inferirMetaPoliticaIdiomas(questoes, meta);
+
   const porChave = new Map<string, QuestaoDb>();
   for (const q of questoes) {
     porChave.set(
@@ -68,7 +95,7 @@ export function montarRelatorioExtracao(
 
   const slots: Array<{ numero: number; idiomaVariante: IdiomaVarianteQuestao }> = [];
   for (const n of numeros) {
-    for (const v of variantesExigidasPorNumero(n, meta)) {
+    for (const v of variantesExigidasPorNumero(n, metaEfetiva)) {
       slots.push({ numero: n, idiomaVariante: v });
     }
   }
@@ -97,7 +124,7 @@ export function montarRelatorioExtracao(
     compararQuestoesPorNumeroEOrdem(
       { numero: a.numero, idiomaVariante: a.idiomaVariante },
       { numero: b.numero, idiomaVariante: b.idiomaVariante },
-      meta.ordemIdiomasFaixa ?? "INGLES_PRIMEIRO"
+      metaEfetiva.ordemIdiomasFaixa ?? "INGLES_PRIMEIRO"
     )
   );
 

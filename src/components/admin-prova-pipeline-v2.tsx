@@ -177,7 +177,7 @@ export function AdminProvaPipelineV2({
 
   return (
     <Card className="border-indigo-200 bg-indigo-50/50">
-      <h2 className="mb-2 font-semibold text-indigo-900">Extrair prova (PDF → banco)</h2>
+      <h2 className="mb-2 font-semibold text-indigo-900">Passo 2 — Extrair prova (PDF → banco)</h2>
       <p className="mb-3 text-sm text-indigo-800">
         Envie o PDF da prova ou simulado. A IA extrai <strong>enunciado literal</strong>,{" "}
         <strong>alternativas</strong> e área/bloco — sem classificar matéria ou assunto. Depois de
