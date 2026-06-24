@@ -33,6 +33,10 @@ function whereVariante(provaId: string, numero: number, variante: IdiomaVariante
   };
 }
 
+function filtroVariante(provaId: string, numero: number, variante: IdiomaVarianteQuestao) {
+  return { provaId, numero, idiomaVariante: variante };
+}
+
 /** Normaliza rótulos para exibição — sem reclassificar matéria/assunto por regex legado. */
 function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
   return rows.map((r) => {
@@ -187,7 +191,7 @@ export async function upsertQuestaoExtracaoManual(
   }
 
   const anterior = await prisma.provaQuestao.findFirst({
-    where: whereVariante(provaId, input.numero, variante),
+    where: filtroVariante(provaId, input.numero, variante),
     select: { observacoes: true },
   });
 
@@ -236,7 +240,7 @@ export async function aceitarEnunciadoExtracaoProva(
 ): Promise<{ id: string }> {
   const variante = (input.idiomaVariante ?? "COMUM") as IdiomaVarianteQuestao;
   const existente = await prisma.provaQuestao.findFirst({
-    where: whereVariante(provaId, input.numero, variante),
+    where: filtroVariante(provaId, input.numero, variante),
   });
   if (!existente) {
     throw new Error("Questão não encontrada no banco.");
