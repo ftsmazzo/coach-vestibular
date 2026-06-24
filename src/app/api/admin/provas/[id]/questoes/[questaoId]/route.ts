@@ -9,6 +9,12 @@ import {
   normalizarLabelMateria,
 } from "@/lib/taxonomia-validacao";
 import { sanitizarTextoProva, truncarTextoProva } from "@/lib/prova-texto-prova";
+import {
+  catalogoN1Valido,
+  labelCatalogoN1,
+  montarClassificacaoN1Manual,
+  versaoLabelN1,
+} from "@/lib/catalogos-n1-destino";
 
 const patchSchema = z.object({
   enunciado: z.string().min(10).optional(),
@@ -17,6 +23,7 @@ const patchSchema = z.object({
   materia: z.string().min(1).optional(),
   assunto: z.string().min(1).optional(),
   conhecimentoExigido: z.string().nullable().optional(),
+  classificacaoN1CatalogoId: z.string().min(1).optional(),
   nivelDificuldade: z.string().nullable().optional(),
   observacoes: z.string().nullable().optional(),
   gabarito: z.string().regex(/^[A-Ea-e]$/).nullable().optional(),
@@ -44,12 +51,30 @@ export async function PATCH(
     return NextResponse.json({ error: "Questão não encontrada" }, { status: 404 });
   }
 
-  const materia = body.materia
-    ? normalizarLabelMateria(body.materia)
-    : existente.materia;
-  const assunto = body.assunto
-    ? normalizarLabelAssunto(materia, body.assunto)
-    : existente.assunto;
+  const n1Manual =
+    body.classificacaoN1CatalogoId !== undefined
+      ? (() => {
+          if (!catalogoN1Valido(body.classificacaoN1CatalogoId!)) return null;
+          return montarClassificacaoN1Manual(body.classificacaoN1CatalogoId!);
+        })()
+      : null;
+
+  if (body.classificacaoN1CatalogoId !== undefined && !n1Manual) {
+    return NextResponse.json({ error: "Catálogo N1 inválido." }, { status: 400 });
+  }
+
+  const materia =
+    body.materia != null
+      ? normalizarLabelMateria(body.materia)
+      : n1Manual
+        ? labelCatalogoN1(n1Manual.catalogoId)
+        : existente.materia;
+  const assunto =
+    body.assunto != null
+      ? normalizarLabelAssunto(materia, body.assunto)
+      : n1Manual
+        ? `N1: ${n1Manual.catalogoId}`
+        : existente.assunto;
 
   const areaBloco =
     body.areaBloco !== undefined
@@ -61,13 +86,27 @@ export async function PATCH(
       ? await resolverQuestaoIdAposMateriaIdioma(prova, questaoId, provaId, materia)
       : questaoId;
 
+  const n1Patch = n1Manual
+    ? {
+        classificacaoN1Json: JSON.stringify(n1Manual),
+        classificacaoVersao: versaoLabelN1(n1Manual),
+        conhecimentoEscopoId: null,
+        conhecimentoDominioId: null,
+        conhecimentoExigido: null,
+        classificacaoConfianca: null,
+        classificacaoSecundariosJson: null,
+        conceitosCanonicosJson: null,
+      }
+    : {};
+
   const atualizada = await prisma.provaQuestao.update({
     where: { id: questaoIdEfetivo },
     data: {
+      ...n1Patch,
       ...(body.areaBloco !== undefined ? { areaBloco } : {}),
       materia,
       assunto,
-      ...(body.conhecimentoExigido !== undefined
+      ...(body.conhecimentoExigido !== undefined && !n1Manual
         ? { conhecimentoExigido: body.conhecimentoExigido }
         : {}),
       ...(body.nivelDificuldade !== undefined

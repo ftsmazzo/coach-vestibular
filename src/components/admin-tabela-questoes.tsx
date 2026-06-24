@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@/components/ui";
 import { inferirAreaBlocoPorMateria, normalizarAreaBloco, opcoesAreaBlocoAdmin } from "@/lib/areas-bloco";
 import { taxonomy } from "@/lib/taxonomy";
-import { parseClassificacaoN1 } from "@/lib/classificacao-n1-types";
+import { parseClassificacaoN1, n1Completo } from "@/lib/classificacao-n1-types";
+import { opcoesCatalogoN1 } from "@/lib/catalogos-n1-destino";
 import {
   marcarObservacoesConferidas,
   questaoConferidaPeloRevisor,
@@ -30,6 +31,7 @@ export interface QuestaoRow {
 const DIFICULDADES = ["", "Fácil", "Média", "Difícil"];
 
 type FormEdicao = {
+  catalogoN1: string;
   areaBloco: string;
   materia: string;
   assunto: string;
@@ -82,7 +84,9 @@ function rotaResumo(versao: string | null | undefined): string {
 
 function formDeQuestao(q: QuestaoRow): FormEdicao {
   const materia = q.materia;
+  const n1 = parseClassificacaoN1(q.classificacaoN1Json);
   return {
+    catalogoN1: n1?.catalogoId ?? "",
     areaBloco:
       normalizarAreaBloco(q.areaBloco, materia) ??
       inferirAreaBlocoPorMateria(materia) ??
@@ -109,14 +113,27 @@ export function AdminTabelaQuestoes({
   const [form, setForm] = useState<FormEdicao | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [conferida, setConferida] = useState(true);
-  const [filtro, setFiltro] = useState<"todas" | "alerta" | "sem_n2">("todas");
+  const [filtro, setFiltro] = useState<"todas" | "alerta" | "sem_n1" | "sem_n2">("todas");
 
   const materias = taxonomy.materias.map((m) => m.label);
   const opcoesArea = opcoesAreaBlocoAdmin();
+  const opcoesN1 = useMemo(() => opcoesCatalogoN1(), []);
+  const gruposN1 = useMemo(() => {
+    const map = new Map<string, typeof opcoesN1>();
+    for (const o of opcoesN1) {
+      const g = map.get(o.grupo) ?? [];
+      g.push(o);
+      map.set(o.grupo, g);
+    }
+    return map;
+  }, [opcoesN1]);
 
   const lista = useMemo(() => {
     if (filtro === "alerta") {
       return questoes.filter((q) => alertaSet.has(chaveAlerta(q)));
+    }
+    if (filtro === "sem_n1") {
+      return questoes.filter((q) => !n1Completo(parseClassificacaoN1(q.classificacaoN1Json)));
     }
     if (filtro === "sem_n2") {
       return questoes.filter((q) => {
@@ -156,8 +173,14 @@ export function AdminTabelaQuestoes({
 
   async function salvarModal() {
     if (!editando || !form) return;
+    if (!form.catalogoN1.trim()) {
+      onMensagem?.("Selecione o catálogo destino (N1) antes de salvar.");
+      return;
+    }
     setSalvando(true);
     onMensagem?.("");
+    const n1Anterior = parseClassificacaoN1(editando.classificacaoN1Json);
+    const n1Mudou = form.catalogoN1 !== (n1Anterior?.catalogoId ?? "");
     try {
       const res = await fetch(
         `/api/admin/provas/${provaId}/questoes/${editando.id}`,
@@ -165,10 +188,11 @@ export function AdminTabelaQuestoes({
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            classificacaoN1CatalogoId: n1Mudou ? form.catalogoN1.trim() : undefined,
             areaBloco: form.areaBloco.trim() || null,
             materia: form.materia.trim(),
             assunto: form.assunto.trim(),
-            conhecimentoExigido: form.conhecimento.trim() || null,
+            conhecimentoExigido: n1Mudou ? null : form.conhecimento.trim() || null,
             nivelDificuldade: form.dificuldade.trim() || null,
             observacoes:
               marcarObservacoesConferidas(form.observacoes, conferida) || null,
@@ -200,6 +224,10 @@ export function AdminTabelaQuestoes({
     return !id || id.endsWith(".__nao_classificado");
   }).length;
 
+  const semN1 = questoes.filter(
+    (q) => !n1Completo(parseClassificacaoN1(q.classificacaoN1Json))
+  ).length;
+
   return (
     <>
       <Card>
@@ -219,6 +247,15 @@ export function AdminTabelaQuestoes({
             >
               Todas ({questoes.length})
             </Button>
+            {semN1 > 0 && (
+              <Button
+                type="button"
+                variant={filtro === "sem_n1" ? "primary" : "secondary"}
+                onClick={() => setFiltro("sem_n1")}
+              >
+                Sem N1 ({semN1})
+              </Button>
+            )}
             {semN2 > 0 && (
               <Button
                 type="button"
@@ -244,7 +281,9 @@ export function AdminTabelaQuestoes({
           <p className="text-sm text-slate-500">
             {filtro === "alerta"
               ? "Nenhum alerta — rode «Auditar» ou volte para todas."
-              : filtro === "sem_n2"
+              : filtro === "sem_n1"
+                ? "Todas as questões têm N1."
+                : filtro === "sem_n2"
                 ? "Todas as questões têm escopo N2 real."
                 : "Nenhuma questão no banco."}
           </p>
@@ -367,6 +406,31 @@ export function AdminTabelaQuestoes({
                 )}
               </p>
             )}
+
+            <label className="text-xs text-slate-600">
+              Catálogo destino (N1)
+              <select
+                className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
+                value={form.catalogoN1}
+                onChange={(e) =>
+                  setForm((f) => f && { ...f, catalogoN1: e.target.value })
+                }
+              >
+                <option value="">— Selecione —</option>
+                {[...gruposN1.entries()].map(([grupo, itens]) => (
+                  <optgroup key={grupo} label={grupo}>
+                    {itens.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label} ({o.id})
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <span className="mt-1 block text-[11px] text-slate-500">
+                Alterar o N1 zera N2/N3 desta questão — rode as fases de novo depois.
+              </span>
+            </label>
 
             <div className="grid gap-3">
               <label className="text-xs text-slate-600">
