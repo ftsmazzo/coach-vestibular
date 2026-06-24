@@ -32,12 +32,21 @@ const DIFICULDADES = ["", "Fácil", "Média", "Difícil"];
 
 type FormEdicao = {
   catalogoN1: string;
+  escopoN2: string;
   areaBloco: string;
   materia: string;
   assunto: string;
   conhecimento: string;
   dificuldade: string;
   observacoes: string;
+};
+
+type EscopoN2Opcao = {
+  id: string;
+  label: string;
+  assuntoId: string;
+  assuntoLabel: string;
+  ehFallback?: boolean;
 };
 
 interface Props {
@@ -87,6 +96,7 @@ function formDeQuestao(q: QuestaoRow): FormEdicao {
   const n1 = parseClassificacaoN1(q.classificacaoN1Json);
   return {
     catalogoN1: n1?.catalogoId ?? "",
+    escopoN2: q.conhecimentoEscopoId?.trim() ?? "",
     areaBloco:
       normalizarAreaBloco(q.areaBloco, materia) ??
       inferirAreaBlocoPorMateria(materia) ??
@@ -114,6 +124,9 @@ export function AdminTabelaQuestoes({
   const [salvando, setSalvando] = useState(false);
   const [conferida, setConferida] = useState(true);
   const [filtro, setFiltro] = useState<"todas" | "alerta" | "sem_n1" | "sem_n2">("todas");
+  const [escoposN2, setEscoposN2] = useState<EscopoN2Opcao[]>([]);
+  const [buscaEscopo, setBuscaEscopo] = useState("");
+  const [carregandoEscopos, setCarregandoEscopos] = useState(false);
 
   const materias = taxonomy.materias.map((m) => m.label);
   const opcoesArea = opcoesAreaBlocoAdmin();
@@ -127,6 +140,51 @@ export function AdminTabelaQuestoes({
     }
     return map;
   }, [opcoesN1]);
+
+  useEffect(() => {
+    const cat = form?.catalogoN1?.trim();
+    if (!editando || !cat) {
+      setEscoposN2([]);
+      return;
+    }
+    let cancel = false;
+    setCarregandoEscopos(true);
+    fetch(`/api/admin/catalogos/${encodeURIComponent(cat)}/escopos`)
+      .then((r) => r.json())
+      .then((data: { escopos?: EscopoN2Opcao[] }) => {
+        if (!cancel) setEscoposN2(data.escopos ?? []);
+      })
+      .catch(() => {
+        if (!cancel) setEscoposN2([]);
+      })
+      .finally(() => {
+        if (!cancel) setCarregandoEscopos(false);
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [editando, form?.catalogoN1]);
+
+  const escoposFiltrados = useMemo(() => {
+    const q = buscaEscopo.trim().toLowerCase();
+    if (!q) return escoposN2;
+    return escoposN2.filter(
+      (e) =>
+        e.id.toLowerCase().includes(q) ||
+        e.label.toLowerCase().includes(q) ||
+        e.assuntoLabel.toLowerCase().includes(q)
+    );
+  }, [escoposN2, buscaEscopo]);
+
+  const gruposEscopoN2 = useMemo(() => {
+    const map = new Map<string, EscopoN2Opcao[]>();
+    for (const e of escoposFiltrados) {
+      const g = map.get(e.assuntoLabel) ?? [];
+      g.push(e);
+      map.set(e.assuntoLabel, g);
+    }
+    return map;
+  }, [escoposFiltrados]);
 
   const lista = useMemo(() => {
     if (filtro === "alerta") {
@@ -161,6 +219,7 @@ export function AdminTabelaQuestoes({
   function abrirModal(q: QuestaoRow) {
     setEditando(q);
     setForm(formDeQuestao(q));
+    setBuscaEscopo("");
     setConferida(
       questaoConferidaPeloRevisor(q.observacoes) || !q.observacoes?.trim()
     );
@@ -181,6 +240,8 @@ export function AdminTabelaQuestoes({
     onMensagem?.("");
     const n1Anterior = parseClassificacaoN1(editando.classificacaoN1Json);
     const n1Mudou = form.catalogoN1 !== (n1Anterior?.catalogoId ?? "");
+    const escopoAnterior = editando.conhecimentoEscopoId?.trim() ?? "";
+    const escopoMudou = form.escopoN2 !== escopoAnterior;
     try {
       const res = await fetch(
         `/api/admin/provas/${provaId}/questoes/${editando.id}`,
@@ -189,10 +250,14 @@ export function AdminTabelaQuestoes({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             classificacaoN1CatalogoId: n1Mudou ? form.catalogoN1.trim() : undefined,
+            conhecimentoEscopoId: escopoMudou
+              ? form.escopoN2.trim() || null
+              : undefined,
             areaBloco: form.areaBloco.trim() || null,
             materia: form.materia.trim(),
             assunto: form.assunto.trim(),
-            conhecimentoExigido: n1Mudou ? null : form.conhecimento.trim() || null,
+            conhecimentoExigido:
+              n1Mudou || escopoMudou ? null : form.conhecimento.trim() || null,
             nivelDificuldade: form.dificuldade.trim() || null,
             observacoes:
               marcarObservacoesConferidas(form.observacoes, conferida) || null,
@@ -398,23 +463,17 @@ export function AdminTabelaQuestoes({
               </button>
             </div>
 
-            {editando.conhecimentoEscopoId && (
-              <p className="mb-3 rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-900">
-                Escopo N2: <code>{editando.conhecimentoEscopoId}</code>
-                {editando.classificacaoConfianca != null && (
-                  <> · confiança {formatConfianca(editando.classificacaoConfianca)}</>
-                )}
-              </p>
-            )}
-
-            <label className="text-xs text-slate-600">
+            <label className="mb-3 block text-xs text-slate-600">
               Catálogo destino (N1)
               <select
-                className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
+                className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm"
                 value={form.catalogoN1}
-                onChange={(e) =>
-                  setForm((f) => f && { ...f, catalogoN1: e.target.value })
-                }
+                onChange={(e) => {
+                  const catalogoN1 = e.target.value;
+                  setForm((f) =>
+                    f ? { ...f, catalogoN1, escopoN2: "" } : f
+                  );
+                }}
               >
                 <option value="">— Selecione —</option>
                 {[...gruposN1.entries()].map(([grupo, itens]) => (
@@ -428,7 +487,52 @@ export function AdminTabelaQuestoes({
                 ))}
               </select>
               <span className="mt-1 block text-[11px] text-slate-500">
-                Alterar o N1 zera N2/N3 desta questão — rode as fases de novo depois.
+                Alterar o N1 zera N2/N3 desta questão.
+              </span>
+            </label>
+
+            <label className="mb-3 block text-xs text-slate-600">
+              Escopo N2 (catálogo)
+              <input
+                type="search"
+                placeholder="Filtrar escopos…"
+                className="mt-0.5 mb-1 w-full rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                value={buscaEscopo}
+                onChange={(e) => setBuscaEscopo(e.target.value)}
+              />
+              <select
+                className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm"
+                value={form.escopoN2}
+                disabled={!form.catalogoN1 || carregandoEscopos}
+                onChange={(e) =>
+                  setForm((f) => f && { ...f, escopoN2: e.target.value })
+                }
+              >
+                <option value="">
+                  {carregandoEscopos
+                    ? "Carregando escopos…"
+                    : !form.catalogoN1
+                      ? "Defina N1 primeiro"
+                      : "— Sem escopo / limpar —"}
+                </option>
+                {[...gruposEscopoN2.entries()].map(([grupo, itens]) => (
+                  <optgroup key={grupo} label={grupo}>
+                    {itens.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label}
+                        {o.ehFallback ? " (fallback)" : ""}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              {form.escopoN2 && (
+                <code className="mt-1 block truncate text-[10px] text-violet-800">
+                  {form.escopoN2}
+                </code>
+              )}
+              <span className="mt-1 block text-[11px] text-slate-500">
+                Alterar N2 zera N3. Use para corrigir inglês/mat etc. sem rodar a prova inteira.
               </span>
             </label>
 

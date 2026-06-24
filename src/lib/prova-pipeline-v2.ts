@@ -417,18 +417,23 @@ ${extra}`;
 
   if (politicaIdioma.modoDuplicata && faixaIdioma) {
     await extrairLotes(numerosComuns, "COMUM", "", "Comum");
-    await extrairLotes(
-      numerosFaixa,
-      "INGLES",
-      "Extraia APENAS o bloco em INGLÊS (Língua Inglesa) — ignore a versão em espanhol.\n",
-      "Inglês"
-    );
-    await extrairLotes(
-      numerosFaixa,
-      "ESPANHOL",
-      "Extraia APENAS o bloco em ESPANHOL (Língua Espanhola) — ignore a versão em inglês.\n",
-      "Espanhol"
-    );
+    const instrIng =
+      "Extraia APENAS o bloco em INGLÊS (Língua Inglesa) — ignore a versão em espanhol.\n" +
+      (ordemIdiomasFaixa === "ESPANHOL_PRIMEIRO"
+        ? "No PDF o bloco de Inglês vem DEPOIS do bloco de Espanhol (5 questões ES e depois 5 EN).\n"
+        : "");
+    const instrEsp =
+      "Extraia APENAS o bloco em ESPANHOL (Língua Espanhola) — ignore a versão em inglês.\n" +
+      (ordemIdiomasFaixa === "ESPANHOL_PRIMEIRO"
+        ? "No PDF o bloco de Espanhol vem ANTES do bloco de Inglês (5 questões ES seguidas de 5 EN).\n"
+        : "");
+    if (ordemIdiomasFaixa === "ESPANHOL_PRIMEIRO") {
+      await extrairLotes(numerosFaixa, "ESPANHOL", instrEsp, "Espanhol");
+      await extrairLotes(numerosFaixa, "INGLES", instrIng, "Inglês");
+    } else {
+      await extrairLotes(numerosFaixa, "INGLES", instrIng, "Inglês");
+      await extrairLotes(numerosFaixa, "ESPANHOL", instrEsp, "Espanhol");
+    }
   } else if (politicaIdioma.forcarSomenteIngles) {
     const faixaLegado = faixaIdioma ?? inferirFaixaIdiomaDoPdf(estrutura) ?? { inicio: 1, fim: 5 };
     const comuns = numeros.filter((n) => n < faixaLegado.inicio || n > faixaLegado.fim);

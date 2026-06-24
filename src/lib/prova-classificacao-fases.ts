@@ -83,7 +83,8 @@ function areaFromRow(row: QuestaoDb): "linguagens" | "humanas" | "exatas" | "nat
 function questaoParaPayload(
   q: QuestaoDb,
   trechos: Map<number, string>,
-  banca?: string
+  banca?: string,
+  todas?: QuestaoDb[]
 ): PayloadQuestaoCompleto {
   const trecho = trechos.get(q.numero);
   const enunciado = q.enunciado?.trim() || trecho?.trim() || "";
@@ -92,6 +93,11 @@ function questaoParaPayload(
     textoBase = trecho.trim();
   } else if (trecho?.trim() && !q.enunciado?.trim()) {
     textoBase = trecho.trim();
+  } else if (todas?.length) {
+    const compartilhado = resolverTextoCompartilhado(q, todas);
+    if (compartilhado) {
+      textoBase = compartilhado;
+    }
   }
 
   return {
@@ -157,7 +163,7 @@ export async function executarFaseN1Prova(provaId: string): Promise<ResultadoFas
   let processadas = 0;
 
   for (const q of questoes) {
-    const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined);
+    const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
     const texto = textoCompletoPayload(payload);
     if (texto.length < textoMinimo(q)) {
       avisos.push(`Q${q.numero}: texto insuficiente para N1.`);
@@ -201,11 +207,25 @@ export async function executarFaseN1Prova(provaId: string): Promise<ResultadoFas
   };
 }
 
+import { resolverTextoCompartilhado } from "@/lib/prova-texto-compartilhado";
+
+export type OpcoesFaseN2Prova = {
+  /** Pula questões que já têm escopo N2 real (não fallback). */
+  apenasSemEscopoReal?: boolean;
+};
+
 /** FASE 2 — N2: escopo no catálogo. Exige N1 gravado. NÃO gera N3. */
-export async function executarFaseN2Prova(provaId: string): Promise<ResultadoFaseProva> {
+export async function executarFaseN2Prova(
+  provaId: string,
+  opts?: OpcoesFaseN2Prova
+): Promise<ResultadoFaseProva> {
   const { prova, questoes, trechos } = await carregarContextoProva(provaId);
   const avisos: string[] = [];
-  const etapas: string[] = ["═══ FASE N2 — escopo no catálogo (sem N3) ═══"];
+  const etapas: string[] = [
+    opts?.apenasSemEscopoReal
+      ? "═══ FASE N2 — só questões sem escopo real ═══"
+      : "═══ FASE N2 — escopo no catálogo (sem N3) ═══",
+  ];
   let ok = 0;
   let processadas = 0;
 
@@ -221,7 +241,16 @@ export async function executarFaseN2Prova(provaId: string): Promise<ResultadoFas
     const n1 = parseClassificacaoN1(q.classificacaoN1Json);
     if (!n1Completo(n1) || !n1) continue;
 
-    const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined);
+    const escAtual = q.conhecimentoEscopoId?.trim();
+    if (
+      opts?.apenasSemEscopoReal &&
+      escAtual &&
+      !escAtual.endsWith(".__nao_classificado")
+    ) {
+      continue;
+    }
+
+    const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
     const meta = metaFromClassificacaoN1(n1);
 
     const { resultado, etapa } = await passoClassificacaoN2Somente(
@@ -290,7 +319,7 @@ export async function executarFaseN3Prova(provaId: string): Promise<ResultadoFas
     const escopoId = q.conhecimentoEscopoId?.trim();
     if (!n1Completo(n1) || !n1 || !escopoId) continue;
 
-    const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined);
+    const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
     const meta = metaFromClassificacaoN1(n1);
     meta.catalogoDestino = n1.catalogoId;
 

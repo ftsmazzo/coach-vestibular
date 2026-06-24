@@ -44,8 +44,9 @@ export function AdminClassificacaoProva({
   const n2CompletoTodas =
     totalQuestoes > 0 && comN2Real + comN2Fallback === totalQuestoes;
   const faltamN1 = totalQuestoes - comN1;
+  const faltamN2Real = totalQuestoes - comN2Real;
 
-  async function rodarFase(fase: Fase) {
+  async function rodarFase(fase: Fase, opts?: { apenasFaltantes?: boolean }) {
     setRodando(fase);
     setUltimo(null);
     onMensagem("");
@@ -60,7 +61,7 @@ export function AdminClassificacaoProva({
       const res = await fetch(`/api/admin/provas/${provaId}/${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify(opts?.apenasFaltantes ? { apenasFaltantes: true } : {}),
       });
       const data = (await res.json()) as ResultadoFase;
       setUltimo(data);
@@ -122,8 +123,18 @@ export function AdminClassificacaoProva({
           disabled={rodando !== null || totalQuestoes === 0 || !n1CompletoTodas}
           onClick={() => rodarFase("N2")}
         >
-          {rodando === "N2" ? "N2 rodando…" : "2 · Rodar N2 (escopo)"}
+          {rodando === "N2" ? "N2 rodando…" : "2 · Rodar N2 (todas)"}
         </Button>
+        {faltamN2Real > 0 && n1CompletoTodas && (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={rodando !== null}
+            onClick={() => rodarFase("N2", { apenasFaltantes: true })}
+          >
+            {rodando === "N2" ? "N2 rodando…" : `2b · N2 só faltantes (${faltamN2Real})`}
+          </Button>
+        )}
         <Button
           type="button"
           variant="secondary"

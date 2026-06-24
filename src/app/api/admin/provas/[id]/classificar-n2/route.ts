@@ -6,13 +6,14 @@ import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 export const maxDuration = 600;
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
   const { id: provaId } = await params;
+  const body = (await request.json().catch(() => ({}))) as { apenasFaltantes?: boolean };
 
   if (!process.env.OPENAI_API_KEY?.trim()) {
     return NextResponse.json(
@@ -22,12 +23,15 @@ export async function POST(
   }
 
   try {
-    const resultado = await executarFaseN2Prova(provaId);
+    const resultado = await executarFaseN2Prova(provaId, {
+      apenasSemEscopoReal: body.apenasFaltantes === true,
+    });
     await refreshProvaGabaritoFlag(provaId);
+    const prefixo = body.apenasFaltantes ? "N2 (só faltantes)" : "Fase N2";
     return NextResponse.json({
       ...resultado,
       fase: "N2",
-      mensagem: `Fase N2: ${resultado.ok}/${resultado.processadas} com escopo real (de ${resultado.total} no banco).`,
+      mensagem: `${prefixo}: ${resultado.ok}/${resultado.processadas} com escopo real (de ${resultado.total} no banco).`,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erro na fase N2";

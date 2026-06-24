@@ -36,6 +36,8 @@ Regras:
 - Línguas e códigos ≠ Geografia/Biologia/Física/Química salvo conteúdo explícito da disciplina.
 - Ciências Humanas ≠ Biologia/Física/Química.
 - Para bloco em INGLÊS: extraia só o texto em inglês. Para ESPANHOL: só o texto em espanhol.
+- Duplicata EN/ES: em muitos vestibulares vêm 5 questões de Espanhol seguidas e depois 5 de Inglês (mesmos números 1–5). Extraia o bloco correto conforme a instrução da passagem — não copie texto do outro idioma.
+- Texto compartilhado ("Leia o texto… responda às questões X a Y"): em CADA questão do intervalo inclua o texto de apoio compartilhado E o comando/pergunta específico daquele número (não repita só o texto sem a pergunta da questão).
 - Responda somente no formato solicitado.`.trim();
 
 /** @deprecated use PROMPT_SISTEMA_EXTRACAO_LITERAL */

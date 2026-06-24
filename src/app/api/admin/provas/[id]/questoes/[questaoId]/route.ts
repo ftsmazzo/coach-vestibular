@@ -15,6 +15,8 @@ import {
   montarClassificacaoN1Manual,
   versaoLabelN1,
 } from "@/lib/catalogos-n1-destino";
+import { parseClassificacaoN1, n1Completo } from "@/lib/classificacao-n1-types";
+import { camposManualEscopoN2 } from "@/lib/prova-classificacao-manual-n2";
 
 const patchSchema = z.object({
   enunciado: z.string().min(10).optional(),
@@ -23,6 +25,7 @@ const patchSchema = z.object({
   materia: z.string().min(1).optional(),
   assunto: z.string().min(1).optional(),
   conhecimentoExigido: z.string().nullable().optional(),
+  conhecimentoEscopoId: z.string().min(1).nullable().optional(),
   classificacaoN1CatalogoId: z.string().min(1).optional(),
   nivelDificuldade: z.string().nullable().optional(),
   observacoes: z.string().nullable().optional(),
@@ -99,14 +102,53 @@ export async function PATCH(
       }
     : {};
 
+  const catalogoN1Atual =
+    n1Manual?.catalogoId ??
+    parseClassificacaoN1(existente.classificacaoN1Json)?.catalogoId ??
+    null;
+
+  let n2Patch: Record<string, unknown> = {};
+  if (body.conhecimentoEscopoId !== undefined && !n1Manual) {
+    if (!catalogoN1Atual || !n1Completo(parseClassificacaoN1(existente.classificacaoN1Json))) {
+      return NextResponse.json(
+        { error: "Defina N1 antes de escolher escopo N2." },
+        { status: 400 }
+      );
+    }
+    if (body.conhecimentoEscopoId === null) {
+      n2Patch = {
+        conhecimentoEscopoId: null,
+        conhecimentoDominioId: null,
+        classificacaoConfianca: null,
+        classificacaoSecundariosJson: null,
+        conceitosCanonicosJson: null,
+        conhecimentoExigido: null,
+      };
+    } else {
+      const campos = camposManualEscopoN2(catalogoN1Atual, body.conhecimentoEscopoId);
+      if (!campos) {
+        return NextResponse.json({ error: "Escopo N2 inválido para o catálogo N1." }, { status: 400 });
+      }
+      n2Patch = campos;
+    }
+  }
+
+  const materiaFinal =
+    (n2Patch.materia as string | undefined) ??
+    (body.materia != null ? materia : n1Manual ? labelCatalogoN1(n1Manual.catalogoId) : existente.materia);
+  const assuntoFinal =
+    (n2Patch.assunto as string | undefined) ??
+    (body.assunto != null ? assunto : n1Manual ? `N1: ${n1Manual.catalogoId}` : existente.assunto);
+
   const atualizada = await prisma.provaQuestao.update({
     where: { id: questaoIdEfetivo },
     data: {
       ...n1Patch,
+      ...n2Patch,
       ...(body.areaBloco !== undefined ? { areaBloco } : {}),
-      materia,
-      assunto,
-      ...(body.conhecimentoExigido !== undefined && !n1Manual
+      materia: materiaFinal,
+      assunto: assuntoFinal,
+      ...(body.conhecimentoExigido !== undefined && !n1Manual && body.conhecimentoEscopoId === undefined
         ? { conhecimentoExigido: body.conhecimentoExigido }
         : {}),
       ...(body.nivelDificuldade !== undefined
