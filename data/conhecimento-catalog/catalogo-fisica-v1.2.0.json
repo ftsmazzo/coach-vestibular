@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.1",
+  "catalogVersion": "1.2.2",
   "materiaId": "fisica",
   "materiaLabel": "Física",
   "areaEnem": "Ciências da Natureza",
@@ -49,23 +49,45 @@
                 "velocidade constante",
                 "gráfico s x t",
                 "km/h",
-                "deslocamento"
+                "deslocamento",
+                "velocidade média",
+                "velocidade media",
+                "ônibus",
+                "onibus",
+                "intervalo entre saídas",
+                "intervalo entre saidas",
+                "tempo de percurso",
+                "horário de partida"
               ],
               "descricao": "Movimento com velocidade constante e aceleração nula; uso de s=s0+vt e leitura linear em gráfico posição×tempo. NÃO cobre aceleração constante (MRUV).",
               "exemplosEnunciado": [
-                "Um veículo percorre distâncias iguais em intervalos de tempo iguais; determine sua velocidade média e posição final."
+                "Um veículo percorre distâncias iguais em intervalos de tempo iguais; determine sua velocidade média e posição final.",
+                "Dois ônibus saem do terminal com intervalo fixo e mesma velocidade média; calcule o tempo até o encontro ou o instante em que o segundo alcança o primeiro.",
+                "Calcular tempo de percurso a partir de velocidade média e intervalo entre saídas de ônibus."
               ],
               "negativeHints": [
                 "aceleração",
                 "Torricelli",
-                "queda livre"
+                "queda livre",
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico",
+                "função afim sem movimento"
               ],
               "naoConfundirCom": [
                 "fis.mecanica.cinematica.mruv",
-                "fis.mecanica.cinematica.graficos"
+                "fis.mecanica.cinematica.graficos",
+                "mat.funcoes.geral.conceito_grafico",
+                "mat.funcoes.geral.afim",
+                "mat.aritmetica.numeros.razao_proporcao"
               ],
-              "keywordsContexto": [],
-              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+              "keywordsContexto": [
+                "linha de transporte",
+                "terminal",
+                "ponto de embarque"
+              ],
+              "regraDesempate": "Velocidade média + tempo de percurso em contexto de movimento (ônibus, carro, móvel) → MRU. Cálculo/proporção sozinhos não levam a Matemática (fisica_prevalece_quando_ha_grandezas_e_fenomeno)."
             },
             {
               "id": "fis.mecanica.cinematica.mruv",
@@ -128,19 +150,34 @@
                 "inclinação do gráfico",
                 "área sob a curva",
                 "s x t",
-                "v x t"
+                "v x t",
+                "gráfico v x t",
+                "grafico v x t",
+                "inclinação do gráfico de velocidade",
+                "aceleração no gráfico"
               ],
               "descricao": "Interpretação de gráficos s×t, v×t e a×t: inclinação, área sob a curva e conversão entre grandezas.",
               "exemplosEnunciado": [
-                "No gráfico velocidade×tempo, a área sob a curva representa o deslocamento do móvel."
+                "No gráfico velocidade×tempo, a área sob a curva representa o deslocamento do móvel.",
+                "No gráfico velocidade×tempo, a inclinação representa a aceleração; a área sob a curva representa o deslocamento."
               ],
               "naoConfundirCom": [
                 "fis.mecanica.cinematica.mru",
-                "fis.mecanica.cinematica.mruv"
+                "fis.mecanica.cinematica.mruv",
+                "fis.mecanica.dinamica.newton",
+                "mat.funcoes.geral.conceito_grafico"
               ],
-              "keywordsContexto": [],
-              "negativeHints": [],
-              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+              "keywordsContexto": [
+                "área sob a curva",
+                "deslocamento"
+              ],
+              "negativeHints": [
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico"
+              ],
+              "regraDesempate": "Se pede apenas interpretar o gráfico (inclinação/área) → aqui. Se pede relacionar aceleração ao sentido da força resultante → fis.mecanica.dinamica.newton (secundário possível)."
             },
             {
               "id": "fis.mecanica.cinematica.relacao_velocidades",
@@ -194,22 +231,37 @@
                 "f=ma",
                 "inércia",
                 "inercia",
-                "diagrama de corpo livre"
+                "diagrama de corpo livre",
+                "gráfico v x t",
+                "sentido da força resultante",
+                "aceleração e força",
+                "2ª lei de newton"
               ],
-              "descricao": "Aplicação das leis de Newton, força resultante e diagrama de corpo livre. NÃO cobre conservação de energia como método principal.",
+              "descricao": "Aplicação das leis de Newton, força resultante e diagrama de corpo livre; interpretação de aceleração em gráfico v×t ligada ao sentido da força. NÃO cobre conservação de energia como método principal. NÃO confundir com leitura pura de gráfico sem vínculo com força.",
               "exemplosEnunciado": [
-                "Um bloco sofre duas forças horizontais; determine sua aceleração pela força resultante."
+                "Um bloco sofre duas forças horizontais; determine sua aceleração pela força resultante.",
+                "Interpretar aceleração em gráfico v×t e relacionar ao sentido da força resultante (2ª lei de Newton)."
               ],
               "negativeHints": [
                 "energia mecânica",
-                "trabalho"
+                "trabalho",
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico",
+                "só calcular inclinação sem força"
               ],
               "naoConfundirCom": [
                 "fis.mecanica.energia.conservacao",
-                "fis.mecanica.energia.trabalho_potencia"
+                "fis.mecanica.energia.trabalho_potencia",
+                "fis.mecanica.cinematica.graficos",
+                "mat.funcoes.geral.conceito_grafico"
               ],
-              "keywordsContexto": [],
-              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+              "keywordsContexto": [
+                "inclinação do gráfico",
+                "diagrama de corpo livre"
+              ],
+              "regraDesempate": "Gráfico v×t + força resultante/aceleração como conceito dinâmico → aqui. Gráfico sem dinâmica → fis.mecanica.cinematica.graficos."
             },
             {
               "id": "fis.mecanica.dinamica.atrito_plano",
@@ -432,15 +484,33 @@
                 "orbita",
                 "kepler",
                 "astronauta",
-                "estação espacial"
+                "estação espacial",
+                "velocidade orbital",
+                "força centrípeta",
+                "força gravitacional",
+                "igualar forças",
+                "movimento circular"
               ],
-              "descricao": "Questões que exigem aplicar conceitos físicos de órbitas, satélites e kepler no domínio Gravitação universal. Classifique aqui quando o procedimento de resolução depender diretamente desse conceito, não apenas quando ele aparecer no contexto.",
+              "descricao": "Órbitas circulares, satélites e Kepler; igualar força gravitacional à resultante centrípeta para obter velocidade orbital. NÃO cobre apenas peso em superfície terrestre.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar órbitas, satélites e kepler para chegar à alternativa correta."
+                "Uma questão apresenta uma situação-problema e pede aplicar órbitas, satélites e kepler para chegar à alternativa correta.",
+                "Igualar a força gravitacional à força centrípeta para obter a velocidade orbital de um satélite."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico"
+              ],
+              "naoConfundirCom": [
+                "fis.mecanica.gravitacao.lei_gravitacao",
+                "mat.algebra.equacoes.segundo_grau"
+              ],
+              "keywordsContexto": [
+                "satélite geoestacionário",
+                "órbita circular"
+              ],
+              "regraDesempate": "Satélite/órbita com Fg = Fc → aqui. Apenas P=m·g na Terra → lei_gravitacao."
             }
           ]
         }
@@ -517,15 +587,34 @@
                 "flutuação",
                 "flutuacao",
                 "submersão",
-                "densidade relativa"
+                "densidade relativa",
+                "submersão total",
+                "submersao total",
+                "força adicional",
+                "flutuação parcial"
               ],
-              "descricao": "Questões que exigem aplicar conceitos físicos de princípio de arquimedes no domínio Empuxo e flutuação. Classifique aqui quando o procedimento de resolução depender diretamente desse conceito, não apenas quando ele aparecer no contexto.",
+              "descricao": "Princípio de Arquimedes: empuxo, flutuação e submersão; determinar força adicional para submersão total. NÃO cobre apenas volume geométrico abstrato.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar princípio de arquimedes para chegar à alternativa correta."
+                "Uma questão apresenta uma situação-problema e pede aplicar princípio de arquimedes para chegar à alternativa correta.",
+                "Aplicar empuxo/flutuação para determinar a força adicional necessária à submersão total de um corpo."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico",
+                "volume de sólido geométrico puro"
+              ],
+              "naoConfundirCom": [
+                "fis.hidrostatica.empuxo.aplicacoes",
+                "mat.geometria_espacial.solidos.esfera"
+              ],
+              "keywordsContexto": [
+                "corpo flutuando",
+                "mergulho",
+                "tanque d'água"
+              ],
+              "regraDesempate": "Empuxo/força de flutuação → aqui. Só cálculo de volume de esfera → Geometria (Mat)."
             },
             {
               "id": "fis.hidrostatica.empuxo.aplicacoes",
@@ -568,15 +657,33 @@
                 "superficial",
                 "volumétrica",
                 "volumetrica",
-                "gap de dilatação"
+                "gap de dilatação",
+                "esfera aquecida",
+                "esfera metálica",
+                "dilatação linear e volumétrica",
+                "raio e volume"
               ],
-              "descricao": "Questões que exigem aplicar conceitos físicos de dilatação térmica no domínio Calor e temperatura. Classifique aqui quando o procedimento de resolução depender diretamente desse conceito, não apenas quando ele aparecer no contexto.",
+              "descricao": "Dilatação linear, superficial e volumétrica; relação entre variação de raio e volume em sólidos (ex.: esfera aquecida). NÃO cobre porcentagem abstrata sem coeficiente de dilatação.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar dilatação térmica para chegar à alternativa correta."
+                "Uma questão apresenta uma situação-problema e pede aplicar dilatação térmica para chegar à alternativa correta.",
+                "Relacionar dilatação volumétrica e linear em uma esfera aquecida (variação de raio e volume)."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico"
+              ],
+              "naoConfundirCom": [
+                "fis.termologia.calor.calorimetria",
+                "mat.aritmetica.numeros.porcentagem"
+              ],
+              "keywordsContexto": [
+                "gap de dilatação",
+                "anel",
+                "tampa"
+              ],
+              "regraDesempate": "Coeficiente de dilatação + ΔL/ΔV físicos → aqui."
             },
             {
               "id": "fis.termologia.calor.calorimetria",
@@ -673,15 +780,34 @@
                 "isobárica",
                 "isobarica",
                 "isocórica",
-                "adiabática"
+                "adiabática",
+                "densidade do gás",
+                "densidade do gas",
+                "recipiente hermético",
+                "volume constante",
+                "pV=nRT",
+                "clapeyron"
               ],
-              "descricao": "Questões que exigem aplicar conceitos físicos de gases ideais e transformações no domínio Termodinâmica. Classifique aqui quando o procedimento de resolução depender diretamente desse conceito, não apenas quando ele aparecer no contexto.",
+              "descricao": "Gás ideal, transformações e densidade em recipiente de volume constante; lei dos gases. NÃO cobre apenas manipulação algébrica de pV=nRT sem contexto físico.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar gases ideais e transformações para chegar à alternativa correta."
+                "Uma questão apresenta uma situação-problema e pede aplicar gases ideais e transformações para chegar à alternativa correta.",
+                "Analisar como a densidade de um gás ideal varia em recipiente hermético de volume constante ao aquecer ou comprimir."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico"
+              ],
+              "naoConfundirCom": [
+                "fis.termologia.termodinamica.primeira_lei",
+                "mat.algebra.equacoes.primeiro_grau"
+              ],
+              "keywordsContexto": [
+                "gás confinado",
+                "temperatura e pressão"
+              ],
+              "regraDesempate": "Densidade/estado do gás ideal → aqui. Só isolar variável em pV=nRT sem fenômeno → revisar se não é Mat."
             },
             {
               "id": "fis.termologia.termodinamica.primeira_lei",
@@ -910,15 +1036,32 @@
                 "espelho plano",
                 "espelho concavo",
                 "espelho convexo",
-                "imagem no espelho"
+                "imagem no espelho",
+                "simetria",
+                "imagem conjugada",
+                "distância objeto-imagem"
               ],
-              "descricao": "Questões que exigem aplicar conceitos físicos de reflexão da luz no domínio Óptica geométrica. Classifique aqui quando o procedimento de resolução depender diretamente desse conceito, não apenas quando ele aparecer no contexto.",
+              "descricao": "Reflexão em espelhos planos; localização de imagem por simetria. NÃO cobre espelhos esféricos com equação de gauss como foco principal.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar reflexão da luz para chegar à alternativa correta."
+                "Uma questão apresenta uma situação-problema e pede aplicar reflexão da luz para chegar à alternativa correta.",
+                "Determinar a posição da imagem de um objeto em espelho plano por simetria/reflexão."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico",
+                "coordenadas cartesianas abstratas"
+              ],
+              "naoConfundirCom": [
+                "fis.optica.geometrica.refracao",
+                "mat.geometria_analitica.plano.distancia_ponto"
+              ],
+              "keywordsContexto": [
+                "campo de visão",
+                "retrovisor"
+              ],
+              "regraDesempate": "Espelho plano + simetria → aqui. Lentes/gauss → lentes."
             },
             {
               "id": "fis.optica.geometrica.refracao",
@@ -1271,15 +1414,36 @@
                 "110v",
                 "127v",
                 "tensão de funcionamento",
-                "potência nominal"
+                "potência nominal",
+                "energia em kWh",
+                "tempo de funcionamento",
+                "potência e consumo",
+                "conta de energia"
               ],
-              "descricao": "Questões que exigem aplicar conceitos físicos de potência, energia e consumo no domínio Potência elétrica. Classifique aqui quando o procedimento de resolução depender diretamente desse conceito, não apenas quando ele aparecer no contexto.",
+              "descricao": "Potência elétrica (P), energia (E=P·t) e consumo em kWh; relação entre potência, tempo e energia. NÃO cobre porcentagem de desconto na conta.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar potência, energia e consumo para chegar à alternativa correta."
+                "Uma questão apresenta uma situação-problema e pede aplicar potência, energia e consumo para chegar à alternativa correta.",
+                "Relacionar potência elétrica, energia em kWh e tempo de funcionamento de um aparelho."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico",
+                "juros",
+                "desconto percentual"
+              ],
+              "naoConfundirCom": [
+                "fis.eletrodinamica.potencia.eletrica_joule",
+                "mat.financeira.juros.simples",
+                "mat.aritmetica.numeros.porcentagem"
+              ],
+              "keywordsContexto": [
+                "aparelho elétrico",
+                "tarifa",
+                "horas ligado"
+              ],
+              "regraDesempate": "P, E, kWh e tempo → aqui. Só porcentagem financeira → Mat."
             },
             {
               "id": "fis.eletrodinamica.potencia.eletrica_joule",
@@ -1341,15 +1505,33 @@
                 "condutor",
                 "f=b.i.l",
                 "partícula carregada",
-                "trajetória circular"
+                "trajetória circular",
+                "módulo da velocidade",
+                "modulo da velocidade",
+                "direção da velocidade",
+                "trabalho da força magnética"
               ],
-              "descricao": "Questões que exigem aplicar conceitos físicos de força sobre condutor e partícula no domínio Campo magnético. Classifique aqui quando o procedimento de resolução depender diretamente desse conceito, não apenas quando ele aparecer no contexto.",
+              "descricao": "Força magnética sobre condutor ou partícula carregada (Lorentz); altera direção da velocidade, não o módulo (trabalho nulo). NÃO cobre trigonometria pura do círculo.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar força sobre condutor e partícula para chegar à alternativa correta."
+                "Uma questão apresenta uma situação-problema e pede aplicar força sobre condutor e partícula para chegar à alternativa correta.",
+                "Reconhecer que a força magnética sobre partícula carregada altera a direção da velocidade, mas não seu módulo."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico"
+              ],
+              "naoConfundirCom": [
+                "fis.magnetismo.campo.ima_forca",
+                "mat.trigonometria.relacoes.identidades"
+              ],
+              "keywordsContexto": [
+                "próton",
+                "elétron",
+                "partícula em campo B"
+              ],
+              "regraDesempate": "Força magnética + carga em movimento → aqui."
             }
           ]
         },
@@ -1534,15 +1716,36 @@
                 "foton",
                 "planck",
                 "quanta",
-                "frequência mínima"
+                "frequência mínima",
+                "Ef=hf",
+                "E = hf",
+                "energia mínima",
+                "energia do fóton",
+                "emissão de elétron",
+                "função trabalho"
               ],
-              "descricao": "Questões que exigem aplicar conceitos físicos de efeito fotoelétrico e fóton no domínio Introdução à física quântica. Classifique aqui quando o procedimento de resolução depender diretamente desse conceito, não apenas quando ele aparecer no contexto.",
+              "descricao": "Efeito fotoelétrico: energia do fóton Ef=h·f, função trabalho e emissão de elétrons. NÃO cobre espectro químico ou equação de reação.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar efeito fotoelétrico e fóton para chegar à alternativa correta."
+                "Uma questão apresenta uma situação-problema e pede aplicar efeito fotoelétrico e fóton para chegar à alternativa correta.",
+                "Aplicar Ef = h·f para verificar quais fótons superam a energia mínima de emissão de elétrons."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "porcentagem pura",
+                "regra de três sem grandezas físicas",
+                "função matemática abstrata",
+                "equação sem fenômeno físico",
+                "balanceamento químico"
+              ],
+              "naoConfundirCom": [
+                "fis.fisica_moderna.quantum.modelos",
+                "quim.ambiental.poluicao.atmosferica"
+              ],
+              "keywordsContexto": [
+                "placa metálica",
+                "luz ultravioleta",
+                "frequência de corte"
+              ],
+              "regraDesempate": "Fóton + efeito fotoelétrico + Planck → aqui."
             },
             {
               "id": "fis.fisica_moderna.quantum.modelos",
@@ -1590,6 +1793,7 @@
     }
   ],
   "changelog": [
+    "1.2.2: Refino FAMERP 61–70 — enriquecidos 11 escopos (MRU ônibus, Newton+gráfico, órbitas, Arquimedes, dilatação esfera, gás ideal densidade, espelho plano, kWh, Lorentz, fotoelétrico) com keywords, exemplos e desempate vs Mat.",
     "1.2.1: Regra global fisica_prevalece_quando_ha_grandezas_e_fenomeno — Física matematizada (FAMERP) não deve ir para Matemática no N1/N2.",
     "1.2.0: Refatoração para o padrão Química v1.2 — descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate em escopos críticos.",
     "1.2.0: confiancaMinima elevada para 0.45; documentadas regras de multiLabel, política N3, pesos e fallback fis.__nao_classificado."
