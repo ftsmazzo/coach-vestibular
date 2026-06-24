@@ -35,6 +35,7 @@ import {
   type MateriaNatureza,
   type TriagemNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
+import { triarQuestaoIA } from "@/lib/enem-classificar/triagem-ia";
 import {
   fisicaPrevaleceSobreMatematica,
   REGRA_FISICA_PREVALECE_ID,
