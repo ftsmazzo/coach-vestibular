@@ -7,11 +7,16 @@ import { chaveQuestaoVariante } from "@/lib/prova-idioma";
 import { normalizarLabelAssunto, normalizarLabelMateria } from "@/lib/taxonomia-validacao";
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import { normalizarGabaritoOficial } from "@/lib/gabarito-anulada";
+import { sanitizarTextoProva, truncarTextoProva } from "@/lib/prova-texto-prova";
 
 function truncarEnunciado(t?: string | null): string | null {
   if (!t?.trim()) return null;
-  const s = t.trim();
-  return s.length > 6000 ? `${s.slice(0, 6000)}…` : s;
+  return truncarTextoProva(sanitizarTextoProva(t));
+}
+
+function truncarAlternativas(t?: string | null): string | null {
+  if (!t?.trim()) return null;
+  return truncarTextoProva(sanitizarTextoProva(t), 8000);
 }
 
 function varianteRow(r: ProvaQuestaoRow): IdiomaVarianteQuestao {
@@ -90,6 +95,7 @@ export async function persistirQuestoesClassificadas(
           nivelDificuldade: r.nivelDificuldade ?? null,
           observacoes: r.observacoes ?? null,
           enunciado: truncarEnunciado(r.enunciado),
+          alternativas: truncarAlternativas(r.alternativas),
           gabarito: r.gabarito ?? null,
           ...camposN2(r),
         })),
@@ -114,6 +120,7 @@ export async function persistirQuestoesClassificadas(
         nivelDificuldade: r.nivelDificuldade ?? null,
         observacoes: r.observacoes ?? null,
         enunciado: truncarEnunciado(r.enunciado),
+        alternativas: truncarAlternativas(r.alternativas),
         gabarito: r.gabarito ?? null,
         ...camposN2(r),
       },
@@ -125,6 +132,7 @@ export async function persistirQuestoesClassificadas(
         nivelDificuldade: r.nivelDificuldade ?? null,
         observacoes: r.observacoes ?? null,
         ...(r.enunciado ? { enunciado: truncarEnunciado(r.enunciado) } : {}),
+        ...(r.alternativas ? { alternativas: truncarAlternativas(r.alternativas) } : {}),
         ...(r.gabarito ? { gabarito: r.gabarito } : {}),
         ...camposN2(r),
       },
@@ -132,6 +140,87 @@ export async function persistirQuestoesClassificadas(
     n++;
   }
   return n;
+}
+
+/** Grava só extração (enunciado/alternativas/área) — limpa classificação anterior. */
+export async function persistirQuestoesExtracaoProva(
+  provaId: string,
+  rows: ProvaQuestaoRow[],
+  opts?: { substituir?: boolean }
+): Promise<number> {
+  const limpas = rows.map((r) => ({
+    ...r,
+    materia: "A classificar",
+    assunto: "A classificar",
+    conhecimentoExigido: undefined,
+    conhecimentoEscopoId: null,
+    conhecimentoDominioId: null,
+    classificacaoVersao: null,
+    classificacaoConfianca: null,
+    classificacaoSecundariosJson: null,
+    conceitosCanonicosJson: null,
+  }));
+
+  await prisma.prova.update({
+    where: { id: provaId },
+    data: { extracaoValidada: false },
+  });
+
+  return persistirQuestoesClassificadas(provaId, limpas, opts);
+}
+
+/** Correção manual ou inclusão de questão faltante na validação. */
+export async function upsertQuestaoExtracaoManual(
+  provaId: string,
+  input: {
+    numero: number;
+    idiomaVariante?: IdiomaVarianteQuestao;
+    enunciado: string;
+    alternativas?: string | null;
+    areaBloco?: string | null;
+  }
+): Promise<{ id: string }> {
+  const variante = (input.idiomaVariante ?? "COMUM") as IdiomaVarianteQuestao;
+  const enunciado = truncarEnunciado(input.enunciado);
+  if (!enunciado || enunciado.length < 10) {
+    throw new Error("Enunciado muito curto.");
+  }
+
+  const row = await prisma.provaQuestao.upsert({
+    where: whereVariante(provaId, input.numero, variante),
+    create: {
+      provaId,
+      numero: input.numero,
+      idiomaVariante: variante,
+      areaBloco: input.areaBloco ?? null,
+      materia: "A classificar",
+      assunto: "A classificar",
+      enunciado,
+      alternativas: truncarAlternativas(input.alternativas),
+      gabarito: null,
+    },
+    update: {
+      areaBloco: input.areaBloco ?? undefined,
+      enunciado,
+      alternativas: truncarAlternativas(input.alternativas),
+      materia: "A classificar",
+      assunto: "A classificar",
+      conhecimentoExigido: null,
+      conhecimentoEscopoId: null,
+      conhecimentoDominioId: null,
+      classificacaoVersao: null,
+      classificacaoConfianca: null,
+      classificacaoSecundariosJson: null,
+      conceitosCanonicosJson: null,
+    },
+  });
+
+  await prisma.prova.update({
+    where: { id: provaId },
+    data: { extracaoValidada: false },
+  });
+
+  return { id: row.id };
 }
 
 const ENUNCIADO_MIN_RECLASSIFICAR = 80;

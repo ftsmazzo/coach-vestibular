@@ -3,8 +3,12 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
-import { executarPipelineProvaV2 } from "@/lib/prova-pipeline-v2";
-import { persistirQuestoesClassificadas, chaveObservacaoQuestao } from "@/lib/prova-questoes-persist";
+import { executarExtracaoProvaV2 } from "@/lib/prova-pipeline-v2";
+import {
+  persistirQuestoesExtracaoProva,
+  chaveObservacaoQuestao,
+} from "@/lib/prova-questoes-persist";
+import { montarRelatorioExtracao, resumoExtracao } from "@/lib/prova-extracao-relatorio";
 
 export const maxDuration = 600;
 
@@ -80,7 +84,7 @@ export async function POST(
   }
 
   try {
-    const resultado = await executarPipelineProvaV2(
+    const resultado = await executarExtracaoProvaV2(
       pdfBuffer,
       {
         nome: prova.nome,
@@ -105,7 +109,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Nenhuma questão classificada. Confira o PDF (texto selecionável), o total de questões no cadastro e se o arquivo corresponde à prova.",
+            "Nenhuma questão extraída. Confira o PDF (texto selecionável), o total de questões no cadastro e se o arquivo corresponde à prova.",
           avisos: resultado.avisos,
           etapas: resultado.etapas,
         },
@@ -114,6 +118,7 @@ export async function POST(
     }
 
     let gravadas = 0;
+    let relatorio: ReturnType<typeof montarRelatorioExtracao> | null = null;
     if (aplicar) {
       const antigas = await prisma.provaQuestao.findMany({
         where: { provaId },
@@ -132,7 +137,7 @@ export async function POST(
             }))
           : resultado.rows;
 
-      gravadas = await persistirQuestoesClassificadas(provaId, rowsComHints, {
+      gravadas = await persistirQuestoesExtracaoProva(provaId, rowsComHints, {
         substituir,
       });
 
@@ -158,18 +163,39 @@ export async function POST(
       }
 
       await refreshProvaGabaritoFlag(provaId);
+
+      const provaAtual = await prisma.prova.findUnique({
+        where: { id: provaId },
+        include: { questoes: true },
+      });
+      relatorio = provaAtual
+        ? montarRelatorioExtracao(provaAtual.questoes, provaAtual.totalQuestoes, {
+            politicaIdiomas: provaAtual.politicaIdiomas,
+            idiomaQuestaoInicio: provaAtual.idiomaQuestaoInicio,
+            idiomaQuestaoFim: provaAtual.idiomaQuestaoFim,
+            ordemIdiomasFaixa: provaAtual.ordemIdiomasFaixa,
+            dia: provaAtual.dia,
+            banca: provaAtual.banca,
+          })
+        : null;
     }
+
+    const relatorioResposta =
+      aplicar && relatorio
+        ? { resumoExtracao: resumoExtracao(relatorio), relatorio }
+        : {};
 
     return NextResponse.json({
       aplicado: aplicar,
       gravadas,
-      totalClassificadas: resultado.rows.length,
+      totalExtraidas: resultado.rows.length,
       totalEsperado: prova.totalQuestoes,
       modeloUsado: resultado.modeloUsado,
       avisos: resultado.avisos,
       etapas: resultado.etapas,
       rows: aplicar ? undefined : resultado.rows,
       csv: resultado.csv || undefined,
+      ...relatorioResposta,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erro no pipeline";

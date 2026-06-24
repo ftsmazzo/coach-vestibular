@@ -27,13 +27,15 @@ import {
   type EstruturaProvaDetectada,
   type ProvaPipelineContext,
 } from "@/lib/prova-pipeline-contexto";
-import { classificarRowsProvaComCatalogo } from "@/lib/prova-classificacao-catalogo";
+import { sanitizarTextoProva, truncarTextoProva } from "@/lib/prova-texto-prova";
 import {
   PROMPT_SISTEMA_EXTRACAO_LITERAL,
   PROMPT_SISTEMA_ESTRUTURA,
 } from "@/lib/prova-pipeline-v2-prompts";
 
 export type { ProvaPipelineContext };
+
+export type ExtracaoProvaResult = PipelineV2Result;
 
 export interface PipelineV2Result {
   rows: ProvaQuestaoRow[];
@@ -204,8 +206,8 @@ function questaoParaRow(
     areaBlocoPorNumero(estrutura.blocos ?? [], q.numero) ||
     undefined;
   const areaBloco = normalizarAreaBloco(areaRaw) ?? undefined;
-  const enunciado = (q.enunciado ?? "").trim();
-  const alternativas = (q.alternativas ?? "").trim();
+  const enunciado = truncarTextoProva(sanitizarTextoProva(q.enunciado));
+  const alternativas = truncarTextoProva(sanitizarTextoProva(q.alternativas), 8000);
   return {
     numero: q.numero,
     idiomaVariante,
@@ -266,7 +268,7 @@ function validarRows(
   }
 
   const semConhecimento = rows.filter(
-    (r) => !r.conhecimentoEscopoId?.trim() && r.materia !== "A classificar"
+    (r) => r.materia !== "A classificar" && !r.conhecimentoEscopoId?.trim()
   );
   if (semConhecimento.length > 0) {
     avisos.push(
@@ -286,10 +288,10 @@ function validarRows(
 }
 
 /**
- * Pipeline V2: PDF → estrutura → extração literal (enunciado + alternativas) → catálogo N2 → gabarito → banco.
- * ENEM, vestibulares, simulados e listas — layout inferido do documento.
+ * Extração pura: PDF → estrutura → enunciado literal + alternativas (+ gabarito opcional).
+ * Não classifica matéria/assunto — use após validar extração no admin.
  */
-export async function executarPipelineProvaV2(
+export async function executarExtracaoProvaV2(
   pdfBuffer: Buffer,
   ctx: ProvaPipelineContext,
   opts?: {
@@ -469,11 +471,7 @@ ${extra}`;
     compararQuestoesPorNumeroEOrdem(a, b, ordemIdiomasFaixa)
   );
 
-  etapas.push("Classificação N2 (catálogo v1.2)…");
-  const catalogo = await classificarRowsProvaComCatalogo(rows, { banca: ctx.banca });
-  rows = catalogo.rows;
-  avisos.push(...catalogo.avisos);
-  etapas.push(...catalogo.etapas);
+  etapas.push(`Extração concluída: ${rows.length} linha(s) — classificação pendente de validação.`);
 
   if (opts?.incluirGabarito && opts.gabaritoTexto?.trim()) {
     const mapaG = normalizarMapaGabarito(parseGabaritoLote(opts.gabaritoTexto), numeros);
@@ -510,3 +508,6 @@ ${extra}`;
     ordemIdiomasFaixa: politicaIdioma.modoDuplicata ? ordemIdiomasFaixa : undefined,
   };
 }
+
+/** @deprecated use executarExtracaoProvaV2 */
+export const executarPipelineProvaV2 = executarExtracaoProvaV2;

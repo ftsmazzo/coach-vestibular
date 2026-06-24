@@ -7,6 +7,7 @@ import { AdminAuditoriaProva } from "@/components/admin-auditoria-prova";
 import { AdminTabelaQuestoes } from "@/components/admin-tabela-questoes";
 import { AdminExtracaoPipeline } from "@/components/admin-extracao-pipeline";
 import { AdminProvaPipelineV2 } from "@/components/admin-prova-pipeline-v2";
+import { AdminValidacaoExtracao } from "@/components/admin-validacao-extracao";
 import { GabaritoRevisaoGrid } from "@/components/gabarito-revisao-grid";
 import { Button, Card, Input, Label } from "@/components/ui";
 import {
@@ -28,6 +29,8 @@ interface ProvaQuestao {
   areaBloco: string | null;
   materia: string;
   assunto: string;
+  enunciado?: string | null;
+  alternativas?: string | null;
   conhecimentoExigido: string | null;
   nivelDificuldade: string | null;
   observacoes: string | null;
@@ -46,6 +49,7 @@ interface Prova {
   descricao: string | null;
   publicada: boolean;
   gabaritoCompleto: boolean;
+  extracaoValidada?: boolean;
   totalQuestoes: number;
   politicaIdiomas?: string;
   idiomaQuestaoInicio?: number | null;
@@ -787,6 +791,15 @@ export default function AdminProvaDetailPage() {
         onMensagem={setMsg}
         onAtualizado={load}
       />
+
+      {(prova.questoes.length > 0 || prova.totalQuestoes > 0) && (
+        <AdminValidacaoExtracao
+          provaId={prova.id}
+          extracaoValidada={prova.extracaoValidada ?? false}
+          onMensagem={setMsg}
+          onAtualizado={load}
+        />
+      )}
 
       <details className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
         <summary className="cursor-pointer text-sm font-medium text-slate-700">

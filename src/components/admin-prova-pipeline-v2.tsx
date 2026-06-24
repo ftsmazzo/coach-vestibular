@@ -17,11 +17,12 @@ interface Props {
 
 interface PreviewRow {
   numero: number;
-  materia: string;
-  assunto: string;
+  idiomaVariante?: string;
   areaBloco?: string;
-  conhecimentoExigido?: string;
-  nivelDificuldade?: string;
+  enunciado?: string;
+  alternativas?: string;
+  materia?: string;
+  assunto?: string;
   gabarito?: string;
 }
 
@@ -63,7 +64,7 @@ export function AdminProvaPipelineV2({
     [pdfFile, incluirGabarito, somenteIngles, gabaritoLote]
   );
 
-  const classificarPdf = useCallback(
+  const extrairPdf = useCallback(
     async (aplicar: boolean) => {
       if (!pdfFile) {
         onMensagem("Selecione o PDF da prova acima.");
@@ -73,8 +74,8 @@ export function AdminProvaPipelineV2({
       setCarregando(true);
       onMensagem(
         aplicar
-          ? "Lendo o PDF, classificando e gravando no banco… (alguns minutos)"
-          : "Classificando prova para pré-visualização…"
+          ? "Lendo o PDF e extraindo enunciados + alternativas… (alguns minutos)"
+          : "Extraindo prova para pré-visualização…"
       );
 
       try {
@@ -86,15 +87,22 @@ export function AdminProvaPipelineV2({
         setCarregando(false);
 
         if (!res.ok) {
-          onMensagem(data.error ?? "Erro na classificação");
+          onMensagem(data.error ?? "Erro na extração");
           return;
         }
 
         if (aplicar) {
           setPreview(null);
-          onMensagem(
-            `${data.gravadas ?? data.totalClassificadas ?? 0} questões gravadas no banco (modelo ${data.modeloUsado ?? ""}). Use «Auditar» abaixo se quiser revisar.`
-          );
+          const resumoStr =
+            typeof data.resumoExtracao === "string"
+              ? data.resumoExtracao
+              : data.relatorio
+                ? `${data.relatorio.ok}/${data.relatorio.linhasEsperadas} OK · ${data.relatorio.curto} curto(s) · ${data.relatorio.faltando} faltando`
+                : null;
+          const msgResumo = resumoStr
+            ? `${data.gravadas ?? 0} questões gravadas · ${resumoStr}. Revise abaixo e confirme a extração.`
+            : `${data.gravadas ?? 0} questões gravadas (modelo ${data.modeloUsado ?? ""}). Revise a validação abaixo.`;
+          onMensagem(msgResumo);
           onAtualizado();
         } else {
           setPreview({
@@ -104,7 +112,7 @@ export function AdminProvaPipelineV2({
             modeloUsado: data.modeloUsado ?? "",
           });
           onMensagem(
-            `Prévia: ${data.rows?.length ?? 0} questões (cadastro espera ${totalQuestoes}). Confira e clique em gravar.`
+            `Prévia: ${data.rows?.length ?? 0} questões extraídas (cadastro espera ${totalQuestoes}). Confira enunciados e grave.`
           );
         }
       } catch {
@@ -116,7 +124,7 @@ export function AdminProvaPipelineV2({
   );
 
   async function gravarPreview() {
-    await classificarPdf(true);
+    await extrairPdf(true);
   }
 
   function baixarCsvPreview() {
@@ -127,7 +135,7 @@ export function AdminProvaPipelineV2({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `prova-classificacao.csv`;
+    a.download = `prova-extracao.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -157,7 +165,7 @@ export function AdminProvaPipelineV2({
         return;
       }
       onMensagem(
-        `${data.imported ?? 0} questões gravadas no banco a partir do CSV (mesma validação do pipeline).`
+        `${data.imported ?? 0} questões gravadas no banco a partir do CSV. Classificação será feita depois da validação.`
       );
       if (csvInputRef.current) csvInputRef.current.value = "";
       onAtualizado();
@@ -169,12 +177,11 @@ export function AdminProvaPipelineV2({
 
   return (
     <Card className="border-indigo-200 bg-indigo-50/50">
-      <h2 className="mb-2 font-semibold text-indigo-900">Classificar prova (IA → banco)</h2>
+      <h2 className="mb-2 font-semibold text-indigo-900">Extrair prova (PDF → banco)</h2>
       <p className="mb-3 text-sm text-indigo-800">
-        Envie o PDF de qualquer prova ou simulado (ENEM, vestibular, cursinho, listas). A IA detecta
-        a estrutura do documento (blocos, numeração, idiomas) e grava matéria, assunto, conhecimento e
-        dificuldade <strong>direto no banco</strong>. O cadastro da prova (banca, tipo, total) é
-        referência — o PDF manda na lista de questões.
+        Envie o PDF da prova ou simulado. A IA extrai <strong>enunciado literal</strong>,{" "}
+        <strong>alternativas</strong> e área/bloco — sem classificar matéria ou assunto. Depois de
+        gravar, valide na seção abaixo antes de qualquer roteamento.
       </p>
 
       <label className="mb-3 flex cursor-pointer items-start gap-2 text-sm text-indigo-900">
@@ -195,15 +202,15 @@ export function AdminProvaPipelineV2({
         <Button
           type="button"
           disabled={carregando || !pdfFile}
-          onClick={() => classificarPdf(true)}
+          onClick={() => extrairPdf(true)}
         >
-          {carregando ? "Processando…" : "Classificar PDF e gravar no banco"}
+          {carregando ? "Extraindo…" : "Extrair PDF e gravar no banco"}
         </Button>
         <Button
           type="button"
           variant="secondary"
           disabled={carregando || !pdfFile}
-          onClick={() => classificarPdf(false)}
+          onClick={() => extrairPdf(false)}
         >
           Só pré-visualizar
         </Button>
@@ -229,23 +236,25 @@ export function AdminProvaPipelineV2({
               Exportar CSV (opcional)
             </Button>
           </div>
-          <div className="max-h-48 overflow-auto text-xs">
+          <div className="max-h-64 overflow-auto text-xs">
             <table className="w-full">
               <thead>
                 <tr className="text-slate-500">
                   <th className="p-1 text-left">#</th>
-                  <th className="p-1 text-left">Matéria</th>
-                  <th className="p-1 text-left">Assunto</th>
-                  <th className="p-1 text-left">Conhec.</th>
+                  <th className="p-1 text-left">Área</th>
+                  <th className="p-1 text-left">Enunciado (início)</th>
+                  <th className="p-1 text-left">Alt.</th>
                 </tr>
               </thead>
               <tbody>
-                {preview.rows.slice(0, 25).map((r) => (
-                  <tr key={r.numero} className="border-t">
+                {preview.rows.slice(0, 30).map((r, i) => (
+                  <tr key={`${r.numero}-${r.idiomaVariante ?? "c"}-${i}`} className="border-t">
                     <td className="p-1">{r.numero}</td>
-                    <td className="p-1">{r.materia}</td>
-                    <td className="p-1">{r.assunto}</td>
-                    <td className="p-1 max-w-[140px] truncate">{r.conhecimentoExigido ?? "—"}</td>
+                    <td className="p-1 max-w-[90px] truncate">{r.areaBloco ?? "—"}</td>
+                    <td className="p-1 max-w-[320px] truncate">{r.enunciado?.slice(0, 100) ?? "—"}</td>
+                    <td className="p-1 max-w-[80px] truncate">
+                      {r.alternativas ? `${r.alternativas.length} chars` : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -259,7 +268,7 @@ export function AdminProvaPipelineV2({
           Já tenho CSV do ChatGPT
         </summary>
         <p className="mt-2 text-xs text-slate-600">
-          Importa direto no banco com a mesma normalização de taxonomia — sem rodar a IA de novo.
+          Importa direto no banco — útil se você já extraiu fora. Classificação só após validação.
         </p>
         <input
           ref={csvInputRef}

@@ -8,8 +8,11 @@ import {
   normalizarLabelAssunto,
   normalizarLabelMateria,
 } from "@/lib/taxonomia-validacao";
+import { sanitizarTextoProva, truncarTextoProva } from "@/lib/prova-texto-prova";
 
 const patchSchema = z.object({
+  enunciado: z.string().min(10).optional(),
+  alternativas: z.string().nullable().optional(),
   areaBloco: z.string().nullable().optional(),
   materia: z.string().min(1).optional(),
   assunto: z.string().min(1).optional(),
@@ -71,11 +74,28 @@ export async function PATCH(
         ? { nivelDificuldade: body.nivelDificuldade }
         : {}),
       ...(body.observacoes !== undefined ? { observacoes: body.observacoes } : {}),
+      ...(body.enunciado !== undefined
+        ? { enunciado: truncarTextoProva(sanitizarTextoProva(body.enunciado)) || null }
+        : {}),
+      ...(body.alternativas !== undefined
+        ? {
+            alternativas: body.alternativas
+              ? truncarTextoProva(sanitizarTextoProva(body.alternativas), 8000)
+              : null,
+          }
+        : {}),
       ...(body.gabarito !== undefined
         ? { gabarito: body.gabarito?.toUpperCase() ?? null }
         : {}),
     },
   });
+
+  if (body.enunciado !== undefined || body.alternativas !== undefined) {
+    await prisma.prova.update({
+      where: { id: provaId },
+      data: { extracaoValidada: false },
+    });
+  }
 
   return NextResponse.json(atualizada);
 }

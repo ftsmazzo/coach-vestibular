@@ -115,6 +115,8 @@ model Prova {
   cadernoStoragePath String?
   cadernoFileName    String?
   cadernoMimeType    String?
+  /// Admin confirmou que enunciados/alternativas estão completos — libera classificação
+  extracaoValidada   Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -137,6 +139,8 @@ model ProvaQuestao {
   observacoes         String?
   /// Trecho do enunciado (IA ou texto colado) — apoia auditoria de classificação
   enunciado           String?   @db.Text
+  /// Alternativas A–E (texto literal da extração)
+  alternativas        String?   @db.Text
   gabarito            String?
 
   /// Classificação pedagógica Coach (N1/N2) — espelha EnemQuestaoCorpus
