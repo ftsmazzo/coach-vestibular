@@ -9,7 +9,7 @@ import {
   versaoLabelN1,
   type ClassificacaoN1,
 } from "@/lib/classificacao-n1-types";
-import { CORPUS_MATERIA_CONFIG, MATERIAS_NATUREZA } from "@/lib/enem-corpus-materia";
+import { CORPUS_MATERIA_CONFIG, MATERIAS_NATUREZA, MATERIAS_NATUREZA_TRANSVERSAL } from "@/lib/enem-corpus-materia";
 
 export type OpcaoCatalogoN1 = {
   id: string;
@@ -27,7 +27,7 @@ const GRUPO_LINGUAGENS = "Linguagens";
 export function opcoesCatalogoN1(): OpcaoCatalogoN1[] {
   const out: OpcaoCatalogoN1[] = [];
 
-  for (const id of MATERIAS_NATUREZA) {
+  for (const id of [...MATERIAS_NATUREZA, ...MATERIAS_NATUREZA_TRANSVERSAL]) {
     out.push({
       id,
       label: CORPUS_MATERIA_CONFIG[id].label,
@@ -74,7 +74,7 @@ export function labelCatalogoN1(catalogoId: string): string {
   return op?.label ?? catalogoId;
 }
 
-export function catalogoN1Valido(catalogoId: string): catalogoId is CatalogDisciplinaId | "biologia" | "quimica" | "fisica" | "matematica" {
+export function catalogoN1Valido(catalogoId: string): catalogoId is CatalogDisciplinaId | "biologia" | "quimica" | "fisica" | "natureza_transversal" | "matematica" {
   return opcoesCatalogoN1().some((o) => o.id === catalogoId);
 }
 
@@ -104,7 +104,10 @@ export function montarClassificacaoN1Manual(catalogoId: string): ClassificacaoN1
     };
   }
 
-  if ((MATERIAS_NATUREZA as readonly string[]).includes(catalogoId)) {
+  if (
+    (MATERIAS_NATUREZA as readonly string[]).includes(catalogoId) ||
+    (MATERIAS_NATUREZA_TRANSVERSAL as readonly string[]).includes(catalogoId)
+  ) {
     n1.triagemNatureza = {
       materia: labelCatalogoN1(catalogoId),
       via: "heuristica",

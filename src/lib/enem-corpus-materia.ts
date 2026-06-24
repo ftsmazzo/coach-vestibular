@@ -1,10 +1,16 @@
 /** Configuração de matérias do corpus ENEM — Natureza (sub-triagem) vs disciplina única. */
 
 export const MATERIAS_NATUREZA = ["biologia", "quimica", "fisica"] as const;
+export const MATERIAS_NATUREZA_TRANSVERSAL = ["natureza_transversal"] as const;
 export const MATERIAS_DISCIPLINA = ["matematica", "humanas", "linguagens"] as const;
-export const MATERIAS_CORPUS = [...MATERIAS_NATUREZA, ...MATERIAS_DISCIPLINA] as const;
+export const MATERIAS_CORPUS = [
+  ...MATERIAS_NATUREZA,
+  ...MATERIAS_NATUREZA_TRANSVERSAL,
+  ...MATERIAS_DISCIPLINA,
+] as const;
 
 export type MateriaNaturezaId = (typeof MATERIAS_NATUREZA)[number];
+export type MateriaNaturezaTransversalId = (typeof MATERIAS_NATUREZA_TRANSVERSAL)[number];
 export type MateriaDisciplinaId = (typeof MATERIAS_DISCIPLINA)[number];
 export type MateriaCorpusId = (typeof MATERIAS_CORPUS)[number];
 
@@ -42,6 +48,13 @@ export const CORPUS_MATERIA_CONFIG: Record<MateriaCorpusId, MateriaCorpusConfig>
     materiaId: "fisica",
     label: "Física",
     prefixo: "fis",
+    disciplina: "ciencias_natureza",
+    naturezaSub: true,
+  },
+  natureza_transversal: {
+    materiaId: "natureza_transversal",
+    label: "Natureza Transversal",
+    prefixo: "nat",
     disciplina: "ciencias_natureza",
     naturezaSub: true,
   },

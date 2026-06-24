@@ -19,6 +19,7 @@ function asAreaEnem(raw: string | undefined, materiaId: MateriaCorpusId): AreaEn
     biologia: "Ciências da Natureza",
     quimica: "Ciências da Natureza",
     fisica: "Ciências da Natureza",
+    natureza_transversal: "Ciências da Natureza",
     matematica: "Matemática",
     linguagens: "Linguagens, Códigos e suas Tecnologias",
     humanas: "Ciências Humanas e suas Tecnologias",

@@ -194,7 +194,7 @@ function motivosConflitoConteudo(
   if (ni === na || q.materia === "A classificar") return [];
   const humanas = new Set(["historia", "geografia", "filosofia", "sociologia"]);
   if (humanas.has(ni) && humanas.has(na)) return [];
-  const natureza = new Set(["biologia", "fisica", "quimica"]);
+  const natureza = new Set(["biologia", "fisica", "quimica", "natureza_transversal"]);
   if (natureza.has(ni) && natureza.has(na)) return [];
   // Comando em português é normal em Humanas/Filosofia/etc. — não alertar “parece Português”.
   if (ni === "portugues" && (humanas.has(na) || na === "filosofia" || na === "sociologia")) {

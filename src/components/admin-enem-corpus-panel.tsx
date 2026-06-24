@@ -7,6 +7,7 @@ type MateriaCorpusId =
   | "biologia"
   | "quimica"
   | "fisica"
+  | "natureza_transversal"
   | "matematica"
   | "humanas"
   | "linguagens";
@@ -71,12 +72,13 @@ const MATERIA_TAB: Array<{ id: MateriaCorpusId; label: string; grupo?: string }>
   { id: "biologia", label: "Biologia", grupo: "Natureza" },
   { id: "quimica", label: "Química", grupo: "Natureza" },
   { id: "fisica", label: "Física", grupo: "Natureza" },
+  { id: "natureza_transversal", label: "Nat. Transversal", grupo: "Natureza" },
   { id: "matematica", label: "Matemática" },
   { id: "humanas", label: "Humanas" },
   { id: "linguagens", label: "Linguagens" },
 ];
 
-const NATUREZA_IDS = new Set<MateriaCorpusId>(["biologia", "quimica", "fisica"]);
+const NATUREZA_IDS = new Set<MateriaCorpusId>(["biologia", "quimica", "fisica", "natureza_transversal"]);
 
 const DISCIPLINA_LABEL: Record<string, string> = {
   linguagens: "Linguagens",

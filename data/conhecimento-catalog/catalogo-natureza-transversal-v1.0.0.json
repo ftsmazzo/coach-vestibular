@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.0.0",
+  "materiaId": "natureza_transversal",
+  "materiaLabel": "Natureza Transversal",
+  "areaEnem": "Ciências da Natureza",
+  "notas": "Catálogo transversal de Ciências da Natureza para conteúdos que não são Biologia, Química ou Física específicos (metodologia científica, natureza da ciência, leitura de experimentos genéricos). Prefixo nat.*.",
+  "changelog": [
+    "1.0.0: Escopo inicial nat.metodologia_cientifica.etapas_metodo_cientifico (FAMERP — sequência após hipótese)."
+  ],
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "Aplica-se a N0–N2. Em N3 ver politicaN3.",
+    "maxN2PorMateria": 20,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "multiLabel": {
+      "permitido": false,
+      "maxPrimarios": 1,
+      "maxSecundarios": 0,
+      "nota": "Escopos transversais são atômicos; evite secundários disciplinares."
+    },
+    "politicaN3": "A IA escolhe APENAS IDs em N0–N2. Em N3 propõe texto livre para revisão humana.",
+    "regraDesempate": "Se ≥2 escopos disparam, aplicar negativeHints + naoConfundirCom + regraDesempate. Persistindo empate ou confiança < confiancaMinima → nat.__nao_classificado.",
+    "pesos": {
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "exemplosEnunciado": "referência semântica, não match literal",
+      "negativeHints": "penalidade: presença do termo reduz a probabilidade deste escopo"
+    },
+    "naturezaTransversal": {
+      "regraId": "natureza_transversal_quando_metodologia_ou_ciencia_geral",
+      "nota": "Classifique aqui quando a questão cobra etapas, lógica ou validade do método científico em geral, sem exigir conceito disciplinar de Bio, Quím ou Fís. Só use bio./quim./fis. se o conteúdo exigido for disciplinar específico."
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "metodologia_cientifica",
+      "assuntoLabel": "Metodologia e natureza da ciência",
+      "dominios": [
+        {
+          "id": "nat.metodologia_cientifica",
+          "label": "Método científico",
+          "escopos": [
+            {
+              "id": "nat.metodologia_cientifica.etapas_metodo_cientifico",
+              "label": "Etapas do método científico",
+              "descricao": "Cobre observação, formulação de problema, hipótese, experimentação, coleta de dados, análise de resultados, conclusão, revisão e comunicação científica. NÃO cobre conteúdo específico de Biologia, Química ou Física quando a resolução exige conceito disciplinar próprio.",
+              "keywords": [
+                "método científico",
+                "metodo cientifico",
+                "hipótese",
+                "hipotese",
+                "formulação de hipótese",
+                "formulacao de hipotese",
+                "observação",
+                "observacao",
+                "experimentação",
+                "experimentacao",
+                "experimento",
+                "coleta de dados",
+                "análise de dados",
+                "analise de dados",
+                "análise crítica",
+                "analise critica",
+                "conclusão",
+                "conclusao",
+                "investigação científica",
+                "investigacao cientifica",
+                "aquisição de novos conhecimentos",
+                "aquisicao de novos conhecimentos",
+                "sequencialmente",
+                "após a formulação",
+                "apos a formulacao"
+              ],
+              "keywordsContexto": [
+                "abordagem sistemática",
+                "etapas do método",
+                "validação",
+                "revisão por pares",
+                "teoria científica"
+              ],
+              "exemplosEnunciado": [
+                "No contexto do método científico, o que deve ocorrer, sequencialmente, após a formulação de uma hipótese?",
+                "Reconhecer que, após a formulação de uma hipótese, devem ocorrer experimentação, coleta de dados e análise dos resultados."
+              ],
+              "negativeHints": [
+                "célula",
+                "dna",
+                "reação química",
+                "estequiometria",
+                "newton",
+                "velocidade",
+                "força resultante",
+                "tabela periódica",
+                "fotossíntese",
+                "ecossistema"
+              ],
+              "naoConfundirCom": [
+                "bio.__nao_classificado",
+                "quim.__nao_classificado",
+                "fis.__nao_classificado"
+              ],
+              "regraDesempate": "Se a questão pergunta sobre etapas, lógica, validade, hipótese, experimento, coleta de dados ou análise do método científico em geral, classifique aqui. Só escolha Biologia, Química ou Física se o conteúdo exigido for disciplinar específico."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "__sistema",
+      "assuntoLabel": "Sistema (não temático)",
+      "dominios": [
+        {
+          "id": "nat.__sistema.fallback",
+          "label": "Fallback / revisão",
+          "escopos": [
+            {
+              "id": "nat.__nao_classificado",
+              "label": "Não classificado / revisar",
+              "descricao": "Bucket de fallback para Natureza Transversal. NÃO conta para maxN2PorMateria.",
+              "keywords": [],
+              "keywordsContexto": [],
+              "exemplosEnunciado": [],
+              "negativeHints": [],
+              "naoConfundirCom": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

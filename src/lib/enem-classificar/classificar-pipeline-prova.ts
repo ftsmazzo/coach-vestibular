@@ -37,6 +37,10 @@ import {
 } from "@/lib/enem-classificar/triagem-natureza";
 import { triarQuestaoIA } from "@/lib/enem-classificar/triagem-ia";
 import {
+  triarNaturezaTransversal,
+  REGRA_NATUREZA_TRANSVERSAL_ID,
+} from "@/lib/enem-classificar/triagem-natureza-transversal";
+import {
   fisicaPrevaleceSobreMatematica,
   REGRA_FISICA_PREVALECE_ID,
 } from "@/lib/enem-classificar/fisica-vs-matematica";
@@ -60,7 +64,7 @@ export type PayloadQuestaoCompleto = {
 export type MetaPipelineProva = {
   area?: "linguagens" | "humanas" | "exatas" | "natureza";
   triagemNatureza?: {
-    materia: MateriaNatureza | null;
+    materia: MateriaNatureza | "Transversal" | null;
     confianca: number;
     motivo: string;
     via: "heuristica" | "ia";
@@ -251,6 +255,28 @@ export async function passoTriagemNatureza(
   meta: MetaPipelineProva
 ): Promise<{ meta: MetaPipelineProva; etapa: EtapaPipeline; materiaId: MateriaCorpusId | null }> {
   const texto = textoCompleto(q);
+
+  const trans = triarNaturezaTransversal(texto);
+  if (trans.catalogoId) {
+    const metaOut: MetaPipelineProva = {
+      ...meta,
+      triagemNatureza: {
+        materia: "Transversal",
+        confianca: trans.confianca,
+        motivo: trans.motivo,
+        via: "heuristica",
+      },
+    };
+    return {
+      meta: metaOut,
+      materiaId: trans.catalogoId,
+      etapa: {
+        passo: "triagem-natureza",
+        detalhe: `Q${q.numero} → natureza_transversal (${REGRA_NATUREZA_TRANSVERSAL_ID}, conf=${trans.confianca.toFixed(2)})`,
+      },
+    };
+  }
+
   const heur = triarMateriaNatureza(texto);
   let tri: TriagemNatureza = heur;
   let via: "heuristica" | "ia" = "heuristica";
@@ -652,7 +678,10 @@ export async function executarN1Questao(
       area,
       catalogoId: tri.materiaId,
       confianca: tri.meta.triagemNatureza?.confianca ?? 0.5,
-      criterio: tri.meta.triagemNatureza?.via ?? "heuristica",
+      criterio:
+        tri.materiaId === "natureza_transversal"
+          ? REGRA_NATUREZA_TRANSVERSAL_ID
+          : tri.meta.triagemNatureza?.via ?? "heuristica",
       justificativa: tri.meta.triagemNatureza?.motivo ?? "Triagem natureza",
       triagemNatureza: tri.meta.triagemNatureza
         ? {

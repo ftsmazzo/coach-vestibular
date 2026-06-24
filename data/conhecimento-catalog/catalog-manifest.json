@@ -12,7 +12,8 @@
     "sociologia": "catalogo-sociologia-v1.0.0.json",
     "portugues": "catalogo-portugues-v1.0.0.json",
     "ingles": "catalogo-ingles-v1.0.0.json",
-    "espanhol": "catalogo-espanhol-v1.0.0.json"
+    "espanhol": "catalogo-espanhol-v1.0.0.json",
+    "natureza_transversal": "catalogo-natureza-transversal-v1.0.0.json"
   },
   "roteamentoLinguagens": "roteamento-linguagens-v2.0.json",
   "roteamentoHumanas": "roteamento-humanas-v1.0.json",
@@ -27,7 +28,8 @@
     "sociologia": "prompt-classificacao-soc-v1.0.md",
     "portugues": "prompt-classificacao-pt-v1.0.md",
     "ingles": "prompt-classificacao-ing-v1.0.md",
-    "espanhol": "prompt-classificacao-esp-v1.0.md"
+    "espanhol": "prompt-classificacao-esp-v1.0.md",
+    "natureza_transversal": "prompt-classificacao-nat-v1.0.md"
   },
   "promptRoteamentoHumanas": "prompt-roteamento-humanas-v1.0.md",
   "promptRoteamentoLinguagens": "prompt-roteamento-linguagens-v1.0.md"
