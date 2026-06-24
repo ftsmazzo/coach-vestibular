@@ -57,12 +57,12 @@ export default function FecharCicloPage() {
     if (res.ok) setResultado(data);
   }
 
-  async function fechar(quizPct: number | null) {
+  async function fechar(quizPct: number | null, quizAcertos = 0, quizTotal = 0) {
     setEnviando(true);
     const res = await fetch("/api/ciclo/fechar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quizPct }),
+      body: JSON.stringify({ quizPct, quizAcertos, quizTotal }),
     });
     const data = await res.json();
     setEnviando(false);
@@ -120,7 +120,7 @@ export default function FecharCicloPage() {
         <ResultadoCiclo
           resultado={resultado}
           enviando={enviando}
-          onFechar={() => fechar(resultado.pctAcerto)}
+          onFechar={(pct, acertos, total) => fechar(pct, acertos, total)}
         />
       ) : (
         <>
@@ -192,7 +192,7 @@ function ResultadoCiclo({
 }: {
   resultado: { pctAcerto: number; acertos: number; total: number };
   enviando: boolean;
-  onFechar: () => void;
+  onFechar: (pct: number, acertos: number, total: number) => void;
 }) {
   const bom = resultado.pctAcerto >= 60;
   return (
@@ -210,7 +210,7 @@ function ResultadoCiclo({
           : "Ainda há espaço — isso é um sinal parcial. Vale repetir o foco no próximo ciclo e confirmar com uma prova real."}
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button disabled={enviando} onClick={onFechar}>
+        <Button disabled={enviando} onClick={() => onFechar(resultado.pctAcerto, resultado.acertos, resultado.total)}>
           {enviando ? "Fechando…" : "Fechar ciclo e abrir o próximo"}
         </Button>
         <Link href="/provas" className="self-center text-sm font-medium text-teal-700 underline">

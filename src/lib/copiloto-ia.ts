@@ -17,6 +17,7 @@ import {
   getFocosPedagogicosRecentes,
   metadadosQuestFromFoco,
 } from "@/lib/learning-motor-foco";
+import { tituloQuestEscopo } from "@/lib/learning-quest-escopo";
 import type { BlocoPlano, StudyPlanItem } from "@/lib/study-plan";
 import type { CopilotoGerado, CopilotoNarrativa, QuestGerada } from "@/lib/copiloto-ia-types";
 
@@ -342,7 +343,7 @@ function montarGerado(input: CopilotoInput, ia: IAOutput): CopilotoGerado {
       const meta = foco ? metadadosQuestFromFoco(foco) : {};
       return {
         slug: `ia-${i + 1}-${slugMateria(q.materia || q.rotulo || String(i))}`,
-        titulo: q.titulo.trim().slice(0, 120),
+        titulo: (foco ? tituloQuestEscopo(foco) : q.titulo.trim()).slice(0, 120),
         descricao: formatarPassos(
           q.passos.filter((p) => p.trim()).slice(0, 8),
           q.porQue.trim(),

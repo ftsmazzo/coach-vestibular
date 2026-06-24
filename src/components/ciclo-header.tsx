@@ -27,6 +27,11 @@ export function CicloHeader({ ciclo }: { ciclo: CicloResumo }) {
           {ciclo.metaMateria && (
             <p className="text-xs text-slate-500">Foco em {ciclo.metaMateria}</p>
           )}
+          {ciclo.historiaInicio && ciclo.historiaInicio.length > 0 && (
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              {ciclo.historiaInicio[0]}
+            </p>
+          )}
         </div>
         <Badge tone={prazoTom}>{prazoLabel}</Badge>
       </div>

@@ -10,6 +10,7 @@ import {
   baselineCicloFromFoco,
   getFocoPedagogicoPrincipal,
 } from "@/lib/learning-motor-foco";
+import { buildStorytellingFechamento } from "@/lib/learning-storytelling";
 
 const DIAS_CICLO = 7;
 
@@ -157,7 +158,7 @@ export type CicloResultado = {
 /** Fecha o ciclo ativo (grava resultado: quiz x baseline) e abre o próximo. */
 export async function fecharCiclo(
   userId: string,
-  opts?: { quizPct?: number | null }
+  opts?: { quizPct?: number | null; quizAcertos?: number; quizTotal?: number }
 ): Promise<{ resultado: CicloResultado; proximo: Awaited<ReturnType<typeof abrirOuRenovarCiclo>> } | null> {
   const ativo = await getCicloAtivo(userId);
   if (!ativo) return null;
@@ -170,13 +171,32 @@ export async function fecharCiclo(
   let baselinePct: number | null = null;
   if (ativo.baselineJson) {
     try {
-      baselinePct = (JSON.parse(ativo.baselineJson) as CicloBaseline).pctMateria ?? null;
+      const bl = JSON.parse(ativo.baselineJson) as CicloBaseline & {
+        focos?: Array<{ taxaAcerto?: number }>;
+      };
+      baselinePct =
+        bl.focos?.[0]?.taxaAcerto != null
+          ? Math.round(bl.focos[0].taxaAcerto * 100)
+          : bl.pctMateria ?? null;
     } catch {
       baselinePct = null;
     }
   }
 
   const quizPct = opts?.quizPct ?? null;
+  const quizAcertos = opts?.quizAcertos ?? 0;
+  const quizTotal = opts?.quizTotal ?? 0;
+
+  const { storytelling, resultado: resultadoMotor, narrativaFim } =
+    buildStorytellingFechamento(
+      ativo,
+      quizPct,
+      quizAcertos,
+      quizTotal,
+      feitas,
+      total
+    );
+
   const resultado: CicloResultado = {
     quizPct,
     baselinePct,
@@ -191,7 +211,9 @@ export async function fecharCiclo(
     data: {
       status: "FECHADO",
       fechadoEm: new Date(),
-      resultadoJson: JSON.stringify(resultado),
+      resultadoJson: JSON.stringify({ ...resultadoMotor, legado: resultado }),
+      storytellingJson: JSON.stringify(storytelling),
+      narrativaFimJson: JSON.stringify({ texto: narrativaFim }),
     },
   });
 
@@ -204,6 +226,7 @@ export type CicloResumo = {
   indice: number;
   metaTitulo: string;
   metaMateria: string | null;
+  metaEscopoId: string | null;
   endAt: string;
   diasRestantes: number;
   expirado: boolean;
@@ -211,18 +234,22 @@ export type CicloResumo = {
   feitas: number;
   pendentes: number;
   pctConcluido: number;
+  historiaInicio?: string[];
 };
 
 export type CicloFechadoView = {
   indice: number;
   metaTitulo: string;
   metaMateria: string | null;
+  metaEscopoId: string | null;
   quizPct: number | null;
   baselinePct: number | null;
   deltaPct: number | null;
   feitas: number;
   totalQuests: number;
   fechadoEm: string | null;
+  historia?: string[];
+  proximoPasso?: string;
 };
 
 /** Ciclos já fechados, com o resultado (para progressão e card de resultado). */
@@ -238,23 +265,50 @@ export async function getCiclosFechados(
 
   return ciclos.map((c) => {
     let r: Partial<CicloResultado> = {};
+    let historia: string[] | undefined;
+    let proximoPasso: string | undefined;
+
     if (c.resultadoJson) {
       try {
-        r = JSON.parse(c.resultadoJson) as CicloResultado;
+        const parsed = JSON.parse(c.resultadoJson) as CicloResultado & {
+          legado?: CicloResultado;
+          avaliacao?: { pctAcerto?: number };
+        };
+        r = parsed.legado ?? parsed;
+        if (parsed.avaliacao?.pctAcerto != null && r.quizPct == null) {
+          r.quizPct = parsed.avaliacao.pctAcerto;
+        }
       } catch {
         r = {};
       }
     }
+
+    if (c.storytellingJson) {
+      try {
+        const story = JSON.parse(c.storytellingJson) as {
+          paragrafos?: string[];
+          proximoPasso?: string;
+        };
+        historia = story.paragrafos;
+        proximoPasso = story.proximoPasso;
+      } catch {
+        /* ignora */
+      }
+    }
+
     return {
       indice: c.indice,
       metaTitulo: c.metaTitulo,
       metaMateria: c.metaMateria,
+      metaEscopoId: c.metaEscopoId,
       quizPct: r.quizPct ?? null,
       baselinePct: r.baselinePct ?? null,
       deltaPct: r.deltaPct ?? null,
       feitas: r.feitas ?? 0,
       totalQuests: r.totalQuests ?? 0,
       fechadoEm: c.fechadoEm?.toISOString() ?? null,
+      historia,
+      proximoPasso,
     };
   });
 }
@@ -283,11 +337,26 @@ export async function getCicloResumo(userId: string): Promise<CicloResumo | null
     Math.ceil((ciclo.endAt.getTime() - agora) / 86_400_000)
   );
 
+  let historiaInicio: string[] | undefined;
+  if (ciclo.narrativaInicioJson || ciclo.baselineJson) {
+    const { buildCicloInicioStory } = await import("@/lib/learning-storytelling");
+    let narrativaInicio: { hipotese?: string; objetivo?: string } | null = null;
+    if (ciclo.narrativaInicioJson) {
+      try {
+        narrativaInicio = JSON.parse(ciclo.narrativaInicioJson);
+      } catch {
+        narrativaInicio = null;
+      }
+    }
+    historiaInicio = buildCicloInicioStory(ciclo, narrativaInicio).paragrafos;
+  }
+
   return {
     id: ciclo.id,
     indice: ciclo.indice,
     metaTitulo: ciclo.metaTitulo,
     metaMateria: ciclo.metaMateria,
+    metaEscopoId: ciclo.metaEscopoId,
     endAt: ciclo.endAt.toISOString(),
     diasRestantes,
     expirado: ciclo.endAt.getTime() <= agora,
@@ -295,5 +364,6 @@ export async function getCicloResumo(userId: string): Promise<CicloResumo | null
     feitas,
     pendentes,
     pctConcluido: total > 0 ? Math.round((feitas / total) * 100) : 0,
+    historiaInicio,
   };
 }

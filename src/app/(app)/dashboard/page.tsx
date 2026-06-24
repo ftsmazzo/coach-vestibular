@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { buildJourneyInsight } from "@/lib/journey-insight";
 import { getAnamneseStatus } from "@/lib/anamnese-motor";
-import { getUltimoCicloFechado } from "@/lib/ciclo";
+import { getUltimoCicloFechado, getCicloResumo } from "@/lib/ciclo";
 import { AnamneseBanner } from "@/components/anamnese-banner";
 import { CicloResultadoCard } from "@/components/ciclo-resultado-card";
+import { CicloStoryCard } from "@/components/ciclo-story-card";
 import { DashboardHomeCopiloto } from "@/components/dashboard-home-copiloto";
 import { JornadaResumoCard } from "@/components/jornada-resumo-card";
 import { MensagemDiaCard } from "@/components/mensagem-dia";
@@ -16,10 +17,11 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
   if (session.role === "ADMIN") redirect("/admin");
 
-  const [insight, anamnese, ultimoCiclo] = await Promise.all([
+  const [insight, anamnese, ultimoCiclo, cicloAtivo] = await Promise.all([
     buildJourneyInsight(session.userId),
     getAnamneseStatus(session.userId),
     getUltimoCicloFechado(session.userId),
+    getCicloResumo(session.userId),
   ]);
 
   return (
@@ -37,6 +39,10 @@ export default async function DashboardPage() {
       <AnamneseBanner anamnese={anamnese} />
 
       {ultimoCiclo && <CicloResultadoCard ciclo={ultimoCiclo} />}
+
+      {cicloAtivo && cicloAtivo.historiaInicio && (
+        <CicloStoryCard ciclo={cicloAtivo} />
+      )}
 
       <DashboardHomeCopiloto insight={insight} />
 

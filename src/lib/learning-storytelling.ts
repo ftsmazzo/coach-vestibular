@@ -1,4 +1,5 @@
 import type { LearningCycle } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
 
 export type BaselineCicloEscopo = {
   escopoId: string;
@@ -159,9 +160,153 @@ export function buildCycleStory(
   };
 }
 
-export async function buildJourneyStory(_userId: string): Promise<{ resumo: string }> {
+export async function buildJourneyStory(userId: string): Promise<{
+  resumo: string;
+  cicloAtivo: CycleStory | null;
+  ultimoCiclo: CycleStory | null;
+}> {
+  const [ativo, ultimoFechado] = await Promise.all([
+    prisma.learningCycle.findFirst({
+      where: { userId, status: "ATIVO" },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.learningCycle.findFirst({
+      where: { userId, status: "FECHADO" },
+      orderBy: { fechadoEm: "desc" },
+    }),
+  ]);
+
+  let narrativaInicio: { hipotese?: string; objetivo?: string; estrategia?: string } | null =
+    null;
+  if (ativo?.narrativaInicioJson) {
+    try {
+      narrativaInicio = JSON.parse(ativo.narrativaInicioJson);
+    } catch {
+      narrativaInicio = null;
+    }
+  }
+
+  const cicloAtivo = ativo
+    ? buildCicloInicioStory(ativo, narrativaInicio)
+    : null;
+
+  const ultimoCiclo = ultimoFechado
+    ? buildCycleStory(ultimoFechado)
+    : null;
+
+  const partes: string[] = [];
+  if (cicloAtivo) {
+    partes.push(cicloAtivo.paragrafos[0] ?? "");
+  } else if (ultimoCiclo) {
+    partes.push(ultimoCiclo.paragrafos[0] ?? "");
+  } else {
+    partes.push(
+      "Sua jornada está sendo reconstruída escopo a escopo — cada prova alimenta focos mais precisos."
+    );
+  }
+
   return {
-    resumo:
-      "Sua jornada está sendo reconstruída escopo a escopo — cada prova alimenta focos mais precisos.",
+    resumo: partes.filter(Boolean).join(" "),
+    cicloAtivo,
+    ultimoCiclo,
   };
+}
+
+export function buildCicloInicioStory(
+  cycle: Pick<LearningCycle, "metaTitulo" | "metaMateria" | "metaEscopoId" | "baselineJson">,
+  narrativaInicio?: { hipotese?: string; objetivo?: string; estrategia?: string } | null
+): CycleStory {
+  const baseline = parseBaselineJson(cycle.baselineJson);
+  const foco = baseline?.focos?.[0];
+  const paragrafos: string[] = [];
+
+  paragrafos.push(
+    `Esta semana o foco não é a matéria inteira — é ${foco?.escopoLabel ?? cycle.metaTitulo.replace(/^Dominar:\s*/i, "")}.`
+  );
+
+  if (narrativaInicio?.hipotese) {
+    paragrafos.push(narrativaInicio.hipotese);
+  } else if (foco?.metadadosCognitivosResumo) {
+    paragrafos.push(`Padrão detectado: ${foco.metadadosCognitivosResumo}.`);
+  }
+
+  if (narrativaInicio?.objetivo) {
+    paragrafos.push(`Objetivo: ${narrativaInicio.objetivo}`);
+  }
+
+  if (foco?.questoesOrigem?.length) {
+    paragrafos.push(
+      `As questões ${foco.questoesOrigem.slice(0, 5).join(", ")} da sua jornada originaram este foco.`
+    );
+  }
+
+  return {
+    titulo: cycle.metaTitulo,
+    paragrafos,
+    proximoPasso: "Execute as tarefas em Quests — cada uma ataca este escopo com uma estratégia diferente.",
+  };
+}
+
+export function buildStorytellingFechamento(
+  cycle: Pick<
+    LearningCycle,
+    "metaTitulo" | "baselineJson" | "resultadoJson" | "narrativaInicioJson"
+  >,
+  quizPct: number | null,
+  acertos: number,
+  total: number,
+  questsFeitas: number,
+  questsTotal: number
+): { storytelling: CycleStory; resultado: ResultadoCiclo; narrativaFim: string } {
+  const baseline = parseBaselineJson(cycle.baselineJson);
+  const foco = baseline?.focos?.[0];
+
+  let narrativaInicio: { hipotese?: string; objetivo?: string } | null = null;
+  if (cycle.narrativaInicioJson) {
+    try {
+      narrativaInicio = JSON.parse(cycle.narrativaInicioJson);
+    } catch {
+      /* ignora */
+    }
+  }
+
+  const resultado: ResultadoCiclo = {
+    execucao: {
+      questsConcluidas: questsFeitas,
+      questsPendentes: Math.max(0, questsTotal - questsFeitas),
+    },
+    ...(total > 0 && quizPct != null
+      ? {
+          avaliacao: {
+            miniQuizTotal: total,
+            miniQuizAcertos: acertos,
+            pctAcerto: quizPct,
+          },
+        }
+      : {}),
+    ...(quizPct != null && narrativaInicio?.hipotese
+      ? {
+          mudancaCognitiva: {
+            antes: narrativaInicio.hipotese.replace(/\.$/, ""),
+            depois:
+              quizPct >= 70
+                ? "você consolidou o escopo no mini-quiz de fechamento"
+                : quizPct >= 50
+                  ? "há avanço parcial — vale repetir o foco"
+                  : "o escopo ainda pede mais prática guiada",
+          },
+        }
+      : {}),
+  };
+
+  const storytelling = buildCycleStory(
+    { ...cycle, resultadoJson: JSON.stringify(resultado) },
+    { focoLabel: foco?.escopoLabel, estrategia: narrativaInicio?.objetivo }
+  );
+
+  const narrativaFim =
+    storytelling.paragrafos.join("\n\n") +
+    (storytelling.proximoPasso ? `\n\n${storytelling.proximoPasso}` : "");
+
+  return { storytelling, resultado, narrativaFim };
 }

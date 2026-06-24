@@ -2,9 +2,9 @@ import type { JourneyInsight } from "@/lib/journey-insight";
 import type { StructuredAnamneseProfile } from "@/lib/anamnese-types";
 import type { AlavancaJornada } from "@/lib/journey-insight";
 import { formatarPassos, PASSOS_POR_CLUSTER } from "@/lib/copiloto-passos";
+import { montarQuestEscopoDirigida } from "@/lib/learning-quest-escopo";
 import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
 import type { ClusterAgregado } from "@/lib/diagnostic-motor";
-import type { FocoPedagogico } from "@/lib/diagnosis-escopo";
 import { prisma } from "@/lib/prisma";
 
 /** Legado — novas quests usam marcador na descrição, sem prefixo no título */
@@ -132,61 +132,6 @@ function montarQuestMateria(a: AlavancaJornada, ordem: number): {
   };
 }
 
-function montarQuestFocoEscopo(
-  fp: FocoPedagogico,
-  ordem: number,
-  rotulo: string
-): {
-  chave: string;
-  titulo: string;
-  descricao: string;
-  materiaId: string;
-  conhecimentoEscopoId: string;
-  conhecimentoDominioId: string;
-  conceitosCanonicosJson?: string;
-  fonteDiagnosticoJson: string;
-  tipoQuest: string;
-  duracaoMin: number;
-  ordem: number;
-  rotulo: string;
-} {
-  const duracao = fp.prioridade === "alta" ? 45 : 35;
-  const passos = [
-    `Escopo: ${fp.escopoLabel} (${fp.materiaLabel}).`,
-    fp.hipoteseCausa,
-    `Objetivo: ${fp.objetivoDaSemana}`,
-    `Refaça questões ${fp.numerosErrados.slice(0, 5).join(", ")} da jornada.`,
-    "Corrija com gabarito e anote o passo que faltou.",
-    "Faça 3 exercícios novos só desse escopo.",
-  ];
-
-  return {
-    chave: chaveQuest("padrao", `escopo-${fp.escopoId}`),
-    titulo: `${fp.materiaLabel} — ${fp.escopoLabel}`,
-    descricao: formatarPassos(
-      passos,
-      `${rotulo.toLowerCase()} — foco por escopo N2 na jornada.`,
-      duracao
-    ),
-    materiaId: fp.materiaId,
-    conhecimentoEscopoId: fp.escopoId,
-    conhecimentoDominioId: fp.dominioId,
-    conceitosCanonicosJson:
-      fp.conceitosCanonicos.length > 0
-        ? JSON.stringify(fp.conceitosCanonicos)
-        : undefined,
-    fonteDiagnosticoJson: JSON.stringify({
-      focoId: fp.focoId,
-      escopoId: fp.escopoId,
-      estrategia: fp.estrategiaRecomendada,
-    }),
-    tipoQuest: fp.estrategiaRecomendada,
-    duracaoMin: duracao,
-    ordem,
-    rotulo,
-  };
-}
-
 function montarListaDesejada(insight: JourneyInsight) {
   const desejadas: Array<{
     chave: string;
@@ -208,11 +153,11 @@ function montarListaDesejada(insight: JourneyInsight) {
 
   if (focos.length > 0) {
     desejadas.push(
-      montarQuestFocoEscopo(focos[0]!, ordem++, "Prioridade da semana")
+      montarQuestEscopoDirigida(focos[0]!, ordem++, "Prioridade da semana", chaveQuest)
     );
     if (focos[1] && !insight.estado?.recoveryMode) {
       desejadas.push(
-        montarQuestFocoEscopo(focos[1], ordem++, "Também vale atenção")
+        montarQuestEscopoDirigida(focos[1], ordem++, "Também vale atenção", chaveQuest)
       );
     }
     const materiaDoFoco = focos[0]!.materiaLabel;

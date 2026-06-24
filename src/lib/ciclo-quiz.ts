@@ -37,16 +37,19 @@ function semGabarito(items: QuizItem[]): QuizItemPublico[] {
 async function selecionarItens(
   userId: string,
   metaClusterId: string | null,
-  metaMateria: string | null
+  metaMateria: string | null,
+  metaEscopoId: string | null = null
 ): Promise<QuizItem[]> {
   const candidatas = await prisma.provaQuestao.findMany({
     where: {
       gabarito: { not: null },
       conhecimentoExigido: { not: null },
       prova: { publicada: true },
-      ...(metaMateria
-        ? { materia: { contains: metaMateria.split(/\s+/)[0]!, mode: "insensitive" } }
-        : {}),
+      ...(metaEscopoId
+        ? { conhecimentoEscopoId: metaEscopoId }
+        : metaMateria
+          ? { materia: { contains: metaMateria.split(/\s+/)[0]!, mode: "insensitive" } }
+          : {}),
     },
     select: {
       id: true,
@@ -61,15 +64,17 @@ async function selecionarItens(
     take: 400,
   });
 
-  const noCluster = candidatas.filter((q) => {
-    if (!metaClusterId) return true;
-    const cluster = classificarClusterPedagogico(
-      q.conhecimentoExigido ?? "",
-      q.materia,
-      q.assunto
-    );
-    return cluster === metaClusterId;
-  });
+  const noCluster = metaEscopoId
+    ? candidatas
+    : candidatas.filter((q) => {
+        if (!metaClusterId) return true;
+        const cluster = classificarClusterPedagogico(
+          q.conhecimentoExigido ?? "",
+          q.materia,
+          q.assunto
+        );
+        return cluster === metaClusterId;
+      });
 
   const base = noCluster.length >= N_ITENS ? noCluster : candidatas;
 
@@ -119,7 +124,12 @@ export async function gerarOuObterQuiz(userId: string): Promise<{
     };
   }
 
-  const itens = await selecionarItens(userId, ciclo.metaClusterId, ciclo.metaMateria);
+  const itens = await selecionarItens(
+    userId,
+    ciclo.metaClusterId,
+    ciclo.metaMateria,
+    ciclo.metaEscopoId
+  );
   if (itens.length < 3) {
     return { quizId: null, itens: [], metaTitulo: ciclo.metaTitulo, insuficiente: true };
   }

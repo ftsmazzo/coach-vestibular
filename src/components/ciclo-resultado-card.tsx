@@ -45,6 +45,17 @@ export function CicloResultadoCard({ ciclo }: { ciclo: CicloFechadoView }) {
         {ciclo.feitas}/{ciclo.totalQuests} tarefas feitas neste ciclo.
         {temQuiz ? " Confirme com uma prova real quando puder." : ""}
       </p>
+
+      {ciclo.historia && ciclo.historia.length > 0 && (
+        <div className="mt-4 space-y-2 border-t border-violet-100 pt-3 text-sm leading-relaxed text-slate-700">
+          {ciclo.historia.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
+          {ciclo.proximoPasso && (
+            <p className="text-xs font-medium text-violet-800">{ciclo.proximoPasso}</p>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
