@@ -24,7 +24,7 @@ export function attemptsPonderadosJornada(
     banca: string | null;
     provaId?: string | null;
     prova?: Parameters<typeof agruparUnidadesJornada>[0][0]["prova"];
-    questionAttempts: QuestionAttemptsJornada;
+    questionAttempts: QuestionAttemptsJornada[];
   }>,
   metaProva?: string | null,
   vestibularAlvo?: string | null
@@ -48,7 +48,7 @@ export function attemptsPonderadosUnidadesJornada(
   unidades: Array<{
     modoUso: Parameters<typeof pesoModoUso>[0];
     banca: string | null;
-    questionAttempts: QuestionAttemptsJornada;
+    questionAttempts: QuestionAttemptsJornada[];
   }>,
   metaProva?: string | null,
   vestibularAlvo?: string | null
