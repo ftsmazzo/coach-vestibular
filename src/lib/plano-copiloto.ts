@@ -203,17 +203,16 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     metaFocoLabel = `${def.tituloHumano.toLowerCase()} em ${materia}`;
   }
 
-  const secundario = focoEscopo ? focosPedagogicos[1] : motor.clusters[1];
-  if (secundario && !recoveryMode) {
-    if (focoEscopo && "escopoLabel" in secundario) {
-      const fp = secundario;
+  if (!recoveryMode) {
+    const fpSecundario = focoEscopo ? focosPedagogicos[1] : undefined;
+    if (fpSecundario) {
       items.push({
         ordem: ordem++,
-        titulo: `Também vale atenção — ${fp.escopoLabel}`,
+        titulo: `Também vale atenção — ${fpSecundario.escopoLabel}`,
         descricao: formatarPassos(
           [
-            `${fp.materiaLabel}: ${fp.hipoteseCausa}`,
-            `Questões ${fp.numerosErrados.slice(0, 4).join(", ")}.`,
+            `${fpSecundario.materiaLabel}: ${fpSecundario.hipoteseCausa}`,
+            `Questões ${fpSecundario.numerosErrados.slice(0, 4).join(", ")}.`,
             "Refaça com calma e compare com o gabarito.",
           ],
           "segundo foco por escopo na jornada.",
@@ -221,27 +220,30 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
         ),
         duracaoMin: 35,
         bloco: "consolidacao",
-        materiaDestaque: fp.materiaLabel,
+        materiaDestaque: fpSecundario.materiaLabel,
         geraQuest: false,
         errosContexto: "jornada",
       });
-    } else if (!focoEscopo) {
-    const def2 = CLUSTERS_PEDAGOGICOS[secundario.clusterId];
-    const mat2 = secundario.materias[0]?.nome ?? "outra matéria";
-    items.push({
-      ordem: ordem++,
-      titulo: `Também vale atenção — ${def2.tituloHumano}`,
-      descricao: formatarPassos(
-        PASSOS_POR_CLUSTER[secundario.clusterId].slice(0, 4),
-        `segundo padrão na jornada (${mat2}).`,
-        35
-      ),
-      duracaoMin: 35,
-      bloco: "consolidacao",
-      materiaDestaque: mat2,
-      geraQuest: false,
-      errosContexto: "jornada",
-    });
+    } else {
+      const clusterSecundario = motor.clusters[1];
+      if (clusterSecundario) {
+        const def2 = CLUSTERS_PEDAGOGICOS[clusterSecundario.clusterId];
+        const mat2 = clusterSecundario.materias[0]?.nome ?? "outra matéria";
+        items.push({
+          ordem: ordem++,
+          titulo: `Também vale atenção — ${def2.tituloHumano}`,
+          descricao: formatarPassos(
+            PASSOS_POR_CLUSTER[clusterSecundario.clusterId].slice(0, 4),
+            `segundo padrão na jornada (${mat2}).`,
+            35
+          ),
+          duracaoMin: 35,
+          bloco: "consolidacao",
+          materiaDestaque: mat2,
+          geraQuest: false,
+          errosContexto: "jornada",
+        });
+      }
     }
   }
 
