@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card, Button, Badge } from "@/components/ui";
 import { CicloHeader } from "@/components/ciclo-header";
+import type { CicloResumo } from "@/lib/ciclo";
 
 interface QuestMeta {
   ordem?: number;
