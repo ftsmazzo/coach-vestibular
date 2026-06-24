@@ -27,25 +27,11 @@ interface Quest {
   meta: QuestMeta | null;
 }
 
-interface CicloResumoView {
-  id: string;
-  indice: number;
-  metaTitulo: string;
-  metaMateria: string | null;
-  endAt: string;
-  diasRestantes: number;
-  expirado: boolean;
-  total: number;
-  feitas: number;
-  pendentes: number;
-  pctConcluido: number;
-}
-
 interface QuestsResponse {
   quests: Quest[];
   oQueFazerAgora?: Quest[];
   copilotoConcluidas?: Quest[];
-  ciclo?: CicloResumoView | null;
+  ciclo?: CicloResumo | null;
   planoAtualizadoEm: string | null;
   recoveryMode: boolean;
   provaId?: string | null;
