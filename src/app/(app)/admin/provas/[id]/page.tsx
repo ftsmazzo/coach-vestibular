@@ -8,7 +8,7 @@ import { AdminTabelaQuestoes } from "@/components/admin-tabela-questoes";
 import { AdminProvaPipelineV2 } from "@/components/admin-prova-pipeline-v2";
 import { AdminValidacaoExtracao } from "@/components/admin-validacao-extracao";
 import { AdminClassificacaoProva } from "@/components/admin-classificacao-prova";
-import { statsFasesProva } from "@/lib/prova-classificacao-fases";
+import { statsFasesProva } from "@/lib/prova-classificacao-stats";
 import { GabaritoRevisaoGrid } from "@/components/gabarito-revisao-grid";
 import { Button, Card, Input, Label } from "@/components/ui";
 import {
