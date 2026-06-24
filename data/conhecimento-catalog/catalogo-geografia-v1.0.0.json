@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.0.1",
+  "catalogVersion": "1.0.2",
   "materiaId": "geografia",
   "materiaLabel": "Geografia",
   "areaEnem": "Ciências Humanas e suas Tecnologias",
@@ -119,10 +119,13 @@
               ],
               "negativeHints": [
                 "segregação urbana",
-                "ocupação de encosta"
+                "ocupação de encosta",
+                "moradores em áreas de risco",
+                "contenção de encostas"
               ],
               "naoConfundirCom": [
-                "geo.urbana.urbanizacao.problemas_urbanos"
+                "geo.urbana.urbanizacao.problemas_urbanos",
+                "geo.urbana.urbanizacao.areas_risco_encostas"
               ],
               "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
             }
@@ -135,7 +138,7 @@
             {
               "id": "geo.fisica_ambiental.relevo_hidrografia.relevo_processos",
               "label": "Relevo e agentes geomorfológicos",
-              "descricao": "Cobre formas de relevo, erosão, intemperismo, sedimentação, tectonismo e agentes modeladores. NÃO cobre relevo apenas como paisagem cultural ou patrimônio.",
+              "descricao": "Cobre formas de relevo, erosão, intemperismo, sedimentação, tectonismo e agentes modeladores. NÃO cobre relevo apenas como paisagem cultural ou patrimônio. NÃO cobre vulnerabilidade urbana, ocupação de encosta ou gestão municipal de risco.",
               "keywords": [
                 "relevo",
                 "erosão",
@@ -155,10 +158,16 @@
               ],
               "negativeHints": [
                 "patrimônio histórico",
-                "turismo cultural"
+                "turismo cultural",
+                "moradores em áreas de risco",
+                "município",
+                "infraestrutura de contenção",
+                "defesa civil",
+                "vulnerabilidade urbana"
               ],
               "naoConfundirCom": [
-                "geo.cartografia.representacao.altimetria_curvas_nivel"
+                "geo.cartografia.representacao.altimetria_curvas_nivel",
+                "geo.urbana.urbanizacao.areas_risco_encostas"
               ],
               "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
             },
@@ -568,10 +577,13 @@
               ],
               "negativeHints": [
                 "erosão",
-                "intemperismo"
+                "intemperismo",
+                "deslizamento de terra",
+                "moradores em áreas de risco"
               ],
               "naoConfundirCom": [
-                "geo.fisica_ambiental.relevo_hidrografia.relevo_processos"
+                "geo.fisica_ambiental.relevo_hidrografia.relevo_processos",
+                "geo.urbana.urbanizacao.areas_risco_encostas"
               ],
               "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
             }
@@ -935,7 +947,7 @@
             {
               "id": "geo.urbana.urbanizacao.problemas_urbanos",
               "label": "Problemas urbanos e infraestrutura",
-              "descricao": "Cobre saneamento, mobilidade, habitação, enchentes urbanas, ilhas de calor, violência urbana e déficit de infraestrutura. NÃO cobre poluição ambiental geral sem contexto urbano.",
+              "descricao": "Cobre saneamento, mobilidade, habitação, enchentes urbanas em planície/vale, ilhas de calor, violência urbana e déficit de infraestrutura geral. NÃO cobre poluição ambiental geral sem contexto urbano. NÃO cobre áreas de risco em encostas, deslizamentos ou contenção de morros — use areas_risco_encostas.",
               "keywords": [
                 "problemas urbanos",
                 "saneamento",
@@ -955,12 +967,74 @@
               "negativeHints": [
                 "mudanças climáticas",
                 "bacia hidrográfica",
-                "bioma"
+                "bioma",
+                "deslizamento de terra",
+                "contenção de encostas",
+                "ocupação de encostas"
               ],
               "naoConfundirCom": [
-                "geo.fisica_ambiental.impactos_ambientais.poluicao_residuos"
+                "geo.fisica_ambiental.impactos_ambientais.poluicao_residuos",
+                "geo.urbana.urbanizacao.areas_risco_encostas"
               ],
-              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente. Enchente urbana sem encosta/risco geológico → aqui; encosta/morros/deslizamento com moradia e gestão municipal → areas_risco_encostas."
+            },
+            {
+              "id": "geo.urbana.urbanizacao.areas_risco_encostas",
+              "label": "Áreas de risco, encostas e vulnerabilidade urbana",
+              "descricao": "Cobre ocupação urbana de encostas, morros, fundos de vale e áreas sujeitas a deslizamentos, inundações, enxurradas e tragédias socioambientais, com foco em vulnerabilidade urbana, déficit de infraestrutura, contenção de encostas, remoção/reassentamento, defesa civil e gestão territorial de riscos. NÃO cobre processos geomorfológicos naturais isolados sem análise urbana ou social.",
+              "keywords": [
+                "áreas de risco",
+                "moradores em áreas de risco",
+                "ocupação de encostas",
+                "encostas",
+                "morro",
+                "alto do morro",
+                "deslizamento de terra",
+                "deslizamentos",
+                "inundações",
+                "enchentes",
+                "enxurradas",
+                "contenção de encostas",
+                "obras de contenção",
+                "defesa civil",
+                "vulnerabilidade urbana",
+                "tragédia socioambiental",
+                "gestão de risco"
+              ],
+              "keywordsContexto": [
+                "chuva intensa",
+                "milímetros de água",
+                "12 horas",
+                "São Sebastião",
+                "Vila Sahy",
+                "bairro atingido",
+                "levantamento de áreas de risco",
+                "Instituto de Pesquisas Tecnológicas",
+                "moradores vivendo em áreas de risco",
+                "infraestrutura de contenção",
+                "município"
+              ],
+              "exemplosEnunciado": [
+                "Após chuvas extremas e deslizamentos, moradores permanecem em áreas de risco no alto do morro; qual desafio municipal persiste em relação à infraestrutura de contenção das encostas?",
+                "Identificar que a permanência de moradores em áreas urbanas de risco exige obras de contenção de encostas e gestão territorial preventiva."
+              ],
+              "negativeHints": [
+                "intemperismo",
+                "tectonismo",
+                "dobramentos",
+                "erosão como processo natural isolado",
+                "curvas de nível",
+                "perfil topográfico",
+                "rocha sedimentar",
+                "bacia hidrográfica sem contexto urbano"
+              ],
+              "naoConfundirCom": [
+                "geo.urbana.urbanizacao.problemas_urbanos",
+                "geo.fisica_ambiental.relevo_hidrografia.relevo_processos",
+                "geo.cartografia.representacao.altimetria_curvas_nivel",
+                "geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas"
+              ],
+              "regraDesempate": "Se a questão articula chuva/deslizamento/inundação com moradia, bairro, município, área de risco, encosta urbanizada ou infraestrutura pública, classifique aqui. Se pergunta apenas o processo natural de erosão, intemperismo ou modelagem do relevo, use relevo/processos geomorfológicos. Se pergunta apenas enchente urbana sem encosta/risco geológico, use problemas urbanos."
             }
           ]
         },
@@ -1708,5 +1782,8 @@
         }
       ]
     }
+  ],
+  "changelog": [
+    "1.0.2: Novo escopo geo.urbana.urbanizacao.areas_risco_encostas (FAMERP — São Sebastião/Vila Sahy, deslizamentos e contenção de encostas); desempate vs relevo, problemas urbanos e cartografia."
   ]
 }

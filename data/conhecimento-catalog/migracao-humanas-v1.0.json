@@ -301,6 +301,7 @@
         "geo.urbana.urbanizacao.metropolizacao_conurbacao",
         "geo.urbana.urbanizacao.segregacao_socioespacial",
         "geo.urbana.urbanizacao.problemas_urbanos",
+        "geo.urbana.urbanizacao.areas_risco_encostas",
         "geo.urbana.rede_urbana.hierarquia_urbana"
       ],
       "candidatosOutrasDisciplinas": [
