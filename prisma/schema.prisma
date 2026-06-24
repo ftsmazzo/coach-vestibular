@@ -144,6 +144,8 @@ model ProvaQuestao {
   gabarito            String?
 
   /// Classificação pedagógica Coach (N1/N2) — espelha EnemQuestaoCorpus
+  /// JSON N1: área, catálogo destino, rota/triagem (fase 1 — antes do escopo N2)
+  classificacaoN1Json            String? @db.Text
   conhecimentoDominioId        String?
   conhecimentoEscopoId         String?
   classificacaoVersao          String?

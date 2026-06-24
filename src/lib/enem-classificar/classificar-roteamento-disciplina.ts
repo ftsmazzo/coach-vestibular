@@ -24,9 +24,16 @@ import {
   prefixoValidoParaDisciplina,
 } from "@/lib/conhecimento-catalog/disciplinas-split";
 import { classificarLoteCatalogoV11 } from "@/lib/enem-classificar/classificar-catalogo-v11";
+import {
+  aplicarMapaComChavesFonteId,
+  fonteIdsFaltantes,
+} from "@/lib/enem-classificar/fonte-id-utils";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
 
 export const CLASSIFICADOR_DISCIPLINA_V10 = "ia-disciplina-v10";
+
+const LOTE_ROTEAMENTO = 3;
+const LOTE_N2_DISCIPLINA = 4;
 
 export type QuestaoRoteamento = {
   fonteId: string;
@@ -62,7 +69,7 @@ function montarBlocoQuestaoRoteamento(q: QuestaoRoteamento): string {
   ].filter(Boolean);
   const meta = metaParts.length ? `Metadados (hints): ${metaParts.join(" ")}\n` : "";
   const tb = q.textoBase?.trim();
-  const textoBase = tb ? `Texto-base:\n${tb.slice(0, 2500)}\n\n` : "";
+  const textoBase = tb ? `Texto-base:\n${tb}\n\n` : "";
   return (
     meta +
     textoBase +
@@ -124,8 +131,7 @@ async function rotearLote(
   items: QuestaoRoteamento[],
   area: "humanas" | "linguagens"
 ): Promise<Map<string, RotaItem["rota"]>> {
-  const map = new Map<string, RotaItem["rota"]>();
-  if (items.length === 0) return map;
+  if (items.length === 0) return new Map();
 
   const enumDisciplinas =
     area === "humanas"
@@ -149,11 +155,12 @@ async function rotearLote(
     content: [],
   });
 
+  const esperados = items.map((q) => q.fonteId);
+  const bruto = new Map<string, RotaItem["rota"]>();
   for (const row of data.classificacoes) {
-    map.set(row.fonteId, row.rota);
+    bruto.set(row.fonteId, row.rota);
   }
-
-  return map;
+  return aplicarMapaComChavesFonteId(bruto, esperados);
 }
 
 function rotaDeterministicaLinguagens(
@@ -161,18 +168,30 @@ function rotaDeterministicaLinguagens(
   rota: RotaItem["rota"]
 ): RotaItem["rota"] {
   const hint = item.idioma;
-  if (hint !== "ingles" && hint !== "espanhol") return rota;
+  if (hint === "ingles" || hint === "espanhol") {
+    const forçada = hint as DisciplinaLinguagensId;
+    if (rota.disciplinaId === forçada) return rota;
+    return {
+      disciplinaId: forçada,
+      criterio: "metadata",
+      confianca: Math.max(rota.confianca ?? 0, 0.95),
+      justificativa: `Rota forçada por idiomaVariante (${forçada}); IA sugeriu ${rota.disciplinaId}.`,
+      sinalizadorRevisao: true,
+    };
+  }
 
-  const forçada = hint as DisciplinaLinguagensId;
-  if (rota.disciplinaId === forçada) return rota;
+  if (rota.disciplinaId === "indefinido") {
+    return {
+      disciplinaId: "portugues",
+      criterio: "metadata",
+      confianca: Math.max(rota.confianca ?? 0, 0.55),
+      justificativa:
+        "Variante COMUM em Linguagens — roteada para português (comando em PT não exclui Língua Portuguesa).",
+      sinalizadorRevisao: true,
+    };
+  }
 
-  return {
-    disciplinaId: forçada,
-    criterio: "metadata",
-    confianca: Math.max(rota.confianca ?? 0, 0.95),
-    justificativa: `Rota forçada por idiomaVariante (${forçada}); IA sugeriu ${rota.disciplinaId}.`,
-    sinalizadorRevisao: true,
-  };
+  return rota;
 }
 
 function resultadoIndefinido(
@@ -263,6 +282,12 @@ export function versaoClassificacaoDisciplinaV10(
   return `${CLASSIFICADOR_DISCIPLINA_V10}|area=${area}|disc=${disc}|crit=${crit}|rc=${(resultado.confianca ?? 0).toFixed(2)}`;
 }
 
+function chunks<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
 async function classificarPorDisciplina(
   disciplinaId: CatalogDisciplinaId,
   items: QuestaoRoteamento[],
@@ -277,30 +302,58 @@ async function classificarPorDisciplina(
   const promptMd = promptClassificacaoDisciplina(disciplinaId);
   const systemPrompt = promptMd?.trim() || montarSystemClassificacaoV11(catalog);
 
-  const payload = items.map((q) => ({
-    fonteId: q.fonteId,
-    enunciado: [q.textoBase?.trim(), q.enunciado].filter(Boolean).join("\n\n"),
-    alternativas: q.alternativas,
-    gabarito: q.gabarito ?? null,
-    numero: q.numero,
-    idioma: q.idioma ?? null,
-  }));
+  for (const lote of chunks(items, LOTE_N2_DISCIPLINA)) {
+    const payload = lote.map((q) => ({
+      fonteId: q.fonteId,
+      enunciado: [q.textoBase?.trim(), q.enunciado].filter(Boolean).join("\n\n"),
+      alternativas: q.alternativas,
+      gabarito: q.gabarito ?? null,
+      numero: q.numero,
+      idioma: q.idioma ?? null,
+    }));
 
-  const parcial = await classificarLoteCatalogoV11(payload, catalog, escopos, {
-    systemPrompt,
-  });
+    const parcial = await classificarLoteCatalogoV11(payload, catalog, escopos, {
+      systemPrompt,
+    });
 
-  for (const q of items) {
-    const rota = rotas.get(q.fonteId)!;
-    const base = parcial.get(q.fonteId);
-    if (!base) {
-      map.set(
-        q.fonteId,
-        resultadoFallbackDisciplina(disciplinaId, rota, "IA não retornou classificação N2.")
-      );
-      continue;
+    for (const q of lote) {
+      const rota = rotas.get(q.fonteId)!;
+      const base = parcial.get(q.fonteId);
+      if (!base) {
+        map.set(
+          q.fonteId,
+          resultadoFallbackDisciplina(disciplinaId, rota, "IA não retornou classificação N2.")
+        );
+        continue;
+      }
+      map.set(q.fonteId, validarResultadoDisciplina(base, disciplinaId, confiancaMinima));
     }
-    map.set(q.fonteId, validarResultadoDisciplina(base, disciplinaId, confiancaMinima));
+  }
+
+  return map;
+}
+
+async function rotearComRetry(
+  items: QuestaoRoteamento[],
+  area: "humanas" | "linguagens"
+): Promise<Map<string, RotaItem["rota"]>> {
+  const map = new Map<string, RotaItem["rota"]>();
+  if (items.length === 0) return map;
+
+  for (const lote of chunks(items, LOTE_ROTEAMENTO)) {
+    const parcial = await rotearLote(lote, area);
+    for (const [k, v] of parcial) map.set(k, v);
+  }
+
+  const faltantes = fonteIdsFaltantes(
+    items.map((q) => q.fonteId),
+    map
+  );
+  for (const fonteId of faltantes) {
+    const item = items.find((q) => q.fonteId === fonteId);
+    if (!item) continue;
+    const solo = await rotearLote([item], area);
+    for (const [k, v] of solo) map.set(k, v);
   }
 
   return map;
@@ -313,7 +366,7 @@ async function classificarAreaComRoteamento(
   const map = new Map<string, ResultadoClassificacao>();
   if (items.length === 0) return map;
 
-  const rotasBrutas = await rotearLote(items, area);
+  const rotasBrutas = await rotearComRetry(items, area);
   const rotas = new Map<string, RotaItem["rota"]>();
 
   for (const item of items) {

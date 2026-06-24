@@ -7,6 +7,9 @@ import {
 } from "@/lib/conhecimento-catalog/prompt-classificacao";
 import { idFallbackNaoClassificado } from "@/lib/conhecimento-catalog/load";
 import { sanitizarTextoPostgres } from "@/lib/sanitize-postgres-text";
+import {
+  aplicarMapaComChavesFonteId,
+} from "@/lib/enem-classificar/fonte-id-utils";
 import type {
   EscopoIndexEntry,
   MateriaCatalogo,
@@ -99,7 +102,7 @@ function idsValidos(escopos: Map<string, EscopoIndexEntry>, fallbackId: string):
   return new Set([...escopos.keys(), fallbackId]);
 }
 
-function itemParaResultado(
+export function itemParaResultadoFromIa(
   row: IaV11Item,
   escopos: Map<string, EscopoIndexEntry>,
   materiaId: string,
@@ -217,11 +220,16 @@ export async function classificarLoteCatalogoV11(
     content: [],
   });
 
+  const esperados = items.map((q) => q.fonteId);
+  const bruto = new Map<string, ResultadoClassificacao>();
   for (const row of data.classificacoes) {
-    map.set(
+    bruto.set(
       row.fonteId,
-      itemParaResultado(row, escopos, catalog.materiaId, confiancaMinima, fallbackId, ids)
+      itemParaResultadoFromIa(row, escopos, catalog.materiaId, confiancaMinima, fallbackId, ids)
     );
+  }
+  for (const [k, v] of aplicarMapaComChavesFonteId(bruto, esperados)) {
+    map.set(k, v);
   }
 
   for (const q of items) {

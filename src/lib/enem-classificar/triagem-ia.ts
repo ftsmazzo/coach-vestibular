@@ -80,7 +80,7 @@ export async function triarLoteIA(
   const blocos = items
     .map(
       (q, i) =>
-        `### ${i + 1}. ${q.fonteId}\n${q.texto.slice(0, 1400).replace(/!\[[^\]]*\]\([^)]+\)/g, "[imagem]")}`
+        `### ${i + 1}. ${q.fonteId}\n${q.texto.replace(/!\[[^\]]*\]\([^)]+\)/g, "[imagem]")}`
     )
     .join("\n\n");
 
@@ -91,7 +91,10 @@ export async function triarLoteIA(
       "Química: átomos, ligações, reações, estequiometria, orgânica, soluções, pH. " +
       "Física: movimento, forças, energia, eletricidade, magnetismo, ondas, óptica, termodinâmica. " +
       "Use null só se realmente não der para distinguir. Prefira a matéria dominante do conteúdo exigido.",
-    instrucao: `Classifique cada questão (materia: Biologia | Química | Física | null):\n\n${blocos}`,
+    instrucao:
+      items.length === 1
+        ? `Classifique esta única questão (materia: Biologia | Química | Física | null):\n\n${blocos}`
+        : `Classifique cada questão (materia: Biologia | Química | Física | null):\n\n${blocos}`,
     schema: SCHEMA,
     content: [],
   });
@@ -111,6 +114,21 @@ export async function triarLoteIA(
   }
 
   return map;
+}
+
+/** Triagem IA de UMA questão — texto integral, uma chamada. */
+export async function triarQuestaoIA(
+  fonteId: string,
+  texto: string
+): Promise<TriagemNatureza> {
+  const map = await triarLoteIA([{ fonteId, texto }]);
+  return (
+    map.get(fonteId) ?? {
+      materia: null,
+      confianca: 0,
+      motivo: "IA não retornou triagem",
+    }
+  );
 }
 
 export function mesclarTriagem(

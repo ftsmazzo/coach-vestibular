@@ -112,8 +112,8 @@ export function montarBlocoQuestaoV11(q: {
   return (
     `### ${q.fonteId}\n` +
     meta +
-    `Enunciado:\n${q.enunciado.slice(0, 2000)}\n\n` +
-    `Alternativas:\n${q.alternativas.slice(0, 1500)}\n` +
+    `Enunciado:\n${q.enunciado}\n\n` +
+    `Alternativas:\n${q.alternativas}\n` +
     gab
   );
 }

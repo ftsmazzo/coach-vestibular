@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
-import { reclassificarProvaInteiraComCatalogo } from "@/lib/prova-classificacao-catalogo";
-import { prisma } from "@/lib/prisma";
-import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 
-export const maxDuration = 600;
+export const maxDuration = 60;
 
+/** @deprecated Use /classificar-n1, /classificar-n2, /classificar-n3 em sequência. */
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -14,43 +12,18 @@ export async function POST(
   if (auth.error) return auth.error;
 
   const { id: provaId } = await params;
-  const prova = await prisma.prova.findUnique({ where: { id: provaId } });
-  if (!prova) {
-    return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
-  }
 
-  if (!prova.extracaoValidada) {
-    return NextResponse.json(
-      { error: "Valide a extração (Passo 3) antes de classificar." },
-      { status: 409 }
-    );
-  }
-
-  if (!process.env.OPENAI_API_KEY?.trim()) {
-    return NextResponse.json(
-      { error: "OPENAI_API_KEY não configurada no servidor." },
-      { status: 503 }
-    );
-  }
-
-  try {
-    const resultado = await reclassificarProvaInteiraComCatalogo(provaId, {
-      banca: prova.banca,
-    });
-
-    await refreshProvaGabaritoFlag(provaId);
-
-    return NextResponse.json({
-      ok: true,
-      ...resultado,
-      mensagem:
-        resultado.classificadas > 0
-          ? `${resultado.classificadas}/${resultado.total} questão(ões) com escopo N2. ${resultado.processadas} linha(s) atualizadas no banco.`
-          : "Nenhuma questão classificada — verifique se há enunciado ou resumo salvo.",
-    });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Erro na reclassificação em lote";
-    console.error(e);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  return NextResponse.json(
+    {
+      error:
+        "Classificação monolítica desativada. Use as 3 fases separadas: N1 (roteamento) → validar → N2 (escopo) → validar → N3 (conhecimento).",
+      provaId,
+      endpoints: [
+        `/api/admin/provas/${provaId}/classificar-n1`,
+        `/api/admin/provas/${provaId}/classificar-n2`,
+        `/api/admin/provas/${provaId}/classificar-n3`,
+      ],
+    },
+    { status: 410 }
+  );
 }

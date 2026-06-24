@@ -8,6 +8,7 @@ import { AdminTabelaQuestoes } from "@/components/admin-tabela-questoes";
 import { AdminProvaPipelineV2 } from "@/components/admin-prova-pipeline-v2";
 import { AdminValidacaoExtracao } from "@/components/admin-validacao-extracao";
 import { AdminClassificacaoProva } from "@/components/admin-classificacao-prova";
+import { statsFasesProva } from "@/lib/prova-classificacao-fases";
 import { GabaritoRevisaoGrid } from "@/components/gabarito-revisao-grid";
 import { Button, Card, Input, Label } from "@/components/ui";
 import {
@@ -36,6 +37,9 @@ interface ProvaQuestao {
   observacoes: string | null;
   gabarito: string | null;
   conhecimentoEscopoId?: string | null;
+  classificacaoN1Json?: string | null;
+  classificacaoConfianca?: number | null;
+  classificacaoVersao?: string | null;
 }
 
 
@@ -257,6 +261,11 @@ export default function AdminProvaDetailPage() {
   }, [prova]);
 
   const faixaIdiomaDual = useMemo(() => faixaIdiomaProva(prova ?? undefined), [prova]);
+
+  const statsClassificacao = useMemo(
+    () => (prova?.questoes.length ? statsFasesProva(prova.questoes) : null),
+    [prova?.questoes]
+  );
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/admin/provas/${id}`);
@@ -881,7 +890,10 @@ export default function AdminProvaDetailPage() {
           <AdminClassificacaoProva
             provaId={prova.id}
             totalQuestoes={prova.questoes.length}
-            classificadas={prova.questoes.filter((q) => q.conhecimentoEscopoId).length}
+            comN1={statsClassificacao?.comN1 ?? 0}
+            comN2Real={statsClassificacao?.comN2Real ?? 0}
+            comN2Fallback={statsClassificacao?.comN2Fallback ?? 0}
+            comN3={statsClassificacao?.comN3 ?? 0}
             onMensagem={setMsg}
             onAtualizado={aoAtualizarQuestoes}
           />

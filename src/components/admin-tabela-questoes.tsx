@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@/components/ui";
 import { inferirAreaBlocoPorMateria, normalizarAreaBloco, opcoesAreaBlocoAdmin } from "@/lib/areas-bloco";
 import { taxonomy } from "@/lib/taxonomy";
+import { parseClassificacaoN1 } from "@/lib/classificacao-n1-types";
 import {
   marcarObservacoesConferidas,
   questaoConferidaPeloRevisor,
@@ -17,6 +18,10 @@ export interface QuestaoRow {
   materia: string;
   assunto: string;
   conhecimentoExigido: string | null;
+  conhecimentoEscopoId?: string | null;
+  classificacaoN1Json?: string | null;
+  classificacaoConfianca?: number | null;
+  classificacaoVersao?: string | null;
   nivelDificuldade: string | null;
   observacoes: string | null;
   gabarito: string | null;
@@ -36,9 +41,7 @@ type FormEdicao = {
 interface Props {
   provaId: string;
   questoes: QuestaoRow[];
-  /** Chaves `numero:variante` com alerta da auditoria. */
   alertaChaves?: string[];
-  /** Abre o modal de edição desta questão (ex.: vindo da auditoria). */
   abrirEdicao?: { numero: number; idiomaVariante?: string } | null;
   onEdicaoAberta?: () => void;
   onAtualizado: () => void;
@@ -47,6 +50,34 @@ interface Props {
 
 function chaveAlerta(q: Pick<QuestaoRow, "numero" | "idiomaVariante">): string {
   return `${q.numero}:${q.idiomaVariante ?? "COMUM"}`;
+}
+
+function statusN2(q: QuestaoRow): { label: string; className: string } {
+  const escopoId = q.conhecimentoEscopoId?.trim();
+  if (!escopoId) {
+    if (q.materia !== "A classificar" && q.assunto.includes("N2 pendente")) {
+      return { label: "Rota OK", className: "bg-sky-100 text-sky-800" };
+    }
+    return { label: "Sem escopo", className: "bg-slate-100 text-slate-600" };
+  }
+  if (escopoId.endsWith(".__nao_classificado")) {
+    return { label: "Fallback", className: "bg-amber-100 text-amber-900" };
+  }
+  return { label: "N2 OK", className: "bg-emerald-100 text-emerald-800" };
+}
+
+function formatConfianca(v: number | null | undefined): string {
+  if (v == null || Number.isNaN(v)) return "—";
+  return `${Math.round(v * 100)}%`;
+}
+
+function rotaResumo(versao: string | null | undefined): string {
+  if (!versao) return "—";
+  const disc = versao.match(/disc=([^|]+)/)?.[1];
+  const crit = versao.match(/crit=([^|]+)/)?.[1];
+  if (disc && crit) return `${disc} (${crit})`;
+  if (versao.includes("ia-catalogo")) return "catálogo direto";
+  return versao.slice(0, 24);
 }
 
 function formDeQuestao(q: QuestaoRow): FormEdicao {
@@ -78,15 +109,23 @@ export function AdminTabelaQuestoes({
   const [form, setForm] = useState<FormEdicao | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [conferida, setConferida] = useState(true);
-  const [filtro, setFiltro] = useState<"todas" | "alerta">("todas");
+  const [filtro, setFiltro] = useState<"todas" | "alerta" | "sem_n2">("todas");
 
   const materias = taxonomy.materias.map((m) => m.label);
   const opcoesArea = opcoesAreaBlocoAdmin();
 
-  const lista =
-    filtro === "alerta"
-      ? questoes.filter((q) => alertaSet.has(chaveAlerta(q)))
-      : questoes;
+  const lista = useMemo(() => {
+    if (filtro === "alerta") {
+      return questoes.filter((q) => alertaSet.has(chaveAlerta(q)));
+    }
+    if (filtro === "sem_n2") {
+      return questoes.filter((q) => {
+        const id = q.conhecimentoEscopoId?.trim();
+        return !id || id.endsWith(".__nao_classificado");
+      });
+    }
+    return questoes;
+  }, [filtro, questoes, alertaSet]);
 
   useEffect(() => {
     if (abrirEdicao == null) return;
@@ -156,42 +195,58 @@ export function AdminTabelaQuestoes({
     return m?.temas.map((t) => t.label) ?? [];
   }
 
+  const semN2 = questoes.filter((q) => {
+    const id = q.conhecimentoEscopoId?.trim();
+    return !id || id.endsWith(".__nao_classificado");
+  }).length;
+
   return (
     <>
       <Card>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="font-semibold">Tabela de questões</h2>
+            <h2 className="font-semibold">Tabela de questões — classificação N2</h2>
             <p className="text-sm text-slate-600">
-              Dados gravados no banco. Use <strong>Editar</strong> na linha para abrir um formulário
-              (uma questão por vez). Linha em destaque = alerta da auditoria.
+              Fonte de verdade: <strong>Escopo N2</strong> e confiança. Matéria/assunto são
+              rótulos auxiliares. Linha em destaque = alerta da auditoria.
             </p>
           </div>
-          {alertaChaves.length > 0 && (
-            <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant={filtro === "todas" ? "primary" : "secondary"}
+              onClick={() => setFiltro("todas")}
+            >
+              Todas ({questoes.length})
+            </Button>
+            {semN2 > 0 && (
               <Button
                 type="button"
-                variant={filtro === "todas" ? "primary" : "secondary"}
-                onClick={() => setFiltro("todas")}
+                variant={filtro === "sem_n2" ? "primary" : "secondary"}
+                onClick={() => setFiltro("sem_n2")}
               >
-                Todas ({questoes.length})
+                Sem N2 real ({semN2})
               </Button>
+            )}
+            {alertaChaves.length > 0 && (
               <Button
                 type="button"
                 variant={filtro === "alerta" ? "primary" : "secondary"}
                 onClick={() => setFiltro("alerta")}
               >
-                Só alertas ({alertaChaves.length})
+                Alertas ({alertaChaves.length})
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {lista.length === 0 ? (
           <p className="text-sm text-slate-500">
             {filtro === "alerta"
               ? "Nenhum alerta — rode «Auditar» ou volte para todas."
-              : "Nenhuma questão no banco."}
+              : filtro === "sem_n2"
+                ? "Todas as questões têm escopo N2 real."
+                : "Nenhuma questão no banco."}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -199,63 +254,83 @@ export function AdminTabelaQuestoes({
               <thead>
                 <tr className="border-b text-slate-500">
                   <th className="p-2">#</th>
-                  <th className="p-2">Área/Bloco</th>
-                  <th className="p-2">Matéria</th>
-                  <th className="p-2">Assunto</th>
-                  <th className="p-2">Conhecimento</th>
-                  <th className="p-2">Dific.</th>
+                  <th className="p-2">N1 catálogo</th>
+                  <th className="p-2">Status</th>
+                  <th className="p-2">Disciplina</th>
+                  <th className="p-2">Escopo N2</th>
+                  <th className="p-2">Label escopo</th>
+                  <th className="p-2">Conf.</th>
+                  <th className="p-2">N3 / conhecimento</th>
                   <th className="p-2">Gabarito</th>
                   <th className="p-2 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {lista.map((q) => (
-                  <tr
-                    key={q.id}
-                    className={`border-b border-slate-100 ${
-                      alertaSet.has(chaveAlerta(q)) ? "bg-amber-50" : ""
-                    }`}
-                  >
-                    <td className="p-2 font-medium">
-                      {q.numero}
-                      {q.idiomaVariante && q.idiomaVariante !== "COMUM" && (
-                        <span className="ml-1 text-[10px] font-normal text-slate-500">
-                          {q.idiomaVariante === "INGLES" ? "EN" : "ES"}
+                {lista.map((q) => {
+                  const st = statusN2(q);
+                  const n1 = parseClassificacaoN1(q.classificacaoN1Json);
+                  return (
+                    <tr
+                      key={q.id}
+                      className={`border-b border-slate-100 ${
+                        alertaSet.has(chaveAlerta(q)) ? "bg-amber-50" : ""
+                      }`}
+                    >
+                      <td className="p-2 font-medium">
+                        {q.numero}
+                        {q.idiomaVariante && q.idiomaVariante !== "COMUM" && (
+                          <span className="ml-1 text-[10px] font-normal text-slate-500">
+                            {q.idiomaVariante === "INGLES" ? "EN" : "ES"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-2 font-mono text-xs" title={n1?.justificativa ?? ""}>
+                        {n1?.catalogoId ?? "—"}
+                      </td>
+                      <td className="p-2">
+                        <span
+                          className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${st.className}`}
+                          title={rotaResumo(q.classificacaoVersao)}
+                        >
+                          {st.label}
                         </span>
-                      )}
-                    </td>
-                    <td className="p-2 max-w-[8rem] truncate" title={q.areaBloco ?? ""}>
-                      {q.areaBloco ?? "—"}
-                    </td>
-                    <td className="p-2">{q.materia}</td>
-                    <td className="p-2 max-w-[10rem] truncate" title={q.assunto}>
-                      {q.assunto}
-                    </td>
-                    <td className="p-2 max-w-xs truncate" title={q.conhecimentoExigido ?? ""}>
-                      {q.conhecimentoExigido ?? "—"}
-                    </td>
-                    <td className="p-2">{q.nivelDificuldade ?? "—"}</td>
-                    <td className="p-2 font-mono font-bold">
-                      {q.gabarito === "*" ? (
-                        <span className="text-slate-500" title="Anulada pela banca">
-                          *
-                        </span>
-                      ) : (
-                        (q.gabarito ?? "—")
-                      )}
-                    </td>
-                    <td className="p-2 text-right">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="px-2 py-1 text-xs"
-                        onClick={() => abrirModal(q)}
+                      </td>
+                      <td className="p-2">{q.materia}</td>
+                      <td
+                        className="max-w-[10rem] truncate p-2 font-mono text-xs"
+                        title={q.conhecimentoEscopoId ?? ""}
                       >
-                        Editar
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                        {q.conhecimentoEscopoId ?? "—"}
+                      </td>
+                      <td className="max-w-[12rem] truncate p-2" title={q.assunto}>
+                        {q.assunto}
+                      </td>
+                      <td className="p-2 text-xs">{formatConfianca(q.classificacaoConfianca)}</td>
+                      <td className="max-w-xs truncate p-2 text-xs" title={q.conhecimentoExigido ?? ""}>
+                        {q.conhecimentoExigido ?? "—"}
+                      </td>
+                      <td className="p-2 font-mono font-bold">
+                        {q.gabarito === "*" ? (
+                          <span className="text-slate-500" title="Anulada pela banca">
+                            *
+                          </span>
+                        ) : (
+                          (q.gabarito ?? "—")
+                        )}
+                      </td>
+                      <td className="p-2 text-right">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="px-2 py-1 text-xs"
+                          onClick={() => abrirModal(q)}
+                        >
+                          Editar
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -283,6 +358,15 @@ export function AdminTabelaQuestoes({
                 ✕
               </button>
             </div>
+
+            {editando.conhecimentoEscopoId && (
+              <p className="mb-3 rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-900">
+                Escopo N2: <code>{editando.conhecimentoEscopoId}</code>
+                {editando.classificacaoConfianca != null && (
+                  <> · confiança {formatConfianca(editando.classificacaoConfianca)}</>
+                )}
+              </p>
+            )}
 
             <div className="grid gap-3">
               <label className="text-xs text-slate-600">
@@ -329,7 +413,7 @@ export function AdminTabelaQuestoes({
                 </select>
               </label>
               <label className="text-xs text-slate-600">
-                Assunto
+                Assunto / label escopo
                 <input
                   list="assuntos-modal"
                   className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
@@ -345,7 +429,7 @@ export function AdminTabelaQuestoes({
                 </datalist>
               </label>
               <label className="text-xs text-slate-600">
-                Conhecimento exigido
+                Conhecimento exigido (N3)
                 <input
                   className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
                   value={form.conhecimento}
