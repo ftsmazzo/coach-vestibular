@@ -2,6 +2,15 @@
 
 import { useState } from "react";
 import { taxonomy } from "@/lib/taxonomy";
+import {
+  buildMetadadosFromForm,
+  CONFIANCA_LABELS,
+  ESTADOS_DURANTE_QUESTAO_UI,
+  ETAPAS_DO_ERRO_UI,
+  metadadosFormFromAttempt,
+  sugerirEtapaDeTipoErro,
+  type MetadadosErroForm,
+} from "@/lib/metadados-cognitivos-labels";
 import { Card, Button, Badge } from "./ui";
 
 interface Attempt {
@@ -10,6 +19,7 @@ interface Attempt {
   correto: boolean;
   tipoErro: string | null;
   observacao: string | null;
+  metadadosCognitivosJson?: string | null;
   materiaId: string | null;
   temaId: string | null;
   respostaAluno?: string | null;
@@ -18,6 +28,7 @@ interface Attempt {
     assunto: string;
     gabarito?: string | null;
     conhecimentoExigido?: string | null;
+    conhecimentoEscopoId?: string | null;
   } | null;
 }
 
@@ -43,43 +54,48 @@ const ERROR_OPTIONS = [
   })),
 ];
 
+function escopoLabelCurto(escopoId: string | null | undefined): string | null {
+  if (!escopoId?.trim()) return null;
+  const parts = escopoId.split(".");
+  return parts[parts.length - 1]?.replace(/_/g, " ") ?? escopoId;
+}
+
 export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
-  // Only filter incorrect attempts
   const erradas = attempts.filter((q) => !q.correto).sort((a, b) => a.numero - b.numero);
-  
-  const [formData, setFormData] = useState<Record<string, { tipoErro: string; observacao: string }>>(
-    erradas.reduce((acc, curr) => {
-      acc[curr.id] = {
-        tipoErro: curr.tipoErro || "",
-        observacao: curr.observacao || "",
-      };
-      return acc;
-    }, {} as Record<string, { tipoErro: string; observacao: string }>)
+
+  const [formData, setFormData] = useState<Record<string, MetadadosErroForm>>(
+    erradas.reduce(
+      (acc, curr) => {
+        acc[curr.id] = metadadosFormFromAttempt(curr);
+        return acc;
+      },
+      {} as Record<string, MetadadosErroForm>
+    )
   );
 
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error" | "saved_no_recalc">("idle");
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error" | "saved_no_recalc"
+  >("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleChangeError = (attemptId: string, value: string) => {
+  const patchForm = (attemptId: string, patch: Partial<MetadadosErroForm>) => {
     setFormData((prev) => ({
       ...prev,
-      [attemptId]: {
-        ...prev[attemptId],
-        tipoErro: value,
-      },
+      [attemptId]: { ...prev[attemptId]!, ...patch },
     }));
-    if (saveStatus === "saved" || saveStatus === "saved_no_recalc") setSaveStatus("idle");
+    if (saveStatus === "saved" || saveStatus === "saved_no_recalc") {
+      setSaveStatus("idle");
+    }
   };
 
-  const handleChangeObservation = (attemptId: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [attemptId]: {
-        ...prev[attemptId],
-        observacao: value,
-      },
-    }));
-    if (saveStatus === "saved" || saveStatus === "saved_no_recalc") setSaveStatus("idle");
+  const handleChangeError = (attemptId: string, value: string) => {
+    const sugestao = value ? sugerirEtapaDeTipoErro(value) : "";
+    const atual = formData[attemptId];
+    patchForm(attemptId, {
+      tipoErro: value,
+      etapaDoErro:
+        !atual?.etapaDoErro && sugestao ? sugestao : atual?.etapaDoErro ?? "",
+    });
   };
 
   const handleSave = async () => {
@@ -88,19 +104,20 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
 
     try {
       const payload = {
-        attempts: Object.entries(formData).map(([id, data]) => ({
-          id,
-          tipoErro: data.tipoErro || null,
-          observacao: data.observacao || null,
-        })),
+        attempts: Object.entries(formData).map(([id, data]) => {
+          const metadadosCognitivos = buildMetadadosFromForm(data);
+          return {
+            id,
+            tipoErro: data.tipoErro || null,
+            observacao: data.observacao || null,
+            metadadosCognitivos,
+          };
+        }),
       };
 
-      // 1. Save classification
       const resClassify = await fetch(`/api/exams/${examId}/classificar-erro`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -108,7 +125,6 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
         throw new Error("Falha ao salvar as alterações.");
       }
 
-      // 2. Recalculate study plan using the endpoint
       const resRecalc = await fetch(`/api/exams/${examId}/recalcular`, {
         method: "POST",
       });
@@ -124,10 +140,10 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
       }
 
       setSaveStatus("saved");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setSaveStatus("error");
-      setErrorMessage(err.message || "Erro desconhecido ao salvar.");
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao salvar.");
     }
   };
 
@@ -150,15 +166,18 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
           <span>🧠</span> Análise Metacognitiva de Erros
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Classifique seus erros para treinar o coach e ajustar as prioridades do seu plano de estudos.
+          Conte <strong>em que etapa</strong> travou e <strong>quão seguro</strong> estava — isso
+          alimenta o motor de aprendizagem e prioriza seu plano por escopo (N2).
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {erradas.map((q) => {
-          const materia = q.provaQuestao?.materia || q.materiaId || "Materia Geral";
-          const assunto = q.provaQuestao?.assunto || q.temaId || "Assunto Geral";
-          
+          const materia = q.provaQuestao?.materia || q.materiaId || "Matéria geral";
+          const assunto = q.provaQuestao?.assunto || q.temaId || "Assunto geral";
+          const escopo = escopoLabelCurto(q.provaQuestao?.conhecimentoEscopoId);
+          const form = formData[q.id];
+
           return (
             <Card
               key={q.id}
@@ -179,6 +198,11 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
 
                 <div className="mb-4">
                   <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{assunto}</h4>
+                  {escopo && (
+                    <p className="mt-1 text-xs text-teal-700 font-medium">
+                      Escopo: {escopo}
+                    </p>
+                  )}
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded-md bg-rose-100 px-2 py-0.5 font-medium text-rose-700">
                       Você marcou {q.respostaAluno ?? "—"}
@@ -198,10 +222,61 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">
-                      Por que você errou essa questão?
+                      Em que etapa você errou? <span className="text-rose-500">*</span>
                     </label>
                     <select
-                      value={formData[q.id]?.tipoErro}
+                      value={form?.etapaDoErro ?? ""}
+                      onChange={(e) => patchForm(q.id, { etapaDoErro: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-800 transition focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 sm:py-2 sm:text-sm"
+                    >
+                      <option value="">O que mais aconteceu?</option>
+                      {ETAPAS_DO_ERRO_UI.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-2">
+                      Quão seguro você estava da resposta?
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {([1, 2, 3, 4, 5] as const).map((n) => {
+                        const selected = form?.confiancaNaResposta === String(n);
+                        return (
+                          <button
+                            key={n}
+                            type="button"
+                            title={CONFIANCA_LABELS[n]}
+                            onClick={() =>
+                              patchForm(q.id, {
+                                confiancaNaResposta: selected ? "" : String(n),
+                              })
+                            }
+                            className={`min-w-[2.25rem] rounded-lg border px-2 py-2 text-sm font-bold transition sm:py-1.5 ${
+                              selected
+                                ? "border-teal-600 bg-teal-600 text-white shadow-sm"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-teal-300"
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      1 = chute · 5 = certeza total
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">
+                      Tipo de erro (visão geral)
+                    </label>
+                    <select
+                      value={form?.tipoErro ?? ""}
                       onChange={(e) => handleChangeError(q.id, e.target.value)}
                       className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-800 transition focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 sm:py-2 sm:text-sm"
                     >
@@ -215,13 +290,33 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">
-                      Anotação metacognitiva
+                      Como você estava na hora da questão?
+                    </label>
+                    <select
+                      value={form?.estadoDuranteQuestao ?? ""}
+                      onChange={(e) =>
+                        patchForm(q.id, { estadoDuranteQuestao: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-800 transition focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 sm:py-2 sm:text-sm"
+                    >
+                      <option value="">Opcional</option>
+                      {ESTADOS_DURANTE_QUESTAO_UI.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">
+                      Anotação livre
                     </label>
                     <textarea
-                      placeholder="Adicionar anotação pessoal sobre este erro..."
-                      value={formData[q.id]?.observacao}
-                      onChange={(e) => handleChangeObservation(q.id, e.target.value)}
-                      rows={3}
+                      placeholder="Ex.: confundi com outro conceito, errei sinal na fórmula..."
+                      value={form?.observacao ?? ""}
+                      onChange={(e) => patchForm(q.id, { observacao: e.target.value })}
+                      rows={2}
                       className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-800 transition placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 resize-none sm:py-2 sm:text-sm"
                     />
                   </div>
@@ -241,8 +336,12 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
           )}
           {saveStatus === "saved_no_recalc" && (
             <p className="text-sm font-medium text-amber-600 flex flex-col gap-0.5 animate-fade-in">
-              <span className="flex items-center gap-1.5"><span>✓</span> Análise salva com sucesso!</span>
-              <span className="text-xs text-slate-500 font-normal">Nota: O plano não pôde ser recalculado ({errorMessage}).</span>
+              <span className="flex items-center gap-1.5">
+                <span>✓</span> Análise salva com sucesso!
+              </span>
+              <span className="text-xs text-slate-500 font-normal">
+                Nota: O plano não pôde ser recalculado ({errorMessage}).
+              </span>
             </p>
           )}
           {saveStatus === "error" && (

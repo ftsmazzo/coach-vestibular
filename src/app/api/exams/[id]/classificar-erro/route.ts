@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { ErrorType } from "@/generated/prisma/client";
+import type { MetadadosCognitivosErro } from "@/lib/metadados-cognitivos";
 
 function parseMateriaAssuntoFromObservacao(obsText: string): { materiaCorrigida: string; assuntoCorrigido: string } | null {
   const obs = obsText.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -128,6 +129,7 @@ export async function POST(
         id: string;
         tipoErro: ErrorType | null;
         observacao: string | null;
+        metadadosCognitivos?: MetadadosCognitivosErro | null;
         materiaCorrigida?: string | null;
         assuntoCorrigido?: string | null;
       }>;
@@ -152,11 +154,18 @@ export async function POST(
           }
         }
 
+        const meta: MetadadosCognitivosErro | null = att.metadadosCognitivos ?? null;
+        const observacao =
+          att.observacao !== undefined && att.observacao !== null
+            ? att.observacao
+            : meta?.observacaoAluno ?? null;
+
         return prisma.questionAttempt.update({
           where: { id: att.id, examId: id },
           data: {
             tipoErro: att.tipoErro || null,
-            observacao: att.observacao !== undefined ? att.observacao : undefined,
+            observacao,
+            metadadosCognitivosJson: meta ? JSON.stringify(meta) : null,
             materiaCorrigida: materiaCorrigida !== undefined ? materiaCorrigida : undefined,
             assuntoCorrigido: assuntoCorrigido !== undefined ? assuntoCorrigido : undefined,
           },
