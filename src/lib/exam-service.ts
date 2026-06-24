@@ -9,6 +9,7 @@ import {
   type FiltroRegistros,
 } from "./prova-tipo";
 import { aplicarPlanoCoachIA, buildDiagnosis } from "./diagnosis";
+import { mapQuestionAttemptToInput } from "./question-attempt-input";
 import { generateStudyPlan, planToQuests } from "./study-plan";
 import { calcularStreakRegistros } from "./streak";
 
@@ -40,7 +41,9 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
     where: { userId: input.userId },
     orderBy: { data: "desc" },
     take: 5,
-    include: { questionAttempts: true },
+    include: {
+      questionAttempts: { include: { provaQuestao: true } },
+    },
   });
 
   const nameUpper = input.nome.toUpperCase();
@@ -51,7 +54,9 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
 
   let diagnosis = await buildDiagnosis(
     input.questoes,
-    historicalExams.map((e) => e.questionAttempts),
+    historicalExams.map((e) =>
+      e.questionAttempts.map((a) => mapQuestionAttemptToInput(a))
+    ),
     {
       checkInScore: input.checkInScore,
       examLabel: input.nome,
