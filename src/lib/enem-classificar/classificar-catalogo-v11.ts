@@ -174,7 +174,9 @@ export type QuestaoClassificacaoV11 = {
 
 export type ClassificarV11Opts = {
   instrucaoExtra?: string;
-  /** @deprecated Linguagens usa classificarLoteLinguagensV12 (rota+ N2 numa passagem). */
+  /** System prompt completo (ex.: markdown da disciplina v1.0). */
+  systemPrompt?: string;
+  /** @deprecated Linguagens agregado — usar classificarLoteLinguagensV20. */
   rotaDisciplina?: string;
 };
 
@@ -196,9 +198,10 @@ export async function classificarLoteCatalogoV11(
   const blocos = items.map((q) => montarBlocoQuestaoV11(q)).join("\n\n");
 
   const systemPrompt =
-    catalog.materiaId === "linguagens"
+    opts?.systemPrompt?.trim() ||
+    (catalog.materiaId === "linguagens"
       ? montarSystemClassificacaoLinguagensV12(catalog)
-      : montarSystemClassificacaoV11(catalog);
+      : montarSystemClassificacaoV11(catalog));
 
   const extra = opts?.instrucaoExtra?.trim();
   const instrucaoExtra = extra ? `\n\n${extra}` : "";

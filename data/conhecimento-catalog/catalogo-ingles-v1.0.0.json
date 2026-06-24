@@ -1,0 +1,1088 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.0.0",
+  "materiaId": "ingles",
+  "materiaLabel": "Inglês",
+  "areaEnem": "Linguagens, Códigos e suas Tecnologias",
+  "notas": "Catálogo disciplinar de Inglês v1.0.0. Área ENEM é metadado; escopoId ing.* é unidade diagnóstica. O comando em português não define Português; se o texto-base/competência cobrada é inglês, usar este catálogo.",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "Aplica-se a N0–N2. Em N3 ver politicaN3.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "roteamentoObrigatorio": {
+      "etapa1": "Determinar se a questão é Português, Inglês ou Espanhol antes de classificar N2.",
+      "etapa2": "Enviar ao classificador apenas este catálogo quando disciplinaId=ingles.",
+      "regraCritica": "O português do comando não define Português. Para Inglês, observar língua dominante do texto-base, alternativas, expressões destacadas e competência cobrada."
+    },
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2
+    },
+    "politicaN3": "A IA escolhe APENAS IDs em N0–N2. Em N3 (conhecimentoExigido) PROPÕE texto livre para revisão humana; N3 nunca é um ID.",
+    "regraDesempate": "Aplicar negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confiança < confiancaMinima → ing.__nao_classificado.",
+    "pesos": {
+      "descricao": "regra mais forte: o que o escopo cobre e não cobre",
+      "exemplosEnunciado": "referência semântica, não match literal",
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "negativeHints": "penalidade: presença do termo reduz a probabilidade deste escopo"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "reading",
+      "assuntoLabel": "Reading comprehension",
+      "dominios": [
+        {
+          "id": "ing.reading.comprehension",
+          "label": "Compreensão leitora",
+          "escopos": [
+            {
+              "id": "ing.reading.comprehension.main_idea",
+              "label": "Main idea and global comprehension",
+              "descricao": "Cobre identificação da ideia central, tema, finalidade geral ou sentido global de texto em inglês. NÃO cobre inferência específica, referência pronominal ou gramática isolada.",
+              "keywords": [
+                "main idea",
+                "central idea",
+                "general meaning",
+                "overall meaning",
+                "purpose of the text",
+                "gist",
+                "theme"
+              ],
+              "keywordsContexto": [
+                "the text is mainly about",
+                "the author intends to",
+                "overall"
+              ],
+              "negativeHints": [
+                "ideia central em português",
+                "idea principal en español",
+                "texto-base em português",
+                "texto-base em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação da ideia central, tema, finalidade geral ou sentido global de texto em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.reading.comprehension.inference",
+                "ing.genre.purpose.communicative_purpose"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.reading.comprehension.inference",
+              "label": "Inference and implicit meaning",
+              "descricao": "Cobre inferências, informação implícita, conclusão provável, intenção não explícita e sentido subentendido em texto em inglês. NÃO cobre mera localização literal de informação.",
+              "keywords": [
+                "infer",
+                "inference",
+                "imply",
+                "suggest",
+                "implicit",
+                "conclude",
+                "read between the lines"
+              ],
+              "keywordsContexto": [
+                "it can be inferred",
+                "the passage suggests",
+                "likely means"
+              ],
+              "negativeHints": [
+                "infere-se em português",
+                "inferencia en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre inferências, informação implícita, conclusão provável, intenção não explícita e sentido subentendido em texto em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.reading.comprehension.explicit_information",
+                "ing.vocabulary.context.expression_meaning"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.reading.comprehension.explicit_information",
+              "label": "Explicit information and textual evidence",
+              "descricao": "Cobre localização de informação explícita, dado, fonte, afirmação ou evidência textual presente em texto em inglês. NÃO cobre conteúdo temático citado como Biologia/História se a operação é leitura em inglês.",
+              "keywords": [
+                "according to the text",
+                "stated in the text",
+                "explicit information",
+                "textual evidence",
+                "source",
+                "WHO",
+                "report says"
+              ],
+              "keywordsContexto": [
+                "the text states",
+                "mentioned",
+                "reference in the text"
+              ],
+              "negativeHints": [
+                "conteúdo de biologia",
+                "conteúdo de história",
+                "OMS em texto espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre localização de informação explícita, dado, fonte, afirmação ou evidência textual presente em texto em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.reading.comprehension.inference",
+                "ing.cohesion.reference.pronoun_reference"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.reading.comprehension.author_position",
+              "label": "Author's opinion, tone and attitude",
+              "descricao": "Cobre identificação de opinião, tom, atitude, posicionamento ou intenção do autor em texto em inglês. NÃO cobre tese/argumento em Português.",
+              "keywords": [
+                "author's opinion",
+                "author's attitude",
+                "tone",
+                "stance",
+                "point of view",
+                "critical tone",
+                "ironic tone"
+              ],
+              "keywordsContexto": [
+                "the author believes",
+                "the tone is",
+                "attitude toward"
+              ],
+              "negativeHints": [
+                "opinião do autor em português",
+                "postura del autor en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação de opinião, tom, atitude, posicionamento ou intenção do autor em texto em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.genre.argumentation.argument_claim"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.reading.comprehension.comparing_texts",
+              "label": "Comparing texts and viewpoints",
+              "descricao": "Cobre comparação entre textos, opiniões, perspectivas ou informações em inglês. NÃO cobre intertextualidade literária em Português.",
+              "keywords": [
+                "compare the texts",
+                "both texts",
+                "different viewpoints",
+                "similarity",
+                "contrast",
+                "whereas",
+                "while"
+              ],
+              "keywordsContexto": [
+                "text I and text II",
+                "same topic",
+                "different perspective"
+              ],
+              "negativeHints": [
+                "intertextualidade em português",
+                "comparación en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre comparação entre textos, opiniões, perspectivas ou informações em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.genre.argumentation.argument_claim"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "ing.cohesion.reference",
+          "label": "Coesão, referência e organização textual",
+          "escopos": [
+            {
+              "id": "ing.cohesion.reference.pronoun_reference",
+              "label": "Pronoun and referent tracking",
+              "descricao": "Cobre identificação do antecedente/referente de pronomes, possessivos, demonstrativos e expressões referenciais em inglês. NÃO cobre função sintática normativa do pronome sem leitura textual.",
+              "keywords": [
+                "pronoun reference",
+                "refer to",
+                "it refers to",
+                "they refer to",
+                "this refers to",
+                "antecedent",
+                "referent"
+              ],
+              "keywordsContexto": [
+                "the pronoun",
+                "the word this",
+                "the expression"
+              ],
+              "negativeHints": [
+                "pronome em português",
+                "pronombre en español",
+                "colocação pronominal"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação do antecedente/referente de pronomes, possessivos, demonstrativos e expressões referenciais em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.grammar.structure.relative_pronouns",
+                "ing.reading.comprehension.explicit_information"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.cohesion.reference.connectors",
+              "label": "Connectors and logical relations",
+              "descricao": "Cobre conectores, marcadores discursivos, relações de causa, consequência, contraste, adição e conclusão em inglês. NÃO cobre operadores argumentativos em Português.",
+              "keywords": [
+                "however",
+                "therefore",
+                "although",
+                "because",
+                "since",
+                "whereas",
+                "moreover",
+                "connectors",
+                "linking words"
+              ],
+              "keywordsContexto": [
+                "contrast",
+                "cause",
+                "consequence",
+                "addition",
+                "conclusion"
+              ],
+              "negativeHints": [
+                "conectivo em português",
+                "conector en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre conectores, marcadores discursivos, relações de causa, consequência, contraste, adição e conclusão em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.genre.argumentation.argument_claim"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.cohesion.reference.text_organization",
+              "label": "Text organization and paragraph development",
+              "descricao": "Cobre organização textual, sequência de ideias, progressão, estrutura de parágrafos e desenvolvimento do texto em inglês. NÃO cobre gênero textual se o foco é apenas tipo de texto.",
+              "keywords": [
+                "text organization",
+                "paragraph",
+                "sequence",
+                "development",
+                "structure of the text",
+                "topic sentence"
+              ],
+              "keywordsContexto": [
+                "first",
+                "then",
+                "finally",
+                "the paragraph develops"
+              ],
+              "negativeHints": [
+                "organização textual em português",
+                "organización textual en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre organização textual, sequência de ideias, progressão, estrutura de parágrafos e desenvolvimento do texto em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.genre.purpose.text_genre"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.cohesion.reference.discourse_markers",
+              "label": "Discourse markers and pragmatic function",
+              "descricao": "Cobre função pragmática de marcadores discursivos, expressões conversacionais e marcas de interação em inglês. NÃO cobre vocabulário isolado sem função discursiva.",
+              "keywords": [
+                "discourse marker",
+                "actually",
+                "well",
+                "you know",
+                "I mean",
+                "by the way",
+                "pragmatic function"
+              ],
+              "keywordsContexto": [
+                "conversation",
+                "interaction",
+                "marker"
+              ],
+              "negativeHints": [
+                "marcador discursivo em português",
+                "marcador discursivo en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre função pragmática de marcadores discursivos, expressões conversacionais e marcas de interação em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.vocabulary.context.expression_meaning"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "vocabulary",
+      "assuntoLabel": "Vocabulary in context",
+      "dominios": [
+        {
+          "id": "ing.vocabulary.context",
+          "label": "Vocabulário, sentido e expressão em contexto",
+          "escopos": [
+            {
+              "id": "ing.vocabulary.context.word_meaning",
+              "label": "Word meaning in context",
+              "descricao": "Cobre sentido de palavra em inglês definido pelo contexto, equivalência lexical e escolha semântica adequada. NÃO cobre tradução de trecho inteiro ou gramática verbal.",
+              "keywords": [
+                "word meaning",
+                "meaning of the word",
+                "in context",
+                "vocabulary",
+                "equivalent meaning",
+                "the word means"
+              ],
+              "keywordsContexto": [
+                "closest meaning",
+                "as used in the text",
+                "refers to"
+              ],
+              "negativeHints": [
+                "sentido de palavra em português",
+                "sentido de palabra en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre sentido de palavra em inglês definido pelo contexto, equivalência lexical e escolha semântica adequada."
+              ],
+              "naoConfundirCom": [
+                "ing.vocabulary.context.expression_meaning",
+                "ing.grammar.verbs.tense_aspect"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.vocabulary.context.expression_meaning",
+              "label": "Expression, idiom and phrasal meaning",
+              "descricao": "Cobre sentido contextual de expressão, idiom, phrasal verb ou expressão figurada em inglês. NÃO cobre palavra isolada simples quando não há expressão idiomática.",
+              "keywords": [
+                "expression",
+                "idiom",
+                "phrasal verb",
+                "phrase means",
+                "figurative meaning",
+                "meaning of the expression"
+              ],
+              "keywordsContexto": [
+                "in this context",
+                "the expression suggests",
+                "idiomatic"
+              ],
+              "negativeHints": [
+                "expressão em português",
+                "expresión en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre sentido contextual de expressão, idiom, phrasal verb ou expressão figurada em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.vocabulary.context.word_meaning"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.vocabulary.context.false_cognates",
+              "label": "False cognates and lexical traps",
+              "descricao": "Cobre falsos cognatos, cognatos enganosos e armadilhas lexicais entre inglês e português. NÃO cobre cognatos transparentes sem risco interpretativo.",
+              "keywords": [
+                "false cognate",
+                "false friend",
+                "actually",
+                "pretend",
+                "college",
+                "eventually",
+                "sensible"
+              ],
+              "keywordsContexto": [
+                "cognate",
+                "misleading word",
+                "does not mean"
+              ],
+              "negativeHints": [
+                "falsos cognatos em espanhol",
+                "parônimos em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre falsos cognatos, cognatos enganosos e armadilhas lexicais entre inglês e português."
+              ],
+              "naoConfundirCom": [
+                "ing.vocabulary.context.word_meaning"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.vocabulary.context.synonyms_paraphrase",
+              "label": "Synonym, paraphrase and semantic equivalence",
+              "descricao": "Cobre equivalência semântica, paráfrase, substituição por sinônimo ou reformulação em inglês. NÃO cobre tradução livre para Português sem leitura do contexto.",
+              "keywords": [
+                "synonym",
+                "paraphrase",
+                "equivalent",
+                "same meaning",
+                "closest in meaning",
+                "rephrase"
+              ],
+              "keywordsContexto": [
+                "can be replaced by",
+                "similar meaning"
+              ],
+              "negativeHints": [
+                "sinonímia em português",
+                "sinonimia en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre equivalência semântica, paráfrase, substituição por sinônimo ou reformulação em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.reading.comprehension.main_idea"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.vocabulary.context.prefix_suffix_word_formation",
+              "label": "Word formation, prefixes and suffixes",
+              "descricao": "Cobre prefixos, sufixos, formação de palavras, famílias lexicais e inferência por morfologia em inglês. NÃO cobre morfologia do português.",
+              "keywords": [
+                "prefix",
+                "suffix",
+                "word formation",
+                "root word",
+                "derivative",
+                "-less",
+                "-ful",
+                "un-",
+                "re-"
+              ],
+              "keywordsContexto": [
+                "word family",
+                "formed by",
+                "morpheme"
+              ],
+              "negativeHints": [
+                "formação de palavras em português",
+                "formación de palabras en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre prefixos, sufixos, formação de palavras, famílias lexicais e inferência por morfologia em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.vocabulary.context.word_meaning"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "grammar_functional",
+      "assuntoLabel": "Functional grammar",
+      "dominios": [
+        {
+          "id": "ing.grammar.verbs",
+          "label": "Verbos, tempos e modalidade",
+          "escopos": [
+            {
+              "id": "ing.grammar.verbs.tense_aspect",
+              "label": "Tense and aspect in context",
+              "descricao": "Cobre valor contextual de tempos verbais, aspecto, present/past/future, perfect/progressive e relação temporal em inglês. NÃO cobre tempos verbais de Português/Espanhol.",
+              "keywords": [
+                "tense",
+                "aspect",
+                "present perfect",
+                "past simple",
+                "present continuous",
+                "future",
+                "verb form"
+              ],
+              "keywordsContexto": [
+                "time reference",
+                "has been",
+                "was",
+                "will",
+                "used to"
+              ],
+              "negativeHints": [
+                "tempo verbal em português",
+                "pretérito perfecto em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre valor contextual de tempos verbais, aspecto, present/past/future, perfect/progressive e relação temporal em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.grammar.verbs.modals"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.grammar.verbs.modals",
+              "label": "Modal verbs and modality",
+              "descricao": "Cobre modal verbs e valores de possibilidade, obrigação, permissão, conselho, probabilidade e habilidade em inglês. NÃO cobre modalização em Português.",
+              "keywords": [
+                "modal verb",
+                "can",
+                "could",
+                "may",
+                "might",
+                "must",
+                "should",
+                "would",
+                "have to"
+              ],
+              "keywordsContexto": [
+                "possibility",
+                "obligation",
+                "permission",
+                "advice",
+                "probability"
+              ],
+              "negativeHints": [
+                "modalização em português",
+                "subjuntivo em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre modal verbs e valores de possibilidade, obrigação, permissão, conselho, probabilidade e habilidade em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.grammar.verbs.tense_aspect"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.grammar.verbs.conditionals",
+              "label": "Conditionals and hypothetical meaning",
+              "descricao": "Cobre condicionais zero, first, second, third, hipóteses e relações if-clause em inglês. NÃO cobre relação causal simples por conector.",
+              "keywords": [
+                "conditional",
+                "if clause",
+                "would have",
+                "would",
+                "unless",
+                "provided that",
+                "hypothetical"
+              ],
+              "keywordsContexto": [
+                "condition",
+                "hypothesis",
+                "imaginary situation"
+              ],
+              "negativeHints": [
+                "condicional em português",
+                "condicional en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre condicionais zero, first, second, third, hipóteses e relações if-clause em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.cohesion.reference.connectors"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.grammar.verbs.passive_voice",
+              "label": "Passive voice and focus",
+              "descricao": "Cobre voz passiva em inglês, agente, foco da informação e efeitos de impessoalidade. NÃO cobre passiva do português.",
+              "keywords": [
+                "passive voice",
+                "was made",
+                "is known",
+                "by agent",
+                "be + past participle"
+              ],
+              "keywordsContexto": [
+                "focus on action",
+                "agent omitted"
+              ],
+              "negativeHints": [
+                "voz passiva em português",
+                "voz pasiva en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre voz passiva em inglês, agente, foco da informação e efeitos de impessoalidade."
+              ],
+              "naoConfundirCom": [
+                "ing.reading.comprehension.explicit_information"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "ing.grammar.structure",
+          "label": "Estrutura frasal e relações gramaticais",
+          "escopos": [
+            {
+              "id": "ing.grammar.structure.relative_pronouns",
+              "label": "Relative pronouns and clauses",
+              "descricao": "Cobre pronomes relativos, relative clauses, antecedente e função textual/sintática em inglês. NÃO cobre simples retomada pronominal sem oração relativa.",
+              "keywords": [
+                "relative pronoun",
+                "who",
+                "which",
+                "that",
+                "whose",
+                "where",
+                "relative clause",
+                "antecedent"
+              ],
+              "keywordsContexto": [
+                "the pronoun functions as",
+                "refers to the noun"
+              ],
+              "negativeHints": [
+                "pronome relativo em português",
+                "pronombre relativo en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre pronomes relativos, relative clauses, antecedente e função textual/sintática em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.cohesion.reference.pronoun_reference"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.grammar.structure.comparison",
+              "label": "Comparatives and superlatives",
+              "descricao": "Cobre comparativos, superlativos e estruturas de comparação em inglês. NÃO cobre comparação de pontos de vista entre textos.",
+              "keywords": [
+                "comparative",
+                "superlative",
+                "more than",
+                "less than",
+                "as...as",
+                "the most",
+                "better",
+                "worse"
+              ],
+              "keywordsContexto": [
+                "comparison structure",
+                "degree"
+              ],
+              "negativeHints": [
+                "comparativo em português",
+                "comparativo en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre comparativos, superlativos e estruturas de comparação em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.reading.comprehension.comparing_texts"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.grammar.structure.noun_phrases_articles",
+              "label": "Noun phrases, articles and determiners",
+              "descricao": "Cobre noun phrases, artigos, determiners, quantifiers e relação entre núcleo/modificadores em inglês. NÃO cobre vocabulário isolado sem estrutura frasal.",
+              "keywords": [
+                "noun phrase",
+                "article",
+                "determiner",
+                "quantifier",
+                "some",
+                "any",
+                "much",
+                "many",
+                "the",
+                "a/an"
+              ],
+              "keywordsContexto": [
+                "modifier",
+                "head noun",
+                "determines"
+              ],
+              "negativeHints": [
+                "artigo em português",
+                "artículo en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre noun phrases, artigos, determiners, quantifiers e relação entre núcleo/modificadores em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.vocabulary.context.word_meaning"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.grammar.structure.prepositions",
+              "label": "Prepositions and prepositional meaning",
+              "descricao": "Cobre uso e sentido de preposições em inglês, relações espaciais, temporais e idiomáticas. NÃO cobre regência/crase do português.",
+              "keywords": [
+                "preposition",
+                "in",
+                "on",
+                "at",
+                "by",
+                "for",
+                "with",
+                "from",
+                "to"
+              ],
+              "keywordsContexto": [
+                "prepositional phrase",
+                "spatial relation",
+                "time relation"
+              ],
+              "negativeHints": [
+                "preposição em português",
+                "preposición en español",
+                "crase"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre uso e sentido de preposições em inglês, relações espaciais, temporais e idiomáticas."
+              ],
+              "naoConfundirCom": [
+                "ing.vocabulary.context.expression_meaning"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "genre_discourse",
+      "assuntoLabel": "Genres, discourse and culture",
+      "dominios": [
+        {
+          "id": "ing.genre.purpose",
+          "label": "Gênero, finalidade e situação comunicativa",
+          "escopos": [
+            {
+              "id": "ing.genre.purpose.communicative_purpose",
+              "label": "Communicative purpose",
+              "descricao": "Cobre identificação da finalidade comunicativa de texto em inglês: informar, persuadir, instruir, advertir, entreter ou relatar. NÃO cobre apenas tema central do texto.",
+              "keywords": [
+                "purpose",
+                "communicative purpose",
+                "aim",
+                "intends to",
+                "inform",
+                "persuade",
+                "warn",
+                "instruct",
+                "entertain"
+              ],
+              "keywordsContexto": [
+                "the text aims to",
+                "the purpose is"
+              ],
+              "negativeHints": [
+                "finalidade em português",
+                "finalidad en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação da finalidade comunicativa de texto em inglês: informar, persuadir, instruir, advertir, entreter ou relatar."
+              ],
+              "naoConfundirCom": [
+                "ing.reading.comprehension.main_idea",
+                "ing.genre.purpose.text_genre"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.genre.purpose.text_genre",
+              "label": "Text genre recognition",
+              "descricao": "Cobre reconhecimento de gênero textual em inglês: advertisement, news, article, poem, song, comic strip, letter, post, campaign. NÃO cobre finalidade se o gênero não é exigido.",
+              "keywords": [
+                "genre",
+                "advertisement",
+                "news",
+                "article",
+                "poem",
+                "song",
+                "comic strip",
+                "letter",
+                "post",
+                "campaign"
+              ],
+              "keywordsContexto": [
+                "type of text",
+                "textual genre",
+                "format"
+              ],
+              "negativeHints": [
+                "gênero textual em português",
+                "género textual en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre reconhecimento de gênero textual em inglês: advertisement, news, article, poem, song, comic strip, letter, post, campaign."
+              ],
+              "naoConfundirCom": [
+                "ing.genre.purpose.communicative_purpose"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.genre.purpose.audience_context",
+              "label": "Audience, context and register",
+              "descricao": "Cobre público-alvo, contexto de circulação, formalidade, registro, interlocutores e adequação comunicativa em inglês. NÃO cobre variação linguística do português.",
+              "keywords": [
+                "audience",
+                "target audience",
+                "context",
+                "register",
+                "formal",
+                "informal",
+                "speaker",
+                "reader"
+              ],
+              "keywordsContexto": [
+                "addressed to",
+                "intended for",
+                "level of formality"
+              ],
+              "negativeHints": [
+                "variação linguística em português",
+                "registro en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre público-alvo, contexto de circulação, formalidade, registro, interlocutores e adequação comunicativa em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.genre.purpose.communicative_purpose"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.genre.purpose.multimodal_text",
+              "label": "Multimodal reading in English",
+              "descricao": "Cobre integração entre texto em inglês e imagem, anúncio, meme, tirinha, campanha ou infográfico. NÃO cobre leitura de imagem artística sem inglês como competência.",
+              "keywords": [
+                "image and text",
+                "multimodal",
+                "comic strip",
+                "cartoon",
+                "meme",
+                "poster",
+                "infographic"
+              ],
+              "keywordsContexto": [
+                "visual elements",
+                "caption",
+                "layout"
+              ],
+              "negativeHints": [
+                "charge em português",
+                "imagem artística",
+                "mapa geográfico"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre integração entre texto em inglês e imagem, anúncio, meme, tirinha, campanha ou infográfico."
+              ],
+              "naoConfundirCom": [
+                "ing.genre.purpose.text_genre"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "ing.genre.argumentation",
+          "label": "Argumentação, opinião e cultura",
+          "escopos": [
+            {
+              "id": "ing.genre.argumentation.argument_claim",
+              "label": "Claim, argument and evidence",
+              "descricao": "Cobre tese, argumento, evidência, exemplo e sustentação de ponto de vista em texto argumentativo em inglês. NÃO cobre apenas opinião/tom sem estrutura argumentativa.",
+              "keywords": [
+                "claim",
+                "argument",
+                "evidence",
+                "support",
+                "reason",
+                "point of view",
+                "opinion article"
+              ],
+              "keywordsContexto": [
+                "supports the idea",
+                "the author argues",
+                "evidence"
+              ],
+              "negativeHints": [
+                "argumentação em português",
+                "argumentación en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre tese, argumento, evidência, exemplo e sustentação de ponto de vista em texto argumentativo em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.reading.comprehension.author_position"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.genre.argumentation.persuasion_advertising",
+              "label": "Persuasion and advertising",
+              "descricao": "Cobre estratégias persuasivas em anúncios, campanhas e textos de convencimento em inglês. NÃO cobre publicidade em português.",
+              "keywords": [
+                "advertising",
+                "advertisement",
+                "persuasion",
+                "slogan",
+                "campaign",
+                "convince",
+                "appeal"
+              ],
+              "keywordsContexto": [
+                "consumer",
+                "persuasive strategy",
+                "call to action"
+              ],
+              "negativeHints": [
+                "propaganda em português",
+                "publicidad en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre estratégias persuasivas em anúncios, campanhas e textos de convencimento em inglês."
+              ],
+              "naoConfundirCom": [
+                "ing.genre.purpose.communicative_purpose"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.genre.culture.social_issues",
+              "label": "Culture and social issues in English texts",
+              "descricao": "Cobre interpretação de temas culturais, diversidade, tecnologia, educação, saúde, ambiente ou questões sociais quando a competência cobrada é leitura em inglês. NÃO classifica pelo conteúdo temático de outra disciplina.",
+              "keywords": [
+                "culture",
+                "social issue",
+                "diversity",
+                "education",
+                "health",
+                "environment",
+                "technology",
+                "identity"
+              ],
+              "keywordsContexto": [
+                "debate",
+                "social problem",
+                "cultural context"
+              ],
+              "negativeHints": [
+                "questão de sociologia",
+                "questão de biologia",
+                "questão de geografia"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre interpretação de temas culturais, diversidade, tecnologia, educação, saúde, ambiente ou questões sociais quando a competência cobrada é leitura em inglês. não classifica pelo conteúdo temático de outra disciplina."
+              ],
+              "naoConfundirCom": [
+                "ing.reading.comprehension.main_idea"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "ing.genre.culture.literary_song_poetic_text",
+              "label": "Literary, song and poetic texts",
+              "descricao": "Cobre leitura de poema, canção, trecho literário ou texto poético em inglês pela compreensão, efeito de sentido ou linguagem figurada. NÃO cobre literatura brasileira/portuguesa.",
+              "keywords": [
+                "poem",
+                "song",
+                "lyrics",
+                "literary text",
+                "poetic language",
+                "stanza",
+                "verse"
+              ],
+              "keywordsContexto": [
+                "figurative meaning",
+                "speaker",
+                "voice"
+              ],
+              "negativeHints": [
+                "poema em português",
+                "literatura brasileira",
+                "letra em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre leitura de poema, canção, trecho literário ou texto poético em inglês pela compreensão, efeito de sentido ou linguagem figurada."
+              ],
+              "naoConfundirCom": [
+                "ing.vocabulary.context.expression_meaning",
+                "ing.reading.comprehension.inference"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "nao_classificado",
+      "assuntoLabel": "Não classificado",
+      "dominios": [
+        {
+          "id": "ing.nao_classificado",
+          "label": "Não classificado",
+          "escopos": [
+            {
+              "id": "ing.__nao_classificado",
+              "label": "Não classificado — Inglês",
+              "descricao": "Usar quando o texto estiver ilegível, a rota disciplinar estiver incerta, a questão for de Português/Espanhol ou outra disciplina, a confiança for inferior ao limiar ou nenhum escopo de Inglês for adequado.",
+              "keywords": [],
+              "keywordsContexto": [],
+              "negativeHints": [],
+              "exemplosEnunciado": [],
+              "naoConfundirCom": [],
+              "regraDesempate": "Fallback obrigatório de Inglês.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

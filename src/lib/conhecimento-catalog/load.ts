@@ -11,11 +11,21 @@ import {
   type MateriaCorpusId,
 } from "@/lib/enem-corpus-materia";
 
+import {
+  LABEL_DISCIPLINA_SPLIT,
+  TODAS_DISCIPLINAS_SPLIT,
+} from "./disciplinas-split";
+
 const CATALOG_DIR = join(process.cwd(), "data", "conhecimento-catalog");
 
 type CatalogManifest = {
   schemaVersion?: string;
   active?: Record<string, string>;
+  roteamentoLinguagens?: string;
+  roteamentoHumanas?: string;
+  promptRoteamentoHumanas?: string;
+  promptRoteamentoLinguagens?: string;
+  prompts?: Record<string, string>;
 };
 
 let cacheManifest: CatalogManifest | null = null;
@@ -44,13 +54,24 @@ export function limparCacheCatalogos(): void {
   limparCacheIndexGlobalEscopos();
 }
 
+/** Prefixos N2 das disciplinas humanas/linguagens desmembradas (Sprint 1). */
+const PREFIXO_DISCIPLINA_SPLIT: Record<string, string> = {
+  historia: "hist",
+  geografia: "geo",
+  filosofia: "fil",
+  sociologia: "soc",
+  portugues: "pt",
+  ingles: "ing",
+  espanhol: "esp",
+};
+
 /** Prefixo de IDs N2 por matéria (bio., quim., mat., …). */
 export const PREFIXO_MATERIA: Record<string, string> = Object.fromEntries(
   Object.values(CORPUS_MATERIA_CONFIG).map((c) => [c.materiaId, c.prefixo])
 );
 
 export function prefixoCatalogoMateria(materiaId: string): string {
-  return PREFIXO_MATERIA[materiaId] ?? materiaId;
+  return PREFIXO_MATERIA[materiaId] ?? PREFIXO_DISCIPLINA_SPLIT[materiaId] ?? materiaId;
 }
 
 /** Rótulo persistido em EnemQuestaoCorpus.materia. */
@@ -59,7 +80,40 @@ export const MATERIA_CORPUS_LABEL: Record<string, string> = Object.fromEntries(
 );
 
 export function labelMateriaCorpus(materiaId: string): string {
+  if (materiaId in LABEL_DISCIPLINA_SPLIT) {
+    return LABEL_DISCIPLINA_SPLIT[materiaId as keyof typeof LABEL_DISCIPLINA_SPLIT];
+  }
   return MATERIA_CORPUS_LABEL[materiaId] ?? materiaId;
+}
+
+export function carregarPromptCatalogo(fileName: string): string {
+  return readFileSync(join(CATALOG_DIR, fileName), "utf-8");
+}
+
+export function promptClassificacaoDisciplina(materiaId: string): string | null {
+  const manifest = carregarManifest();
+  const file = manifest.prompts?.[materiaId];
+  if (!file) return null;
+  return carregarPromptCatalogo(file);
+}
+
+export function promptRoteamentoHumanas(): string | null {
+  const manifest = carregarManifest();
+  const file = manifest.promptRoteamentoHumanas;
+  if (!file) return null;
+  return carregarPromptCatalogo(file);
+}
+
+export function promptRoteamentoLinguagens(): string | null {
+  const manifest = carregarManifest();
+  const file = manifest.promptRoteamentoLinguagens;
+  if (!file) return null;
+  return carregarPromptCatalogo(file);
+}
+
+export function materiasCatalogoAtivas(): string[] {
+  const manifest = carregarManifest();
+  return Object.keys(manifest.active ?? {});
 }
 
 export { MATERIAS_CORPUS, type MateriaCorpusId };
@@ -155,25 +209,43 @@ export type EscopoIndexGlobalEntry = EscopoIndexEntry & {
 
 let cacheIndexGlobal: Map<string, EscopoIndexGlobalEntry> | null = null;
 
-/** Índice N2 de todas as matérias do corpus — base para derivarClassNode. */
+/** Índice N2 — corpus ENEM + disciplinas split (hist/geo/fil/soc/pt/ing/esp). */
 export function indexGlobalEscopos(): Map<string, EscopoIndexGlobalEntry> {
   if (cacheIndexGlobal) return cacheIndexGlobal;
 
   const map = new Map<string, EscopoIndexGlobalEntry>();
+  const agregadosLegado = new Set(["humanas", "linguagens"]);
+
   for (const materiaId of MATERIAS_CORPUS) {
+    if (agregadosLegado.has(materiaId)) continue;
+    indexarCatalogoNoMapa(map, materiaId);
+  }
+
+  for (const materiaId of TODAS_DISCIPLINAS_SPLIT) {
+    indexarCatalogoNoMapa(map, materiaId);
+  }
+
+  cacheIndexGlobal = map;
+  return map;
+}
+
+function indexarCatalogoNoMapa(
+  map: Map<string, EscopoIndexGlobalEntry>,
+  materiaId: string
+): void {
+  try {
     const catalog = carregarCatalogoMateria(materiaId);
     const local = indexarEscopos(catalog);
     for (const [escopoId, entry] of local) {
       map.set(escopoId, {
         ...entry,
         areaEnem: catalog.areaEnem,
-        catalogVersion: catalog.catalogVersion,
+        catalogVersion: catalog.catalogVersion ?? catalog.schemaVersion,
       });
     }
+  } catch {
+    /* catálogo opcional / manifest incompleto */
   }
-
-  cacheIndexGlobal = map;
-  return map;
 }
 
 /** Limpa cache do índice global (testes ou hot-reload de catálogo). */

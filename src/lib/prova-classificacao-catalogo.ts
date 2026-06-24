@@ -12,10 +12,16 @@ import {
   classificarLoteCatalogoV11,
 } from "@/lib/enem-classificar/classificar-catalogo-v11";
 import {
-  CLASSIFICADOR_LING_V12,
-  classificarLoteLinguagensV12,
-  versaoClassificacaoLingV12,
-} from "@/lib/enem-classificar/classificar-linguagens-v12";
+  classificarLoteHumanasV10,
+  classificarLoteLinguagensV20,
+  versaoClassificacaoDisciplinaV10,
+  type QuestaoRoteamento,
+} from "@/lib/enem-classificar/classificar-roteamento-disciplina";
+import {
+  LABEL_DISCIPLINA_SPLIT,
+  ehCatalogDisciplinaSplit,
+} from "@/lib/conhecimento-catalog/disciplinas-split";
+import { MARCADOR_EXTRACAO_ACEITA } from "@/lib/prova-texto-prova";
 import {
   triarMateriaNatureza,
   type MateriaNatureza,
@@ -35,9 +41,11 @@ import { prisma } from "@/lib/prisma";
 import { atualizarClassificacaoLote } from "@/lib/prova-questoes-persist";
 
 const LOTE_CATALOGO = 4;
+const LOTE_ROTEAMENTO = 6;
 
 /** Texto mínimo para classificação N2 (enunciado + alternativas). */
 export const TEXTO_MINIMO_CLASSIFICACAO = 80;
+export const TEXTO_MINIMO_CLASSIFICACAO_CURTO = 12;
 
 const MAP_HUMANAS_ASSUNTO: Record<string, string> = {
   historia_brasil: "História",
@@ -52,6 +60,11 @@ const DISC_LING_PARA_MATERIA: Record<string, string> = {
   ingles: "Inglês",
   espanhol: "Espanhol",
 };
+
+type AreaAgregada = "humanas" | "linguagens";
+type DestinoClassificacao =
+  | { tipo: "catalogo_direto"; materiaId: MateriaCorpusId }
+  | { tipo: "area_agregada"; area: AreaAgregada };
 
 function chunks<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -89,14 +102,29 @@ export function labelsLegadosFromResultado(resultado: ResultadoClassificacao): {
   assunto: string;
 } {
   const entry = resultado.escopoId ? indexGlobalEscopos().get(resultado.escopoId) : null;
+  const catalogMateriaId = resultado.materiaId ?? entry?.materiaId ?? null;
 
-  if (resultado.materiaId === "linguagens") {
+  if (catalogMateriaId && ehCatalogDisciplinaSplit(catalogMateriaId)) {
+    const materia = LABEL_DISCIPLINA_SPLIT[catalogMateriaId];
+    const tax = resultado.escopoId
+      ? escopoIdParaTaxonomy(resultado.escopoId, catalogMateriaId)
+      : null;
+    if (tax?.temaId) {
+      const mat = taxonomy.materias.find((m) => m.id === tax.materiaId);
+      const tema = mat?.temas.find((t) => t.id === tax.temaId);
+      if (tema) return { materia, assunto: tema.label };
+    }
+    const assunto = entry?.escopoLabel ?? entry?.assuntoLabel ?? "A classificar";
+    return { materia, assunto: normalizarLabelAssunto(materia, assunto) };
+  }
+
+  if (resultado.materiaId === "linguagens" || resultado.disciplinaOriginalId) {
     const disc = resultado.disciplinaOriginalId ?? "portugues";
     const materia =
       DISC_LING_PARA_MATERIA[disc] ??
       (disc === "indefinido" ? "Português" : "Português");
     const tax = resultado.escopoId
-      ? escopoIdParaTaxonomy(resultado.escopoId, "linguagens")
+      ? escopoIdParaTaxonomy(resultado.escopoId)
       : null;
     if (tax?.temaId) {
       const mat = taxonomy.materias.find((m) => m.id === tax.materiaId);
@@ -108,9 +136,7 @@ export function labelsLegadosFromResultado(resultado: ResultadoClassificacao): {
   }
 
   if (resultado.materiaId === "humanas") {
-    const tax = resultado.escopoId
-      ? escopoIdParaTaxonomy(resultado.escopoId, "humanas")
-      : null;
+    const tax = resultado.escopoId ? escopoIdParaTaxonomy(resultado.escopoId) : null;
     if (tax) {
       const mat = taxonomy.materias.find((m) => m.id === tax.materiaId);
       const tema = mat?.temas.find((t) => t.id === tax.temaId);
@@ -133,13 +159,10 @@ export function labelsLegadosFromResultado(resultado: ResultadoClassificacao): {
     };
   }
 
-  const catalogMateriaId =
-    (resultado.materiaId as MateriaCorpusId | null) ??
-    (entry?.materiaId as MateriaCorpusId | undefined);
-  const cfg = catalogMateriaId ? CORPUS_MATERIA_CONFIG[catalogMateriaId] : undefined;
+  const cfg = catalogMateriaId ? CORPUS_MATERIA_CONFIG[catalogMateriaId as MateriaCorpusId] : undefined;
   const materia =
     cfg?.label ??
-    normalizarLabelMateria(resultado.materiaId ?? entry?.materiaId ?? "A classificar");
+    normalizarLabelMateria(catalogMateriaId ?? "A classificar");
   const tax =
     resultado.escopoId && catalogMateriaId
       ? escopoIdParaTaxonomy(resultado.escopoId, catalogMateriaId)
@@ -167,21 +190,21 @@ function materiaCorpusNatureza(texto: string, materiaLegada?: string): MateriaCo
   return tri.materia ? MAP_NATUREZA_CORPUS[tri.materia] : null;
 }
 
-function resolverMateriaCatalogo(
+function resolverDestinoClassificacao(
   row: ProvaQuestaoRow,
   texto: string
-): { materiaId: MateriaCorpusId | null; aviso?: string } {
+): { destino: DestinoClassificacao | null; aviso?: string } {
   const area = resolverAreaCatalogo(row);
 
-  if (area === "linguagens") return { materiaId: "linguagens" };
-  if (area === "humanas") return { materiaId: "humanas" };
-  if (area === "matematica") return { materiaId: "matematica" };
+  if (area === "linguagens") return { destino: { tipo: "area_agregada", area: "linguagens" } };
+  if (area === "humanas") return { destino: { tipo: "area_agregada", area: "humanas" } };
+  if (area === "matematica") return { destino: { tipo: "catalogo_direto", materiaId: "matematica" } };
 
   if (area === "natureza") {
     const materiaId = materiaCorpusNatureza(texto, row.materia);
-    if (materiaId) return { materiaId };
+    if (materiaId) return { destino: { tipo: "catalogo_direto", materiaId } };
     return {
-      materiaId: null,
+      destino: null,
       aviso: `Q${row.numero}: Natureza — triagem Bio/Quím/Fís inconclusiva; classificação adiada.`,
     };
   }
@@ -189,14 +212,42 @@ function resolverMateriaCatalogo(
   const triNat = triarMateriaNatureza(texto);
   if (triNat.materia) {
     return {
-      materiaId: MAP_NATUREZA_CORPUS[triNat.materia],
+      destino: {
+        tipo: "catalogo_direto",
+        materiaId: MAP_NATUREZA_CORPUS[triNat.materia],
+      },
       aviso: `Q${row.numero}: área indefinida — triagem Natureza → ${triNat.materia}.`,
     };
   }
 
   return {
-    materiaId: null,
+    destino: null,
     aviso: `Q${row.numero}: área indefinida — classificação adiada (sem fallback).`,
+  };
+}
+
+function textoMinimoClassificacao(row: ProvaQuestaoRow, texto: string): number {
+  if (row.observacoes?.includes(MARCADOR_EXTRACAO_ACEITA)) {
+    return TEXTO_MINIMO_CLASSIFICACAO_CURTO;
+  }
+  return TEXTO_MINIMO_CLASSIFICACAO;
+}
+
+function rowParaQuestaoRoteamento(
+  fonteId: string,
+  row: ProvaQuestaoRow,
+  ctx?: { banca?: string }
+): QuestaoRoteamento {
+  const enunciado = row.enunciado?.trim() ?? "";
+  return {
+    fonteId,
+    enunciado,
+    alternativas: row.alternativas?.trim() ?? "",
+    gabarito: row.gabarito ?? null,
+    numero: row.numero,
+    idioma: hintIdioma(row.idiomaVariante),
+    areaBloco: row.areaBloco ?? null,
+    banca: ctx?.banca ?? null,
   };
 }
 
@@ -210,6 +261,34 @@ function resolverAreaCatalogo(row: ProvaQuestaoRow): MateriaCorpusId | "natureza
   if (areaId === "exatas") return "matematica";
   if (areaId === "natureza") return "natureza";
   return null;
+}
+
+function versaoFromResultado(
+  resultado: ResultadoClassificacao,
+  row: ProvaQuestaoRow
+): string {
+  const mid = resultado.materiaId ?? "";
+  if (ehCatalogDisciplinaSplit(mid)) {
+    const area: AreaAgregada = ["portugues", "ingles", "espanhol"].includes(mid)
+      ? "linguagens"
+      : "humanas";
+    return versaoClassificacaoDisciplinaV10(resultado, area);
+  }
+  if (mid === "humanas" || mid === "linguagens") {
+    return versaoClassificacaoDisciplinaV10(
+      resultado,
+      mid as AreaAgregada
+    );
+  }
+  const areaRow = resolverAreaCatalogo(row);
+  if (areaRow === "humanas" || areaRow === "linguagens") {
+    return versaoClassificacaoDisciplinaV10(resultado, areaRow);
+  }
+  return versaoCatalogoV11(
+    (mid ||
+      indexGlobalEscopos().get(resultado.escopoId ?? "")?.materiaId ||
+      "matematica") as MateriaCorpusId
+  );
 }
 
 function aplicarResultadoNaRow(
@@ -251,31 +330,38 @@ async function classificarLoteMateria(
   const escopos = indexarEscopos(catalog);
 
   for (const lote of chunks(items, LOTE_CATALOGO)) {
-    if (materiaId === "linguagens") {
-      const payload = lote.map(({ fonteId, row }) => ({
-        fonteId,
-        enunciado: textoQuestao(row),
-        alternativas: row.alternativas?.trim() ?? "",
-        gabarito: row.gabarito ?? null,
-        numero: row.numero,
-        idioma: hintIdioma(row.idiomaVariante),
-        banca: ctx?.banca ?? null,
-        origem: "prova-pdf",
-      }));
-      const parcial = await classificarLoteLinguagensV12(payload, catalog, escopos);
-      for (const [k, v] of parcial) map.set(k, v);
-    } else {
-      const payload = lote.map(({ fonteId, row }) => ({
-        fonteId,
-        enunciado: textoQuestao(row),
-        alternativas: row.alternativas?.trim() ?? "",
-        gabarito: row.gabarito ?? null,
-        numero: row.numero,
-        idioma: hintIdioma(row.idiomaVariante),
-      }));
-      const parcial = await classificarLoteCatalogoV11(payload, catalog, escopos);
-      for (const [k, v] of parcial) map.set(k, v);
-    }
+    const payload = lote.map(({ fonteId, row }) => ({
+      fonteId,
+      enunciado: textoQuestao(row),
+      alternativas: row.alternativas?.trim() ?? "",
+      gabarito: row.gabarito ?? null,
+      numero: row.numero,
+      idioma: hintIdioma(row.idiomaVariante),
+    }));
+    const parcial = await classificarLoteCatalogoV11(payload, catalog, escopos);
+    for (const [k, v] of parcial) map.set(k, v);
+  }
+
+  return map;
+}
+
+async function classificarLoteAreaAgregada(
+  area: AreaAgregada,
+  items: Array<{ fonteId: string; row: ProvaQuestaoRow }>,
+  ctx?: { banca?: string }
+): Promise<Map<string, ResultadoClassificacao>> {
+  const map = new Map<string, ResultadoClassificacao>();
+  if (items.length === 0) return map;
+
+  const classificarLote =
+    area === "humanas" ? classificarLoteHumanasV10 : classificarLoteLinguagensV20;
+
+  for (const lote of chunks(items, LOTE_ROTEAMENTO)) {
+    const payload = lote.map(({ fonteId, row }) =>
+      rowParaQuestaoRoteamento(fonteId, row, ctx)
+    );
+    const parcial = await classificarLote(payload);
+    for (const [k, v] of parcial) map.set(k, v);
   }
 
   return map;
@@ -290,33 +376,49 @@ export async function classificarRowsProvaComCatalogo(
 ): Promise<{ rows: ProvaQuestaoRow[]; avisos: string[]; etapas: string[] }> {
   const avisos: string[] = [];
   const etapas: string[] = [];
-  const porMateria = new Map<MateriaCorpusId, Array<{ fonteId: string; row: ProvaQuestaoRow }>>();
+  const porDestino = new Map<
+    string,
+    Array<{ fonteId: string; row: ProvaQuestaoRow }>
+  >();
 
   for (const row of rows) {
     const fonteId = chaveQuestaoVariante(row.numero, row.idiomaVariante ?? "COMUM");
     const texto = textoQuestao(row);
-    if (texto.length < TEXTO_MINIMO_CLASSIFICACAO) {
+    const minimo = textoMinimoClassificacao(row, texto);
+    if (texto.length < minimo) {
       avisos.push(
-        `Q${row.numero}: texto insuficiente (${texto.length} chars, mín. ${TEXTO_MINIMO_CLASSIFICACAO}) — reextraia o PDF com enunciado literal.`
+        `Q${row.numero}: texto insuficiente (${texto.length} chars, mín. ${minimo}) — complete enunciado/alternativas ou aceite enunciado curto.`
       );
       continue;
     }
 
-    const { materiaId, aviso } = resolverMateriaCatalogo(row, texto);
+    const { destino, aviso } = resolverDestinoClassificacao(row, texto);
     if (aviso) avisos.push(aviso);
-    if (!materiaId) continue;
+    if (!destino) continue;
 
-    const lista = porMateria.get(materiaId) ?? [];
+    const chave =
+      destino.tipo === "area_agregada"
+        ? `area:${destino.area}`
+        : `cat:${destino.materiaId}`;
+    const lista = porDestino.get(chave) ?? [];
     lista.push({ fonteId, row });
-    porMateria.set(materiaId, lista);
+    porDestino.set(chave, lista);
   }
 
   const resultados = new Map<string, ResultadoClassificacao>();
 
-  for (const [materiaId, items] of porMateria) {
-    etapas.push(`Catálogo ${materiaId}: ${items.length} questão(ões)`);
-    const parcial = await classificarLoteMateria(materiaId, items, ctx);
-    for (const [k, v] of parcial) resultados.set(k, v);
+  for (const [chave, items] of porDestino) {
+    if (chave.startsWith("area:")) {
+      const area = chave.replace("area:", "") as AreaAgregada;
+      etapas.push(`Roteamento ${area}: ${items.length} questão(ões)`);
+      const parcial = await classificarLoteAreaAgregada(area, items, ctx);
+      for (const [k, v] of parcial) resultados.set(k, v);
+    } else {
+      const materiaId = chave.replace("cat:", "") as MateriaCorpusId;
+      etapas.push(`Catálogo ${materiaId}: ${items.length} questão(ões)`);
+      const parcial = await classificarLoteMateria(materiaId, items, ctx);
+      for (const [k, v] of parcial) resultados.set(k, v);
+    }
   }
 
   const saida = rows.map((row) => {
@@ -324,14 +426,7 @@ export async function classificarRowsProvaComCatalogo(
     const resultado = resultados.get(fonteId);
     if (!resultado) return row;
 
-    const versao =
-      resultado.materiaId === "linguagens"
-        ? versaoClassificacaoLingV12(resultado)
-        : versaoCatalogoV11(
-            (resultado.materiaId ??
-              indexGlobalEscopos().get(resultado.escopoId ?? "")?.materiaId ??
-              "matematica") as MateriaCorpusId
-          );
+    const versao = versaoFromResultado(resultado, row);
 
     return aplicarResultadoNaRow(row, resultado, versao);
   });
@@ -425,6 +520,7 @@ function questaoDbParaRow(q: {
   materia: string;
   assunto: string;
   enunciado: string | null;
+  alternativas: string | null;
   observacoes: string | null;
   conhecimentoExigido: string | null;
   nivelDificuldade: string | null;
@@ -438,6 +534,7 @@ function questaoDbParaRow(q: {
     materia: q.materia,
     assunto: q.assunto,
     enunciado: texto || undefined,
+    alternativas: q.alternativas?.trim() || undefined,
     observacoes: q.observacoes ?? undefined,
     conhecimentoExigido: q.conhecimentoExigido ?? undefined,
     nivelDificuldade: q.nivelDificuldade ?? undefined,
@@ -488,4 +585,5 @@ export async function reclassificarProvaInteiraComCatalogo(
   };
 }
 
-export { CLASSIFICADOR_CATALOGO_V11, CLASSIFICADOR_LING_V12 };
+export { CLASSIFICADOR_CATALOGO_V11 } from "@/lib/enem-classificar/classificar-catalogo-v11";
+export { CLASSIFICADOR_DISCIPLINA_V10 } from "@/lib/enem-classificar/classificar-roteamento-disciplina";

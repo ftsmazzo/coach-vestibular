@@ -1,0 +1,2003 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.0.0",
+  "materiaId": "filosofia",
+  "materiaLabel": "Filosofia",
+  "areaEnem": "Ciências Humanas e suas Tecnologias",
+  "notas": "Catálogo disciplinar de Filosofia. Área ENEM é metadado; escopoId fil.* é a unidade diagnóstica. Classificar pelo problema/conceito filosófico exigido, não por autor citado ou contexto histórico superficial.",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "A IA escolhe apenas IDs existentes até N2. Em N3 propõe conhecimentoExigido em texto livre.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2
+    },
+    "politicaN3": "IA escolhe só N0-N2; N3 é texto livre proposto para conhecimento exigido.",
+    "regraDesempate": "Use descricao como regra mais forte. KeywordsContexto não classificam sozinhas. Se houver conflito Filosofia x História/Sociologia, escolha Filosofia apenas quando a pergunta exigir conceito, argumento, autor ou problema filosófico. Persistindo empate ou confiança < 0.45, usar fil.__nao_classificado.",
+    "pesos": {
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "exemplosEnunciado": "referência semântica",
+      "negativeHints": "penalidade"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "filosofia_antiga",
+      "assuntoLabel": "Filosofia Antiga",
+      "dominios": [
+        {
+          "id": "fil.antiga.pre_socraticos",
+          "label": "Pré-socráticos e origem da filosofia",
+          "escopos": [
+            {
+              "id": "fil.antiga.pre_socraticos.physis_arche",
+              "label": "Physis, arché e cosmologia pré-socrática",
+              "descricao": "Cobre a passagem do mito ao logos, investigação racional da natureza, arché, physis e explicações cosmológicas pré-socráticas; NÃO cobre mitologia como literatura nem ciência moderna como história da ciência.",
+              "keywords": [
+                "pré-socráticos",
+                "pre-socraticos",
+                "arché",
+                "arche",
+                "physis",
+                "cosmologia",
+                "Tales",
+                "Heráclito",
+                "Parmênides"
+              ],
+              "keywordsContexto": [
+                "mito",
+                "logos",
+                "natureza",
+                "origem"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar physis, arché e cosmologia pré-socrática para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual"
+              ],
+              "naoConfundirCom": [
+                "hist.antiga.civilizacoes.grecia",
+                "pt.interpretacao.inferencia"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "mito_logos"
+            },
+            {
+              "id": "fil.antiga.pre_socraticos.heraclito_parmenides",
+              "label": "Heráclito, Parmênides e problema do devir",
+              "descricao": "Cobre mudança, permanência, ser, não-ser, devir e conflito entre mobilismo e imobilismo; NÃO cobre transformação social histórica ou mudança política moderna.",
+              "keywords": [
+                "Heráclito",
+                "Heraclito",
+                "Parmênides",
+                "Parmenides",
+                "devir",
+                "ser",
+                "não-ser",
+                "mobilismo",
+                "imobilismo"
+              ],
+              "keywordsContexto": [
+                "mudança",
+                "permanência",
+                "rio"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar heráclito, parmênides e problema do devir para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "fil.antiga.pre_socraticos.physis_arche"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "ser_devir"
+            }
+          ]
+        },
+        {
+          "id": "fil.antiga.socrates_platao_aristoteles",
+          "label": "Sócrates, Platão e Aristóteles",
+          "escopos": [
+            {
+              "id": "fil.antiga.socrates_platao_aristoteles.socrates_etica_dialogo",
+              "label": "Sócrates: diálogo, virtude e autoconhecimento",
+              "descricao": "Cobre método socrático, maiêutica, ironia, virtude, autoconhecimento e crítica ao relativismo sofista; NÃO cobre educação como política pública contemporânea.",
+              "keywords": [
+                "Sócrates",
+                "Socrates",
+                "maiêutica",
+                "maieutica",
+                "ironia socrática",
+                "virtude",
+                "autoconhecimento",
+                "sofistas"
+              ],
+              "keywordsContexto": [
+                "diálogo",
+                "questionamento",
+                "conhece-te a ti mesmo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar sócrates: diálogo, virtude e autoconhecimento para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "fil.etica.virtude.aristoteles_virtude",
+                "fil.politica.democracia.cidadania_antiga"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "virtude"
+            },
+            {
+              "id": "fil.antiga.socrates_platao_aristoteles.platao_mundo_ideias",
+              "label": "Platão: teoria das ideias e alegoria da caverna",
+              "descricao": "Cobre dualismo sensível/inteligível, teoria das ideias, conhecimento verdadeiro, reminiscência e alegoria da caverna; NÃO cobre caverna ou imagem como interpretação literária.",
+              "keywords": [
+                "Platão",
+                "Platao",
+                "mundo das ideias",
+                "mundo sensível",
+                "alegoria da caverna",
+                "reminiscência",
+                "episteme",
+                "doxa"
+              ],
+              "keywordsContexto": [
+                "aparência",
+                "realidade",
+                "sombras"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar platão: teoria das ideias e alegoria da caverna para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual"
+              ],
+              "naoConfundirCom": [
+                "fil.epistemologia.conhecimento.racionalismo_empirismo",
+                "fil.antiga.socrates_platao_aristoteles.aristoteles_metafisica"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "aparencia_realidade"
+            },
+            {
+              "id": "fil.antiga.socrates_platao_aristoteles.aristoteles_metafisica",
+              "label": "Aristóteles: metafísica, substância e causalidade",
+              "descricao": "Cobre substância, acidente, ato e potência, quatro causas, finalidade e crítica aristotélica a Platão; NÃO cobre causalidade científica moderna se o foco for método experimental.",
+              "keywords": [
+                "Aristóteles",
+                "Aristoteles",
+                "substância",
+                "substancia",
+                "ato e potência",
+                "ato e potencia",
+                "quatro causas",
+                "causa final",
+                "teleologia"
+              ],
+              "keywordsContexto": [
+                "essência",
+                "finalidade",
+                "metafísica"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar aristóteles: metafísica, substância e causalidade para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "território",
+                "paisagem",
+                "cartografia",
+                "urbanização",
+                "metropolização",
+                "clima",
+                "fluxos migratórios"
+              ],
+              "naoConfundirCom": [
+                "fil.ciencia.metodo.ciencia_moderna",
+                "fil.antiga.socrates_platao_aristoteles.platao_mundo_ideias"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "causalidade"
+            },
+            {
+              "id": "fil.antiga.socrates_platao_aristoteles.aristoteles_logica",
+              "label": "Aristóteles: lógica e silogismo",
+              "descricao": "Cobre princípios lógicos, silogismo, dedução, validade de argumentos e estrutura formal do raciocínio; NÃO cobre análise gramatical de conectivos em Português.",
+              "keywords": [
+                "lógica aristotélica",
+                "logica aristotelica",
+                "silogismo",
+                "dedução",
+                "deducao",
+                "premissa",
+                "conclusão",
+                "validade"
+              ],
+              "keywordsContexto": [
+                "argumento",
+                "inferência",
+                "raciocínio"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar aristóteles: lógica e silogismo para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.argumentacao",
+                "mat.logica.proposicional"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "argumentacao_logica"
+            }
+          ]
+        },
+        {
+          "id": "fil.antiga.helenismo",
+          "label": "Helenismo",
+          "escopos": [
+            {
+              "id": "fil.antiga.helenismo.estoicismo_epicurismo",
+              "label": "Estoicismo e epicurismo",
+              "descricao": "Cobre ética helenística, ataraxia, autodomínio, prazer moderado, felicidade e relação entre desejo e sofrimento; NÃO cobre hedonismo como comportamento sociológico contemporâneo.",
+              "keywords": [
+                "estoicismo",
+                "epicurismo",
+                "ataraxia",
+                "apatheia",
+                "Epicuro",
+                "Sêneca",
+                "Seneca",
+                "prazer moderado",
+                "autodomínio"
+              ],
+              "keywordsContexto": [
+                "felicidade",
+                "desejo",
+                "sofrimento"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar estoicismo e epicurismo para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "fil.etica.felicidade.utilitarismo",
+                "soc.cultura.consumo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "felicidade"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "epistemologia",
+      "assuntoLabel": "Epistemologia e teoria do conhecimento",
+      "dominios": [
+        {
+          "id": "fil.epistemologia.conhecimento",
+          "label": "Conhecimento, verdade e método",
+          "escopos": [
+            {
+              "id": "fil.epistemologia.conhecimento.racionalismo_empirismo",
+              "label": "Racionalismo e empirismo",
+              "descricao": "Cobre disputa entre razão e experiência como fontes do conhecimento, Descartes, Locke, Hume e tradição moderna; NÃO cobre método científico experimental em si quando o foco for ciência moderna.",
+              "keywords": [
+                "racionalismo",
+                "empirismo",
+                "Descartes",
+                "Locke",
+                "Hume",
+                "ideias inatas",
+                "experiência",
+                "razão"
+              ],
+              "keywordsContexto": [
+                "conhecimento",
+                "sentidos",
+                "certeza"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar racionalismo e empirismo para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual"
+              ],
+              "naoConfundirCom": [
+                "fil.ciencia.metodo.ciencia_moderna",
+                "fil.epistemologia.conhecimento.ceticismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "conhecimento"
+            },
+            {
+              "id": "fil.epistemologia.conhecimento.ceticismo",
+              "label": "Ceticismo e limites do conhecimento",
+              "descricao": "Cobre dúvida, suspensão do juízo, limites da certeza e problemas de justificação do conhecimento; NÃO cobre descrença religiosa como fenômeno histórico ou sociológico.",
+              "keywords": [
+                "ceticismo",
+                "dúvida",
+                "duvida",
+                "suspensão do juízo",
+                "suspensao do juizo",
+                "Pirro",
+                "limites do conhecimento"
+              ],
+              "keywordsContexto": [
+                "certeza",
+                "verdade",
+                "opinião"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar ceticismo e limites do conhecimento para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "fil.epistemologia.conhecimento.racionalismo_empirismo",
+                "fil.epistemologia.conhecimento.kant_conhecimento"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "limites_conhecimento"
+            },
+            {
+              "id": "fil.epistemologia.conhecimento.kant_conhecimento",
+              "label": "Kant: conhecimento, fenômeno e categorias",
+              "descricao": "Cobre síntese kantiana entre racionalismo e empirismo, juízos, formas da sensibilidade, categorias, fenômeno e coisa em si; NÃO cobre ética kantiana do dever.",
+              "keywords": [
+                "Kant",
+                "fenômeno",
+                "fenomeno",
+                "coisa em si",
+                "categorias",
+                "a priori",
+                "juízo sintético",
+                "juizo sintetico"
+              ],
+              "keywordsContexto": [
+                "sensibilidade",
+                "entendimento",
+                "experiência"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar kant: conhecimento, fenômeno e categorias para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "fil.etica.dever.kant_imperativo",
+                "fil.epistemologia.conhecimento.racionalismo_empirismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "kant"
+            },
+            {
+              "id": "fil.epistemologia.conhecimento.verdade_opiniao",
+              "label": "Verdade, opinião e justificação",
+              "descricao": "Cobre distinção entre verdade, opinião, crença, justificação, doxa e conhecimento; NÃO cobre checagem jornalística ou interpretação textual como foco principal.",
+              "keywords": [
+                "verdade",
+                "opinião",
+                "opiniao",
+                "crença",
+                "crenca",
+                "justificação",
+                "justificacao",
+                "doxa",
+                "episteme"
+              ],
+              "keywordsContexto": [
+                "saber",
+                "conhecimento",
+                "argumento"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar verdade, opinião e justificação para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.argumentacao",
+                "fil.antiga.socrates_platao_aristoteles.platao_mundo_ideias"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "verdade"
+            }
+          ]
+        },
+        {
+          "id": "fil.ciencia.metodo",
+          "label": "Filosofia da ciência",
+          "escopos": [
+            {
+              "id": "fil.ciencia.metodo.ciencia_moderna",
+              "label": "Ciência moderna e método científico",
+              "descricao": "Cobre revolução científica, método experimental, matematização da natureza, Galileu, Bacon, Descartes e critérios de cientificidade; NÃO cobre Revolução Industrial como processo histórico.",
+              "keywords": [
+                "ciência moderna",
+                "ciencia moderna",
+                "método científico",
+                "metodo cientifico",
+                "Galileu",
+                "Bacon",
+                "experimento",
+                "observação",
+                "hipótese"
+              ],
+              "keywordsContexto": [
+                "natureza",
+                "razão",
+                "prova"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar ciência moderna e método científico para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "território",
+                "paisagem",
+                "cartografia",
+                "urbanização",
+                "metropolização",
+                "clima",
+                "fluxos migratórios"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.formacao_mundo_moderno.renascimento_humanismo",
+                "fil.epistemologia.conhecimento.racionalismo_empirismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "metodo_cientifico"
+            },
+            {
+              "id": "fil.ciencia.metodo.popper_falsificacionismo",
+              "label": "Popper e falsificacionismo",
+              "descricao": "Cobre falseabilidade, conjecturas, refutações, demarcação entre ciência e pseudociência; NÃO cobre erro estatístico ou método matemático.",
+              "keywords": [
+                "Popper",
+                "falseabilidade",
+                "falsificacionismo",
+                "refutação",
+                "refutacao",
+                "pseudociência",
+                "pseudociencia",
+                "demarcação"
+              ],
+              "keywordsContexto": [
+                "teoria científica",
+                "hipótese",
+                "teste"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar popper e falsificacionismo para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual"
+              ],
+              "naoConfundirCom": [
+                "fil.ciencia.metodo.ciencia_moderna",
+                "mat.estatistica_probabilidade"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "criterio_cientificidade"
+            },
+            {
+              "id": "fil.ciencia.metodo.kuhn_paradigmas",
+              "label": "Kuhn: paradigmas e revoluções científicas",
+              "descricao": "Cobre paradigma, ciência normal, anomalias, crise e revolução científica em Thomas Kuhn; NÃO cobre revoluções políticas ou sociais da História.",
+              "keywords": [
+                "Kuhn",
+                "paradigma",
+                "ciência normal",
+                "ciencia normal",
+                "anomalia",
+                "revolução científica",
+                "revolucao cientifica"
+              ],
+              "keywordsContexto": [
+                "mudança de paradigma",
+                "comunidade científica"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar kuhn: paradigmas e revoluções científicas para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.revolucoes.revolucao_francesa",
+                "fil.ciencia.metodo.popper_falsificacionismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "paradigma"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "etica",
+      "assuntoLabel": "Ética",
+      "dominios": [
+        {
+          "id": "fil.etica.fundamentos",
+          "label": "Fundamentos da ética",
+          "escopos": [
+            {
+              "id": "fil.etica.fundamentos.moral_etica",
+              "label": "Moral, ética e juízo moral",
+              "descricao": "Cobre distinção entre ética e moral, normas, valores, juízo moral, responsabilidade e deliberação; NÃO cobre costumes sociais apenas como descrição sociológica.",
+              "keywords": [
+                "ética",
+                "etica",
+                "moral",
+                "juízo moral",
+                "juizo moral",
+                "valores",
+                "normas",
+                "responsabilidade"
+              ],
+              "keywordsContexto": [
+                "bem",
+                "mal",
+                "conduta",
+                "dever"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar moral, ética e juízo moral para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "soc.cultura.normas_valores",
+                "fil.etica.dever.kant_imperativo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "etica_moral"
+            },
+            {
+              "id": "fil.etica.fundamentos.relativismo_universalismo",
+              "label": "Relativismo e universalismo moral",
+              "descricao": "Cobre debate entre valores relativos a culturas/contextos e pretensão de validade universal de princípios morais; NÃO cobre diversidade cultural como fenômeno sociológico primário.",
+              "keywords": [
+                "relativismo moral",
+                "universalismo",
+                "valores universais",
+                "relatividade cultural",
+                "etnocentrismo"
+              ],
+              "keywordsContexto": [
+                "cultura",
+                "normas",
+                "direitos"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar relativismo e universalismo moral para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "soc.cultura.etnocentrismo_relativismo",
+                "fil.etica.direitos.direitos_humanos"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "relativismo"
+            }
+          ]
+        },
+        {
+          "id": "fil.etica.virtude_dever_consequencia",
+          "label": "Virtude, dever e consequência",
+          "escopos": [
+            {
+              "id": "fil.etica.virtude_dever_consequencia.aristoteles_virtude",
+              "label": "Ética da virtude em Aristóteles",
+              "descricao": "Cobre felicidade, eudaimonia, virtude como hábito, justa medida e finalidade da vida boa; NÃO cobre virtude socrática como método dialógico.",
+              "keywords": [
+                "ética da virtude",
+                "etica da virtude",
+                "Aristóteles",
+                "Aristoteles",
+                "eudaimonia",
+                "justa medida",
+                "hábito",
+                "habito",
+                "vida boa"
+              ],
+              "keywordsContexto": [
+                "felicidade",
+                "virtude",
+                "excelência"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar ética da virtude em aristóteles para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "fil.antiga.socrates_platao_aristoteles.socrates_etica_dialogo",
+                "fil.antiga.helenismo.estoicismo_epicurismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "virtude"
+            },
+            {
+              "id": "fil.etica.virtude_dever_consequencia.kant_imperativo",
+              "label": "Kant: dever e imperativo categórico",
+              "descricao": "Cobre ética deontológica, dever, autonomia, boa vontade, universalização da máxima e imperativo categórico; NÃO cobre conhecimento em Kant.",
+              "keywords": [
+                "imperativo categórico",
+                "imperativo categorico",
+                "Kant",
+                "dever",
+                "boa vontade",
+                "autonomia",
+                "máxima universal",
+                "maxima universal"
+              ],
+              "keywordsContexto": [
+                "moral",
+                "universalização",
+                "dignidade"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar kant: dever e imperativo categórico para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "fil.epistemologia.conhecimento.kant_conhecimento",
+                "fil.etica.fundamentos.moral_etica"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "dever"
+            },
+            {
+              "id": "fil.etica.virtude_dever_consequencia.utilitarismo",
+              "label": "Utilitarismo e ética consequencialista",
+              "descricao": "Cobre avaliação moral por consequências, maior felicidade, cálculo de utilidade, Bentham e Mill; NÃO cobre políticas públicas utilitárias se a questão cobrar contexto histórico específico.",
+              "keywords": [
+                "utilitarismo",
+                "consequencialismo",
+                "Bentham",
+                "Mill",
+                "maior felicidade",
+                "utilidade",
+                "prazer",
+                "dor"
+              ],
+              "keywordsContexto": [
+                "consequência",
+                "bem-estar",
+                "cálculo moral"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar utilitarismo e ética consequencialista para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "fil.etica.virtude_dever_consequencia.kant_imperativo",
+                "fil.antiga.helenismo.estoicismo_epicurismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "consequencialismo"
+            }
+          ]
+        },
+        {
+          "id": "fil.etica.aplicada",
+          "label": "Ética aplicada",
+          "escopos": [
+            {
+              "id": "fil.etica.aplicada.bioetica",
+              "label": "Bioética e dilemas da vida",
+              "descricao": "Cobre dilemas éticos sobre vida, morte, saúde, reprodução, autonomia, consentimento, pesquisa científica e tecnologia médica; NÃO cobre genética ou fisiologia como Biologia.",
+              "keywords": [
+                "bioética",
+                "bioetica",
+                "eutanásia",
+                "eutanasia",
+                "aborto",
+                "clonagem",
+                "consentimento",
+                "autonomia do paciente",
+                "pesquisa médica"
+              ],
+              "keywordsContexto": [
+                "vida",
+                "saúde",
+                "dilema",
+                "tecnologia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar bioética e dilemas da vida para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "DNA",
+                "mitose",
+                "meiose",
+                "herança genética",
+                "fisiologia",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "bio.genetica.molecular.dna",
+                "fil.etica.fundamentos.moral_etica"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "bioetica"
+            },
+            {
+              "id": "fil.etica.aplicada.etica_tecnologia",
+              "label": "Ética, tecnologia e responsabilidade",
+              "descricao": "Cobre responsabilidade moral em ciência, técnica, inteligência artificial, vigilância, algoritmos e impactos humanos da tecnologia; NÃO cobre funcionamento técnico de computação ou eletrônica.",
+              "keywords": [
+                "ética da tecnologia",
+                "etica da tecnologia",
+                "responsabilidade",
+                "inteligência artificial",
+                "inteligencia artificial",
+                "algoritmo",
+                "vigilância",
+                "tecnologia"
+              ],
+              "keywordsContexto": [
+                "técnica",
+                "risco",
+                "decisão automatizada"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar ética, tecnologia e responsabilidade para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "território",
+                "paisagem",
+                "cartografia",
+                "urbanização",
+                "metropolização",
+                "clima",
+                "fluxos migratórios",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "soc.cultura.tecnologia_sociedade",
+                "fil.ciencia.metodo.ciencia_moderna"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "etica_tecnologia"
+            },
+            {
+              "id": "fil.etica.aplicada.etica_ambiental",
+              "label": "Ética ambiental e responsabilidade intergeracional",
+              "descricao": "Cobre valor moral da natureza, deveres com futuras gerações, antropocentrismo, biocentrismo e responsabilidade ambiental; NÃO cobre clima, bioma ou impacto ambiental como Geografia/Biologia primários.",
+              "keywords": [
+                "ética ambiental",
+                "etica ambiental",
+                "responsabilidade intergeracional",
+                "antropocentrismo",
+                "biocentrismo",
+                "natureza",
+                "sustentabilidade"
+              ],
+              "keywordsContexto": [
+                "meio ambiente",
+                "futuras gerações",
+                "dever"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar ética ambiental e responsabilidade intergeracional para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "clima",
+                "bioma",
+                "desmatamento",
+                "aquecimento global",
+                "ecossistema",
+                "território",
+                "paisagem",
+                "cartografia",
+                "urbanização",
+                "metropolização",
+                "clima",
+                "fluxos migratórios"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.ambiental.sustentabilidade",
+                "bio.ecologia.impactos"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "sustentabilidade"
+            }
+          ]
+        },
+        {
+          "id": "fil.etica.direitos",
+          "label": "Direitos humanos e dignidade",
+          "escopos": [
+            {
+              "id": "fil.etica.direitos.dignidade_pessoa",
+              "label": "Dignidade da pessoa humana",
+              "descricao": "Cobre dignidade, respeito à pessoa, autonomia, igualdade moral e fundamentos éticos dos direitos; NÃO cobre Constituição de 1988 como processo histórico-institucional.",
+              "keywords": [
+                "dignidade humana",
+                "dignidade da pessoa",
+                "autonomia",
+                "respeito",
+                "igualdade moral",
+                "pessoa humana"
+              ],
+              "keywordsContexto": [
+                "direitos",
+                "valor intrínseco",
+                "humanidade"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar dignidade da pessoa humana para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.nova_republica.constituicao_1988",
+                "fil.etica.direitos.direitos_humanos"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "dignidade"
+            },
+            {
+              "id": "fil.etica.direitos.direitos_humanos",
+              "label": "Fundamentos filosóficos dos direitos humanos",
+              "descricao": "Cobre universalidade, liberdade, igualdade, dignidade e fundamentos normativos dos direitos humanos; NÃO cobre ONU e Declaração Universal como eventos históricos se o foco for cronologia pós-guerra.",
+              "keywords": [
+                "direitos humanos",
+                "universalidade",
+                "liberdade",
+                "igualdade",
+                "dignidade",
+                "direitos naturais"
+              ],
+              "keywordsContexto": [
+                "cidadania",
+                "humanidade",
+                "normatividade"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar fundamentos filosóficos dos direitos humanos para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.mundo_recente.organismos_internacionais_direitos_humanos",
+                "soc.politica.cidadania_direitos"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "direitos_humanos"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "politica",
+      "assuntoLabel": "Filosofia Política",
+      "dominios": [
+        {
+          "id": "fil.politica.estado_poder",
+          "label": "Estado, poder e legitimidade",
+          "escopos": [
+            {
+              "id": "fil.politica.estado_poder.estado_legitimidade",
+              "label": "Estado, poder e legitimidade",
+              "descricao": "Cobre fundamentos do Estado, autoridade, legitimidade do poder político, obediência e coerção; NÃO cobre formação histórica de Estados nacionais.",
+              "keywords": [
+                "Estado",
+                "poder",
+                "legitimidade",
+                "autoridade",
+                "coerção",
+                "coercao",
+                "soberania"
+              ],
+              "keywordsContexto": [
+                "governo",
+                "lei",
+                "obediência"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar estado, poder e legitimidade para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "soc.politica.estado_instituicoes",
+                "hist.moderna.formacao_mundo_moderno.absolutismo_estado_moderno"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "estado_poder"
+            },
+            {
+              "id": "fil.politica.estado_poder.maquiavel",
+              "label": "Maquiavel: poder, virtù e razão de Estado",
+              "descricao": "Cobre autonomia da política, virtù, fortuna, realismo político, manutenção do poder e razão de Estado; NÃO cobre Renascimento como movimento histórico-cultural amplo.",
+              "keywords": [
+                "Maquiavel",
+                "O Príncipe",
+                "O Principe",
+                "virtù",
+                "virtu",
+                "fortuna",
+                "razão de Estado",
+                "realismo político"
+              ],
+              "keywordsContexto": [
+                "poder",
+                "governante",
+                "Estado"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar maquiavel: poder, virtù e razão de estado para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.formacao_mundo_moderno.renascimento_humanismo",
+                "fil.politica.estado_poder.estado_legitimidade"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "poder"
+            },
+            {
+              "id": "fil.politica.estado_poder.hobbes",
+              "label": "Hobbes: estado de natureza e soberania",
+              "descricao": "Cobre contrato social hobbesiano, estado de natureza, guerra de todos contra todos, medo, segurança e soberano absoluto; NÃO cobre absolutismo histórico sem teoria contratual.",
+              "keywords": [
+                "Hobbes",
+                "Leviatã",
+                "Leviata",
+                "estado de natureza",
+                "guerra de todos contra todos",
+                "soberano",
+                "contrato social"
+              ],
+              "keywordsContexto": [
+                "medo",
+                "segurança",
+                "soberania"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar hobbes: estado de natureza e soberania para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.formacao_mundo_moderno.absolutismo_estado_moderno",
+                "fil.politica.contratualismo.locke_rousseau"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "contrato_social"
+            },
+            {
+              "id": "fil.politica.estado_poder.locke_rousseau",
+              "label": "Locke e Rousseau: contrato social e liberdade",
+              "descricao": "Cobre contratualismo liberal e republicano, direitos naturais, propriedade, vontade geral, soberania popular e liberdade política; NÃO cobre Revolução Francesa como processo histórico.",
+              "keywords": [
+                "Locke",
+                "Rousseau",
+                "contrato social",
+                "vontade geral",
+                "direitos naturais",
+                "propriedade",
+                "soberania popular"
+              ],
+              "keywordsContexto": [
+                "liberdade",
+                "povo",
+                "governo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar locke e rousseau: contrato social e liberdade para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.revolucoes.revolucao_francesa",
+                "fil.politica.estado_poder.hobbes"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "contrato_social"
+            }
+          ]
+        },
+        {
+          "id": "fil.politica.democracia_justica",
+          "label": "Democracia, justiça e liberdade",
+          "escopos": [
+            {
+              "id": "fil.politica.democracia_justica.democracia_cidadania",
+              "label": "Democracia, cidadania e participação política",
+              "descricao": "Cobre fundamentos filosóficos da democracia, cidadania, participação, deliberação e legitimidade democrática; NÃO cobre democracia ateniense ou Constituição de 1988 como recorte histórico específico.",
+              "keywords": [
+                "democracia",
+                "cidadania",
+                "participação política",
+                "participacao politica",
+                "deliberação",
+                "deliberacao",
+                "esfera pública"
+              ],
+              "keywordsContexto": [
+                "povo",
+                "voto",
+                "liberdade política"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar democracia, cidadania e participação política para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "hist.antiga.civilizacoes.grecia",
+                "hist.brasil_republica.nova_republica.constituicao_1988",
+                "soc.politica.cidadania_participacao"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "democracia"
+            },
+            {
+              "id": "fil.politica.democracia_justica.justica_platao_rawls",
+              "label": "Justiça: Platão, Aristóteles e Rawls",
+              "descricao": "Cobre justiça como ordem, virtude, distribuição, equidade, véu da ignorância e princípios de justiça; NÃO cobre Poder Judiciário ou legislação como instituição empírica.",
+              "keywords": [
+                "justiça",
+                "justica",
+                "Rawls",
+                "véu da ignorância",
+                "veu da ignorancia",
+                "equidade",
+                "distribuição",
+                "distribuicao"
+              ],
+              "keywordsContexto": [
+                "bem comum",
+                "igualdade",
+                "mérito"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar justiça: platão, aristóteles e rawls para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "soc.desigualdade.estratificacao",
+                "fil.etica.direitos.dignidade_pessoa"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "justica"
+            },
+            {
+              "id": "fil.politica.democracia_justica.liberdade",
+              "label": "Liberdade positiva e negativa",
+              "descricao": "Cobre diferentes sentidos filosóficos de liberdade, autonomia, ausência de coerção, liberdade política e liberdade moral; NÃO cobre independência política de países como processo histórico.",
+              "keywords": [
+                "liberdade",
+                "liberdade positiva",
+                "liberdade negativa",
+                "autonomia",
+                "coerção",
+                "coercao",
+                "Isaiah Berlin"
+              ],
+              "keywordsContexto": [
+                "escolha",
+                "autodeterminação",
+                "limite"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar liberdade positiva e negativa para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "hist.america.independencias",
+                "fil.etica.virtude_dever_consequencia.kant_imperativo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "liberdade"
+            }
+          ]
+        },
+        {
+          "id": "fil.politica.marx",
+          "label": "Marx e crítica social filosófica",
+          "escopos": [
+            {
+              "id": "fil.politica.marx.alienacao_trabalho",
+              "label": "Marx: alienação e trabalho",
+              "descricao": "Cobre alienação no trabalho, exploração, fetichismo, relação capital-trabalho e crítica filosófica da sociedade capitalista; NÃO cobre Revolução Industrial como processo histórico nem mercado de trabalho como dado geográfico.",
+              "keywords": [
+                "Marx",
+                "alienação",
+                "alienacao",
+                "trabalho alienado",
+                "fetichismo",
+                "mais-valia",
+                "exploração",
+                "exploracao"
+              ],
+              "keywordsContexto": [
+                "capitalismo",
+                "proletariado",
+                "classe"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar marx: alienação e trabalho para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Industrial",
+                "industrialização",
+                "urbanização",
+                "dados de emprego",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "território",
+                "paisagem",
+                "cartografia",
+                "urbanização",
+                "metropolização",
+                "clima",
+                "fluxos migratórios"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.revolucoes.revolucao_industrial",
+                "soc.trabalho.alienacao_trabalho",
+                "geo.economica.industrializacao"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "trabalho_alienacao"
+            },
+            {
+              "id": "fil.politica.marx.ideologia",
+              "label": "Marx: ideologia e consciência social",
+              "descricao": "Cobre ideologia, falsa consciência, dominação simbólica e crítica da naturalização das relações sociais; NÃO cobre propaganda de regimes históricos se o foco for cronologia política.",
+              "keywords": [
+                "ideologia",
+                "falsa consciência",
+                "falsa consciencia",
+                "Marx",
+                "dominação simbólica",
+                "dominacao simbolica",
+                "infraestrutura",
+                "superestrutura"
+              ],
+              "keywordsContexto": [
+                "consciência",
+                "dominação",
+                "representação"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar marx: ideologia e consciência social para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual"
+              ],
+              "naoConfundirCom": [
+                "soc.cultura.ideologia",
+                "hist.contemporanea.guerras_totalitarismos.fascismo_nazismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "ideologia"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "estetica",
+      "assuntoLabel": "Estética",
+      "dominios": [
+        {
+          "id": "fil.estetica.arte_belo",
+          "label": "Arte, belo e experiência estética",
+          "escopos": [
+            {
+              "id": "fil.estetica.arte_belo.belo_sublime",
+              "label": "Belo, sublime e juízo estético",
+              "descricao": "Cobre conceitos filosóficos de belo, sublime, gosto, juízo estético e experiência estética; NÃO cobre análise de obra artística como conteúdo de Artes se o foco for movimento/linguagem visual.",
+              "keywords": [
+                "belo",
+                "sublime",
+                "gosto",
+                "juízo estético",
+                "juizo estetico",
+                "experiência estética",
+                "experiencia estetica",
+                "Kant"
+              ],
+              "keywordsContexto": [
+                "arte",
+                "sensibilidade",
+                "forma"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar belo, sublime e juízo estético para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "pt.artes.estetica.movimentos",
+                "fil.epistemologia.conhecimento.kant_conhecimento"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "estetica"
+            },
+            {
+              "id": "fil.estetica.arte_belo.arte_mimesis",
+              "label": "Arte, mímesis e representação",
+              "descricao": "Cobre arte como imitação, representação, expressão e relação entre aparência, realidade e criação; NÃO cobre interpretação de texto literário como disciplina de Português.",
+              "keywords": [
+                "mímesis",
+                "mimesis",
+                "representação",
+                "representacao",
+                "imitação",
+                "imitacao",
+                "arte",
+                "Platão",
+                "Aristóteles"
+              ],
+              "keywordsContexto": [
+                "aparência",
+                "realidade",
+                "obra"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar arte, mímesis e representação para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "pt.literatura.teoria_literaria",
+                "fil.antiga.socrates_platao_aristoteles.platao_mundo_ideias"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "representacao"
+            },
+            {
+              "id": "fil.estetica.arte_belo.industria_cultural",
+              "label": "Indústria cultural e cultura de massa",
+              "descricao": "Cobre crítica filosófica da indústria cultural, Adorno, Horkheimer, massificação, consumo cultural e mercantilização da arte; NÃO cobre cultura de massa como fenômeno sociológico sem crítica filosófica.",
+              "keywords": [
+                "indústria cultural",
+                "industria cultural",
+                "Adorno",
+                "Horkheimer",
+                "cultura de massa",
+                "mercantilização",
+                "massificação"
+              ],
+              "keywordsContexto": [
+                "consumo",
+                "mídia",
+                "arte",
+                "entretenimento"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar indústria cultural e cultura de massa para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social",
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual"
+              ],
+              "naoConfundirCom": [
+                "soc.cultura.industria_cultural",
+                "pt.artes.midias"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "industria_cultural"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "existencia_linguagem",
+      "assuntoLabel": "Existência, linguagem e contemporaneidade",
+      "dominios": [
+        {
+          "id": "fil.existencia.modernidade",
+          "label": "Existencialismo e condição humana",
+          "escopos": [
+            {
+              "id": "fil.existencia.modernidade.existencialismo",
+              "label": "Existencialismo, liberdade e responsabilidade",
+              "descricao": "Cobre existência, liberdade, angústia, escolha, responsabilidade, Sartre, Camus e condição humana; NÃO cobre crise social contemporânea como dado sociológico.",
+              "keywords": [
+                "existencialismo",
+                "Sartre",
+                "Camus",
+                "angústia",
+                "angustia",
+                "existência",
+                "existencia",
+                "liberdade",
+                "responsabilidade"
+              ],
+              "keywordsContexto": [
+                "escolha",
+                "sentido",
+                "condição humana"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar existencialismo, liberdade e responsabilidade para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social",
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual"
+              ],
+              "naoConfundirCom": [
+                "fil.politica.democracia_justica.liberdade",
+                "pt.literatura.existencialismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "existencia"
+            },
+            {
+              "id": "fil.existencia.modernidade.nietzsche",
+              "label": "Nietzsche: moral, niilismo e transvaloração",
+              "descricao": "Cobre crítica à moral tradicional, niilismo, morte de Deus, vontade de potência e transvaloração dos valores; NÃO cobre história do cristianismo ou reforma religiosa.",
+              "keywords": [
+                "Nietzsche",
+                "niilismo",
+                "morte de Deus",
+                "vontade de potência",
+                "vontade de potencia",
+                "transvaloração",
+                "transvaloracao",
+                "moral dos escravos"
+              ],
+              "keywordsContexto": [
+                "valores",
+                "crítica moral",
+                "super-homem"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar nietzsche: moral, niilismo e transvaloração para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico",
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social"
+              ],
+              "naoConfundirCom": [
+                "fil.etica.fundamentos.moral_etica",
+                "hist.moderna.formacao_mundo_moderno.reformas_religiosas"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "critica_moral"
+            }
+          ]
+        },
+        {
+          "id": "fil.linguagem.hermeneutica",
+          "label": "Linguagem, interpretação e sentido",
+          "escopos": [
+            {
+              "id": "fil.linguagem.hermeneutica.linguagem_sentido",
+              "label": "Linguagem, significado e interpretação",
+              "descricao": "Cobre problemas filosóficos da linguagem, significado, sentido, referência e interpretação; NÃO cobre gramática, coesão ou interpretação textual escolar como Português.",
+              "keywords": [
+                "filosofia da linguagem",
+                "significado",
+                "sentido",
+                "referência",
+                "referencia",
+                "interpretação",
+                "interpretacao",
+                "Wittgenstein"
+              ],
+              "keywordsContexto": [
+                "linguagem",
+                "palavra",
+                "uso"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar linguagem, significado e interpretação para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual"
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.inferencia",
+                "pt.gramatica.semantica"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "linguagem"
+            },
+            {
+              "id": "fil.linguagem.hermeneutica.hermeneutica",
+              "label": "Hermenêutica e interpretação filosófica",
+              "descricao": "Cobre compreensão, interpretação, historicidade do sentido, círculo hermenêutico e relação intérprete-texto; NÃO cobre apenas localizar informação em texto.",
+              "keywords": [
+                "hermenêutica",
+                "hermeneutica",
+                "Gadamer",
+                "Heidegger",
+                "círculo hermenêutico",
+                "circulo hermeneutico",
+                "compreensão"
+              ],
+              "keywordsContexto": [
+                "interpretação",
+                "sentido",
+                "tradição"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar hermenêutica e interpretação filosófica para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.inferencia",
+                "fil.linguagem.hermeneutica.linguagem_sentido"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "interpretacao"
+            }
+          ]
+        },
+        {
+          "id": "fil.contemporanea.poder_subjetividade",
+          "label": "Poder, subjetividade e crítica contemporânea",
+          "escopos": [
+            {
+              "id": "fil.contemporanea.poder_subjetividade.foucault_poder_disciplina",
+              "label": "Foucault: poder, disciplina e vigilância",
+              "descricao": "Cobre poder disciplinar, vigilância, normalização, biopoder, instituições e produção de sujeitos em Foucault; NÃO cobre instituições sociais empiricamente se o foco for Sociologia.",
+              "keywords": [
+                "Foucault",
+                "poder disciplinar",
+                "disciplina",
+                "vigilância",
+                "vigilancia",
+                "panóptico",
+                "panoptico",
+                "biopoder",
+                "normalização"
+              ],
+              "keywordsContexto": [
+                "corpo",
+                "instituição",
+                "controle"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar foucault: poder, disciplina e vigilância para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social",
+                "Revolução Francesa",
+                "Revolução Industrial",
+                "Era Vargas",
+                "ditadura militar",
+                "processo histórico",
+                "cronologia",
+                "período histórico"
+              ],
+              "naoConfundirCom": [
+                "soc.politica.instituicoes_poder",
+                "fil.etica.aplicada.etica_tecnologia"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "poder_disciplina"
+            },
+            {
+              "id": "fil.contemporanea.poder_subjetividade.habermas_acao_comunicativa",
+              "label": "Habermas: razão comunicativa e esfera pública",
+              "descricao": "Cobre agir comunicativo, racionalidade comunicativa, consenso, deliberação e esfera pública; NÃO cobre mídia ou opinião pública apenas como fenômeno sociológico.",
+              "keywords": [
+                "Habermas",
+                "ação comunicativa",
+                "acao comunicativa",
+                "razão comunicativa",
+                "razao comunicativa",
+                "esfera pública",
+                "consenso",
+                "deliberação"
+              ],
+              "keywordsContexto": [
+                "diálogo",
+                "comunicação",
+                "democracia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar habermas: razão comunicativa e esfera pública para identificar a alternativa correta."
+              ],
+              "negativeHints": [
+                "pesquisa sociológica",
+                "classe social",
+                "movimento social",
+                "instituição social",
+                "cultura de massa",
+                "estratificação social",
+                "interpretação textual",
+                "função do gênero",
+                "figura de linguagem",
+                "gramática",
+                "coesão textual"
+              ],
+              "naoConfundirCom": [
+                "soc.politica.esfera_publica",
+                "fil.politica.democracia_justica.democracia_cidadania"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
+              "conceitoCanonic": "deliberacao"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "nao_classificado",
+      "assuntoLabel": "Não classificado",
+      "dominios": [
+        {
+          "id": "fil.nao_classificado",
+          "label": "Não classificado",
+          "escopos": [
+            {
+              "id": "fil.__nao_classificado",
+              "label": "Não classificado — Filosofia",
+              "descricao": "Usar quando a rota disciplinar estiver incerta, o texto estiver ilegível, a confiança for inferior ao limiar ou nenhum escopo de Filosofia for adequado; NÃO usar como atalho quando houver escopo filosófico plausível.",
+              "keywords": [
+                "não classificado",
+                "nao classificado",
+                "incerto",
+                "ilegível",
+                "ilegivél"
+              ],
+              "keywordsContexto": [],
+              "exemplosEnunciado": [
+                "Uma questão apresenta texto filosófico, situação-problema ou comparação conceitual e exige aplicar não classificado — filosofia para identificar a alternativa correta."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "regraDesempate": "Use este fallback se a questão parecer de História, Geografia, Sociologia, Português ou outra disciplina, ou se houver empate irresolúvel entre escopos filosóficos."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

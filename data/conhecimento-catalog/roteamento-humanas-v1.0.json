@@ -1,0 +1,386 @@
+{
+  "version": "1.0.0",
+  "service": "routeHumanasDiscipline",
+  "description": "Roteamento prova-agnostico de questoes de Ciencias Humanas para historia, geografia, filosofia ou sociologia antes da classificacao N2 no catalogo disciplinar correto.",
+  "principios": [
+    "Area ENEM e metadado; disciplina e catalogo/classificador; escopoId e unidade diagnostica.",
+    "Roteamento deve ocorrer antes da classificacao N2 sempre que a area agrega disciplinas.",
+    "Classificar pelo conhecimento exigido para resolver a questao, nao por palavra solta, personagem citado ou tema superficial do texto-base.",
+    "Nao usar materiaId/temaId da taxonomia legada no prompt de classificacao.",
+    "Se a rota for incerta, usar disciplinaId indefinido, allowedCatalogMateriaIds vazio e sinalizadorRevisao true."
+  ],
+  "inputFields": [
+    "textoBase",
+    "enunciado",
+    "alternativas",
+    "gabarito",
+    "banca",
+    "numero",
+    "areaBloco",
+    "disciplinaOriginalId",
+    "metadadosExtraidos"
+  ],
+  "outputSchema": {
+    "rota": {
+      "disciplinaId": "historia|geografia|filosofia|sociologia|indefinido",
+      "areaEnem": "Ciências Humanas e suas Tecnologias",
+      "criterio": "metadata|conteudo_cobrado|texto_base|inferido|incerto",
+      "confianca": "number 0-1",
+      "justificativa": "string curta explicando por que a disciplina foi escolhida",
+      "sinalizadorRevisao": "boolean"
+    },
+    "allowedCatalogs": {
+      "historia": [
+        "catalogo-historia-v1.0.0.json"
+      ],
+      "geografia": [
+        "catalogo-geografia-v1.0.0.json"
+      ],
+      "filosofia": [
+        "catalogo-filosofia-v1.0.0.json"
+      ],
+      "sociologia": [
+        "catalogo-sociologia-v1.0.0.json"
+      ],
+      "indefinido": []
+    },
+    "allowedFallbacks": {
+      "historia": "hist.__nao_classificado",
+      "geografia": "geo.__nao_classificado",
+      "filosofia": "fil.__nao_classificado",
+      "sociologia": "soc.__nao_classificado"
+    }
+  },
+  "pipeline": [
+    {
+      "step": "normalizarEntrada",
+      "description": "Concatenar textoBase, enunciado e alternativas sem resumir. Preservar comandos, fontes, imagens descritas e tabelas extraidas."
+    },
+    {
+      "step": "routeQuestionDiscipline",
+      "description": "Decidir disciplina de Humanas com base no conhecimento exigido e nos metadados estruturais confiaveis."
+    },
+    {
+      "step": "loadCatalogByRoute",
+      "description": "Carregar apenas o catalogo da disciplina roteada. Nunca enviar historia, geografia, filosofia e sociologia juntas ao classificador N2."
+    },
+    {
+      "step": "classifyQuestionByDiscipline",
+      "description": "Classificar N2 escolhendo apenas escopoId existente no catalogo disciplinar carregado."
+    },
+    {
+      "step": "validateRouteAndScope",
+      "description": "Validar que o escopoId existe, pertence ao prefixo da disciplina roteada e respeita confianca minima. Caso contrario, marcar needs_review ou fallback disciplinar."
+    }
+  ],
+  "disciplineRoutingRules": {
+    "historia": {
+      "disciplinaId": "historia",
+      "prefix": "hist.",
+      "catalog": "catalogo-historia-v1.0.0.json",
+      "fallback": "hist.__nao_classificado",
+      "quandoEscolher": [
+        "A questao exige compreender processo temporal, ruptura, permanencia, evento, periodo historico ou formacao historica.",
+        "A resolucao depende de contextualizar uma fonte/documento no tempo historico.",
+        "O foco e explicar causas, consequencias ou caracteristicas de processos historicos como colonizacao, escravidao, Vargas, ditadura, Revolucao Francesa, Guerra Fria."
+      ],
+      "sinaisFortes": [
+        "periodo historico",
+        "seculo",
+        "processo historico",
+        "colonizacao",
+        "imperio",
+        "republica",
+        "revolucao",
+        "guerra",
+        "ditadura",
+        "redemocratizacao",
+        "fontes historicas",
+        "memoria historica"
+      ],
+      "negativeHints": [
+        "mapa",
+        "escala cartografica",
+        "territorio como categoria espacial",
+        "paisagem",
+        "bacia hidrografica",
+        "clima",
+        "urbanizacao como organizacao do espaco",
+        "alienacao como conceito sociologico",
+        "fato social",
+        "etica normativa",
+        "epistemologia",
+        "argumento filosofico"
+      ],
+      "naoConfundirCom": [
+        "geografia: quando o foco for espaco, territorio, paisagem, rede, lugar, ambiente ou representacao cartografica.",
+        "sociologia: quando o foco for instituicoes, cultura, classes, movimentos sociais ou desigualdade como fenomeno social geral.",
+        "filosofia: quando o foco for autor, conceito, argumento ou problema filosofico abstrato."
+      ],
+      "regraDesempate": "Se o texto cita evento/personagem, mas a pergunta cobra organizacao espacial, sociedade ou conceito filosofico, nao escolher Historia. Escolher Historia apenas quando a temporalidade/processo historico for necessario para acertar."
+    },
+    "geografia": {
+      "disciplinaId": "geografia",
+      "prefix": "geo.",
+      "catalog": "catalogo-geografia-v1.0.0.json",
+      "fallback": "geo.__nao_classificado",
+      "quandoEscolher": [
+        "A questao exige analisar espaco geografico, territorio, paisagem, lugar, regiao, escala, redes, fluxos, cartografia ou ambiente.",
+        "A resolucao depende de mapas, graficos espaciais, dinamica populacional, urbana, agraria, economica ou geopolitica.",
+        "O foco e distribuicao espacial, impactos ambientais, uso do solo, mobilidade, urbanizacao, industrializacao espacial ou fronteiras."
+      ],
+      "sinaisFortes": [
+        "mapa",
+        "cartografia",
+        "escala",
+        "territorio",
+        "paisagem",
+        "regiao",
+        "lugar",
+        "rede urbana",
+        "fluxos",
+        "urbanizacao",
+        "metropolizacao",
+        "populacao",
+        "migração",
+        "clima",
+        "relevo",
+        "hidrografia",
+        "bioma como distribuicao espacial",
+        "agropecuaria",
+        "geopolitica",
+        "globalizacao como rede/fluxo"
+      ],
+      "negativeHints": [
+        "Revolucao Francesa",
+        "Era Vargas",
+        "ditadura militar brasileira",
+        "fonte historica",
+        "memoria historica",
+        "alienacao",
+        "fato social",
+        "solidariedade mecanica",
+        "imperativo categorico",
+        "contratualismo como teoria filosofica",
+        "interpretacao textual sem categoria espacial"
+      ],
+      "naoConfundirCom": [
+        "historia: quando o foco for processo temporal, evento, periodo ou consequencia historica.",
+        "sociologia: quando o foco for relacao social, classe, cultura, identidade ou instituicao sem espacialidade.",
+        "filosofia: quando o foco for conceito normativo, epistemologico, etico ou politico abstrato."
+      ],
+      "regraDesempate": "Se a pergunta pode ser respondida por distribuicao espacial, escala, territorio, ambiente ou mapa, escolher Geografia. Se o espaco e apenas cenario de processo historico/social/filosofico, escolher a disciplina correspondente."
+    },
+    "filosofia": {
+      "disciplinaId": "filosofia",
+      "prefix": "fil.",
+      "catalog": "catalogo-filosofia-v1.0.0.json",
+      "fallback": "fil.__nao_classificado",
+      "quandoEscolher": [
+        "A questao exige identificar, comparar ou aplicar conceito, autor, argumento ou problema filosofico.",
+        "A resolucao depende de etica, politica normativa, epistemologia, metafisica, estetica, linguagem ou existencia.",
+        "O texto-base pode ser historico ou sociologico, mas a pergunta pede tese, argumento ou conceito filosofico."
+      ],
+      "sinaisFortes": [
+        "Platao",
+        "Aristoteles",
+        "Socrates",
+        "Descartes",
+        "Kant",
+        "Hume",
+        "Locke",
+        "Hobbes",
+        "Rousseau",
+        "Marx como filosofia politica",
+        "Nietzsche",
+        "Sartre",
+        "etica",
+        "moral",
+        "conhecimento",
+        "razao",
+        "verdade",
+        "argumento",
+        "contratualismo",
+        "justica",
+        "liberdade",
+        "estetica"
+      ],
+      "negativeHints": [
+        "cronologia historica",
+        "seculo como recorte central",
+        "revolucao como evento historico",
+        "mapa",
+        "territorio",
+        "urbanizacao",
+        "classe social como fenomeno empirico",
+        "movimento social",
+        "instituicao social",
+        "dados populacionais"
+      ],
+      "naoConfundirCom": [
+        "historia: quando autor/conceito aparece apenas como parte de um periodo ou evento historico.",
+        "sociologia: quando o foco e explicar fenomeno social empirico, instituicao, classe ou movimento.",
+        "geografia: quando o foco e espaco, territorio, ambiente ou cartografia."
+      ],
+      "regraDesempate": "Escolher Filosofia apenas se o aluno precisa entender um conceito/argumento filosofico para acertar. Se o nome de um filosofo aparece so como fonte de texto, mas a pergunta cobra fato historico/social/geografico, nao escolher Filosofia."
+    },
+    "sociologia": {
+      "disciplinaId": "sociologia",
+      "prefix": "soc.",
+      "catalog": "catalogo-sociologia-v1.0.0.json",
+      "fallback": "soc.__nao_classificado",
+      "quandoEscolher": [
+        "A questao exige analisar sociedade, cultura, identidade, desigualdade, classe, trabalho, Estado, cidadania, instituicoes ou movimentos sociais como fenomenos sociais.",
+        "A resolucao depende de conceitos sociologicos, autores sociologicos ou interpretacao de dados sociais.",
+        "O foco e relacao social, estrutura social, poder social, cultura, socializacao, globalizacao social ou tecnologia e sociedade."
+      ],
+      "sinaisFortes": [
+        "sociedade",
+        "cultura",
+        "identidade",
+        "classe social",
+        "desigualdade",
+        "estratificacao",
+        "trabalho",
+        "alienacao",
+        "fato social",
+        "acao social",
+        "socializacao",
+        "movimentos sociais",
+        "genero",
+        "raca",
+        "etnia",
+        "cidadania",
+        "instituicoes sociais",
+        "Durkheim",
+        "Weber",
+        "Marx como teoria social",
+        "Bourdieu"
+      ],
+      "negativeHints": [
+        "processo cronologico",
+        "periodo historico",
+        "guerra",
+        "revolucao como evento",
+        "mapa",
+        "escala",
+        "territorio",
+        "clima",
+        "relevo",
+        "argumento etico normativo",
+        "epistemologia",
+        "metafisica"
+      ],
+      "naoConfundirCom": [
+        "historia: quando o foco for evento, periodo, processo historico ou fonte historica.",
+        "geografia: quando o foco for espaco, territorio, rede, fluxo, cartografia ou ambiente.",
+        "filosofia: quando o foco for problema normativo/abstrato ou argumento filosofico."
+      ],
+      "regraDesempate": "Escolher Sociologia quando a questao pede interpretar uma relacao, instituicao ou estrutura social. Se a desigualdade aparece como resultado espacial, escolher Geografia; se aparece como processo historico, escolher Historia; se aparece como problema moral abstrato, escolher Filosofia."
+    }
+  },
+  "globalRules": [
+    "NUNCA escolher disciplina por palavra solta isolada.",
+    "NUNCA escolher Historia apenas porque apareceu presidente, ano ou governo se a pergunta cobra territorio, mapa, sociedade ou conceito filosofico.",
+    "NUNCA escolher Geografia apenas porque apareceu pais, cidade ou regiao se a pergunta cobra processo historico.",
+    "NUNCA escolher Filosofia apenas porque o texto-base cita um filosofo; verificar se a pergunta cobra conceito/argumento filosofico.",
+    "NUNCA escolher Sociologia apenas porque aparece sociedade ou cultura; verificar se a questao cobra fenomeno social e nao processo historico, espacial ou argumento filosofico.",
+    "Quando metadado da prova contradiz fortemente o conhecimento cobrado, marcar sinalizadorRevisao true.",
+    "Se confianca da rota < 0.55, usar disciplinaId indefinido e sinalizadorRevisao true.",
+    "Se duas disciplinas ficam empatadas e nao ha criterio claro, disciplinaId indefinido.",
+    "Apos rota definida, o classificador N2 so recebe o catalogo da disciplina escolhida.",
+    "Se o escopo retornado nao pertence ao prefixo da disciplina roteada, invalidar e marcar needs_review."
+  ],
+  "tieBreakMatrix": [
+    {
+      "conflito": "historia_vs_geografia",
+      "decisao": "Se o foco e temporalidade, evento, formacao historica, ruptura ou permanencia, Historia. Se o foco e espaco, territorio, mapa, rede, escala, ambiente ou distribuicao espacial, Geografia."
+    },
+    {
+      "conflito": "historia_vs_sociologia",
+      "decisao": "Se o foco e processo historico situado no tempo, Historia. Se o foco e conceito social, instituicao, classe, cultura, identidade ou movimento social como fenomeno, Sociologia."
+    },
+    {
+      "conflito": "historia_vs_filosofia",
+      "decisao": "Se o foco e periodo/evento, Historia. Se o foco e conceito, autor, tese ou argumento filosofico, Filosofia."
+    },
+    {
+      "conflito": "geografia_vs_sociologia",
+      "decisao": "Se o foco e espacial/territorial/cartografico/ambiental, Geografia. Se o foco e relacao social/institucional/cultural sem espacialidade determinante, Sociologia."
+    },
+    {
+      "conflito": "filosofia_vs_sociologia",
+      "decisao": "Se o foco e normativo, epistemologico, ontologico, etico ou argumentativo, Filosofia. Se o foco e fenomeno social empirico, Sociologia."
+    },
+    {
+      "conflito": "filosofia_vs_geografia",
+      "decisao": "Se o foco e conceito filosofico, Filosofia. Se o foco e espaco, territorio, ambiente ou cartografia, Geografia."
+    }
+  ],
+  "validationRules": {
+    "prefixByDisciplina": {
+      "historia": "hist.",
+      "geografia": "geo.",
+      "filosofia": "fil.",
+      "sociologia": "soc."
+    },
+    "fallbackByDisciplina": {
+      "historia": "hist.__nao_classificado",
+      "geografia": "geo.__nao_classificado",
+      "filosofia": "fil.__nao_classificado",
+      "sociologia": "soc.__nao_classificado"
+    },
+    "minRouteConfidence": 0.55,
+    "minClassificationConfidence": 0.45,
+    "onInvalidRoute": {
+      "disciplinaId": "indefinido",
+      "status": "needs_review",
+      "reason": "Rota disciplinar incerta ou contraditoria"
+    },
+    "onScopePrefixMismatch": {
+      "status": "needs_review",
+      "reason": "Escopo N2 retornado nao pertence ao prefixo da disciplina roteada"
+    }
+  },
+  "auditFlags": [
+    "rota_indefinida",
+    "confianca_rota_baixa",
+    "escopo_fora_da_disciplina",
+    "fallback_usado",
+    "metadado_conflitante_com_conteudo",
+    "palavra_soltas_sem_conhecimento_cobrado",
+    "classificacao_sem_conhecimento_exigido"
+  ],
+  "examples": [
+    {
+      "caso": "Texto sobre Era Vargas cita industrializacao, mas pergunta pede politica trabalhista e CLT.",
+      "rotaEsperada": "historia",
+      "justificativa": "Conhecimento exigido e processo historico-politico do varguismo, nao economia espacial."
+    },
+    {
+      "caso": "Mapa mostra crescimento urbano e periferizacao em metropole brasileira.",
+      "rotaEsperada": "geografia",
+      "justificativa": "Resolucao depende de organizacao espacial urbana e desigualdade territorial."
+    },
+    {
+      "caso": "Trecho de Kant pede identificar fundamento moral da acao por dever.",
+      "rotaEsperada": "filosofia",
+      "justificativa": "Resolucao depende de conceito etico kantiano."
+    },
+    {
+      "caso": "Texto discute alienacao no trabalho e classes sociais.",
+      "rotaEsperada": "sociologia",
+      "justificativa": "Resolucao depende de conceito sociologico de trabalho e estrutura social."
+    },
+    {
+      "caso": "Texto sobre Guerra Fria menciona EUA e URSS, mas pergunta cobra bipolaridade historica.",
+      "rotaEsperada": "historia",
+      "justificativa": "Conhecimento exigido e processo historico de pos-guerra e mundo bipolar."
+    },
+    {
+      "caso": "Grafico de migracao interna pede interpretar rede urbana e atratividade regional.",
+      "rotaEsperada": "geografia",
+      "justificativa": "Conhecimento exigido e dinamica espacial populacional."
+    }
+  ]
+}

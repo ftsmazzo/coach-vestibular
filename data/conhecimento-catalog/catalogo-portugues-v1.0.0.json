@@ -1,0 +1,2045 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.0.0",
+  "materiaId": "portugues",
+  "materiaLabel": "Português",
+  "areaEnem": "Linguagens, Códigos e suas Tecnologias",
+  "notas": "Catálogo disciplinar de Português v1.0.0, extraído da arquitetura agregada de Linguagens e separado de Inglês/Espanhol. Área ENEM é metadado; escopoId pt.* é unidade diagnóstica. Inclui leitura, gêneros, literatura, gramática, semântica, artes e tecnologias da linguagem enquanto não houver catálogo art.* separado.",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "Aplica-se a N0–N2. Em N3 ver politicaN3.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "roteamentoObrigatorio": {
+      "etapa1": "Determinar se a questão é Português, Inglês ou Espanhol antes de classificar N2.",
+      "etapa2": "Enviar ao classificador apenas este catálogo quando disciplinaId=portugues.",
+      "regraCritica": "O português do comando não define Português. Se o texto-base/competência cobrada for Inglês ou Espanhol, usar os catálogos ing.* ou esp.*."
+    },
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2
+    },
+    "politicaN3": "A IA escolhe APENAS IDs em N0–N2. Em N3 (conhecimentoExigido) PROPÕE texto livre para revisão humana; N3 nunca é um ID.",
+    "regraDesempate": "Aplicar negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confiança < confiancaMinima → pt.__nao_classificado.",
+    "pesos": {
+      "descricao": "regra mais forte: o que o escopo cobre e não cobre",
+      "exemplosEnunciado": "referência semântica, não match literal",
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "negativeHints": "penalidade: presença do termo reduz a probabilidade deste escopo"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "interpretacao",
+      "assuntoLabel": "Interpretação, leitura e gêneros textuais",
+      "dominios": [
+        {
+          "id": "pt.interpretacao.leitura",
+          "label": "Compreensão, inferência e textualidade",
+          "escopos": [
+            {
+              "id": "pt.interpretacao.leitura.compreensao_global",
+              "label": "Compreensão global do texto",
+              "descricao": "Cobre identificação de tema, tese, finalidade geral e sentido global de texto em português. NÃO cobre inferência localizada, análise gramatical ou leitura de texto em língua estrangeira.",
+              "keywords": [
+                "ideia central",
+                "tema do texto",
+                "tese central",
+                "sentido global",
+                "finalidade do texto",
+                "compreensão global"
+              ],
+              "keywordsContexto": [
+                "em síntese",
+                "o texto defende",
+                "assunto principal"
+              ],
+              "negativeHints": [
+                "main idea",
+                "idea principal",
+                "texto-base em inglês",
+                "texto-base em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação de tema, tese, finalidade geral e sentido global de texto em português."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.inferencia_implicito",
+                "pt.generos.argumentacao.tese_argumento"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.interpretacao.leitura.inferencia_implicito",
+              "label": "Inferência e sentido implícito",
+              "descricao": "Cobre pressupostos, subentendidos, ironia, sentidos implícitos e informações inferidas em texto em português. NÃO cobre simples resumo global nem gramática normativa.",
+              "keywords": [
+                "inferência",
+                "implícito",
+                "subentendido",
+                "pressuposto",
+                "entrelinhas",
+                "depreende-se",
+                "sugere que"
+              ],
+              "keywordsContexto": [
+                "ironia",
+                "não dito",
+                "pista textual"
+              ],
+              "negativeHints": [
+                "main idea",
+                "idea principal",
+                "pretérito perfecto",
+                "present perfect"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre pressupostos, subentendidos, ironia, sentidos implícitos e informações inferidas em texto em português."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.compreensao_global",
+                "pt.semantica.significacao.denotacao_conotacao"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.interpretacao.leitura.localizacao_informacao",
+              "label": "Localização de informação explícita",
+              "descricao": "Cobre identificação de informação explicitamente presente no texto, fonte, dado, referência ou afirmação literal. NÃO cobre inferência, interpretação global ou conteúdo científico citado no texto.",
+              "keywords": [
+                "de acordo com o texto",
+                "informação explícita",
+                "localizar informação",
+                "fonte citada",
+                "afirma-se no texto"
+              ],
+              "keywordsContexto": [
+                "segundo o autor",
+                "conforme a fonte",
+                "trecho informa"
+              ],
+              "negativeHints": [
+                "WHO",
+                "OMS como tema de saúde se a questão for idioma estrangeiro",
+                "conteúdo de biologia"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação de informação explicitamente presente no texto, fonte, dado, referência ou afirmação literal."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.inferencia_implicito",
+                "pt.generos.jornalistico.noticia_reportagem"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.interpretacao.leitura.coesao_referencia",
+              "label": "Coesão, coerência e referenciação",
+              "descricao": "Cobre conectivos, anáfora, catáfora, retomada pronominal, progressão temática e relações lógico-textuais em português. NÃO cobre função sintática normativa do pronome fora do funcionamento textual.",
+              "keywords": [
+                "coesão",
+                "coerência",
+                "conectivo",
+                "retomada",
+                "referenciação",
+                "anáfora",
+                "catáfora",
+                "progressão temática"
+              ],
+              "keywordsContexto": [
+                "pronome retoma",
+                "operador argumentativo",
+                "relação de causa",
+                "relação de oposição"
+              ],
+              "negativeHints": [
+                "cohesion and reference",
+                "cohesión y referencia",
+                "relative pronoun em inglês"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre conectivos, anáfora, catáfora, retomada pronominal, progressão temática e relações lógico-textuais em português."
+              ],
+              "naoConfundirCom": [
+                "pt.gramatica.morfologia.pronomes_colocacao",
+                "pt.generos.argumentacao.operadores_argumentativos"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.interpretacao.leitura.sentido_vocabulario_contexto",
+              "label": "Sentido contextual de palavra ou expressão",
+              "descricao": "Cobre interpretação do sentido de palavra, expressão, gíria ou construção no contexto de texto em português. NÃO cobre vocabulário de Inglês/Espanhol nem formação morfológica como regra gramatical.",
+              "keywords": [
+                "sentido da expressão",
+                "significado no contexto",
+                "vocábulo",
+                "expressão destacada",
+                "sentido contextual"
+              ],
+              "keywordsContexto": [
+                "no trecho",
+                "a palavra indica",
+                "equivale a"
+              ],
+              "negativeHints": [
+                "meaning of the expression",
+                "sentido de expresión en español",
+                "false cognates"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre interpretação do sentido de palavra, expressão, gíria ou construção no contexto de texto em português."
+              ],
+              "naoConfundirCom": [
+                "pt.semantica.significacao.polissemia_ambiguidade",
+                "pt.semantica.significacao.denotacao_conotacao"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.interpretacao.leitura.intertextualidade",
+              "label": "Intertextualidade e diálogo entre textos",
+              "descricao": "Cobre paródia, paráfrase, citação, alusão, apropriação e reescritura entre textos em português. NÃO cobre apenas comparação temática simples em língua estrangeira.",
+              "keywords": [
+                "intertextualidade",
+                "paródia",
+                "paráfrase",
+                "citação",
+                "alusão",
+                "releitura",
+                "dialoga com"
+              ],
+              "keywordsContexto": [
+                "texto-fonte",
+                "apropriação",
+                "ressignificação"
+              ],
+              "negativeHints": [
+                "comparing two texts",
+                "comparación de textos",
+                "texto em inglês",
+                "texto em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre paródia, paráfrase, citação, alusão, apropriação e reescritura entre textos em português."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.multimodal.multimodalidade",
+                "pt.literatura.teoria.metalinguagem_intertextualidade"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "pt.generos.discurso",
+          "label": "Gêneros, discurso e situação comunicativa",
+          "escopos": [
+            {
+              "id": "pt.generos.discurso.funcoes_linguagem",
+              "label": "Funções da linguagem",
+              "descricao": "Cobre funções referencial, emotiva, conativa, poética, fática e metalinguística e predominância comunicativa. NÃO cobre reconhecimento de gênero textual se a função não for o foco.",
+              "keywords": [
+                "função referencial",
+                "função emotiva",
+                "função conativa",
+                "função poética",
+                "função metalinguística",
+                "função fática"
+              ],
+              "keywordsContexto": [
+                "emissor",
+                "receptor",
+                "canal",
+                "código",
+                "referente"
+              ],
+              "negativeHints": [
+                "gênero textual como foco",
+                "notícia",
+                "propaganda"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre funções referencial, emotiva, conativa, poética, fática e metalinguística e predominância comunicativa."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.jornalistico.publicidade_propaganda",
+                "pt.literatura.teoria.metalinguagem_intertextualidade"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.generos.discurso.variacao_linguistica",
+              "label": "Variação linguística e preconceito linguístico",
+              "descricao": "Cobre registros, norma-padrão, norma culta, oralidade, regionalismos, gírias, adequação e preconceito linguístico. NÃO cobre erro ortográfico isolado.",
+              "keywords": [
+                "variação linguística",
+                "preconceito linguístico",
+                "norma-padrão",
+                "registro informal",
+                "regionalismo",
+                "oralidade",
+                "gíria"
+              ],
+              "keywordsContexto": [
+                "fala popular",
+                "adequação linguística",
+                "norma culta"
+              ],
+              "negativeHints": [
+                "língua estrangeira",
+                "false cognates",
+                "falsos cognatos"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre registros, norma-padrão, norma culta, oralidade, regionalismos, gírias, adequação e preconceito linguístico."
+              ],
+              "naoConfundirCom": [
+                "pt.gramatica.ortografia.ortografia_acentuacao"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.generos.jornalistico.noticia_reportagem",
+              "label": "Notícia e reportagem",
+              "descricao": "Cobre notícia, reportagem, lead, fato, fonte jornalística, objetividade e aprofundamento informativo. NÃO cobre texto opinativo/editorial.",
+              "keywords": [
+                "notícia",
+                "reportagem",
+                "manchete",
+                "lead",
+                "jornalismo",
+                "fonte jornalística",
+                "fato"
+              ],
+              "keywordsContexto": [
+                "veículo de imprensa",
+                "informação",
+                "entrevista"
+              ],
+              "negativeHints": [
+                "editorial",
+                "artigo de opinião",
+                "tese",
+                "advertisement"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre notícia, reportagem, lead, fato, fonte jornalística, objetividade e aprofundamento informativo."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.argumentacao.artigo_opiniao_editorial",
+                "pt.interpretacao.leitura.localizacao_informacao"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.generos.argumentacao.artigo_opiniao_editorial",
+              "label": "Artigo de opinião e editorial",
+              "descricao": "Cobre tese, argumento, ponto de vista, posicionamento autoral e estratégia persuasiva em artigo de opinião/editorial. NÃO cobre notícia/reportagem informativa.",
+              "keywords": [
+                "artigo de opinião",
+                "editorial",
+                "argumentação",
+                "tese",
+                "ponto de vista",
+                "argumento",
+                "opinião do autor"
+              ],
+              "keywordsContexto": [
+                "defende que",
+                "posicionamento",
+                "convencer"
+              ],
+              "negativeHints": [
+                "lead",
+                "notícia",
+                "reportagem",
+                "main idea"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre tese, argumento, ponto de vista, posicionamento autoral e estratégia persuasiva em artigo de opinião/editorial."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.jornalistico.noticia_reportagem",
+                "pt.generos.argumentacao.tese_argumento"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.generos.jornalistico.publicidade_propaganda",
+              "label": "Publicidade, propaganda e campanha",
+              "descricao": "Cobre anúncio, slogan, campanha, marketing e estratégias persuasivas verbais/visuais. NÃO cobre função conativa abstrata se o gênero não é publicitário.",
+              "keywords": [
+                "publicidade",
+                "propaganda",
+                "anúncio",
+                "slogan",
+                "campanha",
+                "persuasão",
+                "marketing"
+              ],
+              "keywordsContexto": [
+                "consumidor",
+                "convencer",
+                "chamada",
+                "imagem do produto"
+              ],
+              "negativeHints": [
+                "notícia",
+                "reportagem",
+                "poema"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre anúncio, slogan, campanha, marketing e estratégias persuasivas verbais/visuais."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.discurso.funcoes_linguagem",
+                "pt.generos.multimodal.multimodalidade"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.generos.discurso.carta_documento",
+              "label": "Carta, e-mail e documentos",
+              "descricao": "Cobre carta, e-mail, ofício, memorando, abaixo-assinado, documentos oficiais, interlocução e formalidade. NÃO cobre apenas variação linguística sem foco no gênero.",
+              "keywords": [
+                "carta",
+                "e-mail",
+                "ofício",
+                "memorando",
+                "abaixo-assinado",
+                "documento oficial",
+                "destinatário"
+              ],
+              "keywordsContexto": [
+                "vocativo",
+                "saudação",
+                "despedida",
+                "formalidade"
+              ],
+              "negativeHints": [
+                "redação ENEM",
+                "proposta de intervenção"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre carta, e-mail, ofício, memorando, abaixo-assinado, documentos oficiais, interlocução e formalidade."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.discurso.variacao_linguistica"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.generos.expositivo.divulgacao_cientifica_instrucional",
+              "label": "Divulgação científica e texto instrucional",
+              "descricao": "Cobre divulgação científica, manual, instrução, explicação técnica e popularização do conhecimento. NÃO cobre o conteúdo científico em si se a questão for de Natureza.",
+              "keywords": [
+                "divulgação científica",
+                "texto científico",
+                "manual",
+                "instrução",
+                "experimento",
+                "popularização da ciência"
+              ],
+              "keywordsContexto": [
+                "pesquisa",
+                "estudo",
+                "procedimento",
+                "cientistas"
+              ],
+              "negativeHints": [
+                "questão de biologia",
+                "questão de química",
+                "conteúdo disciplinar de ciências"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre divulgação científica, manual, instrução, explicação técnica e popularização do conhecimento."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.compreensao_global"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.generos.multimodal.multimodalidade",
+              "label": "Texto multimodal, charge, tirinha e infográfico",
+              "descricao": "Cobre leitura integrada de linguagem verbal e não verbal em charge, tirinha, meme, infográfico, cartaz e hipertexto. NÃO cobre movimento artístico ou obra de arte como objeto estético-histórico.",
+              "keywords": [
+                "multimodalidade",
+                "charge",
+                "tirinha",
+                "meme",
+                "infográfico",
+                "cartaz",
+                "imagem e texto",
+                "hipertexto"
+              ],
+              "keywordsContexto": [
+                "linguagem verbal e não verbal",
+                "efeito de humor",
+                "elementos visuais"
+              ],
+              "negativeHints": [
+                "movimento artístico",
+                "modernismo",
+                "barroco"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre leitura integrada de linguagem verbal e não verbal em charge, tirinha, meme, infográfico, cartaz e hipertexto."
+              ],
+              "naoConfundirCom": [
+                "pt.artes.visuais.leitura_imagem",
+                "pt.generos.jornalistico.publicidade_propaganda"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "pt.generos.argumentacao",
+          "label": "Argumentação e organização discursiva",
+          "escopos": [
+            {
+              "id": "pt.generos.argumentacao.tese_argumento",
+              "label": "Tese, argumento e contra-argumento",
+              "descricao": "Cobre identificação de tese, argumentos, contra-argumentos, conclusão e sustentação de ponto de vista. NÃO cobre apenas tema geral do texto.",
+              "keywords": [
+                "tese",
+                "argumento",
+                "contra-argumento",
+                "ponto de vista",
+                "conclusão argumentativa",
+                "defesa de ideia"
+              ],
+              "keywordsContexto": [
+                "sustentar",
+                "refutar",
+                "convencer"
+              ],
+              "negativeHints": [
+                "lead",
+                "notícia factual",
+                "main idea"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação de tese, argumentos, contra-argumentos, conclusão e sustentação de ponto de vista."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.compreensao_global",
+                "pt.generos.argumentacao.artigo_opiniao_editorial"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.generos.argumentacao.estrategias_persuasivas",
+              "label": "Estratégias argumentativas e persuasivas",
+              "descricao": "Cobre uso de autoridade, exemplificação, comparação, dados, causa/consequência, apelo emocional e recursos de persuasão. NÃO cobre somente função da linguagem.",
+              "keywords": [
+                "estratégia argumentativa",
+                "persuasão",
+                "argumento de autoridade",
+                "exemplo",
+                "comparação",
+                "dados estatísticos"
+              ],
+              "keywordsContexto": [
+                "convencimento",
+                "recurso persuasivo",
+                "efeito argumentativo"
+              ],
+              "negativeHints": [
+                "função conativa isolada",
+                "propaganda como gênero"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre uso de autoridade, exemplificação, comparação, dados, causa/consequência, apelo emocional e recursos de persuasão."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.discurso.funcoes_linguagem",
+                "pt.generos.jornalistico.publicidade_propaganda"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.generos.argumentacao.operadores_argumentativos",
+              "label": "Operadores argumentativos e relações lógico-discursivas",
+              "descricao": "Cobre conectores argumentativos, oposição, concessão, causa, consequência, conclusão e progressão argumentativa. NÃO cobre coesão referencial sem valor argumentativo.",
+              "keywords": [
+                "operador argumentativo",
+                "conectivo",
+                "portanto",
+                "contudo",
+                "embora",
+                "pois",
+                "consequentemente"
+              ],
+              "keywordsContexto": [
+                "relação lógica",
+                "concessão",
+                "oposição",
+                "conclusão"
+              ],
+              "negativeHints": [
+                "grammar in context",
+                "cohesion and reference em inglês"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre conectores argumentativos, oposição, concessão, causa, consequência, conclusão e progressão argumentativa."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.coesao_referencia"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.generos.argumentacao.proposta_intervencao_redacao",
+              "label": "Proposta de intervenção e intervenção social",
+              "descricao": "Cobre reconhecimento de proposta de intervenção, agente, ação, meio, finalidade e detalhamento em textos argumentativos. NÃO cobre políticas públicas como conteúdo de Humanas se a questão exigir conhecimento histórico/sociológico.",
+              "keywords": [
+                "proposta de intervenção",
+                "agente",
+                "ação",
+                "meio",
+                "finalidade",
+                "detalhamento",
+                "intervenção social"
+              ],
+              "keywordsContexto": [
+                "redação ENEM",
+                "solução para o problema",
+                "medida proposta"
+              ],
+              "negativeHints": [
+                "política social como conteúdo histórico",
+                "movimento social sociológico"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre reconhecimento de proposta de intervenção, agente, ação, meio, finalidade e detalhamento em textos argumentativos."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.argumentacao.tese_argumento"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "literatura",
+      "assuntoLabel": "Literatura",
+      "dominios": [
+        {
+          "id": "pt.literatura.periodos",
+          "label": "Literatura brasileira por período",
+          "escopos": [
+            {
+              "id": "pt.literatura.periodos.colonial_barroco_arcadismo",
+              "label": "Quinhentismo, Barroco e Arcadismo",
+              "descricao": "Cobre literatura colonial, informação/catequese, Barroco, Arcadismo, autores, temas e traços estéticos do período. NÃO cobre Barroco como patrimônio histórico ou arte visual isolada.",
+              "keywords": [
+                "quinhentismo",
+                "barroco",
+                "arcadismo",
+                "Gregório de Matos",
+                "Padre Vieira",
+                "Tomás Antônio Gonzaga",
+                "bucolismo"
+              ],
+              "keywordsContexto": [
+                "cultismo",
+                "conceptismo",
+                "carpe diem",
+                "contrarreforma"
+              ],
+              "negativeHints": [
+                "história colonial como processo histórico",
+                "arte barroca como arquitetura"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre literatura colonial, informação/catequese, barroco, arcadismo, autores, temas e traços estéticos do período."
+              ],
+              "naoConfundirCom": [
+                "pt.artes.visuais.movimentos_artisticos"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.periodos.romantismo",
+              "label": "Romantismo",
+              "descricao": "Cobre indianismo, nacionalismo, sentimentalismo, ultrarromantismo, condoreirismo e romance romântico brasileiro. NÃO cobre romantização como sentido comum.",
+              "keywords": [
+                "romantismo",
+                "indianismo",
+                "nacionalismo literário",
+                "José de Alencar",
+                "Gonçalves Dias",
+                "Álvares de Azevedo",
+                "Castro Alves"
+              ],
+              "keywordsContexto": [
+                "idealização",
+                "subjetivismo",
+                "mal do século"
+              ],
+              "negativeHints": [
+                "nacionalismo político em História"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre indianismo, nacionalismo, sentimentalismo, ultrarromantismo, condoreirismo e romance romântico brasileiro."
+              ],
+              "naoConfundirCom": [
+                "pt.literatura.periodos.realismo_naturalismo_parnasianismo"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.periodos.realismo_naturalismo_parnasianismo",
+              "label": "Realismo, Naturalismo e Parnasianismo",
+              "descricao": "Cobre crítica social realista, determinismo naturalista, objetividade e formalismo parnasiano. NÃO cobre realismo como interpretação literal de texto não literário.",
+              "keywords": [
+                "realismo",
+                "naturalismo",
+                "parnasianismo",
+                "Machado de Assis",
+                "Aluísio Azevedo",
+                "Olavo Bilac",
+                "determinismo"
+              ],
+              "keywordsContexto": [
+                "crítica social",
+                "objetividade",
+                "impassibilidade"
+              ],
+              "negativeHints": [
+                "realidade social como Sociologia",
+                "descrição objetiva de reportagem"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre crítica social realista, determinismo naturalista, objetividade e formalismo parnasiano."
+              ],
+              "naoConfundirCom": [
+                "pt.literatura.periodos.romantismo",
+                "pt.literatura.periodos.modernismo_22"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.periodos.simbolismo",
+              "label": "Simbolismo",
+              "descricao": "Cobre musicalidade, subjetivismo, misticismo, sugestão, sinestesia e poesia simbolista. NÃO cobre figura de linguagem isolada sem vínculo com escola literária.",
+              "keywords": [
+                "simbolismo",
+                "Cruz e Sousa",
+                "Alphonsus de Guimaraens",
+                "musicalidade",
+                "misticismo",
+                "sugestão",
+                "sinestesia"
+              ],
+              "keywordsContexto": [
+                "espiritualidade",
+                "subjetividade",
+                "nebulosidade"
+              ],
+              "negativeHints": [
+                "figura de linguagem sem escola literária"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre musicalidade, subjetivismo, misticismo, sugestão, sinestesia e poesia simbolista."
+              ],
+              "naoConfundirCom": [
+                "pt.semantica.recursos.figuras_linguagem"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.periodos.premodernismo",
+              "label": "Pré-Modernismo",
+              "descricao": "Cobre autores e obras de transição, crítica social, regionalismo, denúncia social e linguagem pré-modernista. NÃO cobre Modernismo de 1922.",
+              "keywords": [
+                "pré-modernismo",
+                "Euclides da Cunha",
+                "Lima Barreto",
+                "Monteiro Lobato",
+                "Augusto dos Anjos",
+                "Os Sertões"
+              ],
+              "keywordsContexto": [
+                "denúncia social",
+                "regionalismo crítico",
+                "transição"
+              ],
+              "negativeHints": [
+                "Semana de Arte Moderna",
+                "modernismo de 1922"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre autores e obras de transição, crítica social, regionalismo, denúncia social e linguagem pré-modernista."
+              ],
+              "naoConfundirCom": [
+                "pt.literatura.periodos.modernismo_22"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.periodos.modernismo_22",
+              "label": "Modernismo de 1922 e primeira fase",
+              "descricao": "Cobre Semana de 22, vanguardas, ruptura formal, nacionalismo crítico e primeira fase modernista. NÃO cobre romance regionalista de 1930.",
+              "keywords": [
+                "modernismo",
+                "Semana de Arte Moderna",
+                "1922",
+                "Mário de Andrade",
+                "Oswald de Andrade",
+                "antropofagia",
+                "vanguardas"
+              ],
+              "keywordsContexto": [
+                "ruptura",
+                "verso livre",
+                "nacionalismo crítico"
+              ],
+              "negativeHints": [
+                "romance de 30",
+                "Estado Novo"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre semana de 22, vanguardas, ruptura formal, nacionalismo crítico e primeira fase modernista."
+              ],
+              "naoConfundirCom": [
+                "pt.artes.visuais.movimentos_artisticos",
+                "pt.literatura.periodos.modernismo_30_45"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.periodos.modernismo_30_45",
+              "label": "Modernismo de 1930 e geração de 45",
+              "descricao": "Cobre romance regionalista, poesia social, amadurecimento modernista, geração de 45 e autores do período. NÃO cobre primeira fase modernista de ruptura.",
+              "keywords": [
+                "romance de 30",
+                "Graciliano Ramos",
+                "Jorge Amado",
+                "Rachel de Queiroz",
+                "Carlos Drummond de Andrade",
+                "João Cabral"
+              ],
+              "keywordsContexto": [
+                "regionalismo",
+                "poesia social",
+                "geração de 45"
+              ],
+              "negativeHints": [
+                "Semana de 22",
+                "antropofagia"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre romance regionalista, poesia social, amadurecimento modernista, geração de 45 e autores do período."
+              ],
+              "naoConfundirCom": [
+                "pt.literatura.periodos.modernismo_22"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.periodos.contemporanea",
+              "label": "Literatura contemporânea",
+              "descricao": "Cobre literatura brasileira contemporânea, pluralidade de vozes, pós-modernidade, literatura marginal, feminina, negra, indígena e novas formas narrativas. NÃO cobre sociologia da identidade sem análise literária.",
+              "keywords": [
+                "literatura contemporânea",
+                "pós-modernismo",
+                "literatura marginal",
+                "literatura feminina",
+                "literatura negra",
+                "literatura indígena"
+              ],
+              "keywordsContexto": [
+                "pluralidade",
+                "fragmentação",
+                "vozes periféricas"
+              ],
+              "negativeHints": [
+                "identidade como Sociologia",
+                "movimento social"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre literatura brasileira contemporânea, pluralidade de vozes, pós-modernidade, literatura marginal, feminina, negra, indígena e novas formas narrativas."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.discurso.variacao_linguistica"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "pt.literatura.teoria",
+          "label": "Teoria literária e análise estética",
+          "escopos": [
+            {
+              "id": "pt.literatura.teoria.generos_literarios",
+              "label": "Gêneros literários",
+              "descricao": "Cobre épico/narrativo, lírico, dramático e formas literárias. NÃO cobre gêneros textuais não literários como notícia ou propaganda.",
+              "keywords": [
+                "gênero literário",
+                "lírico",
+                "épico",
+                "dramático",
+                "narrativo",
+                "poema",
+                "teatro"
+              ],
+              "keywordsContexto": [
+                "forma literária",
+                "eu lírico",
+                "rubrica"
+              ],
+              "negativeHints": [
+                "notícia",
+                "reportagem",
+                "artigo de opinião"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre épico/narrativo, lírico, dramático e formas literárias."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.jornalistico.noticia_reportagem"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.teoria.narratologia",
+              "label": "Narrador, foco narrativo, tempo e espaço",
+              "descricao": "Cobre narrador, foco narrativo, personagem, enredo, tempo narrativo, espaço e conflito. NÃO cobre reconhecimento genérico de crônica/conto como gênero textual.",
+              "keywords": [
+                "narrador",
+                "foco narrativo",
+                "personagem",
+                "enredo",
+                "tempo narrativo",
+                "espaço narrativo",
+                "conflito"
+              ],
+              "keywordsContexto": [
+                "primeira pessoa",
+                "terceira pessoa",
+                "narrador observador"
+              ],
+              "negativeHints": [
+                "gênero crônica sem análise técnica"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre narrador, foco narrativo, personagem, enredo, tempo narrativo, espaço e conflito."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.jornalistico.noticia_reportagem"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.teoria.eu_lirico_poema",
+              "label": "Eu lírico e análise de poema",
+              "descricao": "Cobre voz poética, subjetividade lírica, recursos poéticos, verso, estrofe, ritmo e sentido do poema. NÃO cobre função poética abstrata sem análise literária.",
+              "keywords": [
+                "eu lírico",
+                "voz poética",
+                "poema",
+                "verso",
+                "estrofe",
+                "ritmo",
+                "subjetividade lírica"
+              ],
+              "keywordsContexto": [
+                "imagem poética",
+                "sonoridade",
+                "lirismo"
+              ],
+              "negativeHints": [
+                "função poética como função da linguagem"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre voz poética, subjetividade lírica, recursos poéticos, verso, estrofe, ritmo e sentido do poema."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.discurso.funcoes_linguagem"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.teoria.recursos_estilisticos_literarios",
+              "label": "Recursos estilísticos literários",
+              "descricao": "Cobre recursos expressivos em texto literário, como metáfora, ironia, antítese, hipérbole, comparação e construção estética. NÃO cobre figura de linguagem isolada em texto não literário.",
+              "keywords": [
+                "metáfora",
+                "ironia",
+                "antítese",
+                "hipérbole",
+                "comparação",
+                "estilo literário",
+                "expressividade"
+              ],
+              "keywordsContexto": [
+                "imagem",
+                "efeito estético",
+                "linguagem figurada"
+              ],
+              "negativeHints": [
+                "figura de linguagem em propaganda",
+                "sentido contextual não literário"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre recursos expressivos em texto literário, como metáfora, ironia, antítese, hipérbole, comparação e construção estética."
+              ],
+              "naoConfundirCom": [
+                "pt.semantica.recursos.figuras_linguagem"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.literatura.teoria.metalinguagem_intertextualidade",
+              "label": "Metalinguagem e intertextualidade literária",
+              "descricao": "Cobre textos literários que refletem sobre a própria linguagem/literatura ou dialogam com outras obras literárias. NÃO cobre intertextualidade em anúncio, tirinha ou texto jornalístico.",
+              "keywords": [
+                "metalinguagem",
+                "intertextualidade literária",
+                "poema sobre poesia",
+                "reescrita literária",
+                "paródia literária"
+              ],
+              "keywordsContexto": [
+                "arte poética",
+                "diálogo literário",
+                "texto-fonte"
+              ],
+              "negativeHints": [
+                "intertextualidade publicitária",
+                "meme"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre textos literários que refletem sobre a própria linguagem/literatura ou dialogam com outras obras literárias."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.intertextualidade"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "gramatica",
+      "assuntoLabel": "Gramática e norma-padrão",
+      "dominios": [
+        {
+          "id": "pt.gramatica.morfologia",
+          "label": "Morfologia e classes de palavras",
+          "escopos": [
+            {
+              "id": "pt.gramatica.morfologia.classes_palavras",
+              "label": "Classes de palavras",
+              "descricao": "Cobre identificação e função de substantivos, adjetivos, advérbios, preposições, conjunções e demais classes. NÃO cobre análise sintática completa da oração.",
+              "keywords": [
+                "classe gramatical",
+                "substantivo",
+                "adjetivo",
+                "advérbio",
+                "preposição",
+                "conjunção",
+                "artigo"
+              ],
+              "keywordsContexto": [
+                "morfologia",
+                "valor morfológico",
+                "classe de palavra"
+              ],
+              "negativeHints": [
+                "parts of speech em inglês",
+                "clases de palabras em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação e função de substantivos, adjetivos, advérbios, preposições, conjunções e demais classes."
+              ],
+              "naoConfundirCom": [
+                "pt.gramatica.sintaxe.termos_oracao"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.gramatica.morfologia.verbos_tempos_modos",
+              "label": "Verbos, tempos e modos verbais",
+              "descricao": "Cobre tempos, modos, aspecto verbal, voz verbal, conjugação e valor semântico de formas verbais em português. NÃO cobre tempos verbais de Inglês/Espanhol.",
+              "keywords": [
+                "verbo",
+                "tempo verbal",
+                "modo verbal",
+                "subjuntivo",
+                "indicativo",
+                "imperativo",
+                "voz passiva",
+                "aspecto verbal"
+              ],
+              "keywordsContexto": [
+                "pretérito",
+                "futuro",
+                "presente",
+                "locução verbal"
+              ],
+              "negativeHints": [
+                "pretérito perfecto",
+                "present perfect",
+                "subjunctive em inglês/espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre tempos, modos, aspecto verbal, voz verbal, conjugação e valor semântico de formas verbais em português."
+              ],
+              "naoConfundirCom": [
+                "pt.gramatica.sintaxe.termos_oracao"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.gramatica.morfologia.pronomes_colocacao",
+              "label": "Pronomes e colocação pronominal",
+              "descricao": "Cobre pronomes, referenciação gramatical, colocação pronominal, próclise, mesóclise e ênclise em português. NÃO cobre retomada textual se o foco for coesão discursiva.",
+              "keywords": [
+                "pronome",
+                "colocação pronominal",
+                "próclise",
+                "mesóclise",
+                "ênclise",
+                "pronome relativo",
+                "pronome oblíquo"
+              ],
+              "keywordsContexto": [
+                "retoma termo",
+                "função pronominal",
+                "clítico"
+              ],
+              "negativeHints": [
+                "relative pronoun em inglês",
+                "pronombre em espanhol",
+                "se espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre pronomes, referenciação gramatical, colocação pronominal, próclise, mesóclise e ênclise em português."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.coesao_referencia"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.gramatica.morfologia.formacao_palavras",
+              "label": "Formação de palavras e morfemas",
+              "descricao": "Cobre prefixação, sufixação, composição, derivação, radical, afixos e neologismos em português. NÃO cobre sentido contextual isolado de palavra.",
+              "keywords": [
+                "formação de palavras",
+                "prefixo",
+                "sufixo",
+                "derivação",
+                "composição",
+                "radical",
+                "neologismo"
+              ],
+              "keywordsContexto": [
+                "morfema",
+                "afixo",
+                "processo de formação"
+              ],
+              "negativeHints": [
+                "vocabulary em inglês",
+                "falsos cognatos"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre prefixação, sufixação, composição, derivação, radical, afixos e neologismos em português."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.sentido_vocabulario_contexto"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "pt.gramatica.sintaxe",
+          "label": "Sintaxe, concordância e regência",
+          "escopos": [
+            {
+              "id": "pt.gramatica.sintaxe.termos_oracao",
+              "label": "Termos da oração e funções sintáticas",
+              "descricao": "Cobre sujeito, predicado, objeto, complemento nominal, adjunto, aposto, vocativo e funções sintáticas em português. NÃO cobre apenas classe morfológica.",
+              "keywords": [
+                "sujeito",
+                "predicado",
+                "objeto direto",
+                "objeto indireto",
+                "complemento nominal",
+                "adjunto adnominal",
+                "aposto"
+              ],
+              "keywordsContexto": [
+                "função sintática",
+                "termo da oração",
+                "análise sintática"
+              ],
+              "negativeHints": [
+                "syntactic function em inglês",
+                "función sintáctica em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre sujeito, predicado, objeto, complemento nominal, adjunto, aposto, vocativo e funções sintáticas em português."
+              ],
+              "naoConfundirCom": [
+                "pt.gramatica.morfologia.classes_palavras"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.gramatica.sintaxe.periodo_composto_oracoes",
+              "label": "Período composto e orações",
+              "descricao": "Cobre coordenação, subordinação, oração subordinada, oração coordenada e relações sintáticas entre orações. NÃO cobre conectivo apenas como operador argumentativo discursivo.",
+              "keywords": [
+                "período composto",
+                "oração subordinada",
+                "oração coordenada",
+                "subordinação",
+                "coordenação",
+                "oração adjetiva"
+              ],
+              "keywordsContexto": [
+                "valor da oração",
+                "relação entre orações"
+              ],
+              "negativeHints": [
+                "relative clause em inglês",
+                "subordinada em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre coordenação, subordinação, oração subordinada, oração coordenada e relações sintáticas entre orações."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.argumentacao.operadores_argumentativos"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.gramatica.sintaxe.concordancia",
+              "label": "Concordância verbal e nominal",
+              "descricao": "Cobre regras de concordância verbal e nominal, sujeito composto, silepse e adequação à norma-padrão. NÃO cobre variação linguística como fenômeno social.",
+              "keywords": [
+                "concordância verbal",
+                "concordância nominal",
+                "sujeito composto",
+                "norma-padrão",
+                "silepse"
+              ],
+              "keywordsContexto": [
+                "verbo concorda",
+                "flexão nominal",
+                "plural"
+              ],
+              "negativeHints": [
+                "agreement em inglês",
+                "concordancia em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre regras de concordância verbal e nominal, sujeito composto, silepse e adequação à norma-padrão."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.discurso.variacao_linguistica"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.gramatica.sintaxe.regencia_crase",
+              "label": "Regência verbal/nominal e crase",
+              "descricao": "Cobre regência verbal, regência nominal, uso da preposição e emprego da crase. NÃO cobre sentido de preposição em língua estrangeira.",
+              "keywords": [
+                "regência",
+                "crase",
+                "preposição",
+                "regência verbal",
+                "regência nominal",
+                "a craseado"
+              ],
+              "keywordsContexto": [
+                "exige preposição",
+                "termo regido",
+                "complemento"
+              ],
+              "negativeHints": [
+                "preposition em inglês",
+                "preposición em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre regência verbal, regência nominal, uso da preposição e emprego da crase."
+              ],
+              "naoConfundirCom": [
+                "pt.gramatica.sintaxe.termos_oracao"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.gramatica.sintaxe.pontuacao_sintaxe",
+              "label": "Pontuação e efeitos sintáticos",
+              "descricao": "Cobre vírgula, ponto e vírgula, dois-pontos, travessão e efeitos sintáticos/semânticos da pontuação. NÃO cobre pontuação apenas como marca expressiva literária sem regra sintática.",
+              "keywords": [
+                "pontuação",
+                "vírgula",
+                "ponto e vírgula",
+                "dois-pontos",
+                "travessão",
+                "aposto",
+                "oração intercalada"
+              ],
+              "keywordsContexto": [
+                "isolamento",
+                "pausa",
+                "enumeração",
+                "explicação"
+              ],
+              "negativeHints": [
+                "punctuation em inglês",
+                "puntuación em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre vírgula, ponto e vírgula, dois-pontos, travessão e efeitos sintáticos/semânticos da pontuação."
+              ],
+              "naoConfundirCom": [
+                "pt.literatura.teoria.recursos_estilisticos_literarios"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "pt.gramatica.ortografia",
+          "label": "Ortografia e convenções da escrita",
+          "escopos": [
+            {
+              "id": "pt.gramatica.ortografia.ortografia_acentuacao",
+              "label": "Ortografia e acentuação",
+              "descricao": "Cobre grafia correta, acentuação, hífen, acordo ortográfico e convenções ortográficas. NÃO cobre variação linguística ou adequação de registro.",
+              "keywords": [
+                "ortografia",
+                "acentuação",
+                "hífen",
+                "acordo ortográfico",
+                "grafia correta",
+                "norma ortográfica"
+              ],
+              "keywordsContexto": [
+                "acento",
+                "grafar",
+                "escrita correta"
+              ],
+              "negativeHints": [
+                "spelling em inglês",
+                "ortografía em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre grafia correta, acentuação, hífen, acordo ortográfico e convenções ortográficas."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.discurso.variacao_linguistica"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.gramatica.ortografia.paronimos_homonimos",
+              "label": "Parônimos, homônimos e uso lexical normativo",
+              "descricao": "Cobre distinção normativa entre parônimos, homônimos e formas semelhantes no português. NÃO cobre polissemia interpretativa em texto literário.",
+              "keywords": [
+                "parônimo",
+                "homônimo",
+                "mal e mau",
+                "há e a",
+                "porque porquê",
+                "onde aonde"
+              ],
+              "keywordsContexto": [
+                "formas semelhantes",
+                "uso correto",
+                "distinção lexical"
+              ],
+              "negativeHints": [
+                "false cognates",
+                "falsos cognatos"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre distinção normativa entre parônimos, homônimos e formas semelhantes no português."
+              ],
+              "naoConfundirCom": [
+                "pt.semantica.significacao.polissemia_ambiguidade"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.gramatica.ortografia.reescrita_norma_padrao",
+              "label": "Reescrita e adequação à norma-padrão",
+              "descricao": "Cobre reescrita mantendo sentido, correção gramatical, clareza e adequação à norma-padrão. NÃO cobre reescrita literária/intertextual.",
+              "keywords": [
+                "reescrita",
+                "norma-padrão",
+                "corrigir trecho",
+                "manter o sentido",
+                "adequação gramatical"
+              ],
+              "keywordsContexto": [
+                "sem alterar sentido",
+                "forma correta",
+                "substituição adequada"
+              ],
+              "negativeHints": [
+                "paráfrase literária",
+                "tradução"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre reescrita mantendo sentido, correção gramatical, clareza e adequação à norma-padrão."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.intertextualidade"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "semantica_estilistica",
+      "assuntoLabel": "Semântica, estilística e recursos expressivos",
+      "dominios": [
+        {
+          "id": "pt.semantica.significacao",
+          "label": "Significação e relações de sentido",
+          "escopos": [
+            {
+              "id": "pt.semantica.significacao.denotacao_conotacao",
+              "label": "Denotação e conotação",
+              "descricao": "Cobre sentido literal e figurado, conotação, denotação e efeitos de sentido em português. NÃO cobre figura literária específica se o foco for escola/poema.",
+              "keywords": [
+                "denotação",
+                "conotação",
+                "sentido literal",
+                "sentido figurado",
+                "linguagem figurada"
+              ],
+              "keywordsContexto": [
+                "efeito de sentido",
+                "valor expressivo"
+              ],
+              "negativeHints": [
+                "figurative language em inglês",
+                "sentido figurado em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre sentido literal e figurado, conotação, denotação e efeitos de sentido em português."
+              ],
+              "naoConfundirCom": [
+                "pt.literatura.teoria.recursos_estilisticos_literarios"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.semantica.significacao.sinonimia_antonimia",
+              "label": "Sinonímia, antonímia e equivalência semântica",
+              "descricao": "Cobre relações de equivalência, oposição e substituição lexical em português. NÃO cobre tradução/equivalência de língua estrangeira.",
+              "keywords": [
+                "sinônimo",
+                "antônimo",
+                "equivalência semântica",
+                "substituição lexical",
+                "sentido equivalente"
+              ],
+              "keywordsContexto": [
+                "termo equivalente",
+                "oposição de sentido"
+              ],
+              "negativeHints": [
+                "translation",
+                "equivalencia en español",
+                "meaning in English"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre relações de equivalência, oposição e substituição lexical em português."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.sentido_vocabulario_contexto"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.semantica.significacao.polissemia_ambiguidade",
+              "label": "Polissemia e ambiguidade",
+              "descricao": "Cobre múltiplos sentidos, ambiguidade lexical/sintática, duplo sentido e indeterminação de sentido em português. NÃO cobre inferência ampla do texto.",
+              "keywords": [
+                "polissemia",
+                "ambiguidade",
+                "duplo sentido",
+                "múltiplos sentidos",
+                "ambíguo"
+              ],
+              "keywordsContexto": [
+                "sentido duplo",
+                "interpretação possível"
+              ],
+              "negativeHints": [
+                "ambiguous word em inglês",
+                "polisemia em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre múltiplos sentidos, ambiguidade lexical/sintática, duplo sentido e indeterminação de sentido em português."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.inferencia_implicito"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.semantica.significacao.pressupostos_subentendidos",
+              "label": "Pressupostos e implícitos linguísticos",
+              "descricao": "Cobre pressupostos linguísticos, subentendidos ativados por escolhas lexicais e marcas gramaticais. NÃO cobre inferência global sem marca linguística.",
+              "keywords": [
+                "pressuposto",
+                "subentendido",
+                "implícito",
+                "marcador linguístico",
+                "pressuposição"
+              ],
+              "keywordsContexto": [
+                "ainda",
+                "já",
+                "deixar de",
+                "continuar"
+              ],
+              "negativeHints": [
+                "presupposition em inglês",
+                "presuposición em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre pressupostos linguísticos, subentendidos ativados por escolhas lexicais e marcas gramaticais."
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.inferencia_implicito"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.semantica.significacao.modalizacao",
+              "label": "Modalização e marcas de subjetividade",
+              "descricao": "Cobre modalizadores, avaliação, certeza, dúvida, obrigação, possibilidade e posicionamento do enunciador. NÃO cobre argumento completo ou tese do texto.",
+              "keywords": [
+                "modalização",
+                "modalizador",
+                "subjetividade",
+                "certeza",
+                "dúvida",
+                "possibilidade",
+                "obrigação"
+              ],
+              "keywordsContexto": [
+                "talvez",
+                "deve",
+                "pode",
+                "certamente"
+              ],
+              "negativeHints": [
+                "modal verbs em inglês",
+                "modalizadores em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre modalizadores, avaliação, certeza, dúvida, obrigação, possibilidade e posicionamento do enunciador."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.argumentacao.tese_argumento"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "pt.semantica.recursos",
+          "label": "Recursos expressivos e figuras",
+          "escopos": [
+            {
+              "id": "pt.semantica.recursos.figuras_linguagem",
+              "label": "Figuras de linguagem",
+              "descricao": "Cobre metáfora, metonímia, personificação, hipérbole, eufemismo, antítese, paradoxo e comparação em português. NÃO cobre escola literária como foco principal.",
+              "keywords": [
+                "figura de linguagem",
+                "metáfora",
+                "metonímia",
+                "personificação",
+                "hipérbole",
+                "eufemismo",
+                "antítese",
+                "paradoxo"
+              ],
+              "keywordsContexto": [
+                "comparação",
+                "imagem expressiva",
+                "efeito expressivo"
+              ],
+              "negativeHints": [
+                "figures of speech em inglês",
+                "figuras retóricas em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre metáfora, metonímia, personificação, hipérbole, eufemismo, antítese, paradoxo e comparação em português."
+              ],
+              "naoConfundirCom": [
+                "pt.literatura.periodos.simbolismo",
+                "pt.literatura.teoria.recursos_estilisticos_literarios"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.semantica.recursos.ironia_humor",
+              "label": "Ironia, humor e crítica",
+              "descricao": "Cobre ironia, humor, sarcasmo, crítica implícita e quebra de expectativa em texto verbal ou multimodal em português. NÃO cobre apenas meme/charge sem análise do efeito de humor.",
+              "keywords": [
+                "ironia",
+                "humor",
+                "sarcasmo",
+                "crítica",
+                "quebra de expectativa",
+                "efeito de humor"
+              ],
+              "keywordsContexto": [
+                "contradição",
+                "duplo sentido",
+                "tom crítico"
+              ],
+              "negativeHints": [
+                "humor in English",
+                "humor en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre ironia, humor, sarcasmo, crítica implícita e quebra de expectativa em texto verbal ou multimodal em português."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.multimodal.multimodalidade",
+                "pt.interpretacao.leitura.inferencia_implicito"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.semantica.recursos.polifonia_vozes",
+              "label": "Polifonia, discurso citado e vozes no texto",
+              "descricao": "Cobre discurso direto, indireto, indireto livre, vozes sociais, citação e autoria enunciativa. NÃO cobre fonte jornalística apenas como dado explícito.",
+              "keywords": [
+                "polifonia",
+                "discurso direto",
+                "discurso indireto",
+                "discurso indireto livre",
+                "vozes do texto",
+                "citação"
+              ],
+              "keywordsContexto": [
+                "enunciador",
+                "voz narrativa",
+                "fala de personagem"
+              ],
+              "negativeHints": [
+                "reported speech em inglês",
+                "estilo indirecto em espanhol"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre discurso direto, indireto, indireto livre, vozes sociais, citação e autoria enunciativa."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.jornalistico.noticia_reportagem",
+                "pt.literatura.teoria.narratologia"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.semantica.recursos.efeitos_estilo",
+              "label": "Efeitos de estilo e escolha lexical",
+              "descricao": "Cobre efeitos produzidos por escolhas lexicais, repetição, sonoridade, ritmo, paralelismo e intensidade expressiva em português. NÃO cobre regra gramatical normativa.",
+              "keywords": [
+                "efeito de estilo",
+                "escolha lexical",
+                "repetição",
+                "paralelismo",
+                "sonoridade",
+                "ritmo",
+                "ênfase"
+              ],
+              "keywordsContexto": [
+                "expressividade",
+                "intensificação",
+                "recurso estilístico"
+              ],
+              "negativeHints": [
+                "stylistic effect in English",
+                "efecto estilístico en español"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre efeitos produzidos por escolhas lexicais, repetição, sonoridade, ritmo, paralelismo e intensidade expressiva em português."
+              ],
+              "naoConfundirCom": [
+                "pt.gramatica.morfologia.classes_palavras"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "artes_tecnologias_linguagem",
+      "assuntoLabel": "Artes e tecnologias da linguagem",
+      "dominios": [
+        {
+          "id": "pt.artes.visuais",
+          "label": "Artes visuais e linguagem artística",
+          "escopos": [
+            {
+              "id": "pt.artes.visuais.leitura_imagem",
+              "label": "Leitura de imagem e obra visual",
+              "descricao": "Cobre interpretação de imagens, composição, cor, forma, plano, perspectiva, materialidade e efeitos visuais. NÃO cobre charge/tirinha quando o foco é gênero multimodal comunicativo.",
+              "keywords": [
+                "leitura de imagem",
+                "obra visual",
+                "composição",
+                "cor",
+                "forma",
+                "perspectiva",
+                "elementos visuais"
+              ],
+              "keywordsContexto": [
+                "plano",
+                "materialidade",
+                "imagem artística"
+              ],
+              "negativeHints": [
+                "mapa geográfico",
+                "cartografia",
+                "infográfico jornalístico"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre interpretação de imagens, composição, cor, forma, plano, perspectiva, materialidade e efeitos visuais."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.multimodal.multimodalidade"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.artes.visuais.movimentos_artisticos",
+              "label": "Movimentos artísticos e vanguardas",
+              "descricao": "Cobre modernismo, vanguardas europeias, barroco, renascimento, arte moderna/contemporânea e características de movimentos artísticos. NÃO cobre movimento histórico se o foco for processo político-social.",
+              "keywords": [
+                "movimento artístico",
+                "vanguarda",
+                "modernismo",
+                "barroco",
+                "renascimento",
+                "cubismo",
+                "surrealismo",
+                "expressionismo"
+              ],
+              "keywordsContexto": [
+                "estética",
+                "ruptura artística",
+                "manifesto artístico"
+              ],
+              "negativeHints": [
+                "Semana de 22 como literatura",
+                "processo histórico"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre modernismo, vanguardas europeias, barroco, renascimento, arte moderna/contemporânea e características de movimentos artísticos."
+              ],
+              "naoConfundirCom": [
+                "pt.literatura.periodos.modernismo_22",
+                "hist.moderna.formacao_mundo_moderno.renascimento_humanismo"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.artes.linguagens.musica_danca_teatro",
+              "label": "Música, dança e teatro",
+              "descricao": "Cobre linguagens da música, dança e teatro, performance, corpo, cena, ritmo e expressões artísticas performativas. NÃO cobre análise literária de texto dramático sem linguagem cênica.",
+              "keywords": [
+                "música",
+                "dança",
+                "teatro",
+                "performance",
+                "corpo",
+                "cena",
+                "ritmo",
+                "expressão corporal"
+              ],
+              "keywordsContexto": [
+                "encenação",
+                "coreografia",
+                "sonoridade"
+              ],
+              "negativeHints": [
+                "gênero dramático literário",
+                "história da música como evento"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre linguagens da música, dança e teatro, performance, corpo, cena, ritmo e expressões artísticas performativas."
+              ],
+              "naoConfundirCom": [
+                "pt.literatura.teoria.generos_literarios"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.artes.cultura.cultura_popular_patrimonio",
+              "label": "Cultura popular, patrimônio e identidade artística",
+              "descricao": "Cobre manifestações culturais, patrimônio material/imaterial, cultura popular, festas, tradições e identidade cultural pela perspectiva das linguagens. NÃO cobre patrimônio como fonte histórica primária.",
+              "keywords": [
+                "cultura popular",
+                "patrimônio cultural",
+                "patrimônio imaterial",
+                "festa popular",
+                "tradição",
+                "identidade cultural"
+              ],
+              "keywordsContexto": [
+                "manifestação cultural",
+                "folclore",
+                "memória cultural"
+              ],
+              "negativeHints": [
+                "fonte histórica",
+                "patrimônio histórico como História",
+                "identidade como Sociologia"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre manifestações culturais, patrimônio material/imaterial, cultura popular, festas, tradições e identidade cultural pela perspectiva das linguagens."
+              ],
+              "naoConfundirCom": [
+                "hist.historiografia.fontes_memoria.patrimonio_memoria",
+                "soc.cultura_identidade.identidade"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "pt.tecnologias.comunicacao",
+          "label": "Tecnologias, mídias e comunicação",
+          "escopos": [
+            {
+              "id": "pt.tecnologias.comunicacao.midias_digitais",
+              "label": "Mídias digitais e redes sociais",
+              "descricao": "Cobre linguagem digital, redes sociais, memes, hipertexto, interação online e circulação de sentidos. NÃO cobre tecnologia como conteúdo de informática ou sociedade digital sociológica se o foco não for linguagem.",
+              "keywords": [
+                "mídias digitais",
+                "redes sociais",
+                "internet",
+                "meme",
+                "hipertexto",
+                "postagem",
+                "comentário online"
+              ],
+              "keywordsContexto": [
+                "interação digital",
+                "circulação",
+                "viralização"
+              ],
+              "negativeHints": [
+                "algoritmo como tecnologia",
+                "sociologia da tecnologia"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre linguagem digital, redes sociais, memes, hipertexto, interação online e circulação de sentidos."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.multimodal.multimodalidade",
+                "soc.globalizacao_tecnologia.midias_digitais"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.tecnologias.comunicacao.generos_digitais",
+              "label": "Gêneros digitais",
+              "descricao": "Cobre e-mail, blog, post, comentário, chat, podcast, vídeo, thread e gêneros digitais em sua estrutura comunicativa. NÃO cobre suporte digital se o gênero não for relevante para a resolução.",
+              "keywords": [
+                "gênero digital",
+                "blog",
+                "post",
+                "thread",
+                "podcast",
+                "vídeo",
+                "chat",
+                "comentário"
+              ],
+              "keywordsContexto": [
+                "ambiente digital",
+                "formato digital",
+                "interatividade"
+              ],
+              "negativeHints": [
+                "carta tradicional",
+                "notícia impressa"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre e-mail, blog, post, comentário, chat, podcast, vídeo, thread e gêneros digitais em sua estrutura comunicativa."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.discurso.carta_documento"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.tecnologias.comunicacao.letramento_midiatico",
+              "label": "Letramento midiático e checagem de informação",
+              "descricao": "Cobre fake news, checagem, curadoria, autoria, fonte, confiabilidade e leitura crítica de mídias. NÃO cobre conteúdo factual da notícia como História/Geografia/Ciências.",
+              "keywords": [
+                "fake news",
+                "checagem",
+                "fonte confiável",
+                "letramento midiático",
+                "desinformação",
+                "autoria",
+                "curadoria"
+              ],
+              "keywordsContexto": [
+                "verificação",
+                "credibilidade",
+                "circulação de informação"
+              ],
+              "negativeHints": [
+                "evento histórico noticiado",
+                "dados científicos como conteúdo"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre fake news, checagem, curadoria, autoria, fonte, confiabilidade e leitura crítica de mídias."
+              ],
+              "naoConfundirCom": [
+                "pt.generos.jornalistico.noticia_reportagem"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "pt.tecnologias.comunicacao.inclusao_acessibilidade",
+              "label": "Acessibilidade, inclusão e tecnologias da linguagem",
+              "descricao": "Cobre Libras, legenda, audiodescrição, acessibilidade comunicacional, inclusão digital e tecnologias assistivas em linguagem. NÃO cobre deficiência como tema biológico ou sociológico sem foco comunicativo.",
+              "keywords": [
+                "acessibilidade",
+                "Libras",
+                "legenda",
+                "audiodescrição",
+                "inclusão digital",
+                "tecnologia assistiva"
+              ],
+              "keywordsContexto": [
+                "comunicação inclusiva",
+                "barreira comunicacional"
+              ],
+              "negativeHints": [
+                "deficiência como biologia",
+                "inclusão social sem linguagem"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre libras, legenda, audiodescrição, acessibilidade comunicacional, inclusão digital e tecnologias assistivas em linguagem."
+              ],
+              "naoConfundirCom": [
+                "soc.desigualdades.inclusao_exclusao"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "nao_classificado",
+      "assuntoLabel": "Não classificado",
+      "dominios": [
+        {
+          "id": "pt.nao_classificado",
+          "label": "Não classificado",
+          "escopos": [
+            {
+              "id": "pt.__nao_classificado",
+              "label": "Não classificado — Português",
+              "descricao": "Usar quando o texto estiver ilegível, a rota disciplinar estiver incerta, a questão for de Inglês/Espanhol ou outra disciplina, a confiança for inferior ao limiar ou nenhum escopo de Português for adequado.",
+              "keywords": [],
+              "keywordsContexto": [],
+              "negativeHints": [],
+              "exemplosEnunciado": [],
+              "naoConfundirCom": [],
+              "regraDesempate": "Fallback obrigatório de Português.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

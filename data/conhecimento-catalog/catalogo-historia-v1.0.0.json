@@ -1,0 +1,2052 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.0.0",
+  "materiaId": "historia",
+  "materiaLabel": "História",
+  "areaEnem": "Ciências Humanas e suas Tecnologias",
+  "notas": "Catálogo operacional v1.0 de História. Área ENEM é metadado; disciplina é unidade de catálogo; escopoId hist.* é unidade diagnóstica. História foi separada do catálogo agregado humanas para reduzir viés e evitar classificação por palavra solta. Versão enxuta conforme decisão operacional: 62 escopos reais + fallback, deixando folga para v1.1.",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "A IA só pode escolher IDs existentes neste catálogo. N3/conhecimentoExigido é texto livre, nunca ID.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2,
+      "nota": "Primário deve representar o processo histórico exigido para resolver. Secundários só quando houver conhecimento adicional relevante."
+    },
+    "politicaN3": "IA escolhe apenas IDs N0-N2; conhecimentoExigido/N3 é texto livre proposto para revisão humana.",
+    "regraDesempate": "Classificar pelo conhecimento histórico exigido para resolver, não por palavra solta ou personagem citado. Se a rota disciplinar for incerta ou a confiança ficar abaixo do mínimo, usar hist.__nao_classificado.",
+    "pesos": {
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "exemplosEnunciado": "referência semântica, não match literal",
+      "negativeHints": "penalidade: termo indica que outro escopo/disciplina pode ser primário"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "brasil_colonial",
+      "assuntoLabel": "Brasil Colonial",
+      "dominios": [
+        {
+          "id": "hist.brasil_colonial.colonizacao",
+          "label": "Colonização, ocupação e economia colonial",
+          "escopos": [
+            {
+              "id": "hist.brasil_colonial.colonizacao.expansao_portuguesa",
+              "label": "Expansão marítima portuguesa e chegada ao Brasil",
+              "descricao": "Cobre expansão ultramarina portuguesa, mercantilismo, chegada ao território americano e interesses iniciais da colonização. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "expansão marítima",
+                "navegações",
+                "mercantilismo",
+                "1500",
+                "Portugal",
+                "pau-brasil"
+              ],
+              "keywordsContexto": [
+                "colonização",
+                "atlântico",
+                "comércio ultramarino"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer expansão marítima portuguesa e chegada ao brasil para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "projeção cartográfica",
+                "correntes marítimas"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.formacao_mundo_moderno.mercantilismo_colonialismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_colonial.colonizacao.administracao_colonial",
+              "label": "Capitanias, Governo-Geral e administração colonial",
+              "descricao": "Cobre capitanias hereditárias, sesmarias, Governo-Geral, câmaras municipais e mecanismos administrativos da colônia. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "capitanias hereditárias",
+                "sesmarias",
+                "Governo-Geral",
+                "Tomé de Sousa",
+                "câmara municipal",
+                "administração colonial"
+              ],
+              "keywordsContexto": [
+                "colonização",
+                "poder local",
+                "centralização"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer capitanias, governo-geral e administração colonial para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "federalismo republicano",
+                "Poder Moderador"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_imperio.independencia.primeiro_reinado"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_colonial.colonizacao.economia_acucareira",
+              "label": "Economia açucareira e plantation",
+              "descricao": "Cobre engenhos, plantation, latifúndio, monocultura, exportação e estrutura social do Nordeste açucareiro. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "engenho",
+                "açúcar",
+                "plantation",
+                "latifúndio",
+                "monocultura",
+                "Casa-grande"
+              ],
+              "keywordsContexto": [
+                "Nordeste",
+                "exportação",
+                "trabalho escravo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer economia açucareira e plantation para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "café",
+                "industrialização",
+                "Plano de Metas"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_imperio.segundo_reinado.cafe_imigracao"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_colonial.colonizacao.interiorizacao_bandeirismo",
+              "label": "Interiorização, bandeirismo e expansão territorial",
+              "descricao": "Cobre bandeiras, entradas, apresamento indígena, interiorização, mineração e redefinição de fronteiras coloniais. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "bandeirantes",
+                "entradas",
+                "bandeiras",
+                "apresamento indígena",
+                "interiorização",
+                "Tratado de Madri"
+              ],
+              "keywordsContexto": [
+                "fronteiras",
+                "sertão",
+                "expansão territorial"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer interiorização, bandeirismo e expansão territorial para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "migração urbana",
+                "êxodo rural",
+                "metropolização"
+              ],
+              "naoConfundirCom": [
+                "geo.populacao.migracoes.internas"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.brasil_colonial.escravidao",
+          "label": "Escravidão, resistência e sociedade colonial",
+          "escopos": [
+            {
+              "id": "hist.brasil_colonial.escravidao.trafico_africano",
+              "label": "Tráfico atlântico e escravização africana",
+              "descricao": "Cobre tráfico negreiro, diáspora africana, economia atlântica, escravização e inserção da mão de obra africana no sistema colonial. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "tráfico negreiro",
+                "diáspora africana",
+                "navio negreiro",
+                "escravização",
+                "africanos",
+                "Atlântico"
+              ],
+              "keywordsContexto": [
+                "senzala",
+                "engenho",
+                "mão de obra"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer tráfico atlântico e escravização africana para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "racismo estrutural",
+                "movimento negro contemporâneo"
+              ],
+              "naoConfundirCom": [
+                "soc.desigualdade.racismo.estrutural"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada.",
+              "conceitoCanonic": "escravidao"
+            },
+            {
+              "id": "hist.brasil_colonial.escravidao.resistencias_quilombos",
+              "label": "Resistências escravas e quilombos",
+              "descricao": "Cobre fugas, revoltas, quilombos, negociação, resistência cultural e protagonismo de escravizados. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "quilombo",
+                "Palmares",
+                "Zumbi",
+                "resistência escrava",
+                "fuga",
+                "revolta escrava"
+              ],
+              "keywordsContexto": [
+                "cultura afro-brasileira",
+                "negociação",
+                "autonomia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer resistências escravas e quilombos para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "movimentos sociais urbanos",
+                "ações afirmativas"
+              ],
+              "naoConfundirCom": [
+                "soc.movimentos_sociais.identidade.movimento_negro"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada.",
+              "conceitoCanonic": "resistencia_escrava"
+            }
+          ]
+        },
+        {
+          "id": "hist.brasil_colonial.indigenas_igreja_crise",
+          "label": "Povos indígenas, Igreja e crise colonial",
+          "escopos": [
+            {
+              "id": "hist.brasil_colonial.indigenas_igreja.povos_indigenas",
+              "label": "Povos indígenas e colonização",
+              "descricao": "Cobre impactos da colonização sobre povos indígenas, alianças, guerras, trabalho compulsório, resistências e negociações. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "povos indígenas",
+                "indígenas",
+                "aldeamento",
+                "guerra justa",
+                "trabalho indígena",
+                "colonização"
+              ],
+              "keywordsContexto": [
+                "catequese",
+                "bandeirantes",
+                "território"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer povos indígenas e colonização para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "demarcação atual",
+                "bioma",
+                "etnia como conceito sociológico"
+              ],
+              "naoConfundirCom": [
+                "geo.brasil.territorio.indigenas",
+                "soc.cultura.identidade.povos_indigenas"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada.",
+              "conceitoCanonic": "povos_indigenas"
+            },
+            {
+              "id": "hist.brasil_colonial.indigenas_igreja.jesuitas_catequese",
+              "label": "Jesuítas, catequese e missões",
+              "descricao": "Cobre Companhia de Jesus, catequese, aldeamentos, educação colonial e conflitos entre missionários, colonos e Coroa. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "jesuítas",
+                "Companhia de Jesus",
+                "catequese",
+                "missões",
+                "aldeamentos",
+                "educação colonial"
+              ],
+              "keywordsContexto": [
+                "Igreja",
+                "colonos",
+                "povos indígenas"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer jesuítas, catequese e missões para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Igreja medieval",
+                "Reforma Protestante"
+              ],
+              "naoConfundirCom": [
+                "hist.medieval.europa.igreja_cultura",
+                "hist.moderna.formacao_mundo_moderno.reformas_religiosas"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_colonial.crise_sistema.mineracao_revoltas",
+              "label": "Mineração, fiscalidade e revoltas coloniais",
+              "descricao": "Cobre ciclo do ouro, urbanização mineradora, fiscalidade, quinto, casas de fundição, revoltas nativistas e movimentos emancipacionistas. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "mineração",
+                "ouro",
+                "quinto",
+                "derrama",
+                "Inconfidência Mineira",
+                "Conjuração Baiana",
+                "revoltas nativistas"
+              ],
+              "keywordsContexto": [
+                "Vila Rica",
+                "século XVIII",
+                "crise colonial",
+                "iluminismo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer mineração, fiscalidade e revoltas coloniais para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "mineração atual",
+                "royalties",
+                "relevo"
+              ],
+              "naoConfundirCom": [
+                "geo.economica.recursos.mineracao"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "brasil_imperio",
+      "assuntoLabel": "Brasil Império",
+      "dominios": [
+        {
+          "id": "hist.brasil_imperio.independencia_regencia",
+          "label": "Independência, Primeiro Reinado e Regência",
+          "escopos": [
+            {
+              "id": "hist.brasil_imperio.independencia.processo_independencia",
+              "label": "Processo de Independência do Brasil",
+              "descricao": "Cobre transferência da Corte, abertura dos portos, Revolução do Porto, tensões luso-brasileiras e Independência de 1822. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Independência do Brasil",
+                "1822",
+                "D. Pedro",
+                "Corte portuguesa",
+                "abertura dos portos",
+                "Revolução do Porto"
+              ],
+              "keywordsContexto": [
+                "Brasil imperial",
+                "Portugal",
+                "monarquia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer processo de independência do brasil para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "independência dos EUA",
+                "independências hispano-americanas"
+              ],
+              "naoConfundirCom": [
+                "hist.america.independencias.america_hispanica"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_imperio.independencia.primeiro_reinado",
+              "label": "Primeiro Reinado e Constituição de 1824",
+              "descricao": "Cobre Primeiro Reinado, Constituição de 1824, Poder Moderador, Confederação do Equador, autoritarismo imperial e abdicação. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Primeiro Reinado",
+                "Constituição de 1824",
+                "Poder Moderador",
+                "Confederação do Equador",
+                "abdicação",
+                "D. Pedro I"
+              ],
+              "keywordsContexto": [
+                "centralização",
+                "monarquia",
+                "autoritarismo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer primeiro reinado e constituição de 1824 para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Constituição de 1988",
+                "parlamentarismo inglês"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.nova_republica.constituicao_1988"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_imperio.independencia.periodo_regencial",
+              "label": "Período Regencial e revoltas regenciais",
+              "descricao": "Cobre regências, Ato Adicional, descentralização, instabilidade política e revoltas como Cabanagem, Farroupilha, Balaiada, Sabinada e Malês. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Período Regencial",
+                "Ato Adicional",
+                "Cabanagem",
+                "Farroupilha",
+                "Balaiada",
+                "Sabinada",
+                "Revolta dos Malês"
+              ],
+              "keywordsContexto": [
+                "regência",
+                "instabilidade",
+                "autonomia provincial"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer período regencial e revoltas regenciais para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "revoltas da Primeira República",
+                "movimentos sociais atuais"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.primeira_republica.revoltas_sociais"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.brasil_imperio.segundo_reinado",
+          "label": "Segundo Reinado, economia e crise",
+          "escopos": [
+            {
+              "id": "hist.brasil_imperio.segundo_reinado.cafe_imigracao",
+              "label": "Café, imigração e transformações econômicas",
+              "descricao": "Cobre expansão cafeeira, Vale do Paraíba, Oeste Paulista, imigração, ferrovias e modernização econômica do Império. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "café",
+                "imigração",
+                "ferrovias",
+                "Oeste Paulista",
+                "Vale do Paraíba",
+                "barões do café"
+              ],
+              "keywordsContexto": [
+                "mão de obra livre",
+                "modernização",
+                "exportação"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer café, imigração e transformações econômicas para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "economia cafeeira da Primeira República",
+                "industrialização varguista"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.primeira_republica.economia_cafe"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_imperio.segundo_reinado.abolicionismo_crise",
+              "label": "Abolicionismo, Guerra do Paraguai e crise do Império",
+              "descricao": "Cobre abolicionismo, leis graduais, resistência escrava, Guerra do Paraguai, questão militar/religiosa e crise da monarquia. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "abolicionismo",
+                "Lei Áurea",
+                "Lei do Ventre Livre",
+                "Guerra do Paraguai",
+                "questão militar",
+                "Proclamação da República"
+              ],
+              "keywordsContexto": [
+                "1888",
+                "1889",
+                "Exército",
+                "crise imperial"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer abolicionismo, guerra do paraguai e crise do império para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "abolição nos EUA",
+                "ditadura militar"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.primeira_republica.republica_espada_1891"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada.",
+              "conceitoCanonic": "abolicao"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "brasil_republica",
+      "assuntoLabel": "Brasil República",
+      "dominios": [
+        {
+          "id": "hist.brasil_republica.primeira_republica",
+          "label": "Primeira República e oligarquias",
+          "escopos": [
+            {
+              "id": "hist.brasil_republica.primeira_republica.republica_espada_1891",
+              "label": "República da Espada e Constituição de 1891",
+              "descricao": "Cobre transição monarquia-república, governos Deodoro/Floriano, federalismo, Constituição de 1891 e instabilidade inicial do regime. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "República da Espada",
+                "Deodoro",
+                "Floriano",
+                "Constituição de 1891",
+                "federalismo",
+                "encilhamento"
+              ],
+              "keywordsContexto": [
+                "república",
+                "militares",
+                "1891"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer república da espada e constituição de 1891 para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Constituição de 1988",
+                "Poder Moderador"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.nova_republica.constituicao_1988"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.primeira_republica.oligarquias_coronelismo",
+              "label": "Oligarquias, coronelismo e política dos governadores",
+              "descricao": "Cobre coronelismo, voto de cabresto, política dos governadores, café com leite e estrutura oligárquica da Primeira República. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "coronelismo",
+                "voto de cabresto",
+                "política dos governadores",
+                "café com leite",
+                "oligarquias"
+              ],
+              "keywordsContexto": [
+                "clientelismo",
+                "fraude eleitoral",
+                "república oligárquica"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer oligarquias, coronelismo e política dos governadores para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "clientelismo contemporâneo",
+                "teoria da dominação"
+              ],
+              "naoConfundirCom": [
+                "soc.poder_estado.democracia.clientelismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.primeira_republica.economia_cafe",
+              "label": "Economia cafeeira e valorização do café",
+              "descricao": "Cobre agroexportação cafeeira, Convênio de Taubaté, dependência do café, crise econômica e tensões da Primeira República. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Convênio de Taubaté",
+                "valorização do café",
+                "café",
+                "agroexportador",
+                "oligarquia cafeeira"
+              ],
+              "keywordsContexto": [
+                "exportação",
+                "São Paulo",
+                "crise de 1929"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer economia cafeeira e valorização do café para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "café no Império",
+                "commodity atual"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_imperio.segundo_reinado.cafe_imigracao"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.primeira_republica.revoltas_sociais",
+              "label": "Revoltas sociais na Primeira República",
+              "descricao": "Cobre Canudos, Contestado, Revolta da Vacina, Revolta da Chibata e conflitos sociais urbanos/rurais no início republicano. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Canudos",
+                "Contestado",
+                "Revolta da Vacina",
+                "Revolta da Chibata",
+                "Antônio Conselheiro",
+                "João Cândido"
+              ],
+              "keywordsContexto": [
+                "messianismo",
+                "higienização",
+                "marinha",
+                "sertão"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer revoltas sociais na primeira república para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "movimentos sociais contemporâneos",
+                "revoltas regenciais"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_imperio.independencia.periodo_regencial"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.primeira_republica.tenentismo_1930",
+              "label": "Tenentismo e Revolução de 1930",
+              "descricao": "Cobre tenentismo, crise oligárquica, Coluna Prestes, Aliança Liberal e Revolução de 1930 como ruptura da Primeira República. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "tenentismo",
+                "Coluna Prestes",
+                "Revolução de 1930",
+                "Aliança Liberal",
+                "Washington Luís",
+                "Júlio Prestes"
+              ],
+              "keywordsContexto": [
+                "crise oligárquica",
+                "Getúlio Vargas",
+                "1930"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer tenentismo e revolução de 1930 para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Estado Novo",
+                "ditadura militar"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.vargas.estado_novo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.brasil_republica.vargas",
+          "label": "Era Vargas",
+          "escopos": [
+            {
+              "id": "hist.brasil_republica.vargas.provisorio_constitucional",
+              "label": "Governo Provisório e Constitucional de Vargas",
+              "descricao": "Cobre centralização pós-1930, Revolução Constitucionalista de 1932, Constituição de 1934, disputas políticas e formação do varguismo. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Governo Provisório",
+                "Governo Constitucional",
+                "Revolução Constitucionalista",
+                "1932",
+                "Constituição de 1934",
+                "Vargas"
+              ],
+              "keywordsContexto": [
+                "centralização",
+                "São Paulo",
+                "AIB",
+                "ANL"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer governo provisório e constitucional de vargas para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Estado Novo",
+                "Constituição de 1988"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.vargas.estado_novo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.vargas.estado_novo",
+              "label": "Estado Novo e autoritarismo varguista",
+              "descricao": "Cobre golpe de 1937, Estado Novo, censura, DIP, propaganda, nacionalismo e autoritarismo do regime varguista. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Estado Novo",
+                "1937",
+                "DIP",
+                "censura",
+                "propaganda",
+                "Plano Cohen"
+              ],
+              "keywordsContexto": [
+                "autoritarismo",
+                "nacionalismo",
+                "Vargas"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer estado novo e autoritarismo varguista para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "ditadura militar",
+                "fascismo europeu"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.ditadura.repressao_ai5",
+                "hist.contemporanea.guerras_totalitarismos.fascismo_nazismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.vargas.trabalhismo_clt",
+              "label": "Trabalhismo, CLT e política social varguista",
+              "descricao": "Cobre legislação trabalhista, CLT, sindicalismo controlado, cidadania regulada, populismo trabalhista e relação Estado-trabalhadores. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "CLT",
+                "trabalhismo",
+                "sindicato",
+                "Ministério do Trabalho",
+                "cidadania regulada",
+                "Getúlio Vargas"
+              ],
+              "keywordsContexto": [
+                "direitos trabalhistas",
+                "operários",
+                "populismo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer trabalhismo, clt e política social varguista para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "alienação",
+                "precarização atual",
+                "Revolução Industrial"
+              ],
+              "naoConfundirCom": [
+                "soc.trabalho.alienacao",
+                "hist.moderna.revolucoes.revolucao_industrial"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada.",
+              "conceitoCanonic": "trabalho"
+            },
+            {
+              "id": "hist.brasil_republica.vargas.industrializacao_nacional",
+              "label": "Industrialização e nacional-desenvolvimentismo varguista",
+              "descricao": "Cobre industrialização de base, intervenção estatal, substituição de importações, CSN, Petrobras e projeto nacional-desenvolvimentista varguista. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "industrialização",
+                "CSN",
+                "substituição de importações",
+                "nacional-desenvolvimentismo",
+                "Petrobras",
+                "intervenção estatal"
+              ],
+              "keywordsContexto": [
+                "Estado",
+                "indústria de base",
+                "Vargas"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer industrialização e nacional-desenvolvimentismo varguista para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Industrial",
+                "industrialização geográfica"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.revolucoes.revolucao_industrial",
+                "geo.economica.industrializacao.brasil"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.brasil_republica.democracia_ditadura",
+          "label": "Democracia populista, ditadura militar e redemocratização",
+          "escopos": [
+            {
+              "id": "hist.brasil_republica.democracia_populismo.redemocratizacao_1945_partidos",
+              "label": "Redemocratização de 1945 e sistema partidário",
+              "descricao": "Cobre queda de Vargas, Constituição de 1946, PSD/PTB/UDN e dinâmica política do período democrático de 1945 a 1964. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "redemocratização de 1945",
+                "Constituição de 1946",
+                "PSD",
+                "PTB",
+                "UDN",
+                "Eurico Dutra"
+              ],
+              "keywordsContexto": [
+                "partidos",
+                "populismo",
+                "democracia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer redemocratização de 1945 e sistema partidário para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Constituição de 1988",
+                "Diretas Já"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.nova_republica.constituicao_1988"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.democracia_populismo.jk_desenvolvimentismo",
+              "label": "Governo JK e desenvolvimentismo",
+              "descricao": "Cobre Plano de Metas, Brasília, industrialização, abertura ao capital estrangeiro e modernização econômica no governo Juscelino Kubitschek. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "JK",
+                "Juscelino Kubitschek",
+                "Plano de Metas",
+                "Brasília",
+                "50 anos em 5",
+                "desenvolvimentismo"
+              ],
+              "keywordsContexto": [
+                "rodovias",
+                "indústria automobilística",
+                "modernização"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer governo jk e desenvolvimentismo para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "urbanização como rede urbana",
+                "Era Vargas"
+              ],
+              "naoConfundirCom": [
+                "geo.urbana.metropolizacao.urbanizacao"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.democracia_populismo.jango_reformas_base",
+              "label": "Governo João Goulart e Reformas de Base",
+              "descricao": "Cobre crise política de 1961-1964, parlamentarismo, Reformas de Base, polarização social e antecedentes do golpe militar. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "João Goulart",
+                "Jango",
+                "Reformas de Base",
+                "parlamentarismo",
+                "1964",
+                "comício da Central"
+              ],
+              "keywordsContexto": [
+                "polarização",
+                "crise política",
+                "golpe"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer governo joão goulart e reformas de base para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Reforma Protestante",
+                "reformas neoliberais"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.ditadura.golpe_1964"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.ditadura.golpe_1964",
+              "label": "Golpe de 1964 e instalação do regime militar",
+              "descricao": "Cobre crise política, golpe civil-militar, primeiros atos institucionais, cassações e consolidação inicial do regime militar. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "golpe de 1964",
+                "regime militar",
+                "AI-1",
+                "cassações",
+                "Castelo Branco",
+                "militares"
+              ],
+              "keywordsContexto": [
+                "Guerra Fria",
+                "anticomunismo",
+                "autoritarismo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer golpe de 1964 e instalação do regime militar para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "golpes latino-americanos em geral",
+                "Estado Novo"
+              ],
+              "naoConfundirCom": [
+                "hist.america.contemporanea.america_latina_populismos_ditaduras"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.ditadura.repressao_ai5",
+              "label": "Repressão, censura e AI-5",
+              "descricao": "Cobre aparato repressivo, censura, tortura, AI-5, oposição, guerrilhas, propaganda e controle político-cultural da ditadura militar. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "AI-5",
+                "censura",
+                "tortura",
+                "repressão",
+                "guerrilha",
+                "DOPS",
+                "DOI-CODI"
+              ],
+              "keywordsContexto": [
+                "ditadura militar",
+                "oposição",
+                "direitos humanos"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer repressão, censura e ai-5 para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Estado Novo",
+                "fascismo",
+                "censura literária"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.vargas.estado_novo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.ditadura.milagre_crise",
+              "label": "Milagre econômico e crise do regime militar",
+              "descricao": "Cobre crescimento econômico, endividamento, obras de infraestrutura, concentração de renda, crise do petróleo e desgaste econômico da ditadura. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "milagre econômico",
+                "endividamento",
+                "obras faraônicas",
+                "crise do petróleo",
+                "concentração de renda",
+                "anos 1970"
+              ],
+              "keywordsContexto": [
+                "PIB",
+                "inflação",
+                "desenvolvimento"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer milagre econômico e crise do regime militar para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "desenvolvimento urbano geográfico",
+                "Plano Real"
+              ],
+              "naoConfundirCom": [],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.brasil_republica.ditadura.abertura_redemocratizacao",
+              "label": "Abertura política, Anistia e Diretas Já",
+              "descricao": "Cobre distensão, abertura lenta e gradual, Lei da Anistia, movimentos democráticos, Diretas Já e transição para o governo civil. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "abertura política",
+                "Lei da Anistia",
+                "Diretas Já",
+                "Tancredo Neves",
+                "Figueiredo",
+                "redemocratização"
+              ],
+              "keywordsContexto": [
+                "transição democrática",
+                "oposição",
+                "mobilização"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer abertura política, anistia e diretas já para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "redemocratização de 1945",
+                "Constituição de 1988"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.nova_republica.constituicao_1988"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.brasil_republica.nova_republica",
+          "label": "Nova República e Brasil recente",
+          "escopos": [
+            {
+              "id": "hist.brasil_republica.nova_republica.constituicao_1988",
+              "label": "Constituição de 1988 e cidadania",
+              "descricao": "Cobre Assembleia Constituinte, direitos sociais, cidadania, redemocratização institucional e Estado democrático de direito. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Constituição de 1988",
+                "Constituinte",
+                "cidadania",
+                "direitos sociais",
+                "Estado democrático",
+                "Nova República"
+              ],
+              "keywordsContexto": [
+                "redemocratização",
+                "direitos",
+                "democracia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer constituição de 1988 e cidadania para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Constituição de 1891",
+                "teoria democrática filosófica"
+              ],
+              "naoConfundirCom": [
+                "fil.politica.democracia.cidadania"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "america",
+      "assuntoLabel": "História da América",
+      "dominios": [
+        {
+          "id": "hist.america.colonizacao_independencias",
+          "label": "Colonização e independências americanas",
+          "escopos": [
+            {
+              "id": "hist.america.colonizacao.povos_pre_colombianos",
+              "label": "Povos pré-colombianos",
+              "descricao": "Cobre sociedades indígenas americanas antes da conquista europeia, como maias, astecas, incas e outros povos originários. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "maias",
+                "astecas",
+                "incas",
+                "pré-colombianos",
+                "Mesoamérica",
+                "Andes"
+              ],
+              "keywordsContexto": [
+                "império",
+                "cidade",
+                "agricultura"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer povos pré-colombianos para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "povos indígenas no Brasil colonial",
+                "demarcação atual"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.indigenas_igreja.povos_indigenas"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.america.colonizacao.conquista_colonizacao_espanhola",
+              "label": "Conquista e colonização espanhola",
+              "descricao": "Cobre conquista da América espanhola, encomienda, mita, exploração mineral, vice-reinos e impactos sobre populações nativas. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "conquista espanhola",
+                "encomienda",
+                "mita",
+                "Potosí",
+                "vice-reino",
+                "Cortés",
+                "Pizarro"
+              ],
+              "keywordsContexto": [
+                "colonização",
+                "mineração",
+                "América espanhola"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer conquista e colonização espanhola para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "colonização portuguesa",
+                "mineração brasileira"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.crise_sistema.mineracao_revoltas"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.america.independencias.eua",
+              "label": "Independência dos Estados Unidos",
+              "descricao": "Cobre Treze Colônias, guerra de independência, republicanismo, constitucionalismo e impactos atlânticos da independência dos EUA. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Independência dos EUA",
+                "Treze Colônias",
+                "1776",
+                "Boston Tea Party",
+                "Constituição americana",
+                "George Washington"
+              ],
+              "keywordsContexto": [
+                "republicanismo",
+                "liberalismo",
+                "colônias inglesas"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer independência dos estados unidos para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Guerra Civil",
+                "Doutrina Monroe"
+              ],
+              "naoConfundirCom": [
+                "hist.america.contemporanea.eua_expansionismo_guerra_civil"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.america.independencias.america_hispanica_haiti",
+              "label": "Independências da América Hispânica e Revolução Haitiana",
+              "descricao": "Cobre crise colonial espanhola, elites criollas, Bolívar, San Martín, fragmentação política e Revolução Haitiana como independência antiescravista. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Bolívar",
+                "San Martín",
+                "criollos",
+                "independência hispano-americana",
+                "Haiti",
+                "Toussaint Louverture"
+              ],
+              "keywordsContexto": [
+                "América Latina",
+                "fragmentação",
+                "escravidão"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer independências da américa hispânica e revolução haitiana para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Independência do Brasil",
+                "quilombos"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_imperio.independencia.processo_independencia",
+                "hist.brasil_colonial.escravidao.resistencias_quilombos"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.america.contemporanea",
+          "label": "América contemporânea",
+          "escopos": [
+            {
+              "id": "hist.america.contemporanea.eua_expansionismo_guerra_civil",
+              "label": "Estados Unidos: expansionismo e Guerra Civil",
+              "descricao": "Cobre destino manifesto, expansão territorial, escravidão, Guerra de Secessão e consolidação dos EUA no século XIX. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "destino manifesto",
+                "Guerra Civil",
+                "Guerra de Secessão",
+                "escravidão nos EUA",
+                "expansionismo",
+                "Lincoln"
+              ],
+              "keywordsContexto": [
+                "EUA",
+                "século XIX",
+                "território"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer estados unidos: expansionismo e guerra civil para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "intervencionismo na América Latina",
+                "imperialismo europeu"
+              ],
+              "naoConfundirCom": [],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.america.contemporanea.america_latina_populismos_ditaduras",
+              "label": "América Latina: revoluções, populismos e ditaduras",
+              "descricao": "Cobre Revolução Mexicana, Revolução Cubana, populismos, ditaduras latino-americanas e Guerra Fria no continente. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Revolução Mexicana",
+                "Revolução Cubana",
+                "ditaduras latino-americanas",
+                "Perón",
+                "Allende",
+                "Pinochet"
+              ],
+              "keywordsContexto": [
+                "populismo",
+                "Guerra Fria",
+                "América Latina"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer américa latina: revoluções, populismos e ditaduras para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "ditadura militar brasileira",
+                "movimentos sociais atuais"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.ditadura.golpe_1964"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "historia_antiga_medieval",
+      "assuntoLabel": "História Antiga e Medieval",
+      "dominios": [
+        {
+          "id": "hist.antiga.civilizacoes",
+          "label": "Antiguidade",
+          "escopos": [
+            {
+              "id": "hist.antiga.civilizacoes.oriente_antigo",
+              "label": "Civilizações do Oriente Antigo",
+              "descricao": "Cobre Egito, Mesopotâmia, hebreus, fenícios, persas, Estado, religião, escrita, trabalho e organização social no Oriente Antigo. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Egito",
+                "Mesopotâmia",
+                "hebreus",
+                "fenícios",
+                "persas",
+                "Código de Hamurabi"
+              ],
+              "keywordsContexto": [
+                "rio Nilo",
+                "escrita",
+                "Estado teocrático"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer civilizações do oriente antigo para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "mundo greco-romano",
+                "Oriente Médio contemporâneo"
+              ],
+              "naoConfundirCom": [
+                "hist.antiga.civilizacoes.grecia"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.antiga.civilizacoes.grecia",
+              "label": "Grécia Antiga, pólis e democracia",
+              "descricao": "Cobre pólis, Atenas, Esparta, democracia, cidadania, escravidão, cultura e conflitos gregos em contexto histórico. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Grécia",
+                "Atenas",
+                "Esparta",
+                "pólis",
+                "democracia ateniense",
+                "cidadania grega"
+              ],
+              "keywordsContexto": [
+                "escravidão",
+                "cidade-Estado",
+                "filosofia grega"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer grécia antiga, pólis e democracia para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "democracia contemporânea",
+                "teoria filosófica de Platão"
+              ],
+              "naoConfundirCom": [
+                "fil.politica.democracia.classica"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.antiga.civilizacoes.roma",
+              "label": "Roma Antiga: República, Império e crise",
+              "descricao": "Cobre monarquia, república, império, cidadania, escravidão, expansão, cristianismo e crise romana. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Roma",
+                "República Romana",
+                "Império Romano",
+                "pax romana",
+                "cidadania romana",
+                "crise romana"
+              ],
+              "keywordsContexto": [
+                "patrícios",
+                "plebeus",
+                "cristianismo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer roma antiga: república, império e crise para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Igreja medieval",
+                "Renascimento"
+              ],
+              "naoConfundirCom": [
+                "hist.medieval.europa.igreja_cultura"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.medieval.europa",
+          "label": "Idade Média europeia",
+          "escopos": [
+            {
+              "id": "hist.medieval.europa.feudalismo",
+              "label": "Feudalismo e sociedade medieval",
+              "descricao": "Cobre servidão, relações suserano-vassálicas, economia agrária, descentralização política e sociedade estamental. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "feudalismo",
+                "servidão",
+                "suserania",
+                "vassalagem",
+                "senhor feudal",
+                "sociedade estamental"
+              ],
+              "keywordsContexto": [
+                "feudo",
+                "camponeses",
+                "nobreza"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer feudalismo e sociedade medieval para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "estratificação social contemporânea",
+                "latifúndio colonial"
+              ],
+              "naoConfundirCom": [
+                "soc.desigualdade.estratificacao.classes"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.medieval.europa.igreja_cultura",
+              "label": "Igreja medieval, Cruzadas e crise do feudalismo",
+              "descricao": "Cobre poder da Igreja, cultura cristã, cruzadas, renascimento comercial, cidades, peste, crise feudal e transição para a modernidade. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Igreja medieval",
+                "cruzadas",
+                "renascimento comercial",
+                "burguesia medieval",
+                "peste negra",
+                "crise feudal"
+              ],
+              "keywordsContexto": [
+                "catolicismo",
+                "cidades",
+                "comércio"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer igreja medieval, cruzadas e crise do feudalismo para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Reforma Protestante",
+                "Jesuítas"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.formacao_mundo_moderno.reformas_religiosas"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "historia_moderna",
+      "assuntoLabel": "História Moderna",
+      "dominios": [
+        {
+          "id": "hist.moderna.formacao_mundo_moderno",
+          "label": "Formação do mundo moderno",
+          "escopos": [
+            {
+              "id": "hist.moderna.formacao_mundo_moderno.renascimento_humanismo",
+              "label": "Renascimento e humanismo",
+              "descricao": "Cobre antropocentrismo, humanismo, artes renascentistas, ciência moderna nascente e cultura urbana dos séculos XV-XVI. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Renascimento",
+                "humanismo",
+                "antropocentrismo",
+                "Leonardo da Vinci",
+                "Mecenas",
+                "ciência moderna"
+              ],
+              "keywordsContexto": [
+                "arte",
+                "cidades italianas",
+                "burguesia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer renascimento e humanismo para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Modernismo brasileiro",
+                "interpretação estética"
+              ],
+              "naoConfundirCom": [
+                "pt.artes.modernismo.vanguardas"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.moderna.formacao_mundo_moderno.reformas_religiosas",
+              "label": "Reformas religiosas e Contrarreforma",
+              "descricao": "Cobre Reforma Protestante, Lutero, Calvino, anglicanismo, Contrarreforma, Concílio de Trento e conflitos religiosos modernos. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Reforma Protestante",
+                "Lutero",
+                "Calvino",
+                "anglicanismo",
+                "Contrarreforma",
+                "Concílio de Trento"
+              ],
+              "keywordsContexto": [
+                "Igreja",
+                "protestantismo",
+                "catolicismo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer reformas religiosas e contrarreforma para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Igreja medieval",
+                "Jesuítas no Brasil"
+              ],
+              "naoConfundirCom": [
+                "hist.medieval.europa.igreja_cultura"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.moderna.formacao_mundo_moderno.absolutismo_estado_moderno",
+              "label": "Absolutismo, Estado moderno e Revoluções Inglesas",
+              "descricao": "Cobre centralização monárquica, soberania, burocracia, mercantilismo político, teóricos do absolutismo e Revoluções Inglesas como limitação do poder real. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "absolutismo",
+                "Estado moderno",
+                "Luís XIV",
+                "Revolução Inglesa",
+                "Revolução Gloriosa",
+                "parlamentarismo"
+              ],
+              "keywordsContexto": [
+                "soberania",
+                "monarquia",
+                "Hobbes",
+                "Locke"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer absolutismo, estado moderno e revoluções inglesas para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "contratualismo filosófico",
+                "parlamentarismo brasileiro"
+              ],
+              "naoConfundirCom": [
+                "fil.politica.contratualismo.estado"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.moderna.formacao_mundo_moderno.mercantilismo_colonialismo",
+              "label": "Mercantilismo e colonialismo moderno",
+              "descricao": "Cobre práticas mercantilistas, metalismo, balança comercial favorável, monopólios, pacto colonial e expansão colonial europeia. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "mercantilismo",
+                "metalismo",
+                "balança comercial",
+                "pacto colonial",
+                "monopólio",
+                "colonialismo"
+              ],
+              "keywordsContexto": [
+                "Estado moderno",
+                "comércio",
+                "colônias"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer mercantilismo e colonialismo moderno para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "colonização brasileira em detalhe",
+                "neocolonialismo"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.colonizacao.expansao_portuguesa",
+                "hist.contemporanea.seculo_xix.imperialismo_neocolonialismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.moderna.revolucoes",
+          "label": "Iluminismo e revoluções modernas",
+          "escopos": [
+            {
+              "id": "hist.moderna.revolucoes.iluminismo",
+              "label": "Iluminismo e crítica ao Antigo Regime",
+              "descricao": "Cobre racionalismo iluminista, crítica ao absolutismo, liberdade, igualdade jurídica, enciclopedismo e influência política no século XVIII. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Iluminismo",
+                "Antigo Regime",
+                "razão",
+                "Voltaire",
+                "Montesquieu",
+                "Rousseau"
+              ],
+              "keywordsContexto": [
+                "liberdade",
+                "igualdade",
+                "crítica ao absolutismo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer iluminismo e crítica ao antigo regime para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "filosofia iluminista abstrata",
+                "Inconfidência Mineira"
+              ],
+              "naoConfundirCom": [
+                "fil.politica.iluminismo.contratualismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.moderna.revolucoes.revolucao_francesa",
+              "label": "Revolução Francesa e Era Napoleônica",
+              "descricao": "Cobre crise do Antigo Regime, fases revolucionárias, jacobinos, girondinos, terror, Declaração dos Direitos e Era Napoleônica. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Revolução Francesa",
+                "1789",
+                "jacobinos",
+                "girondinos",
+                "Terror",
+                "Napoleão"
+              ],
+              "keywordsContexto": [
+                "burguesia",
+                "direitos",
+                "Antigo Regime"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer revolução francesa e era napoleônica para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Independência do Haiti",
+                "Revolução Industrial"
+              ],
+              "naoConfundirCom": [
+                "hist.america.independencias.america_hispanica_haiti"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.moderna.revolucoes.revolucao_industrial",
+              "label": "Revolução Industrial",
+              "descricao": "Cobre mecanização, fábrica, proletariado, burguesia industrial, transformações produtivas e sociais da industrialização europeia. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Revolução Industrial",
+                "fábrica",
+                "máquina a vapor",
+                "proletariado",
+                "burguesia industrial",
+                "mecanização"
+              ],
+              "keywordsContexto": [
+                "trabalho",
+                "Inglaterra",
+                "urbanização"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer revolução industrial para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "industrialização varguista",
+                "alienação sociológica",
+                "urbanização geográfica"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.vargas.industrializacao_nacional",
+                "soc.trabalho.alienacao"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "historia_contemporanea",
+      "assuntoLabel": "História Contemporânea",
+      "dominios": [
+        {
+          "id": "hist.contemporanea.seculo_xix",
+          "label": "Século XIX, ideologias e imperialismo",
+          "escopos": [
+            {
+              "id": "hist.contemporanea.seculo_xix.liberalismo_nacionalismo_socialismo",
+              "label": "Liberalismo, nacionalismo e socialismo no século XIX",
+              "descricao": "Cobre ideologias políticas do século XIX em contexto histórico, revoluções liberais, movimentos nacionais e críticas sociais. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "liberalismo",
+                "nacionalismo",
+                "socialismo",
+                "revoluções de 1848",
+                "unificação italiana",
+                "unificação alemã"
+              ],
+              "keywordsContexto": [
+                "século XIX",
+                "ideologias",
+                "movimentos nacionais"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer liberalismo, nacionalismo e socialismo no século xix para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "teoria sociológica de Marx",
+                "filosofia política abstrata"
+              ],
+              "naoConfundirCom": [
+                "soc.trabalho.marx.classes",
+                "fil.politica.marx.estado"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.contemporanea.seculo_xix.imperialismo_neocolonialismo",
+              "label": "Imperialismo e neocolonialismo",
+              "descricao": "Cobre partilha da África e Ásia, domínio europeu, justificativas civilizatórias, exploração econômica e rivalidades imperialistas. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "imperialismo",
+                "neocolonialismo",
+                "partilha da África",
+                "Conferência de Berlim",
+                "missão civilizatória",
+                "colonialismo"
+              ],
+              "keywordsContexto": [
+                "África",
+                "Ásia",
+                "Europa"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer imperialismo e neocolonialismo para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "globalização contemporânea",
+                "colonização americana"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.formacao_mundo_moderno.mercantilismo_colonialismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.contemporanea.guerras_totalitarismos",
+          "label": "Guerras mundiais e totalitarismos",
+          "escopos": [
+            {
+              "id": "hist.contemporanea.guerras_totalitarismos.primeira_guerra",
+              "label": "Primeira Guerra Mundial",
+              "descricao": "Cobre imperialismo, nacionalismos, alianças, guerra de trincheiras, Tratado de Versalhes e consequências da Primeira Guerra. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Primeira Guerra",
+                "trincheiras",
+                "Tratado de Versalhes",
+                "Tríplice Entente",
+                "Tríplice Aliança",
+                "1914"
+              ],
+              "keywordsContexto": [
+                "nacionalismo",
+                "imperialismo",
+                "Europa"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer primeira guerra mundial para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Segunda Guerra",
+                "Guerra Fria"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.guerras_totalitarismos.segunda_guerra"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.contemporanea.guerras_totalitarismos.revolucao_russa",
+              "label": "Revolução Russa e socialismo soviético",
+              "descricao": "Cobre crise czarista, Revolução de 1917, bolcheviques, guerra civil, URSS, Lenin e Stalinismo. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Revolução Russa",
+                "1917",
+                "bolcheviques",
+                "Lenin",
+                "Stalin",
+                "URSS"
+              ],
+              "keywordsContexto": [
+                "socialismo",
+                "czarismo",
+                "sovietes"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer revolução russa e socialismo soviético para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "socialismo como teoria",
+                "Guerra Fria"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.guerra_fria.bipolaridade"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.contemporanea.guerras_totalitarismos.fascismo_nazismo",
+              "label": "Fascismo, nazismo e regimes totalitários",
+              "descricao": "Cobre características dos totalitarismos, fascismo italiano, nazismo alemão, propaganda, autoritarismo, racismo e antissemitismo. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "fascismo",
+                "nazismo",
+                "Mussolini",
+                "Hitler",
+                "totalitarismo",
+                "antissemitismo"
+              ],
+              "keywordsContexto": [
+                "propaganda",
+                "autoritarismo",
+                "partido único"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer fascismo, nazismo e regimes totalitários para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Estado Novo",
+                "ditadura militar brasileira"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.vargas.estado_novo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.contemporanea.guerras_totalitarismos.segunda_guerra",
+              "label": "Segunda Guerra Mundial e Holocausto",
+              "descricao": "Cobre causas, fases, Eixo/Aliados, genocídio, Holocausto, fim da guerra e nova ordem internacional pós-1945. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Segunda Guerra",
+                "Holocausto",
+                "Eixo",
+                "Aliados",
+                "genocídio",
+                "1945"
+              ],
+              "keywordsContexto": [
+                "nazismo",
+                "guerra total",
+                "ONU"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer segunda guerra mundial e holocausto para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Primeira Guerra",
+                "Guerra Fria"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.guerra_fria.bipolaridade"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.contemporanea.guerra_fria",
+          "label": "Guerra Fria e mundo bipolar",
+          "escopos": [
+            {
+              "id": "hist.contemporanea.guerra_fria.bipolaridade",
+              "label": "Guerra Fria e bipolaridade",
+              "descricao": "Cobre disputa EUA-URSS, capitalismo/socialismo, corrida armamentista, corrida espacial, propaganda e conflitos indiretos. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Guerra Fria",
+                "bipolaridade",
+                "EUA",
+                "URSS",
+                "corrida armamentista",
+                "corrida espacial"
+              ],
+              "keywordsContexto": [
+                "capitalismo",
+                "socialismo",
+                "propaganda"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer guerra fria e bipolaridade para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "globalização",
+                "fim da URSS"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.guerra_fria.fim_urss_nova_ordem"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.contemporanea.guerra_fria.descolonizacao_afroasiatica",
+              "label": "Descolonização afro-asiática",
+              "descricao": "Cobre independências na África e Ásia, crise dos impérios coloniais, Bandung, Terceiro Mundo e neocolonialismo. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "descolonização",
+                "Bandung",
+                "Terceiro Mundo",
+                "África",
+                "Ásia",
+                "independências afro-asiáticas"
+              ],
+              "keywordsContexto": [
+                "neocolonialismo",
+                "Guerra Fria",
+                "nacionalismo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer descolonização afro-asiática para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "independências americanas",
+                "partilha da África"
+              ],
+              "naoConfundirCom": [
+                "hist.america.independencias.america_hispanica_haiti"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.contemporanea.guerra_fria.conflitos_revolucoes",
+              "label": "Conflitos e revoluções na Guerra Fria",
+              "descricao": "Cobre Coreia, Vietnã, Revolução Chinesa, Revolução Cubana e disputas periféricas da Guerra Fria. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "Guerra da Coreia",
+                "Guerra do Vietnã",
+                "Revolução Chinesa",
+                "Revolução Cubana",
+                "Mao",
+                "Fidel Castro"
+              ],
+              "keywordsContexto": [
+                "conflitos indiretos",
+                "socialismo",
+                "capitalismo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer conflitos e revoluções na guerra fria para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "ditaduras latino-americanas",
+                "revolução haitiana"
+              ],
+              "naoConfundirCom": [
+                "hist.america.contemporanea.america_latina_populismos_ditaduras"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.contemporanea.guerra_fria.fim_urss_nova_ordem",
+              "label": "Crise do socialismo real e fim da URSS",
+              "descricao": "Cobre crise soviética, perestroika, glasnost, queda do Muro de Berlim, fim da URSS e reorganização geopolítica pós-Guerra Fria. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "fim da URSS",
+                "perestroika",
+                "glasnost",
+                "queda do Muro de Berlim",
+                "Gorbachev",
+                "Nova Ordem Mundial"
+              ],
+              "keywordsContexto": [
+                "socialismo real",
+                "1989",
+                "1991"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer crise do socialismo real e fim da urss para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Russa",
+                "globalização econômica"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.mundo_recente.globalizacao_neoliberalismo"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        },
+        {
+          "id": "hist.contemporanea.mundo_recente",
+          "label": "Mundo recente, globalização e conflitos",
+          "escopos": [
+            {
+              "id": "hist.contemporanea.mundo_recente.globalizacao_neoliberalismo",
+              "label": "Globalização e neoliberalismo em perspectiva histórica",
+              "descricao": "Cobre transformações políticas e econômicas do final do século XX, neoliberalismo, reestruturação produtiva e globalização como processo histórico. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "globalização",
+                "neoliberalismo",
+                "reestruturação produtiva",
+                "Consenso de Washington",
+                "privatização",
+                "anos 1990"
+              ],
+              "keywordsContexto": [
+                "capitalismo",
+                "mercado",
+                "Estado mínimo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer globalização e neoliberalismo em perspectiva histórica para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "fluxos territoriais",
+                "blocos econômicos"
+              ],
+              "naoConfundirCom": [
+                "geo.economica.globalizacao.fluxos"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "historiografia_memoria",
+      "assuntoLabel": "Historiografia, memória e patrimônio",
+      "dominios": [
+        {
+          "id": "hist.historiografia.fontes_memoria",
+          "label": "Fontes históricas, memória e patrimônio",
+          "escopos": [
+            {
+              "id": "hist.historiografia.fontes_memoria.fontes_historicas",
+              "label": "Fontes históricas e interpretação documental",
+              "descricao": "Cobre uso de documentos, imagens, relatos, mapas, cultura material e crítica de fontes para produção do conhecimento histórico. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "fonte histórica",
+                "documento histórico",
+                "relato",
+                "imagem histórica",
+                "cultura material",
+                "historiador"
+              ],
+              "keywordsContexto": [
+                "memória",
+                "interpretação",
+                "arquivo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer fontes históricas e interpretação documental para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "interpretação textual geral",
+                "gênero textual"
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.inferencia"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            },
+            {
+              "id": "hist.historiografia.fontes_memoria.memoria_patrimonio",
+              "label": "Memória, identidade histórica e patrimônio cultural",
+              "descricao": "Cobre memória coletiva, identidade histórica, silenciamentos, disputas narrativas, patrimônio material/imaterial e políticas de preservação. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "keywords": [
+                "memória",
+                "patrimônio cultural",
+                "tombamento",
+                "identidade histórica",
+                "patrimônio imaterial",
+                "IPHAN"
+              ],
+              "keywordsContexto": [
+                "narrativa",
+                "preservação",
+                "cultura"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer memória, identidade histórica e patrimônio cultural para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "patrimônio natural",
+                "identidade sociológica"
+              ],
+              "naoConfundirCom": [
+                "soc.cultura.identidade.memoria_coletiva"
+              ],
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "nao_classificado",
+      "assuntoLabel": "Não classificado",
+      "dominios": [
+        {
+          "id": "hist.nao_classificado",
+          "label": "Fallback de História",
+          "escopos": [
+            {
+              "id": "hist.__nao_classificado",
+              "label": "Não classificado — História",
+              "descricao": "Usar quando o texto estiver ilegível, a rota disciplinar estiver incerta, a confiança for inferior ao limiar ou nenhum escopo de História for adequado. NÃO usar como atalho quando houver escopo plausível com evidência suficiente.",
+              "keywords": [],
+              "keywordsContexto": [],
+              "exemplosEnunciado": [
+                "Questão com enunciado incompleto, imagem ausente ou conflito real entre rotas disciplinares."
+              ],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "regraDesempate": "Se a confiança do primário for menor que 0.45, se houver empate irresolúvel entre História e outra disciplina, ou se faltarem dados do enunciado, usar este fallback e marcar revisão."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "changelog": [
+    "v1.0.0: desmembrado de humanas agregado para catálogo próprio de História com prefixo hist.*.",
+    "v1.0.0: versão operacional enxuta com 62 escopos reais + hist.__nao_classificado, evitando teto de 80.",
+    "v1.0.0: inclui negativeHints, naoConfundirCom e regraDesempate em todos os escopos."
+  ]
+}

@@ -1,0 +1,691 @@
+{
+  "schemaVersion": "1.0.0",
+  "notas": "Mapeamento hum.* (catalogo-humanas-v1.2.0.json) → escopos disciplinares v1.0.0. Não copiar cegamente: reclassificar pelo conteúdo quando tipo=split ou roteamento_obrigatorio. escopoId destino é fonte de verdade pedagógica.",
+  "catalogoOrigem": {
+    "arquivo": "catalogo-humanas-v1.2.0.json",
+    "materiaId": "humanas",
+    "prefixo": "hum",
+    "escoposN2": 40,
+    "fallback": "hum.__nao_classificado"
+  },
+  "catalogosDestino": {
+    "historia": {
+      "arquivo": "catalogo-historia-v1.0.0.json",
+      "prefixo": "hist",
+      "fallback": "hist.__nao_classificado",
+      "escoposN2": 62
+    },
+    "geografia": {
+      "arquivo": "catalogo-geografia-v1.0.0.json",
+      "prefixo": "geo",
+      "fallback": "geo.__nao_classificado",
+      "escoposN2": 50
+    },
+    "filosofia": {
+      "arquivo": "catalogo-filosofia-v1.0.0.json",
+      "prefixo": "fil",
+      "fallback": "fil.__nao_classificado",
+      "escoposN2": 42
+    },
+    "sociologia": {
+      "arquivo": "catalogo-sociologia-v1.0.0.json",
+      "prefixo": "soc",
+      "fallback": "soc.__nao_classificado",
+      "escoposN2": 45
+    }
+  },
+  "roteamentoSpec": "roteamento-humanas-v1.0.json",
+  "regrasMigracao": [
+    "Passo 1: inferir disciplina (roteamento-humanas) quando hum.* era agregado ou tipo=roteamento_obrigatorio.",
+    "Passo 2: escolher escopo N2 dentro do catálogo disciplinar — preferir candidato primario; demais são split histórico.",
+    "Registros legados com hum.__nao_classificado → reclassificar do zero (roteamento + N2), não mapear automaticamente.",
+    "Um hum.* pode expandir para vários escopos (granularidade v1.0 > v1.2 agregado).",
+    "Escopos novos sem linha hum.* não têm migração reversa — só classificação forward.",
+    "materiaId/temaId de taxonomy.json não entram na migração de escopoId."
+  ],
+  "mapeamentos": [
+    {
+      "de": "hum.historia_brasil.colonizacao.povoamento",
+      "labelOrigem": "Povoamento e economia colonial",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.brasil_colonial.colonizacao.expansao_portuguesa",
+        "hist.brasil_colonial.colonizacao.administracao_colonial",
+        "hist.brasil_colonial.colonizacao.economia_acucareira",
+        "hist.brasil_colonial.colonizacao.interiorizacao_bandeirismo"
+      ],
+      "primarioSugerido": "hist.brasil_colonial.colonizacao.economia_acucareira"
+    },
+    {
+      "de": "hum.historia_brasil.colonizacao.escravidao",
+      "labelOrigem": "Escravidão e resistências",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.brasil_colonial.escravidao.trafico_africano",
+        "hist.brasil_colonial.escravidao.resistencias_quilombos"
+      ],
+      "primarioSugerido": "hist.brasil_colonial.escravidao.trafico_africano"
+    },
+    {
+      "de": "hum.historia_brasil.colonizacao.jesuitas_indigenas",
+      "labelOrigem": "Jesuítas e povos indígenas",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.brasil_colonial.indigenas_igreja.povos_indigenas",
+        "hist.brasil_colonial.indigenas_igreja.jesuitas_catequese"
+      ],
+      "primarioSugerido": "hist.brasil_colonial.indigenas_igreja.jesuitas_catequese"
+    },
+    {
+      "de": "hum.historia_brasil.imperio.independencia",
+      "labelOrigem": "Independência e Primeiro Reinado",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.brasil_imperio.independencia.processo_independencia",
+        "hist.brasil_imperio.independencia.primeiro_reinado",
+        "hist.brasil_imperio.independencia.periodo_regencial"
+      ],
+      "primarioSugerido": "hist.brasil_imperio.independencia.processo_independencia"
+    },
+    {
+      "de": "hum.historia_brasil.imperio.segundo_reinado",
+      "labelOrigem": "Segundo Reinado e abolição",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.brasil_imperio.segundo_reinado.cafe_imigracao",
+        "hist.brasil_imperio.segundo_reinado.abolicionismo_crise"
+      ],
+      "primarioSugerido": "hist.brasil_imperio.segundo_reinado.abolicionismo_crise"
+    },
+    {
+      "de": "hum.historia_brasil.imperio.republica_velha",
+      "labelOrigem": "República Velha e oligarchias",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.brasil_republica.primeira_republica.republica_espada_1891",
+        "hist.brasil_republica.primeira_republica.oligarquias_coronelismo",
+        "hist.brasil_republica.primeira_republica.economia_cafe",
+        "hist.brasil_republica.primeira_republica.revoltas_sociais",
+        "hist.brasil_republica.primeira_republica.tenentismo_1930"
+      ],
+      "primarioSugerido": "hist.brasil_republica.primeira_republica.oligarquias_coronelismo"
+    },
+    {
+      "de": "hum.historia_brasil.contemporanea.vargas",
+      "labelOrigem": "Era Vargas e industrialização",
+      "disciplina": "historia",
+      "tipo": "roteamento_obrigatorio",
+      "notas": "Industrialização como processo histórico-político → hist; como reorganização espacial/econômica → geo.",
+      "para": [
+        "hist.brasil_republica.vargas.provisorio_constitucional",
+        "hist.brasil_republica.vargas.estado_novo",
+        "hist.brasil_republica.vargas.trabalhismo_clt",
+        "hist.brasil_republica.vargas.industrializacao_nacional"
+      ],
+      "candidatosOutrasDisciplinas": [
+        "geo.economia.industrializacao.industrializacao_brasileira"
+      ],
+      "primarioSugerido": "hist.brasil_republica.vargas.trabalhismo_clt"
+    },
+    {
+      "de": "hum.historia_brasil.contemporanea.ditadura",
+      "labelOrigem": "Regime militar e redemocratização",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.brasil_republica.democracia_populismo.redemocratizacao_1945_partidos",
+        "hist.brasil_republica.democracia_populismo.jk_desenvolvimentismo",
+        "hist.brasil_republica.democracia_populismo.jango_reformas_base",
+        "hist.brasil_republica.ditadura.golpe_1964",
+        "hist.brasil_republica.ditadura.repressao_ai5",
+        "hist.brasil_republica.ditadura.milagre_crise",
+        "hist.brasil_republica.ditadura.abertura_redemocratizacao"
+      ],
+      "primarioSugerido": "hist.brasil_republica.ditadura.golpe_1964"
+    },
+    {
+      "de": "hum.historia_brasil.contemporanea.republica_recente",
+      "labelOrigem": "Brasil recente (1990–hoje)",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.brasil_republica.nova_republica.constituicao_1988",
+        "hist.contemporanea.mundo_recente.globalizacao_neoliberalismo"
+      ],
+      "primarioSugerido": "hist.brasil_republica.nova_republica.constituicao_1988"
+    },
+    {
+      "de": "hum.historia_geral.antiga_medieval.antiguidade",
+      "labelOrigem": "Grécia, Roma e civilizações antigas",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.antiga.civilizacoes.oriente_antigo",
+        "hist.antiga.civilizacoes.grecia",
+        "hist.antiga.civilizacoes.roma"
+      ],
+      "primarioSugerido": "hist.antiga.civilizacoes.grecia"
+    },
+    {
+      "de": "hum.historia_geral.antiga_medieval.medieval",
+      "labelOrigem": "Feudalismo e Idade Média",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.medieval.europa.feudalismo",
+        "hist.medieval.europa.igreja_cultura"
+      ],
+      "primarioSugerido": "hist.medieval.europa.feudalismo"
+    },
+    {
+      "de": "hum.historia_geral.moderna.absolutismo",
+      "labelOrigem": "Absolutismo e mercantilismo",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.moderna.formacao_mundo_moderno.absolutismo_estado_moderno",
+        "hist.moderna.formacao_mundo_moderno.mercantilismo_colonialismo"
+      ],
+      "primarioSugerido": "hist.moderna.formacao_mundo_moderno.absolutismo_estado_moderno"
+    },
+    {
+      "de": "hum.historia_geral.moderna.revolutions",
+      "labelOrigem": "Revoluções e Iluminismo",
+      "disciplina": "historia",
+      "tipo": "roteamento_obrigatorio",
+      "notas": "Iluminismo como movimento histórico → hist; como corrente filosófica → fil.",
+      "para": [
+        "hist.moderna.formacao_mundo_moderno.renascimento_humanismo",
+        "hist.moderna.revolucoes.iluminismo",
+        "hist.moderna.revolucoes.revolucao_francesa",
+        "hist.moderna.revolucoes.revolucao_industrial"
+      ],
+      "candidatosOutrasDisciplinas": [
+        "fil.epistemologia.conhecimento.racionalismo_empirismo"
+      ],
+      "primarioSugerido": "hist.moderna.revolucoes.iluminismo"
+    },
+    {
+      "de": "hum.historia_geral.moderna.imperialismo",
+      "labelOrigem": "Imperialismo e nacionalismos",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.contemporanea.seculo_xix.liberalismo_nacionalismo_socialismo",
+        "hist.contemporanea.seculo_xix.imperialismo_neocolonialismo"
+      ],
+      "primarioSugerido": "hist.contemporanea.seculo_xix.imperialismo_neocolonialismo"
+    },
+    {
+      "de": "hum.historia_geral.contemporanea.guerras",
+      "labelOrigem": "Guerras mundiais e Guerra Fria",
+      "disciplina": "historia",
+      "tipo": "split",
+      "para": [
+        "hist.contemporanea.guerras_totalitarismos.primeira_guerra",
+        "hist.contemporanea.guerras_totalitarismos.revolucao_russa",
+        "hist.contemporanea.guerras_totalitarismos.fascismo_nazismo",
+        "hist.contemporanea.guerras_totalitarismos.segunda_guerra",
+        "hist.contemporanea.guerra_fria.bipolaridade",
+        "hist.contemporanea.guerra_fria.descolonizacao_afroasiatica",
+        "hist.contemporanea.guerra_fria.conflitos_revolucoes",
+        "hist.contemporanea.guerra_fria.fim_urss_nova_ordem"
+      ],
+      "primarioSugerido": "hist.contemporanea.guerra_fria.bipolaridade"
+    },
+    {
+      "de": "hum.historia_geral.contemporanea.globalizacao",
+      "labelOrigem": "Globalização e conflitos recentes",
+      "disciplina": "historia",
+      "tipo": "roteamento_obrigatorio",
+      "notas": "Globalização como processo histórico → hist; espacial/econômica → geo; fenômeno social → soc.",
+      "para": [
+        "hist.contemporanea.mundo_recente.globalizacao_neoliberalismo"
+      ],
+      "candidatosOutrasDisciplinas": [
+        "geo.economia.globalizacao.fluxos_redes",
+        "geo.economia.globalizacao.blocos_economicos",
+        "soc.globalizacao.contemporanea.globalizacao_cultural"
+      ],
+      "primarioSugerido": "hist.contemporanea.mundo_recente.globalizacao_neoliberalismo"
+    },
+    {
+      "de": "hum.geografia.fisica.clima",
+      "labelOrigem": "Clima e tempo atmosférico",
+      "disciplina": "geografia",
+      "tipo": "split",
+      "para": [
+        "geo.fisica_ambiental.climatologia.tempo_clima",
+        "geo.fisica_ambiental.climatologia.massas_ar",
+        "geo.fisica_ambiental.climatologia.fenomenos_climaticos"
+      ],
+      "primarioSugerido": "geo.fisica_ambiental.climatologia.tempo_clima"
+    },
+    {
+      "de": "hum.geografia.fisica.relevo_hidrografia",
+      "labelOrigem": "Relevo e hidrografia",
+      "disciplina": "geografia",
+      "tipo": "split",
+      "para": [
+        "geo.fisica_ambiental.relevo_hidrografia.relevo_processos",
+        "geo.fisica_ambiental.relevo_hidrografia.solos",
+        "geo.fisica_ambiental.relevo_hidrografia.bacias_hidrograficas"
+      ],
+      "primarioSugerido": "geo.fisica_ambiental.relevo_hidrografia.relevo_processos"
+    },
+    {
+      "de": "hum.geografia.fisica.biomas",
+      "labelOrigem": "Biomas e vegetação",
+      "disciplina": "geografia",
+      "tipo": "split",
+      "para": [
+        "geo.fisica_ambiental.biomas.biomas_brasileiros",
+        "geo.fisica_ambiental.biomas.dominios_morfoclimaticos"
+      ],
+      "primarioSugerido": "geo.fisica_ambiental.biomas.biomas_brasileiros"
+    },
+    {
+      "de": "hum.geografia.humana.urbanizacao",
+      "labelOrigem": "Urbanização e metropolização",
+      "disciplina": "geografia",
+      "tipo": "roteamento_obrigatorio",
+      "notas": "Organização espacial urbana → geo; segregação como fenômeno social puro → soc (raro).",
+      "para": [
+        "geo.urbana.urbanizacao.processo_urbanizacao",
+        "geo.urbana.urbanizacao.metropolizacao_conurbacao",
+        "geo.urbana.urbanizacao.segregacao_socioespacial",
+        "geo.urbana.urbanizacao.problemas_urbanos",
+        "geo.urbana.rede_urbana.hierarquia_urbana"
+      ],
+      "candidatosOutrasDisciplinas": [
+        "soc.desigualdades.sociais.pobreza_exclusao"
+      ],
+      "primarioSugerido": "geo.urbana.urbanizacao.processo_urbanizacao"
+    },
+    {
+      "de": "hum.geografia.humana.industrializacao",
+      "labelOrigem": "Industrialização e economia",
+      "disciplina": "geografia",
+      "tipo": "roteamento_obrigatorio",
+      "notas": "Industrialização espacial/econômica → geo; política histórica varguista → hist.",
+      "para": [
+        "geo.economia.industrializacao.industrializacao_mundial",
+        "geo.economia.industrializacao.industrializacao_brasileira",
+        "geo.economia.industrializacao.reestruturacao_produtiva"
+      ],
+      "candidatosOutrasDisciplinas": [
+        "hist.brasil_republica.vargas.industrializacao_nacional"
+      ],
+      "primarioSugerido": "geo.economia.industrializacao.industrializacao_brasileira"
+    },
+    {
+      "de": "hum.geografia.humana.globalizacao",
+      "labelOrigem": "Globalização e fluxos",
+      "disciplina": "geografia",
+      "tipo": "roteamento_obrigatorio",
+      "para": [
+        "geo.economia.globalizacao.fluxos_redes",
+        "geo.economia.globalizacao.divisao_internacional_trabalho",
+        "geo.economia.globalizacao.blocos_economicos"
+      ],
+      "candidatosOutrasDisciplinas": [
+        "hist.contemporanea.mundo_recente.globalizacao_neoliberalismo",
+        "soc.globalizacao.contemporanea.globalizacao_cultural"
+      ],
+      "primarioSugerido": "geo.economia.globalizacao.fluxos_redes"
+    },
+    {
+      "de": "hum.geografia.humana.agricultura",
+      "labelOrigem": "Agricultura e uso do solo",
+      "disciplina": "geografia",
+      "tipo": "split",
+      "para": [
+        "geo.agraria.espaco_rural.estrutura_fundiaria",
+        "geo.agraria.espaco_rural.agricultura_familiar",
+        "geo.agraria.espaco_rural.agronegocio",
+        "geo.agraria.espaco_rural.frente_agricola",
+        "geo.agraria.espaco_rural.conflitos_campo"
+      ],
+      "primarioSugerido": "geo.agraria.espaco_rural.estrutura_fundiaria"
+    },
+    {
+      "de": "hum.geografia.brasil.regioes",
+      "labelOrigem": "Regiões e desigualdades regionais",
+      "disciplina": "geografia",
+      "tipo": "split",
+      "para": [
+        "geo.economia.desenvolvimento.desigualdades_regionais",
+        "geo.politica_geopolitica.estado_territorio.geopolitica_brasileira"
+      ],
+      "primarioSugerido": "geo.economia.desenvolvimento.desigualdades_regionais"
+    },
+    {
+      "de": "hum.geografia.brasil.ambiental",
+      "labelOrigem": "Questões ambientais brasileiras",
+      "disciplina": "geografia",
+      "tipo": "split",
+      "para": [
+        "geo.fisica_ambiental.impactos_ambientais.desmatamento_queimadas",
+        "geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas",
+        "geo.fisica_ambiental.impactos_ambientais.poluicao_residuos",
+        "geo.fisica_ambiental.impactos_ambientais.sustentabilidade"
+      ],
+      "primarioSugerido": "geo.fisica_ambiental.impactos_ambientais.desmatamento_queimadas"
+    },
+    {
+      "de": "hum.geografia.brasil.demografia",
+      "labelOrigem": "Demografia e população",
+      "disciplina": "geografia",
+      "tipo": "split",
+      "para": [
+        "geo.populacao.demografia.crescimento_transicao",
+        "geo.populacao.demografia.estrutura_etaria",
+        "geo.populacao.demografia.distribuicao_densidade",
+        "geo.populacao.migracoes.internas_brasil",
+        "geo.populacao.migracoes.mobilidade_trabalho"
+      ],
+      "primarioSugerido": "geo.populacao.demografia.distribuicao_densidade"
+    },
+    {
+      "de": "hum.geografia.cartografia.mapas",
+      "labelOrigem": "Mapas, projeções e coordenadas",
+      "disciplina": "geografia",
+      "tipo": "split",
+      "para": [
+        "geo.cartografia.representacao.coordenadas_orientacao",
+        "geo.cartografia.representacao.escala_cartografica",
+        "geo.cartografia.representacao.projecoes",
+        "geo.cartografia.representacao.altimetria_curvas_nivel",
+        "geo.cartografia.geotecnologias.sensoriamento_remoto",
+        "geo.cartografia.geotecnologias.sig_gps"
+      ],
+      "primarioSugerido": "geo.cartografia.representacao.escala_cartografica"
+    },
+    {
+      "de": "hum.filosofia.classica_moderna.antiga",
+      "labelOrigem": "Filosofia antiga",
+      "disciplina": "filosofia",
+      "tipo": "split",
+      "para": [
+        "fil.antiga.pre_socraticos.physis_arche",
+        "fil.antiga.pre_socraticos.heraclito_parmenides",
+        "fil.antiga.socrates_platao_aristoteles.socrates_etica_dialogo",
+        "fil.antiga.socrates_platao_aristoteles.platao_mundo_ideias",
+        "fil.antiga.socrates_platao_aristoteles.aristoteles_metafisica",
+        "fil.antiga.socrates_platao_aristoteles.aristoteles_logica",
+        "fil.antiga.helenismo.estoicismo_epicurismo"
+      ],
+      "primarioSugerido": "fil.antiga.socrates_platao_aristoteles.platao_mundo_ideias"
+    },
+    {
+      "de": "hum.filosofia.classica_moderna.moderna",
+      "labelOrigem": "Racionalismo, empirismo e iluminismo",
+      "disciplina": "filosofia",
+      "tipo": "roteamento_obrigatorio",
+      "notas": "Correntes filosóficas → fil; Iluminismo como movimento histórico → hist.",
+      "para": [
+        "fil.epistemologia.conhecimento.racionalismo_empirismo",
+        "fil.epistemologia.conhecimento.ceticismo",
+        "fil.epistemologia.conhecimento.kant_conhecimento"
+      ],
+      "candidatosOutrasDisciplinas": [
+        "hist.moderna.revolucoes.iluminismo"
+      ],
+      "primarioSugerido": "fil.epistemologia.conhecimento.racionalismo_empirismo"
+    },
+    {
+      "de": "hum.filosofia.contemporanea.etica",
+      "labelOrigem": "Ética e moral",
+      "disciplina": "filosofia",
+      "tipo": "split",
+      "para": [
+        "fil.etica.fundamentos.moral_etica",
+        "fil.etica.fundamentos.relativismo_universalismo",
+        "fil.etica.virtude_dever_consequencia.aristoteles_virtude",
+        "fil.etica.virtude_dever_consequencia.kant_imperativo",
+        "fil.etica.virtude_dever_consequencia.utilitarismo",
+        "fil.etica.aplicada.bioetica",
+        "fil.etica.aplicada.etica_tecnologia",
+        "fil.etica.aplicada.etica_ambiental",
+        "fil.etica.direitos.dignidade_pessoa",
+        "fil.etica.direitos.direitos_humanos"
+      ],
+      "primarioSugerido": "fil.etica.fundamentos.moral_etica"
+    },
+    {
+      "de": "hum.filosofia.contemporanea.politica",
+      "labelOrigem": "Filosofia política",
+      "disciplina": "filosofia",
+      "tipo": "roteamento_obrigatorio",
+      "notas": "Teoria política filosófica → fil; instituições/Estado empírico → soc.",
+      "para": [
+        "fil.politica.estado_poder.estado_legitimidade",
+        "fil.politica.estado_poder.maquiavel",
+        "fil.politica.estado_poder.hobbes",
+        "fil.politica.estado_poder.locke_rousseau",
+        "fil.politica.democracia_justica.democracia_cidadania",
+        "fil.politica.democracia_justica.justica_platao_rawls",
+        "fil.politica.democracia_justica.liberdade",
+        "fil.politica.marx.alienacao_trabalho",
+        "fil.politica.marx.ideologia"
+      ],
+      "candidatosOutrasDisciplinas": [
+        "soc.poder.estado.poder_dominacao",
+        "soc.cidadania.democracia.direitos_cidadania"
+      ],
+      "primarioSugerido": "fil.politica.estado_poder.locke_rousseau"
+    },
+    {
+      "de": "hum.filosofia.contemporanea.epistemologia",
+      "labelOrigem": "Conhecimento e ciência",
+      "disciplina": "filosofia",
+      "tipo": "split",
+      "para": [
+        "fil.epistemologia.conhecimento.verdade_opiniao",
+        "fil.ciencia.metodo.ciencia_moderna",
+        "fil.ciencia.metodo.popper_falsificacionismo",
+        "fil.ciencia.metodo.kuhn_paradigmas"
+      ],
+      "primarioSugerido": "fil.ciencia.metodo.ciencia_moderna"
+    },
+    {
+      "de": "hum.filosofia.contemporanea.existencialismo",
+      "labelOrigem": "Existencialismo e fenomenologia",
+      "disciplina": "filosofia",
+      "tipo": "split",
+      "para": [
+        "fil.existencia.modernidade.existencialismo",
+        "fil.existencia.modernidade.nietzsche",
+        "fil.linguagem.hermeneutica.linguagem_sentido",
+        "fil.linguagem.hermeneutica.hermeneutica",
+        "fil.contemporanea.poder_subjetividade.foucault_poder_disciplina",
+        "fil.contemporanea.poder_subjetividade.habermas_acao_comunicativa"
+      ],
+      "primarioSugerido": "fil.existencia.modernidade.existencialismo"
+    },
+    {
+      "de": "hum.sociologia.classicos.durkheim_weber",
+      "labelOrigem": "Durkheim, Weber e Marx",
+      "disciplina": "sociologia",
+      "tipo": "split",
+      "para": [
+        "soc.teoria.classicos.durkheim_fato_social",
+        "soc.teoria.classicos.weber_acao_social",
+        "soc.teoria.classicos.marx_materialismo"
+      ],
+      "primarioSugerido": "soc.teoria.classicos.durkheim_fato_social"
+    },
+    {
+      "de": "hum.sociologia.classicos.conceitos",
+      "labelOrigem": "Conceitos sociológicos básicos",
+      "disciplina": "sociologia",
+      "tipo": "split",
+      "para": [
+        "soc.teoria.origem.modernidade_sociologia",
+        "soc.teoria.origem.positivismo_comte",
+        "soc.cultura.conceitos.cultura_natureza",
+        "soc.cultura.conceitos.etnocentrismo_relativismo",
+        "soc.cultura.conceitos.socializacao_instituicoes"
+      ],
+      "primarioSugerido": "soc.cultura.conceitos.socializacao_instituicoes"
+    },
+    {
+      "de": "hum.sociologia.contemporanea.estratiificacao",
+      "labelOrigem": "Estratificação social e desigualdade",
+      "disciplina": "sociologia",
+      "tipo": "split",
+      "para": [
+        "soc.classes.estratificacao.classes_sociais",
+        "soc.classes.estratificacao.mobilidade_social",
+        "soc.desigualdades.sociais.pobreza_exclusao",
+        "soc.desigualdades.sociais.meritocracia_desigualdade",
+        "soc.desigualdades.sociais.interseccionalidade"
+      ],
+      "primarioSugerido": "soc.classes.estratificacao.classes_sociais"
+    },
+    {
+      "de": "hum.sociologia.contemporanea.trabalho",
+      "labelOrigem": "Trabalho, produção e consumo",
+      "disciplina": "sociologia",
+      "tipo": "split",
+      "para": [
+        "soc.trabalho.capitalismo.alienacao_exploracao",
+        "soc.trabalho.capitalismo.fordismo_taylorismo",
+        "soc.trabalho.capitalismo.flexibilizacao_precarizacao",
+        "soc.trabalho.capitalismo.sindicatos_direitos"
+      ],
+      "primarioSugerido": "soc.trabalho.capitalismo.flexibilizacao_precarizacao"
+    },
+    {
+      "de": "hum.sociologia.contemporanea.movimentos",
+      "labelOrigem": "Movimentos sociais e cidadania",
+      "disciplina": "sociologia",
+      "tipo": "split",
+      "para": [
+        "soc.movimentos.teoria.acao_coletiva",
+        "soc.movimentos.teoria.novos_movimentos",
+        "soc.movimentos.especificos.movimento_negro",
+        "soc.movimentos.especificos.feminismos",
+        "soc.movimentos.especificos.indigenas_tradicionais",
+        "soc.movimentos.especificos.ambientalismo",
+        "soc.cidadania.democracia.direitos_cidadania",
+        "soc.cidadania.democracia.participacao_politica"
+      ],
+      "primarioSugerido": "soc.movimentos.teoria.acao_coletiva"
+    },
+    {
+      "de": "hum.sociologia.contemporanea.cultura_midia",
+      "labelOrigem": "Cultura, mídia e identidade",
+      "disciplina": "sociologia",
+      "tipo": "split",
+      "para": [
+        "soc.cultura.conceitos.identidade_pertencimento",
+        "soc.cultura.midia.industria_cultural",
+        "soc.cultura.midia.consumo_publicidade",
+        "soc.cultura.midia.midia_opiniao_publica"
+      ],
+      "primarioSugerido": "soc.cultura.midia.midia_opiniao_publica"
+    },
+    {
+      "de": "hum.sociologia.contemporanea.cidade",
+      "labelOrigem": "Sociologia urbana",
+      "disciplina": "sociologia",
+      "tipo": "roteamento_obrigatorio",
+      "notas": "No catálogo v1.0, fenômeno urbano espacial → geo; exclusão/periferização social → soc.",
+      "para": [
+        "soc.desigualdades.sociais.pobreza_exclusao",
+        "soc.desigualdades.genero_raca.racismo_preconceito"
+      ],
+      "candidatosOutrasDisciplinas": [
+        "geo.urbana.urbanizacao.segregacao_socioespacial",
+        "geo.urbana.urbanizacao.problemas_urbanos"
+      ],
+      "primarioSugerido": "geo.urbana.urbanizacao.segregacao_socioespacial"
+    },
+    {
+      "de": "hum.__nao_classificado",
+      "labelOrigem": "Não classificado / revisar",
+      "disciplina": null,
+      "tipo": "reclassificar",
+      "notas": "Não mapear 1:1. Executar roteamento-humanas + classificação N2 disciplinar. Fallback = {prefixo}.__nao_classificado da disciplina roteada.",
+      "para": [],
+      "fallbacksPorDisciplina": {
+        "historia": "hist.__nao_classificado",
+        "geografia": "geo.__nao_classificado",
+        "filosofia": "fil.__nao_classificado",
+        "sociologia": "soc.__nao_classificado"
+      }
+    }
+  ],
+  "escoposNovosSemEquivalenteHum": {
+    "historia": [
+      "hist.brasil_colonial.crise_sistema.mineracao_revoltas",
+      "hist.america.colonizacao.povos_pre_colombianos",
+      "hist.america.colonizacao.conquista_colonizacao_espanhola",
+      "hist.america.independencias.eua",
+      "hist.america.independencias.america_hispanica_haiti",
+      "hist.america.contemporanea.eua_expansionismo_guerra_civil",
+      "hist.america.contemporanea.america_latina_populismos_ditaduras",
+      "hist.moderna.formacao_mundo_moderno.reformas_religiosas",
+      "hist.historiografia.fontes_memoria.fontes_historicas",
+      "hist.historiografia.fontes_memoria.memoria_patrimonio"
+    ],
+    "geografia": [
+      "geo.politica_geopolitica.estado_territorio.territorio_fronteiras",
+      "geo.politica_geopolitica.conflitos.ordem_mundial",
+      "geo.politica_geopolitica.conflitos.conflitos_territoriais",
+      "geo.politica_geopolitica.conflitos.oriente_medio_geopolitica",
+      "geo.politica_geopolitica.conflitos.organismos_internacionais",
+      "geo.urbana.rede_urbana.cidades_globais",
+      "geo.populacao.migracoes.internacionais_refugiados",
+      "geo.economia.desenvolvimento.indicadores_socioeconomicos"
+    ],
+    "filosofia": [
+      "fil.estetica.arte_belo.belo_sublime",
+      "fil.estetica.arte_belo.arte_mimesis",
+      "fil.estetica.arte_belo.industria_cultural"
+    ],
+    "sociologia": [
+      "soc.teoria.brasil.formacao_social",
+      "soc.teoria.brasil.racismo_estrutural",
+      "soc.desigualdades.genero_raca.genero_patriarcado",
+      "soc.desigualdades.genero_raca.diversidade_sexual",
+      "soc.globalizacao.contemporanea.sociedade_rede",
+      "soc.globalizacao.contemporanea.individualismo_modernidade",
+      "soc.globalizacao.contemporanea.migracao_xenofobia",
+      "soc.globalizacao.religiao.secularizacao_pluralismo",
+      "soc.globalizacao.religiao.fundamentalismo_intolerancia",
+      "soc.poder.estado.burocracia_instituicoes",
+      "soc.poder.estado.controle_social",
+      "soc.poder.estado.violencia_estado"
+    ]
+  },
+  "estatisticas": {
+    "mapeamentosTotal": 41,
+    "porTipo": {
+      "split": 28,
+      "roteamento_obrigatorio": 11,
+      "reclassificar": 1
+    },
+    "porDisciplinaOrigem": {
+      "historia": 16,
+      "geografia": 11,
+      "filosofia": 6,
+      "sociologia": 7,
+      "fallback": 1
+    },
+    "escoposDestinoAproximados": {
+      "historia": 62,
+      "geografia": 50,
+      "filosofia": 42,
+      "sociologia": 45
+    },
+    "expansaoGranularidade": "40 hum.* → ~199 escopos disciplinares (sem contar fallbacks)"
+  }
+}

@@ -19,6 +19,13 @@ export async function POST(
     return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
   }
 
+  if (!prova.extracaoValidada) {
+    return NextResponse.json(
+      { error: "Valide a extração (Passo 3) antes de classificar." },
+      { status: 409 }
+    );
+  }
+
   if (!process.env.OPENAI_API_KEY?.trim()) {
     return NextResponse.json(
       { error: "OPENAI_API_KEY não configurada no servidor." },

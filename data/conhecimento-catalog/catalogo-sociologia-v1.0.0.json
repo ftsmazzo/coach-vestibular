@@ -1,0 +1,1587 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.0.0",
+  "materiaId": "sociologia",
+  "materiaLabel": "Sociologia",
+  "areaEnem": "Ciências Humanas e suas Tecnologias",
+  "notas": "Catálogo disciplinar de Sociologia. Área ENEM é metadado; escopoId soc.* é a unidade diagnóstica. Classificar pelo fenômeno social/conceito sociológico exigido, não por evento histórico, território ou palavra solta no texto-base.",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "A IA escolhe apenas IDs existentes até N2. Em N3 propõe conhecimentoExigido em texto livre.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2
+    },
+    "politicaN3": "IA escolhe só N0-N2; N3 é texto livre proposto para conhecimento exigido.",
+    "regraDesempate": "Use descricao como regra mais forte. KeywordsContexto não classificam sozinhas. Se houver conflito Sociologia x História/Geografia/Filosofia, escolha Sociologia apenas quando a pergunta exigir explicar fenômeno social, instituição, cultura, desigualdade, classe, poder social, identidade, trabalho ou movimento social. Persistindo empate ou confiança < 0.45, usar soc.__nao_classificado.",
+    "pesos": {
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "exemplosEnunciado": "referência semântica",
+      "negativeHints": "penalidade"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "teoria_sociologica",
+      "assuntoLabel": "Teoria sociológica",
+      "dominios": [
+        {
+          "id": "soc.teoria.origem",
+          "label": "Origem da Sociologia e pensamento clássico",
+          "escopos": [
+            {
+              "id": "soc.teoria.origem.modernidade_sociologia",
+              "label": "Modernidade e surgimento da Sociologia",
+              "descricao": "Cobre a Sociologia como resposta às transformações da modernidade, industrialização, urbanização, secularização e ordem social. NÃO cobre Revolução Industrial como processo histórico em si.",
+              "keywords": [
+                "Sociologia",
+                "modernidade",
+                "industrialização",
+                "urbanização",
+                "ordem social",
+                "Comte"
+              ],
+              "keywordsContexto": [
+                "sociedade moderna",
+                "ciência social"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar modernidade e surgimento da sociologia como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Industrial europeia como sequência histórica",
+                "máquinas e fábricas como processo econômico histórico"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.revolucoes.revolucao_industrial",
+                "fil.epistemologia.ciencia_metodo.positivismo"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado."
+            },
+            {
+              "id": "soc.teoria.origem.positivismo_comte",
+              "label": "Positivismo e ordem social",
+              "descricao": "Cobre positivismo sociológico, ordem, progresso, cientificismo social e Comte quando o foco for explicar a sociedade por leis sociais. NÃO cobre positivismo como epistemologia filosófica abstrata.",
+              "keywords": [
+                "positivismo",
+                "Comte",
+                "ordem e progresso",
+                "cientificismo",
+                "leis sociais"
+              ],
+              "keywordsContexto": [
+                "método científico",
+                "sociedade"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar positivismo e ordem social como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "epistemologia",
+                "filosofia da ciência",
+                "República brasileira como contexto histórico"
+              ],
+              "naoConfundirCom": [
+                "fil.epistemologia.ciencia_metodo.positivismo",
+                "hist.brasil_republica.primeira_republica.republica_espada"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado."
+            },
+            {
+              "id": "soc.teoria.classicos.durkheim_fato_social",
+              "label": "Durkheim: fato social, coesão e anomia",
+              "descricao": "Cobre fato social, coerção, exterioridade, solidariedade mecânica/orgânica, anomia e integração social em Durkheim. NÃO cobre regras jurídicas isoladas sem análise social.",
+              "keywords": [
+                "Durkheim",
+                "fato social",
+                "anomia",
+                "solidariedade mecânica",
+                "solidariedade orgânica",
+                "coesão social"
+              ],
+              "keywordsContexto": [
+                "normas",
+                "integração",
+                "suicídio"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar durkheim: fato social, coesão e anomia como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "ética normativa",
+                "direito constitucional",
+                "história das instituições"
+              ],
+              "naoConfundirCom": [
+                "fil.etica.normatividade.dever_moral"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado."
+            },
+            {
+              "id": "soc.teoria.classicos.weber_acao_social",
+              "label": "Weber: ação social, racionalização e dominação",
+              "descricao": "Cobre ação social, tipos de ação, racionalização, desencantamento, burocracia e dominação legítima em Weber. NÃO cobre Estado moderno histórico se o foco for cronologia política.",
+              "keywords": [
+                "Weber",
+                "ação social",
+                "racionalização",
+                "burocracia",
+                "dominação legítima",
+                "desencantamento"
+              ],
+              "keywordsContexto": [
+                "ética protestante",
+                "tipo ideal"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar weber: ação social, racionalização e dominação como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "absolutismo",
+                "formação do Estado moderno",
+                "contratualismo filosófico"
+              ],
+              "naoConfundirCom": [
+                "fil.politica.estado.contratualismo",
+                "hist.moderna.formacao_mundo_moderno.absolutismo_estado_moderno"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado."
+            },
+            {
+              "id": "soc.teoria.classicos.marx_materialismo",
+              "label": "Marx: materialismo histórico e luta de classes",
+              "descricao": "Cobre materialismo histórico, modo de produção, infraestrutura/superestrutura, luta de classes e exploração em Marx como teoria social. NÃO cobre Revolução Russa ou socialismo soviético como evento histórico.",
+              "keywords": [
+                "Marx",
+                "materialismo histórico",
+                "luta de classes",
+                "modo de produção",
+                "infraestrutura",
+                "superestrutura"
+              ],
+              "keywordsContexto": [
+                "capitalismo",
+                "exploração",
+                "burguesia",
+                "proletariado"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar marx: materialismo histórico e luta de classes como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Russa",
+                "URSS",
+                "filosofia política de Marx sem fenômeno social empírico"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.guerras_totalitarismos.revolucao_russa",
+                "fil.politica.marx.alienacao"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado."
+            }
+          ]
+        },
+        {
+          "id": "soc.teoria.brasil",
+          "label": "Pensamento social brasileiro",
+          "escopos": [
+            {
+              "id": "soc.teoria.brasil.formacao_social",
+              "label": "Formação social brasileira",
+              "descricao": "Cobre interpretações sociológicas sobre patriarcalismo, escravidão, casa-grande/senzala, cordialidade, mestiçagem e formação social brasileira. NÃO cobre Brasil colonial como cronologia histórica primária.",
+              "keywords": [
+                "formação social brasileira",
+                "Casa-Grande",
+                "Senzala",
+                "homem cordial",
+                "patriarcalismo",
+                "mestiçagem"
+              ],
+              "keywordsContexto": [
+                "Gilberto Freyre",
+                "Sérgio Buarque",
+                "Raymundo Faoro"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar formação social brasileira como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "engenho colonial como economia",
+                "Independência do Brasil",
+                "Era Vargas"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.escravidao.sociedade_colonial",
+                "hist.brasil_imperio.independencia.processo_independencia"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado."
+            },
+            {
+              "id": "soc.teoria.brasil.racismo_estrutural",
+              "label": "Racismo estrutural e relações raciais no Brasil",
+              "descricao": "Cobre racismo estrutural, mito da democracia racial, desigualdades raciais, branqueamento e relações raciais como fenômenos sociais. NÃO cobre escravidão colonial se a pergunta exigir processo histórico específico.",
+              "keywords": [
+                "racismo estrutural",
+                "democracia racial",
+                "relações raciais",
+                "branqueamento",
+                "desigualdade racial"
+              ],
+              "keywordsContexto": [
+                "raça",
+                "etnia",
+                "preconceito",
+                "discriminação"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar racismo estrutural e relações raciais no brasil como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "tráfico atlântico",
+                "quilombos coloniais",
+                "abolição como evento histórico"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.escravidao.trafico_africano",
+                "hist.brasil_colonial.escravidao.resistencias_quilombos"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "racismo_estrutural"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "cultura_identidade",
+      "assuntoLabel": "Cultura, identidade e socialização",
+      "dominios": [
+        {
+          "id": "soc.cultura.conceitos",
+          "label": "Cultura e diversidade",
+          "escopos": [
+            {
+              "id": "soc.cultura.conceitos.cultura_natureza",
+              "label": "Cultura, natureza e sociedade",
+              "descricao": "Cobre distinção entre natureza e cultura, produção simbólica, costumes, valores e práticas sociais aprendidas. NÃO cobre biologia evolutiva ou comportamento animal.",
+              "keywords": [
+                "cultura",
+                "natureza",
+                "símbolos",
+                "costumes",
+                "valores",
+                "aprendizagem social"
+              ],
+              "keywordsContexto": [
+                "práticas sociais",
+                "normas culturais"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar cultura, natureza e sociedade como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "evolução biológica",
+                "genética",
+                "ecologia"
+              ],
+              "naoConfundirCom": [
+                "bio.evolucao.teorias.selecao_natural"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "cultura"
+            },
+            {
+              "id": "soc.cultura.conceitos.etnocentrismo_relativismo",
+              "label": "Etnocentrismo e relativismo cultural",
+              "descricao": "Cobre julgamento de culturas, relativização cultural, diversidade cultural e crítica ao etnocentrismo. NÃO cobre povos antigos/indígenas apenas como conteúdo histórico.",
+              "keywords": [
+                "etnocentrismo",
+                "relativismo cultural",
+                "diversidade cultural",
+                "alteridade",
+                "cultura"
+              ],
+              "keywordsContexto": [
+                "preconceito cultural",
+                "diferença",
+                "outro"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar etnocentrismo e relativismo cultural como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "povos pré-colombianos como processo histórico",
+                "colonização indígena"
+              ],
+              "naoConfundirCom": [
+                "hist.america.colonizacao.povos_pre_colombianos",
+                "hist.brasil_colonial.indigenas_igreja.povos_indigenas_colonizacao"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "alteridade"
+            },
+            {
+              "id": "soc.cultura.conceitos.identidade_pertencimento",
+              "label": "Identidade, pertencimento e reconhecimento",
+              "descricao": "Cobre identidades sociais, pertencimento, reconhecimento, diferença, construção social da identidade e disputas simbólicas. NÃO cobre memória histórica como disputa narrativa do passado.",
+              "keywords": [
+                "identidade",
+                "pertencimento",
+                "reconhecimento",
+                "diferença",
+                "representação",
+                "grupos sociais"
+              ],
+              "keywordsContexto": [
+                "subjetividade",
+                "comunidade",
+                "memória social"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar identidade, pertencimento e reconhecimento como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "fonte histórica",
+                "patrimônio histórico",
+                "narrativa histórica"
+              ],
+              "naoConfundirCom": [
+                "hist.historiografia.fontes_memoria.memoria_patrimonio"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "identidade"
+            },
+            {
+              "id": "soc.cultura.conceitos.socializacao_instituicoes",
+              "label": "Socialização e instituições sociais",
+              "descricao": "Cobre processos de socialização primária/secundária e papel de família, escola, religião, trabalho e mídia na formação social. NÃO cobre instituição política estatal como História ou Filosofia política se o foco for teoria do Estado.",
+              "keywords": [
+                "socialização",
+                "instituições sociais",
+                "família",
+                "escola",
+                "religião",
+                "mídia"
+              ],
+              "keywordsContexto": [
+                "normas",
+                "valores",
+                "aprendizagem",
+                "papéis sociais"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar socialização e instituições sociais como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Estado moderno",
+                "contratualismo",
+                "Constituição"
+              ],
+              "naoConfundirCom": [
+                "fil.politica.estado.contratualismo",
+                "hist.moderna.formacao_mundo_moderno.absolutismo_estado_moderno"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "socializacao"
+            }
+          ]
+        },
+        {
+          "id": "soc.cultura.midia",
+          "label": "Cultura de massa, mídia e consumo",
+          "escopos": [
+            {
+              "id": "soc.cultura.midia.industria_cultural",
+              "label": "Indústria cultural e cultura de massa",
+              "descricao": "Cobre indústria cultural, padronização, consumo cultural, Escola de Frankfurt e crítica sociológica da cultura de massa. NÃO cobre análise literária, artística ou estética como disciplina de Linguagens/Filosofia.",
+              "keywords": [
+                "indústria cultural",
+                "cultura de massa",
+                "Adorno",
+                "Horkheimer",
+                "padronização",
+                "consumo cultural"
+              ],
+              "keywordsContexto": [
+                "mídia",
+                "entretenimento",
+                "mercadoria cultural"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar indústria cultural e cultura de massa como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "figura de linguagem",
+                "análise estética",
+                "modernismo artístico"
+              ],
+              "naoConfundirCom": [
+                "fil.estetica.arte.industria_cultural",
+                "pt.artes.modernismo.vanguardas"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "industria_cultural"
+            },
+            {
+              "id": "soc.cultura.midia.consumo_publicidade",
+              "label": "Consumo, publicidade e sociedade de consumo",
+              "descricao": "Cobre consumo como prática social, publicidade, distinção social, mercantilização e construção de desejos. NÃO cobre cálculo financeiro ou economia de mercado em Matemática/Geografia.",
+              "keywords": [
+                "sociedade de consumo",
+                "consumo",
+                "publicidade",
+                "distinção social",
+                "mercantilização"
+              ],
+              "keywordsContexto": [
+                "marca",
+                "mercadoria",
+                "status",
+                "estilo de vida"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar consumo, publicidade e sociedade de consumo como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "juros",
+                "porcentagem",
+                "PIB",
+                "setores econômicos"
+              ],
+              "naoConfundirCom": [
+                "mat.aritmetica.razao_proporcao.porcentagem",
+                "geo.economica.producao.setores_economia"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "consumo"
+            },
+            {
+              "id": "soc.cultura.midia.midia_opiniao_publica",
+              "label": "Mídia, opinião pública e poder simbólico",
+              "descricao": "Cobre influência da mídia, opinião pública, agenda, representação social e poder simbólico. NÃO cobre interpretação textual em Português se não exigir conceito sociológico.",
+              "keywords": [
+                "mídia",
+                "opinião pública",
+                "poder simbólico",
+                "representação",
+                "agenda",
+                "Bourdieu"
+              ],
+              "keywordsContexto": [
+                "jornal",
+                "redes sociais",
+                "notícia",
+                "discurso"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar mídia, opinião pública e poder simbólico como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "objetivo comunicativo",
+                "gênero textual",
+                "função de linguagem"
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.generos.finalidade_textual"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "poder_simbolico"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "trabalho_classes",
+      "assuntoLabel": "Trabalho, classes e estratificação",
+      "dominios": [
+        {
+          "id": "soc.trabalho.capitalismo",
+          "label": "Trabalho e capitalismo",
+          "escopos": [
+            {
+              "id": "soc.trabalho.capitalismo.alienacao_exploracao",
+              "label": "Alienação, exploração e trabalho assalariado",
+              "descricao": "Cobre alienação, exploração, mais-valia, trabalho assalariado e relações capitalistas em chave sociológica. NÃO cobre legislação trabalhista varguista como processo histórico.",
+              "keywords": [
+                "alienação",
+                "exploração",
+                "mais-valia",
+                "trabalho assalariado",
+                "capitalismo",
+                "proletariado"
+              ],
+              "keywordsContexto": [
+                "Marx",
+                "fábrica",
+                "classe trabalhadora"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar alienação, exploração e trabalho assalariado como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "CLT",
+                "Era Vargas",
+                "Revolução Industrial como sequência histórica"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.vargas.trabalhismo_clt",
+                "hist.moderna.revolucoes.revolucao_industrial"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "trabalho_alienacao"
+            },
+            {
+              "id": "soc.trabalho.capitalismo.fordismo_taylorismo",
+              "label": "Taylorismo, fordismo e organização do trabalho",
+              "descricao": "Cobre divisão técnica do trabalho, linha de montagem, racionalização produtiva, disciplina fabril e modelos fordista/taylorista. NÃO cobre industrialização como período histórico se o foco for cronologia.",
+              "keywords": [
+                "taylorismo",
+                "fordismo",
+                "linha de montagem",
+                "divisão do trabalho",
+                "organização do trabalho"
+              ],
+              "keywordsContexto": [
+                "produção em massa",
+                "fábrica",
+                "tempo e movimento"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar taylorismo, fordismo e organização do trabalho como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Revolução Industrial",
+                "industrialização brasileira",
+                "geografia industrial"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.revolucoes.revolucao_industrial",
+                "geo.economica.producao.industrializacao"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "organizacao_trabalho"
+            },
+            {
+              "id": "soc.trabalho.capitalismo.flexibilizacao_precarizacao",
+              "label": "Flexibilização, precarização e uberização",
+              "descricao": "Cobre transformações contemporâneas do trabalho, terceirização, informalidade, uberização, plataformas digitais e precarização. NÃO cobre tecnologia digital como infraestrutura ou redes geográficas se o foco for espacial.",
+              "keywords": [
+                "precarização",
+                "uberização",
+                "flexibilização",
+                "terceirização",
+                "informalidade",
+                "plataformas digitais"
+              ],
+              "keywordsContexto": [
+                "trabalho contemporâneo",
+                "gig economy",
+                "aplicativos"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar flexibilização, precarização e uberização como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "rede urbana",
+                "fluxos informacionais",
+                "globalização territorial"
+              ],
+              "naoConfundirCom": [
+                "geo.economica.globalizacao.fluxos_redes"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "precarizacao_trabalho"
+            },
+            {
+              "id": "soc.trabalho.capitalismo.sindicatos_direitos",
+              "label": "Sindicatos, direitos trabalhistas e conflitos de classe",
+              "descricao": "Cobre organização sindical, greves, negociação coletiva, conflitos entre capital e trabalho e direitos trabalhistas como luta social. NÃO cobre criação da CLT se o foco for governo Vargas.",
+              "keywords": [
+                "sindicato",
+                "greve",
+                "direitos trabalhistas",
+                "conflito de classe",
+                "movimento operário"
+              ],
+              "keywordsContexto": [
+                "trabalhadores",
+                "negociação",
+                "classe operária"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar sindicatos, direitos trabalhistas e conflitos de classe como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "CLT como política varguista",
+                "Revolta social da Primeira República"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.vargas.trabalhismo_clt",
+                "hist.brasil_republica.primeira_republica.revoltas_sociais"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "movimento_trabalhista"
+            }
+          ]
+        },
+        {
+          "id": "soc.classes.estratificacao",
+          "label": "Classes e estratificação social",
+          "escopos": [
+            {
+              "id": "soc.classes.estratificacao.classes_sociais",
+              "label": "Classes sociais e estratificação",
+              "descricao": "Cobre classes sociais, estratificação, desigualdade de posições sociais, status, renda e poder. NÃO cobre hierarquia colonial/estamental quando o foco for História.",
+              "keywords": [
+                "classes sociais",
+                "estratificação",
+                "status",
+                "renda",
+                "poder",
+                "classe média"
+              ],
+              "keywordsContexto": [
+                "desigualdade",
+                "mobilidade",
+                "pirâmide social"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar classes sociais e estratificação como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "sociedade colonial",
+                "sociedade feudal",
+                "castas antigas"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.escravidao.sociedade_colonial",
+                "hist.medieval.europa.feudalismo"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "estratificacao_social"
+            },
+            {
+              "id": "soc.classes.estratificacao.mobilidade_social",
+              "label": "Mobilidade social e reprodução das desigualdades",
+              "descricao": "Cobre mobilidade social, reprodução social, capital cultural/econômico/simbólico e desigualdade de oportunidades. NÃO cobre migração populacional como fenômeno geográfico.",
+              "keywords": [
+                "mobilidade social",
+                "reprodução social",
+                "capital cultural",
+                "Bourdieu",
+                "desigualdade de oportunidades"
+              ],
+              "keywordsContexto": [
+                "educação",
+                "renda",
+                "meritocracia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar mobilidade social e reprodução das desigualdades como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "migração",
+                "êxodo rural",
+                "fluxos migratórios"
+              ],
+              "naoConfundirCom": [
+                "geo.populacao.migracoes.migracoes_internas",
+                "geo.populacao.migracoes.refugiados_xenofobia"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "mobilidade_social"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "poder_estado_cidadania",
+      "assuntoLabel": "Poder, Estado e cidadania",
+      "dominios": [
+        {
+          "id": "soc.poder.estado",
+          "label": "Poder, dominação e instituições políticas",
+          "escopos": [
+            {
+              "id": "soc.poder.estado.poder_dominacao",
+              "label": "Poder, dominação e legitimidade",
+              "descricao": "Cobre relações de poder, dominação social, legitimidade, autoridade e obediência como fenômenos sociológicos. NÃO cobre teoria normativa do Estado como Filosofia política.",
+              "keywords": [
+                "poder",
+                "dominação",
+                "legitimidade",
+                "autoridade",
+                "obediência",
+                "Weber"
+              ],
+              "keywordsContexto": [
+                "instituições",
+                "controle",
+                "hierarquia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar poder, dominação e legitimidade como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "contratualismo",
+                "Estado de natureza",
+                "soberania filosófica"
+              ],
+              "naoConfundirCom": [
+                "fil.politica.estado.contratualismo"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "poder_dominacao"
+            },
+            {
+              "id": "soc.poder.estado.burocracia_instituicoes",
+              "label": "Burocracia e instituições modernas",
+              "descricao": "Cobre burocracia, racionalização administrativa, impessoalidade, regras formais e instituições modernas. NÃO cobre administração colonial ou estatal em recorte histórico específico.",
+              "keywords": [
+                "burocracia",
+                "instituições",
+                "impessoalidade",
+                "racionalização",
+                "administração"
+              ],
+              "keywordsContexto": [
+                "Estado moderno",
+                "regras",
+                "organização"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar burocracia e instituições modernas como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "capitanias",
+                "Governo-Geral",
+                "Constituição de 1891"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.colonizacao.capitanias_governo_geral",
+                "hist.brasil_republica.primeira_republica.republica_espada"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "burocracia"
+            },
+            {
+              "id": "soc.poder.estado.controle_social",
+              "label": "Controle social, normas e desvio",
+              "descricao": "Cobre controle social formal/informal, normas, sanções, desvio, criminalização e disciplina social. NÃO cobre crime específico como notícia ou legislação sem análise sociológica.",
+              "keywords": [
+                "controle social",
+                "normas",
+                "desvio",
+                "sanção",
+                "criminalização",
+                "disciplina"
+              ],
+              "keywordsContexto": [
+                "vigilância",
+                "punição",
+                "Foucault"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar controle social, normas e desvio como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Código Penal",
+                "interpretação de lei",
+                "autoritarismo histórico"
+              ],
+              "naoConfundirCom": [
+                "fil.politica.poder.foucault_biopoder",
+                "hist.brasil_republica.ditadura.repressao_ai5"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "controle_social"
+            },
+            {
+              "id": "soc.poder.estado.violencia_estado",
+              "label": "Violência, Estado e segurança pública",
+              "descricao": "Cobre violência social, violência estatal, segurança pública, seletividade penal e letalidade como fenômenos sociais. NÃO cobre guerra, golpe ou repressão ditatorial como evento histórico primário.",
+              "keywords": [
+                "violência",
+                "segurança pública",
+                "violência estatal",
+                "seletividade penal",
+                "letalidade",
+                "criminalização"
+              ],
+              "keywordsContexto": [
+                "polícia",
+                "encarceramento",
+                "juventude"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar violência, estado e segurança pública como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "AI-5",
+                "golpe de 1964",
+                "guerras mundiais"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.ditadura.repressao_ai5",
+                "hist.contemporanea.guerras_totalitarismos.segunda_guerra"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "violencia_estado"
+            }
+          ]
+        },
+        {
+          "id": "soc.cidadania.democracia",
+          "label": "Cidadania, democracia e participação",
+          "escopos": [
+            {
+              "id": "soc.cidadania.democracia.direitos_cidadania",
+              "label": "Cidadania e direitos sociais",
+              "descricao": "Cobre cidadania civil, política e social, direitos, inclusão, acesso a políticas públicas e participação social. NÃO cobre Constituição de 1988 como processo histórico se o foco for redemocratização.",
+              "keywords": [
+                "cidadania",
+                "direitos sociais",
+                "direitos civis",
+                "direitos políticos",
+                "políticas públicas"
+              ],
+              "keywordsContexto": [
+                "inclusão",
+                "participação",
+                "Estado",
+                "Marshall"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar cidadania e direitos sociais como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Constituição de 1988",
+                "Assembleia Constituinte",
+                "Revolução Francesa"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.nova_republica.constituicao_1988",
+                "hist.moderna.revolucoes.revolucao_francesa"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "cidadania"
+            },
+            {
+              "id": "soc.cidadania.democracia.participacao_politica",
+              "label": "Participação política e sociedade civil",
+              "descricao": "Cobre participação social, sociedade civil, conselhos, associações, movimentos, democracia participativa e engajamento político. NÃO cobre eleições ou partidos em cronologia histórica específica.",
+              "keywords": [
+                "participação política",
+                "sociedade civil",
+                "democracia participativa",
+                "associações",
+                "conselhos"
+              ],
+              "keywordsContexto": [
+                "engajamento",
+                "mobilização",
+                "esfera pública"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar participação política e sociedade civil como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "sistema partidário de 1945",
+                "Diretas Já como processo histórico"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.democracia_populismo.redemocratizacao_1945",
+                "hist.brasil_republica.ditadura.abertura_redemocratizacao"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "participacao_politica"
+            },
+            {
+              "id": "soc.cidadania.democracia.democracia_representacao",
+              "label": "Democracia, representação e crise de confiança",
+              "descricao": "Cobre representação política, legitimidade democrática, crise de confiança, participação eleitoral e mediação institucional como fenômenos sociais. NÃO cobre filosofia da democracia em sentido normativo abstrato.",
+              "keywords": [
+                "democracia",
+                "representação",
+                "crise de confiança",
+                "eleições",
+                "legitimidade democrática"
+              ],
+              "keywordsContexto": [
+                "voto",
+                "instituições",
+                "opinião pública"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar democracia, representação e crise de confiança como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "democracia ateniense",
+                "contratualismo",
+                "Constituição de 1988"
+              ],
+              "naoConfundirCom": [
+                "hist.antiga.civilizacoes.grecia",
+                "fil.politica.democracia.justica"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "desigualdades",
+      "assuntoLabel": "Desigualdades e marcadores sociais",
+      "dominios": [
+        {
+          "id": "soc.desigualdades.sociais",
+          "label": "Desigualdade social e exclusão",
+          "escopos": [
+            {
+              "id": "soc.desigualdades.sociais.pobreza_exclusao",
+              "label": "Pobreza, exclusão e vulnerabilidade social",
+              "descricao": "Cobre pobreza, exclusão, vulnerabilidade, marginalização e desigualdade de acesso a direitos/serviços. NÃO cobre periferização urbana como fenômeno territorial quando o foco for Geografia.",
+              "keywords": [
+                "pobreza",
+                "exclusão social",
+                "vulnerabilidade",
+                "marginalização",
+                "desigualdade social"
+              ],
+              "keywordsContexto": [
+                "renda",
+                "moradia",
+                "serviços",
+                "periferia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar pobreza, exclusão e vulnerabilidade social como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "segregação socioespacial",
+                "metropolização",
+                "mapa urbano"
+              ],
+              "naoConfundirCom": [
+                "geo.urbana.metropolizacao.segregacao"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "desigualdade_social"
+            },
+            {
+              "id": "soc.desigualdades.sociais.meritocracia_desigualdade",
+              "label": "Meritocracia e desigualdade de oportunidades",
+              "descricao": "Cobre crítica sociológica à meritocracia, reprodução de privilégios e desigualdade de oportunidades. NÃO cobre esforço individual como questão moral filosófica.",
+              "keywords": [
+                "meritocracia",
+                "desigualdade de oportunidades",
+                "privilégio",
+                "reprodução social",
+                "capital cultural"
+              ],
+              "keywordsContexto": [
+                "educação",
+                "renda",
+                "ascensão social"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar meritocracia e desigualdade de oportunidades como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "ética do mérito",
+                "justiça distributiva filosófica"
+              ],
+              "naoConfundirCom": [
+                "fil.etica.justica.justica_distributiva"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "meritocracia"
+            },
+            {
+              "id": "soc.desigualdades.sociais.interseccionalidade",
+              "label": "Interseccionalidade e marcadores sociais",
+              "descricao": "Cobre articulação entre raça, classe, gênero, sexualidade, território e outros marcadores na produção de desigualdades. NÃO cobre um marcador isolado se a questão exigir História específica de um movimento.",
+              "keywords": [
+                "interseccionalidade",
+                "marcadores sociais",
+                "raça",
+                "classe",
+                "gênero",
+                "sexualidade"
+              ],
+              "keywordsContexto": [
+                "desigualdade",
+                "opressão",
+                "identidade"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar interseccionalidade e marcadores sociais como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "movimento sufragista histórico",
+                "abolição",
+                "ditadura"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_imperio.segundo_reinado.abolicionismo"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "interseccionalidade"
+            }
+          ]
+        },
+        {
+          "id": "soc.desigualdades.genero_raca",
+          "label": "Gênero, raça e diversidade",
+          "escopos": [
+            {
+              "id": "soc.desigualdades.genero_raca.genero_patriarcado",
+              "label": "Gênero, patriarcado e desigualdade",
+              "descricao": "Cobre gênero como construção social, patriarcado, desigualdade de gênero, divisão sexual do trabalho e violência de gênero. NÃO cobre gramática de gênero ou biologia sexual.",
+              "keywords": [
+                "gênero",
+                "patriarcado",
+                "desigualdade de gênero",
+                "divisão sexual do trabalho",
+                "violência de gênero"
+              ],
+              "keywordsContexto": [
+                "mulheres",
+                "masculinidade",
+                "feminismo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar gênero, patriarcado e desigualdade como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "sexo biológico",
+                "concordância nominal",
+                "sufrágio feminino como fato histórico"
+              ],
+              "naoConfundirCom": [
+                "bio.fisiologia_humana.reproducao.sexualidade",
+                "hist.contemporanea.seculo_xix.liberalismo_nacionalismo_socialismo"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "genero"
+            },
+            {
+              "id": "soc.desigualdades.genero_raca.racismo_preconceito",
+              "label": "Racismo, preconceito e discriminação",
+              "descricao": "Cobre preconceito, discriminação, racismo, xenofobia e relações étnico-raciais como fenômenos sociais. NÃO cobre escravidão ou abolição como processo histórico primário.",
+              "keywords": [
+                "racismo",
+                "preconceito",
+                "discriminação",
+                "xenofobia",
+                "relações étnico-raciais"
+              ],
+              "keywordsContexto": [
+                "raça",
+                "etnia",
+                "minorias",
+                "intolerância"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar racismo, preconceito e discriminação como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "tráfico negreiro",
+                "Lei Áurea",
+                "Revolução Haitiana"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.escravidao.trafico_africano",
+                "hist.america.independencias.revolucao_haiti"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "racismo_preconceito"
+            },
+            {
+              "id": "soc.desigualdades.genero_raca.diversidade_sexual",
+              "label": "Diversidade sexual, LGBTfobia e reconhecimento",
+              "descricao": "Cobre identidade de gênero, orientação sexual, LGBTfobia, reconhecimento, direitos e discriminação contra população LGBTQIA+. NÃO cobre reprodução humana em Biologia.",
+              "keywords": [
+                "diversidade sexual",
+                "LGBTfobia",
+                "orientação sexual",
+                "identidade de gênero",
+                "LGBTQIA+",
+                "reconhecimento"
+              ],
+              "keywordsContexto": [
+                "direitos",
+                "preconceito",
+                "discriminação"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar diversidade sexual, lgbtfobia e reconhecimento como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "reprodução",
+                "hormônios",
+                "sistema reprodutor"
+              ],
+              "naoConfundirCom": [
+                "bio.fisiologia_humana.reproducao.sexualidade"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "diversidade_sexual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "movimentos_sociais",
+      "assuntoLabel": "Movimentos sociais e ação coletiva",
+      "dominios": [
+        {
+          "id": "soc.movimentos.teoria",
+          "label": "Teoria e formas de mobilização",
+          "escopos": [
+            {
+              "id": "soc.movimentos.teoria.acao_coletiva",
+              "label": "Ação coletiva e movimentos sociais",
+              "descricao": "Cobre ação coletiva, reivindicação, mobilização, repertórios de protesto, organização social e disputa por direitos. NÃO cobre revoltas históricas específicas se a questão exigir cronologia/evento.",
+              "keywords": [
+                "movimentos sociais",
+                "ação coletiva",
+                "mobilização",
+                "protesto",
+                "reivindicação",
+                "direitos"
+              ],
+              "keywordsContexto": [
+                "manifestação",
+                "organização",
+                "participação"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar ação coletiva e movimentos sociais como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Canudos",
+                "Revolta da Vacina",
+                "Diretas Já como evento histórico"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.primeira_republica.revoltas_sociais",
+                "hist.brasil_republica.ditadura.abertura_redemocratizacao"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "movimentos_sociais"
+            },
+            {
+              "id": "soc.movimentos.teoria.novos_movimentos",
+              "label": "Novos movimentos sociais e identidades",
+              "descricao": "Cobre movimentos identitários, culturais, ambientais, feministas, negros, LGBTQIA+ e formas contemporâneas de mobilização. NÃO cobre movimento histórico específico sem análise sociológica.",
+              "keywords": [
+                "novos movimentos sociais",
+                "identidade",
+                "movimentos identitários",
+                "feminismo",
+                "movimento negro",
+                "LGBTQIA+"
+              ],
+              "keywordsContexto": [
+                "redes",
+                "cultura",
+                "reconhecimento"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar novos movimentos sociais e identidades como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "revolução histórica",
+                "partido político do século XX"
+              ],
+              "naoConfundirCom": [
+                "hist.america.contemporanea.america_latina_populismos_ditaduras"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "novos_movimentos_sociais"
+            }
+          ]
+        },
+        {
+          "id": "soc.movimentos.especificos",
+          "label": "Movimentos e agendas específicas",
+          "escopos": [
+            {
+              "id": "soc.movimentos.especificos.movimento_negro",
+              "label": "Movimento negro e luta antirracista",
+              "descricao": "Cobre movimento negro, ações afirmativas, cotas, luta antirracista e disputa por reconhecimento/direitos. NÃO cobre quilombos coloniais se o foco for resistência escrava histórica.",
+              "keywords": [
+                "movimento negro",
+                "antirracismo",
+                "ações afirmativas",
+                "cotas",
+                "igualdade racial"
+              ],
+              "keywordsContexto": [
+                "racismo",
+                "representatividade",
+                "direitos"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar movimento negro e luta antirracista como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "quilombo",
+                "escravidão colonial",
+                "abolição"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.escravidao.resistencias_quilombos",
+                "hist.brasil_imperio.segundo_reinado.abolicionismo"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "movimento_negro"
+            },
+            {
+              "id": "soc.movimentos.especificos.feminismos",
+              "label": "Feminismos e direitos das mulheres",
+              "descricao": "Cobre feminismos, movimentos de mulheres, igualdade de gênero, direitos reprodutivos e combate à violência. NÃO cobre voto feminino como evento histórico isolado se a questão for cronológica.",
+              "keywords": [
+                "feminismo",
+                "direitos das mulheres",
+                "igualdade de gênero",
+                "violência contra a mulher",
+                "movimento de mulheres"
+              ],
+              "keywordsContexto": [
+                "patriarcado",
+                "gênero",
+                "representação"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar feminismos e direitos das mulheres como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "sufrágio como evento histórico",
+                "Olympe de Gouges na Revolução Francesa"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.revolucoes.revolucao_francesa"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "feminismo"
+            },
+            {
+              "id": "soc.movimentos.especificos.indigenas_tradicionais",
+              "label": "Movimentos indígenas e povos tradicionais",
+              "descricao": "Cobre movimentos indígenas contemporâneos, povos tradicionais, demarcação, reconhecimento, direitos territoriais e identidade coletiva. NÃO cobre colonização indígena se o foco for Brasil Colonial.",
+              "keywords": [
+                "movimento indígena",
+                "povos tradicionais",
+                "demarcação",
+                "território indígena",
+                "direitos indígenas"
+              ],
+              "keywordsContexto": [
+                "quilombolas",
+                "ribeirinhos",
+                "identidade",
+                "território"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar movimentos indígenas e povos tradicionais como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "catequese",
+                "jesuítas",
+                "colonização indígena"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.indigenas_igreja.povos_indigenas_colonizacao",
+                "geo.agraria.estrutura_fundiaria.conflitos_campo"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "povos_tradicionais"
+            },
+            {
+              "id": "soc.movimentos.especificos.ambientalismo",
+              "label": "Movimento ambientalista e justiça ambiental",
+              "descricao": "Cobre ambientalismo como movimento social, justiça ambiental, conflitos socioambientais e mobilização coletiva. NÃO cobre clima, biomas ou impactos ambientais como Geografia física/ambiental se o foco for fenômeno natural/territorial.",
+              "keywords": [
+                "movimento ambientalista",
+                "justiça ambiental",
+                "conflito socioambiental",
+                "ambientalismo",
+                "mobilização ambiental"
+              ],
+              "keywordsContexto": [
+                "sustentabilidade",
+                "direitos",
+                "comunidades"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar movimento ambientalista e justiça ambiental como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "clima",
+                "bioma",
+                "desmatamento como dinâmica territorial"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.ambiental.desmatamento_queimadas",
+                "geo.fisica_ambiental.clima.clima_tempo"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "justica_ambiental"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "globalizacao_tecnologia",
+      "assuntoLabel": "Globalização, tecnologia e sociedade contemporânea",
+      "dominios": [
+        {
+          "id": "soc.globalizacao.contemporanea",
+          "label": "Sociedade contemporânea",
+          "escopos": [
+            {
+              "id": "soc.globalizacao.contemporanea.globalizacao_cultural",
+              "label": "Globalização cultural e homogeneização",
+              "descricao": "Cobre globalização cultural, hibridização, homogeneização, consumo global e circulação de símbolos. NÃO cobre fluxos econômicos/territoriais como Geografia.",
+              "keywords": [
+                "globalização cultural",
+                "homogeneização",
+                "hibridização",
+                "consumo global",
+                "cultura global"
+              ],
+              "keywordsContexto": [
+                "mídia",
+                "marcas",
+                "identidade"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar globalização cultural e homogeneização como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "blocos econômicos",
+                "fluxos comerciais",
+                "redes geográficas"
+              ],
+              "naoConfundirCom": [
+                "geo.economica.globalizacao.fluxos_redes",
+                "geo.politica_geopolitica.blocos.organismos_blocos"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "globalizacao_cultural"
+            },
+            {
+              "id": "soc.globalizacao.contemporanea.sociedade_rede",
+              "label": "Sociedade em rede e tecnologia digital",
+              "descricao": "Cobre redes sociais digitais, sociabilidade online, vigilância, algoritmos, bolhas informacionais e tecnologia como mediação social. NÃO cobre infraestrutura de telecomunicações ou cartografia de redes.",
+              "keywords": [
+                "sociedade em rede",
+                "redes sociais",
+                "algoritmos",
+                "bolhas informacionais",
+                "vigilância digital",
+                "Castells"
+              ],
+              "keywordsContexto": [
+                "internet",
+                "plataformas",
+                "dados",
+                "tecnologia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar sociedade em rede e tecnologia digital como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "rede urbana",
+                "fibra óptica",
+                "fluxos territoriais"
+              ],
+              "naoConfundirCom": [
+                "geo.economica.globalizacao.fluxos_redes"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "sociedade_rede"
+            },
+            {
+              "id": "soc.globalizacao.contemporanea.individualismo_modernidade",
+              "label": "Individualismo, liquidez e modernidade tardia",
+              "descricao": "Cobre individualização, modernidade líquida, incerteza, consumo, relações sociais frágeis e transformações subjetivas contemporâneas. NÃO cobre existencialismo filosófico se o foco for liberdade/angústia como conceito filosófico.",
+              "keywords": [
+                "individualismo",
+                "modernidade líquida",
+                "Bauman",
+                "relações líquidas",
+                "incerteza",
+                "individualização"
+              ],
+              "keywordsContexto": [
+                "consumo",
+                "identidade",
+                "subjetividade"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar individualismo, liquidez e modernidade tardia como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "existencialismo",
+                "Sartre",
+                "angústia"
+              ],
+              "naoConfundirCom": [
+                "fil.existencia_linguagem.existencia.existencialismo"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "modernidade_liquida"
+            },
+            {
+              "id": "soc.globalizacao.contemporanea.migracao_xenofobia",
+              "label": "Migrações, xenofobia e integração social",
+              "descricao": "Cobre xenofobia, integração de migrantes, discriminação, identidade, pertencimento e conflito social ligado a migrações. NÃO cobre fluxos migratórios como dinâmica demográfica/territorial se o foco for Geografia.",
+              "keywords": [
+                "xenofobia",
+                "migração",
+                "imigrantes",
+                "refugiados",
+                "integração social",
+                "preconceito"
+              ],
+              "keywordsContexto": [
+                "fronteiras",
+                "identidade",
+                "discriminação"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar migrações, xenofobia e integração social como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "taxa migratória",
+                "êxodo rural",
+                "mapa de fluxos"
+              ],
+              "naoConfundirCom": [
+                "geo.populacao.migracoes.refugiados_xenofobia"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "xenofobia"
+            }
+          ]
+        },
+        {
+          "id": "soc.globalizacao.religiao",
+          "label": "Religião, secularização e sociedade",
+          "escopos": [
+            {
+              "id": "soc.globalizacao.religiao.secularizacao_pluralismo",
+              "label": "Secularização, laicidade e pluralismo religioso",
+              "descricao": "Cobre secularização, laicidade, pluralismo religioso, intolerância religiosa e relação religião-sociedade. NÃO cobre Reforma Protestante ou Igreja medieval como processo histórico.",
+              "keywords": [
+                "secularização",
+                "laicidade",
+                "pluralismo religioso",
+                "intolerância religiosa",
+                "religião"
+              ],
+              "keywordsContexto": [
+                "Estado laico",
+                "crenças",
+                "diversidade religiosa"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar secularização, laicidade e pluralismo religioso como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Reforma Protestante",
+                "Igreja medieval",
+                "Contrarreforma"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.formacao_mundo_moderno.reformas_religiosas",
+                "hist.medieval.europa.igreja_cultura"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "secularizacao"
+            },
+            {
+              "id": "soc.globalizacao.religiao.fundamentalismo_intolerancia",
+              "label": "Fundamentalismo e intolerância religiosa",
+              "descricao": "Cobre fundamentalismo, intolerância religiosa, conflito social e identidade religiosa como fenômenos sociais. NÃO cobre Oriente Médio como conflito histórico-geopolítico se o foco for processo internacional.",
+              "keywords": [
+                "fundamentalismo",
+                "intolerância religiosa",
+                "identidade religiosa",
+                "conflito religioso",
+                "radicalização"
+              ],
+              "keywordsContexto": [
+                "preconceito",
+                "violência",
+                "religião"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão pede interpretar fundamentalismo e intolerância religiosa como fenômeno social para chegar à alternativa correta."
+              ],
+              "negativeHints": [
+                "Oriente Médio",
+                "guerra árabe-israelense",
+                "geopolítica do petróleo"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.mundo_recente.conflitos_oriente_medio",
+                "geo.politica_geopolitica.geopolitica.conflitos_geopoliticos"
+              ],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "conceitoCanonic": "intolerancia_religiosa"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "nao_classificado",
+      "assuntoLabel": "Não classificado",
+      "dominios": [
+        {
+          "id": "soc.nao_classificado",
+          "label": "Fallback",
+          "escopos": [
+            {
+              "id": "soc.__nao_classificado",
+              "label": "Não classificado — Sociologia",
+              "descricao": "Usar quando a rota disciplinar estiver incerta, o texto estiver ilegível, a confiança for inferior a 0.45 ou nenhum escopo de Sociologia for adequado. NÃO usar para mascarar conflito com História, Geografia ou Filosofia; nesses casos marcar revisão.",
+              "keywords": [
+                "não classificado",
+                "fallback",
+                "revisão"
+              ],
+              "keywordsContexto": [],
+              "exemplosEnunciado": [
+                "Texto insuficiente para decidir o escopo sociológico."
+              ],
+              "negativeHints": [
+                "cronologia histórica como foco central",
+                "evento político datado como processo histórico",
+                "território, espaço, mapa ou paisagem como foco central",
+                "autor filosófico como problema conceitual abstrato"
+              ],
+              "naoConfundirCom": [],
+              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

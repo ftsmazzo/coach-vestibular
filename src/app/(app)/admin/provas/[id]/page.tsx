@@ -7,6 +7,7 @@ import { AdminAuditoriaProva } from "@/components/admin-auditoria-prova";
 import { AdminTabelaQuestoes } from "@/components/admin-tabela-questoes";
 import { AdminProvaPipelineV2 } from "@/components/admin-prova-pipeline-v2";
 import { AdminValidacaoExtracao } from "@/components/admin-validacao-extracao";
+import { AdminClassificacaoProva } from "@/components/admin-classificacao-prova";
 import { GabaritoRevisaoGrid } from "@/components/gabarito-revisao-grid";
 import { Button, Card, Input, Label } from "@/components/ui";
 import {
@@ -34,6 +35,7 @@ interface ProvaQuestao {
   nivelDificuldade: string | null;
   observacoes: string | null;
   gabarito: string | null;
+  conhecimentoEscopoId?: string | null;
 }
 
 
@@ -876,27 +878,13 @@ export default function AdminProvaDetailPage() {
 
       {prova.extracaoValidada ? (
         <>
-          <Card className="border-violet-200 bg-violet-50/40">
-            <h2 className="mb-2 font-semibold text-violet-900">Passo 5 — Classificação (em breve)</h2>
-            <p className="text-sm text-violet-800">
-              Extração validada. O roteamento por disciplina e a classificação N2 serão liberados no
-              próximo sprint. Enquanto isso, use a auditoria abaixo se precisar revisar áreas.
-            </p>
-          </Card>
-
-          {prova.questoes.length > 0 && (
-            <AdminAuditoriaProva
-              provaId={prova.id}
-              textoFonteColado={textoProva}
-              orientacoesSalvas={orientacoesSalvas}
-              onQuestoesAtualizadas={aoAtualizarQuestoes}
-              onAlertasChange={setAlertaChaves}
-              onEditarQuestao={(numero, idiomaVariante) =>
-                setEditarQuestaoAlvo({ numero, idiomaVariante })
-              }
-              atualizarAuditoria={atualizarAuditoria}
-            />
-          )}
+          <AdminClassificacaoProva
+            provaId={prova.id}
+            totalQuestoes={prova.questoes.length}
+            classificadas={prova.questoes.filter((q) => q.conhecimentoEscopoId).length}
+            onMensagem={setMsg}
+            onAtualizado={aoAtualizarQuestoes}
+          />
 
           {prova.questoes.length > 0 && (
             <AdminTabelaQuestoes
@@ -908,6 +896,27 @@ export default function AdminProvaDetailPage() {
               onAtualizado={aoAtualizarQuestoes}
               onMensagem={setMsg}
             />
+          )}
+
+          {prova.questoes.length > 0 && (
+            <details className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+              <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                Auditoria legada (opcional)
+              </summary>
+              <div className="mt-3">
+                <AdminAuditoriaProva
+                  provaId={prova.id}
+                  textoFonteColado={textoProva}
+                  orientacoesSalvas={orientacoesSalvas}
+                  onQuestoesAtualizadas={aoAtualizarQuestoes}
+                  onAlertasChange={setAlertaChaves}
+                  onEditarQuestao={(numero, idiomaVariante) =>
+                    setEditarQuestaoAlvo({ numero, idiomaVariante })
+                  }
+                  atualizarAuditoria={atualizarAuditoria}
+                />
+              </div>
+            </details>
           )}
 
           <details className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">

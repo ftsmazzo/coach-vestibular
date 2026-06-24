@@ -1,0 +1,307 @@
+{
+  "version": "2.0.0",
+  "service": "routeLinguagensDiscipline",
+  "description": "Roteamento prova-agnostico de questoes de Linguagens para portugues, ingles ou espanhol antes da classificacao N2 no catalogo disciplinar correto.",
+  "principios": [
+    "Area ENEM e metadado; disciplina e catalogo/classificador; escopoId e unidade diagnostica.",
+    "Roteamento deve ocorrer antes da classificacao N2 sempre que a area agrega disciplinas.",
+    "O portugues do comando, instrucao ou enunciado nao define a rota como Portugues.",
+    "A rota deve considerar lingua dominante do texto-base, lingua das alternativas, metadados confiaveis de variante e competencia linguistica cobrada.",
+    "Classificar pelo conhecimento exigido para resolver a questao, nao por palavra solta, tema superficial ou assunto do texto-base.",
+    "materiaId/temaId da taxonomia legada nao entram no prompt de classificacao.",
+    "Se a rota for incerta, usar disciplinaId indefinido, allowedCatalogMateriaIds vazio e sinalizadorRevisao true."
+  ],
+  "inputFields": [
+    "textoBase",
+    "enunciado",
+    "alternativas",
+    "gabarito",
+    "banca",
+    "numero",
+    "areaBloco",
+    "idioma",
+    "variante",
+    "disciplinaOriginalId",
+    "metadadosExtraidos"
+  ],
+  "outputSchema": {
+    "rota": {
+      "disciplinaId": "portugues|ingles|espanhol|indefinido",
+      "areaEnem": "Linguagens, Códigos e suas Tecnologias",
+      "criterio": "metadata|lingua_texto_base|competencia_cobrada|alternativas|inferido|incerto",
+      "confianca": "number 0-1",
+      "justificativa": "string curta explicando por que a disciplina foi escolhida",
+      "sinalizadorRevisao": "boolean"
+    },
+    "allowedCatalogs": {
+      "portugues": [
+        "catalogo-portugues-v1.0.0.json"
+      ],
+      "ingles": [
+        "catalogo-ingles-v1.0.0.json"
+      ],
+      "espanhol": [
+        "catalogo-espanhol-v1.0.0.json"
+      ],
+      "indefinido": []
+    },
+    "allowedFallbacks": {
+      "portugues": "pt.__nao_classificado",
+      "ingles": "ing.__nao_classificado",
+      "espanhol": "esp.__nao_classificado"
+    }
+  },
+  "pipeline": [
+    {
+      "step": "normalizarEntrada",
+      "description": "Concatenar textoBase, enunciado e alternativas sem resumir. Preservar idioma, variante EN/ES, fontes, imagens descritas e tabelas extraidas."
+    },
+    {
+      "step": "routeQuestionDiscipline",
+      "description": "Decidir Portugues, Ingles ou Espanhol com base na lingua dominante do texto-base, alternativas, metadados confiaveis e competencia cobrada."
+    },
+    {
+      "step": "loadCatalogByRoute",
+      "description": "Carregar apenas o catalogo da disciplina roteada. Nunca enviar Portugues, Ingles e Espanhol juntos ao classificador N2."
+    },
+    {
+      "step": "classifyQuestionByDiscipline",
+      "description": "Classificar N2 escolhendo apenas escopoId existente no catalogo disciplinar carregado."
+    },
+    {
+      "step": "validateRouteAndScope",
+      "description": "Validar que o escopoId existe, pertence ao prefixo da disciplina roteada e respeita confianca minima. Caso contrario, marcar needs_review ou fallback disciplinar."
+    }
+  ],
+  "disciplineRoutingRules": {
+    "portugues": {
+      "disciplinaId": "portugues",
+      "prefix": "pt.",
+      "catalog": "catalogo-portugues-v1.0.0.json",
+      "fallback": "pt.__nao_classificado",
+      "quandoEscolher": [
+        "A questao exige compreensao, interpretacao, genero, literatura, gramatica, semantica, artes ou tecnologias da linguagem em texto de lingua portuguesa.",
+        "O texto-base principal esta em portugues e a competencia cobrada e de leitura/linguagem, nao conteudo de outra disciplina.",
+        "A questao cobra literatura brasileira/portuguesa, norma-padrao, variacao linguistica, figuras de linguagem ou recursos expressivos em portugues.",
+        "A questao cobra leitura de imagem, artes ou tecnologia da linguagem dentro do bloco de Linguagens."
+      ],
+      "sinaisFortes": [
+        "texto-base em portugues",
+        "literatura brasileira",
+        "gramatica portuguesa",
+        "norma-padrao",
+        "variacao linguistica",
+        "genero textual em portugues",
+        "figura de linguagem em portugues",
+        "charge/tirinha em portugues",
+        "artes",
+        "tecnologias da linguagem"
+      ],
+      "negativeHints": [
+        "texto-base dominante em ingles",
+        "texto-base dominante em espanhol",
+        "questao marcada como EN",
+        "questao marcada como ES",
+        "expressao destacada em ingles",
+        "expressao destacada em espanhol",
+        "present perfect",
+        "main idea",
+        "false cognates",
+        "pretérito perfecto",
+        "subjuntivo espanhol",
+        "falsos cognatos em espanhol"
+      ],
+      "naoConfundirCom": [
+        "ingles: quando o texto-base ou expressao cobrada esta em ingles, mesmo com comando em portugues.",
+        "espanhol: quando o texto-base ou expressao cobrada esta em espanhol, mesmo com comando em portugues.",
+        "outras disciplinas: quando o texto de portugues apenas serve de suporte para conteudo de Natureza/Humanas/Matematica."
+      ],
+      "regraDesempate": "Escolher Portugues apenas quando a competencia cobrada e efetivamente leitura/linguagem/literatura/gramatica em portugues. O comando em portugues nunca basta para escolher Portugues."
+    },
+    "ingles": {
+      "disciplinaId": "ingles",
+      "prefix": "ing.",
+      "catalog": "catalogo-ingles-v1.0.0.json",
+      "fallback": "ing.__nao_classificado",
+      "quandoEscolher": [
+        "O texto-base principal esta em ingles.",
+        "A expressao, palavra, trecho ou pronome cobrado esta em ingles.",
+        "A questao exige compreensao leitora, vocabulario, coesao, genero, finalidade ou gramatica funcional em ingles.",
+        "Metadado confiavel indica variante EN ou lingua inglesa e nao ha contradicao no texto-base."
+      ],
+      "sinaisFortes": [
+        "texto-base em ingles",
+        "variante EN",
+        "idioma ingles",
+        "main idea",
+        "meaning of the word",
+        "expression means",
+        "according to the text",
+        "pronoun refers to",
+        "relative pronoun",
+        "present perfect",
+        "modal verbs",
+        "advertisement em ingles",
+        "song/poem em ingles"
+      ],
+      "negativeHints": [
+        "texto-base dominante em portugues",
+        "texto-base dominante em espanhol",
+        "variante ES",
+        "pretérito perfecto",
+        "subjuntivo espanhol",
+        "falsos cognatos em espanhol",
+        "literatura brasileira",
+        "gramatica portuguesa",
+        "norma-padrao do portugues"
+      ],
+      "naoConfundirCom": [
+        "portugues: comando em portugues nao muda a rota se o texto-base e a competencia sao de ingles.",
+        "espanhol: cuidado com cognatos; escolher Ingles apenas se a lingua dominante do texto-base/cobrança for inglesa."
+      ],
+      "regraDesempate": "Se texto-base, expressao destacada ou competencia linguistica esta em ingles, escolher Ingles, mesmo que enunciado/comando esteja em portugues. Se apenas uma palavra inglesa aparece em texto portugues, nao escolher Ingles."
+    },
+    "espanhol": {
+      "disciplinaId": "espanhol",
+      "prefix": "esp.",
+      "catalog": "catalogo-espanhol-v1.0.0.json",
+      "fallback": "esp.__nao_classificado",
+      "quandoEscolher": [
+        "O texto-base principal esta em espanhol.",
+        "A expressao, palavra, trecho, pronome ou forma verbal cobrada esta em espanhol.",
+        "A questao exige compreensao leitora, vocabulario, coesao, genero, finalidade ou gramatica funcional em espanhol.",
+        "Metadado confiavel indica variante ES ou lingua espanhola e nao ha contradicao no texto-base."
+      ],
+      "sinaisFortes": [
+        "texto-base em espanhol",
+        "variante ES",
+        "idioma espanhol",
+        "idea principal",
+        "sentido de la palabra",
+        "según el texto",
+        "se refiere a",
+        "pretérito perfecto",
+        "pretérito indefinido",
+        "subjuntivo",
+        "pronombre se",
+        "falsos cognatos",
+        "heterosemánticos",
+        "anuncio em espanhol",
+        "canción/poema em espanhol"
+      ],
+      "negativeHints": [
+        "texto-base dominante em portugues",
+        "texto-base dominante em ingles",
+        "variante EN",
+        "main idea",
+        "present perfect",
+        "relative pronoun em ingles",
+        "false cognates em ingles",
+        "literatura brasileira",
+        "gramatica portuguesa",
+        "norma-padrao do portugues"
+      ],
+      "naoConfundirCom": [
+        "portugues: comando em portugues nao muda a rota se o texto-base e a competencia sao de espanhol.",
+        "ingles: cuidado com cognatos; escolher Espanhol apenas se a lingua dominante do texto-base/cobrança for espanhola."
+      ],
+      "regraDesempate": "Se texto-base, expressao destacada ou competencia linguistica esta em espanhol, escolher Espanhol, mesmo que enunciado/comando esteja em portugues. Se apenas uma palavra espanhola aparece em texto portugues, nao escolher Espanhol."
+    }
+  },
+  "globalRules": [
+    "NUNCA escolher Portugues apenas porque o comando da questao esta em portugues.",
+    "NUNCA escolher Portugues se o texto-base principal esta em Ingles ou Espanhol e a pergunta cobra compreensao da lingua estrangeira.",
+    "NUNCA escolher Ingles ou Espanhol por uma palavra solta isolada em texto portugues.",
+    "NUNCA escolher uma disciplina por tema do texto-base. Exemplo: texto em espanhol sobre OMS continua sendo Espanhol se a operacao e leitura/vocabulario em espanhol.",
+    "Se metadado da prova indica EN/ES e o texto-base confirma, a rota deve respeitar o metadado.",
+    "Se metadado indica EN mas texto-base esta em espanhol, ou vice-versa, marcar sinalizadorRevisao true.",
+    "Se texto-base esta ausente/ilegivel e nao ha metadado confiavel, usar disciplinaId indefinido.",
+    "Se confianca da rota < 0.55, usar disciplinaId indefinido e sinalizadorRevisao true.",
+    "Apos rota definida, o classificador N2 so recebe o catalogo da disciplina escolhida.",
+    "Se o escopo retornado nao pertence ao prefixo da disciplina roteada, invalidar e marcar needs_review."
+  ],
+  "tieBreakMatrix": [
+    {
+      "conflito": "portugues_vs_ingles",
+      "decisao": "Se o texto-base/expressao cobrada esta em ingles, Ingles. Se o texto-base esta em portugues e a competencia e leitura/gramatica/literatura em portugues, Portugues. Comando em portugues nao decide."
+    },
+    {
+      "conflito": "portugues_vs_espanhol",
+      "decisao": "Se o texto-base/expressao cobrada esta em espanhol, Espanhol. Se o texto-base esta em portugues e a competencia e leitura/gramatica/literatura em portugues, Portugues. Comando em portugues nao decide."
+    },
+    {
+      "conflito": "ingles_vs_espanhol",
+      "decisao": "Usar lingua dominante do texto-base e metadado EN/ES confiavel. Se houver mistura real ou OCR ruim, marcar indefinido/needs_review."
+    },
+    {
+      "conflito": "linguagens_vs_outra_area",
+      "decisao": "Se a questao cobra linguagem, genero, leitura, vocabulario, gramatica ou literatura, manter Linguagens. Se cobra conteudo disciplinar de Natureza/Humanas/Matematica, sinalizar rota conflitante para revisao."
+    }
+  ],
+  "validationRules": {
+    "prefixByDisciplina": {
+      "portugues": "pt.",
+      "ingles": "ing.",
+      "espanhol": "esp."
+    },
+    "fallbackByDisciplina": {
+      "portugues": "pt.__nao_classificado",
+      "ingles": "ing.__nao_classificado",
+      "espanhol": "esp.__nao_classificado"
+    },
+    "minRouteConfidence": 0.55,
+    "minClassificationConfidence": 0.45,
+    "onInvalidRoute": {
+      "disciplinaId": "indefinido",
+      "status": "needs_review",
+      "reason": "Rota disciplinar incerta ou contraditoria"
+    },
+    "onScopePrefixMismatch": {
+      "status": "needs_review",
+      "reason": "Escopo N2 retornado nao pertence ao prefixo da disciplina roteada"
+    }
+  },
+  "auditFlags": [
+    "rota_indefinida",
+    "confianca_rota_baixa",
+    "escopo_fora_da_disciplina",
+    "fallback_usado",
+    "metadado_en_es_conflitante",
+    "comando_portugues_usado_como_rota",
+    "texto_base_ausente_ou_ilegivel",
+    "palavra_soltas_sem_competencia_linguistica",
+    "classificacao_sem_conhecimento_exigido"
+  ],
+  "examples": [
+    {
+      "caso": "Comando em portugues, texto-base em ingles sobre WHO, pergunta pede informacao atribuida a WHO.",
+      "rotaEsperada": "ingles",
+      "justificativa": "A operacao e localizar informacao em texto em ingles; WHO/OMS nao deve puxar Biologia."
+    },
+    {
+      "caso": "Comando em portugues, texto-base em espanhol, pergunta pede sentido de expressao no contexto.",
+      "rotaEsperada": "espanhol",
+      "justificativa": "A competencia cobrada e vocabulario/contexto em espanhol."
+    },
+    {
+      "caso": "Comando em portugues, texto-base em espanhol, pergunta cobra pretérito perfecto.",
+      "rotaEsperada": "espanhol",
+      "justificativa": "A competencia cobrada e gramatica funcional do espanhol."
+    },
+    {
+      "caso": "Texto em portugues, pergunta pede tese defendida em artigo de opiniao.",
+      "rotaEsperada": "portugues",
+      "justificativa": "A competencia cobrada e argumentacao em texto de lingua portuguesa."
+    },
+    {
+      "caso": "Tirinha em portugues com imagem e fala, pergunta pede efeito de humor pela relacao texto-imagem.",
+      "rotaEsperada": "portugues",
+      "justificativa": "A competencia cobrada e leitura multimodal em Portugues/Linguagens."
+    },
+    {
+      "caso": "Texto-base ausente, OCR ilegivel, sem metadado EN/ES confiavel.",
+      "rotaEsperada": "indefinido",
+      "justificativa": "Nao ha base suficiente para roteamento seguro."
+    }
+  ]
+}

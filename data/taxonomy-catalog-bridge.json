@@ -1,18 +1,18 @@
 {
-  "schemaVersion": "1.0.0",
-  "notas": "Ponte entre taxonomy.json (diagnóstico/simulado: materiaId + temaId) e conhecimento-catalog (classificação: materiaId corpus + assuntoId/N2). Sem este arquivo, relatórios de erro e classificador IA medem coisas diferentes.",
+  "schemaVersion": "1.1.0",
+  "notas": "Ponte taxonomy ↔ catálogos disciplinares v1.0 (split). Agregados humanas/linguagens removidos da classificação.",
   "materiaParaCatalogo": {
     "biologia": { "catalogMateriaId": "biologia" },
     "quimica": { "catalogMateriaId": "quimica" },
     "fisica": { "catalogMateriaId": "fisica" },
     "matematica": { "catalogMateriaId": "matematica" },
-    "portugues": { "catalogMateriaId": "linguagens", "trilhaCatalogo": "pt" },
-    "ingles": { "catalogMateriaId": "linguagens", "trilhaCatalogo": "l2_en" },
-    "espanhol": { "catalogMateriaId": "linguagens", "trilhaCatalogo": "l2_es" },
-    "historia": { "catalogMateriaId": "humanas" },
-    "geografia": { "catalogMateriaId": "humanas" },
-    "filosofia": { "catalogMateriaId": "humanas" },
-    "sociologia": { "catalogMateriaId": "humanas" }
+    "portugues": { "catalogMateriaId": "portugues" },
+    "ingles": { "catalogMateriaId": "ingles" },
+    "espanhol": { "catalogMateriaId": "espanhol" },
+    "historia": { "catalogMateriaId": "historia" },
+    "geografia": { "catalogMateriaId": "geografia" },
+    "filosofia": { "catalogMateriaId": "filosofia" },
+    "sociologia": { "catalogMateriaId": "sociologia" }
   },
   "temaParaCatalogo": [
     { "taxonomyMateriaId": "biologia", "temaId": "genetica", "catalogAssuntoId": "genetica" },
@@ -43,25 +43,34 @@
     { "taxonomyMateriaId": "matematica", "temaId": "algebra", "catalogAssuntoId": "algebra" },
     { "taxonomyMateriaId": "matematica", "temaId": "matrizes", "catalogAssuntoId": "matrizes" },
 
-    { "taxonomyMateriaId": "portugues", "temaId": "interpretacao_texto", "catalogAssuntoId": "pt_interp" },
-    { "taxonomyMateriaId": "portugues", "temaId": "gramatica", "catalogAssuntoId": "pt_gram" },
-    { "taxonomyMateriaId": "portugues", "temaId": "literatura", "catalogAssuntoId": "pt_lit" },
-    { "taxonomyMateriaId": "portugues", "temaId": "redacao", "catalogAssuntoId": "pt_tec" },
+    { "taxonomyMateriaId": "portugues", "temaId": "interpretacao_texto", "catalogAssuntoId": "interpretacao" },
+    { "taxonomyMateriaId": "portugues", "temaId": "gramatica", "catalogAssuntoId": "gramatica" },
+    { "taxonomyMateriaId": "portugues", "temaId": "literatura", "catalogAssuntoId": "literatura" },
+    { "taxonomyMateriaId": "portugues", "temaId": "redacao", "catalogAssuntoId": "artes_tecnologias_linguagem" },
 
-    { "taxonomyMateriaId": "ingles", "temaId": "compreensao_texto", "catalogAssuntoId": "l2_en" },
-    { "taxonomyMateriaId": "ingles", "temaId": "gramatica_vocabulario", "catalogAssuntoId": "l2_en" },
-    { "taxonomyMateriaId": "espanhol", "temaId": "compreensao_texto", "catalogAssuntoId": "l2_es" },
-    { "taxonomyMateriaId": "espanhol", "temaId": "gramatica_vocabulario", "catalogAssuntoId": "l2_es" },
+    { "taxonomyMateriaId": "ingles", "temaId": "compreensao_texto", "catalogAssuntoId": "reading" },
+    { "taxonomyMateriaId": "ingles", "temaId": "gramatica_vocabulario", "catalogAssuntoId": "vocabulary" },
+    { "taxonomyMateriaId": "espanhol", "temaId": "compreensao_texto", "catalogAssuntoId": "lectura" },
+    { "taxonomyMateriaId": "espanhol", "temaId": "gramatica_vocabulario", "catalogAssuntoId": "vocabulario" },
 
-    { "taxonomyMateriaId": "historia", "temaId": "brasil_republica", "catalogAssuntoId": "historia_brasil" },
-    { "taxonomyMateriaId": "historia", "temaId": "geral_contemporanea", "catalogAssuntoId": "historia_geral" },
-    { "taxonomyMateriaId": "geografia", "temaId": "humanos", "catalogAssuntoId": "geografia" },
-    { "taxonomyMateriaId": "geografia", "temaId": "fisicos", "catalogAssuntoId": "geografia" },
-    { "taxonomyMateriaId": "filosofia", "temaId": "etica", "catalogAssuntoId": "filosofia" },
-    { "taxonomyMateriaId": "filosofia", "temaId": "politica", "catalogAssuntoId": "filosofia" },
-    { "taxonomyMateriaId": "filosofia", "temaId": "geral", "catalogAssuntoId": "filosofia" },
-    { "taxonomyMateriaId": "sociologia", "temaId": "sociedade_cultura", "catalogAssuntoId": "sociologia" },
-    { "taxonomyMateriaId": "sociologia", "temaId": "movimentos_sociais", "catalogAssuntoId": "sociologia" },
-    { "taxonomyMateriaId": "sociologia", "temaId": "geral", "catalogAssuntoId": "sociologia" }
-  ]
+    { "taxonomyMateriaId": "historia", "temaId": "brasil_republica", "catalogAssuntoId": "brasil_republica" },
+    { "taxonomyMateriaId": "historia", "temaId": "geral_contemporanea", "catalogAssuntoId": "historia_contemporanea" },
+    { "taxonomyMateriaId": "geografia", "temaId": "humanos", "catalogAssuntoId": "urbana" },
+    { "taxonomyMateriaId": "geografia", "temaId": "fisicos", "catalogAssuntoId": "fisica_ambiental" },
+    { "taxonomyMateriaId": "filosofia", "temaId": "etica", "catalogAssuntoId": "etica" },
+    { "taxonomyMateriaId": "filosofia", "temaId": "politica", "catalogAssuntoId": "politica" },
+    { "taxonomyMateriaId": "filosofia", "temaId": "geral", "catalogAssuntoId": "epistemologia" },
+    { "taxonomyMateriaId": "sociologia", "temaId": "sociedade_cultura", "catalogAssuntoId": "cultura_identidade" },
+    { "taxonomyMateriaId": "sociologia", "temaId": "movimentos_sociais", "catalogAssuntoId": "movimentos_sociais" },
+    { "taxonomyMateriaId": "sociologia", "temaId": "geral", "catalogAssuntoId": "teoria_sociologica" }
+  ],
+  "prefixoParaTaxonomy": {
+    "hist": "historia",
+    "geo": "geografia",
+    "fil": "filosofia",
+    "soc": "sociologia",
+    "pt": "portugues",
+    "ing": "ingles",
+    "esp": "espanhol"
+  }
 }

@@ -7,7 +7,7 @@ export type TaxonomyCatalogBridge = {
   materiaParaCatalogo: Record<
     string,
     {
-      catalogMateriaId: MateriaCorpusId;
+      catalogMateriaId: string;
       trilhaCatalogo?: "pt" | "l2_en" | "l2_es";
     }
   >;
@@ -16,9 +16,9 @@ export type TaxonomyCatalogBridge = {
     temaId: string;
     catalogAssuntoId?: string;
     catalogDominioPrefix?: string;
-    /** Segmento que deve aparecer no escopo N2 (ex.: geometria_ → geometria_plana, geometria_espacial). */
     catalogEscopoContem?: string;
   }>;
+  prefixoParaTaxonomy?: Record<string, string>;
 };
 
 const bridge = bridgeData as TaxonomyCatalogBridge;
@@ -26,7 +26,7 @@ const bridge = bridgeData as TaxonomyCatalogBridge;
 export type ResolucaoTaxonomyParaCatalogo = {
   taxonomyMateriaId: string;
   temaId?: string;
-  catalogMateriaId: MateriaCorpusId;
+  catalogMateriaId: string;
   catalogAssuntoId?: string;
   catalogDominioPrefix?: string;
   catalogEscopoContem?: string;
@@ -66,30 +66,39 @@ export function taxonomyParaCatalogo(
 /** Escopo N2 classificado → taxonomia grossa (relatórios de jornada). */
 export function escopoIdParaTaxonomy(
   escopoId: string,
-  catalogMateriaId: MateriaCorpusId
+  catalogMateriaId?: string
 ): { materiaId: string; temaId?: string } | null {
-  for (const [taxonomyMateriaId, map] of Object.entries(bridge.materiaParaCatalogo)) {
-    if (map.catalogMateriaId !== catalogMateriaId) continue;
+  const prefixo = escopoId.split(".")[0];
+  let taxonomyMateriaId = bridge.prefixoParaTaxonomy?.[prefixo ?? ""];
 
-    for (const t of bridge.temaParaCatalogo) {
-      if (t.taxonomyMateriaId !== taxonomyMateriaId) continue;
-      if (t.catalogAssuntoId && escopoId.includes(`.${t.catalogAssuntoId}.`)) {
-        return { materiaId: taxonomyMateriaId, temaId: t.temaId };
-      }
-      if (t.catalogDominioPrefix && escopoId.startsWith(`${t.catalogDominioPrefix}.`)) {
-        return { materiaId: taxonomyMateriaId, temaId: t.temaId };
-      }
-      if (t.catalogEscopoContem && escopoId.includes(t.catalogEscopoContem)) {
-        return { materiaId: taxonomyMateriaId, temaId: t.temaId };
-      }
-      if (t.catalogAssuntoId && escopoId.endsWith(`.${t.catalogAssuntoId}`)) {
-        return { materiaId: taxonomyMateriaId, temaId: t.temaId };
+  if (!taxonomyMateriaId && catalogMateriaId) {
+    for (const [taxId, map] of Object.entries(bridge.materiaParaCatalogo)) {
+      if (map.catalogMateriaId === catalogMateriaId) {
+        taxonomyMateriaId = taxId;
+        break;
       }
     }
-
-    return { materiaId: taxonomyMateriaId };
   }
-  return null;
+
+  if (!taxonomyMateriaId) return null;
+
+  for (const t of bridge.temaParaCatalogo) {
+    if (t.taxonomyMateriaId !== taxonomyMateriaId) continue;
+    if (t.catalogAssuntoId && escopoId.includes(`.${t.catalogAssuntoId}.`)) {
+      return { materiaId: taxonomyMateriaId, temaId: t.temaId };
+    }
+    if (t.catalogDominioPrefix && escopoId.startsWith(`${t.catalogDominioPrefix}.`)) {
+      return { materiaId: taxonomyMateriaId, temaId: t.temaId };
+    }
+    if (t.catalogEscopoContem && escopoId.includes(t.catalogEscopoContem)) {
+      return { materiaId: taxonomyMateriaId, temaId: t.temaId };
+    }
+    if (t.catalogAssuntoId && escopoId.endsWith(`.${t.catalogAssuntoId}`)) {
+      return { materiaId: taxonomyMateriaId, temaId: t.temaId };
+    }
+  }
+
+  return { materiaId: taxonomyMateriaId };
 }
 
 export function carregarTaxonomyCatalogBridge(): TaxonomyCatalogBridge {

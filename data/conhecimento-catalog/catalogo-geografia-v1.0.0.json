@@ -1,0 +1,1683 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.0.0",
+  "materiaId": "geografia",
+  "materiaLabel": "Geografia",
+  "areaEnem": "Ciências Humanas e suas Tecnologias",
+  "notas": "Catalogo disciplinar de Geografia. Area ENEM e metadado; escopoId geo.* e unidade pedagogica. Classificar pelo conhecimento geografico exigido para resolver a questao, nao por palavra solta no texto-base.",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "Aplica-se a N0-N2. Em N3 ver politicaN3.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2,
+      "nota": "Escolha um primario por conhecimento geografico exigido. Secundarios apenas quando houver segunda competencia real."
+    },
+    "politicaN3": "A IA escolhe APENAS IDs em N0-N2. Em N3 (conhecimentoExigido) propoe texto livre para revisao humana; N3 nunca e um ID.",
+    "regraDesempate": "Se >=2 escopos irmaos disparam, aplicar descricao + negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confianca < confiancaMinima -> geo.__nao_classificado.",
+    "pesos": {
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "exemplosEnunciado": "referencia semantica, nao match literal",
+      "negativeHints": "penalidade: presenca do termo reduz a probabilidade deste escopo"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "fisica_ambiental",
+      "assuntoLabel": "Geografia física e ambiental",
+      "dominios": [
+        {
+          "id": "geo.fisica_ambiental.climatologia",
+          "label": "Climatologia e dinâmica atmosférica",
+          "escopos": [
+            {
+              "id": "geo.fisica_ambiental.climatologia.tempo_clima",
+              "label": "Tempo atmosférico e clima",
+              "descricao": "Cobre diferença entre tempo e clima, elementos e fatores climáticos, temperatura, pressão, umidade e circulação atmosférica. NÃO cobre aquecimento global como problema ambiental se o foco for ação antrópica e política climática.",
+              "keywords": [
+                "tempo atmosférico",
+                "clima",
+                "elementos climáticos",
+                "fatores climáticos",
+                "temperatura",
+                "pressão atmosférica"
+              ],
+              "keywordsContexto": [
+                "chuva",
+                "vento",
+                "umidade",
+                "latitude",
+                "altitude"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar tempo atmosférico e clima para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "industrialização",
+                "Protocolo de Kyoto",
+                "Acordo de Paris"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.fisica_ambiental.climatologia.massas_ar",
+              "label": "Massas de ar e frentes",
+              "descricao": "Cobre atuação de massas de ar, frentes frias/quentes, continentalidade, maritimidade e variações regionais do tempo. NÃO cobre clima como classificação geral sem dinâmica atmosférica.",
+              "keywords": [
+                "massas de ar",
+                "frente fria",
+                "frente quente",
+                "mPa",
+                "mTa",
+                "mEc"
+              ],
+              "keywordsContexto": [
+                "queda de temperatura",
+                "chuvas frontais",
+                "friagem"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar massas de ar e frentes para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "aquecimento global",
+                "efeito estufa"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.climatologia.tempo_clima"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.fisica_ambiental.climatologia.fenomenos_climaticos",
+              "label": "Fenômenos climáticos: El Niño, La Niña e monções",
+              "descricao": "Cobre fenômenos climáticos de escala regional/global, como El Niño, La Niña, monções, secas e enchentes associadas. NÃO cobre desastres ambientais urbanos se o foco for ocupação irregular.",
+              "keywords": [
+                "El Niño",
+                "La Niña",
+                "monções",
+                "seca",
+                "enchente",
+                "anomalia climática"
+              ],
+              "keywordsContexto": [
+                "Pacífico",
+                "chuvas",
+                "estiagem"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar fenômenos climáticos: el niño, la niña e monções para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "segregação urbana",
+                "ocupação de encosta"
+              ],
+              "naoConfundirCom": [
+                "geo.urbana.urbanizacao.problemas_urbanos"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        },
+        {
+          "id": "geo.fisica_ambiental.relevo_hidrografia",
+          "label": "Relevo, solos e hidrografia",
+          "escopos": [
+            {
+              "id": "geo.fisica_ambiental.relevo_hidrografia.relevo_processos",
+              "label": "Relevo e agentes geomorfológicos",
+              "descricao": "Cobre formas de relevo, erosão, intemperismo, sedimentação, tectonismo e agentes modeladores. NÃO cobre relevo apenas como paisagem cultural ou patrimônio.",
+              "keywords": [
+                "relevo",
+                "erosão",
+                "intemperismo",
+                "sedimentação",
+                "planalto",
+                "planície",
+                "depressão"
+              ],
+              "keywordsContexto": [
+                "encosta",
+                "assoreamento",
+                "voçoroca"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar relevo e agentes geomorfológicos para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "patrimônio histórico",
+                "turismo cultural"
+              ],
+              "naoConfundirCom": [
+                "geo.cartografia.representacao.altimetria_curvas_nivel"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.fisica_ambiental.relevo_hidrografia.solos",
+              "label": "Solos, erosão e conservação",
+              "descricao": "Cobre formação, uso, degradação e conservação dos solos, lixiviação, laterização, erosão e manejo. NÃO cobre agricultura como cadeia produtiva se o foco for agronegócio.",
+              "keywords": [
+                "solo",
+                "erosão do solo",
+                "lixiviação",
+                "laterização",
+                "conservação do solo",
+                "terraceamento"
+              ],
+              "keywordsContexto": [
+                "fertilidade",
+                "assoreamento",
+                "manejo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar solos, erosão e conservação para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "agronegócio",
+                "commodities",
+                "exportação agrícola"
+              ],
+              "naoConfundirCom": [
+                "geo.agraria.espaco_rural.agronegocio"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.fisica_ambiental.relevo_hidrografia.bacias_hidrograficas",
+              "label": "Bacias hidrográficas e recursos hídricos",
+              "descricao": "Cobre bacias, rios, aquíferos, disponibilidade hídrica, gestão da água e conflitos pelo uso da água. NÃO cobre saneamento urbano como política pública se o foco for infraestrutura urbana.",
+              "keywords": [
+                "bacia hidrográfica",
+                "rios",
+                "aquífero",
+                "recursos hídricos",
+                "nascentes",
+                "vazão"
+              ],
+              "keywordsContexto": [
+                "transposição",
+                "escassez hídrica",
+                "uso da água"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar bacias hidrográficas e recursos hídricos para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "saneamento básico",
+                "periferização"
+              ],
+              "naoConfundirCom": [
+                "geo.urbana.urbanizacao.problemas_urbanos"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "agua_recursos_hidricos"
+            }
+          ]
+        },
+        {
+          "id": "geo.fisica_ambiental.biomas",
+          "label": "Biomas e domínios naturais",
+          "escopos": [
+            {
+              "id": "geo.fisica_ambiental.biomas.biomas_brasileiros",
+              "label": "Biomas brasileiros",
+              "descricao": "Cobre Amazônia, Cerrado, Caatinga, Mata Atlântica, Pantanal e Pampa como formações naturais e sua distribuição espacial. NÃO cobre relações ecológicas específicas de Biologia.",
+              "keywords": [
+                "biomas brasileiros",
+                "Amazônia",
+                "Cerrado",
+                "Caatinga",
+                "Mata Atlântica",
+                "Pantanal",
+                "Pampa"
+              ],
+              "keywordsContexto": [
+                "vegetação",
+                "domínio morfoclimático",
+                "biodiversidade"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar biomas brasileiros para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "cadeia alimentar",
+                "nicho ecológico",
+                "sucessão ecológica"
+              ],
+              "naoConfundirCom": [
+                "bio.ecologia.ecossistemas.biomas_brasileiros"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "biomas_brasil"
+            },
+            {
+              "id": "geo.fisica_ambiental.biomas.dominios_morfoclimaticos",
+              "label": "Domínios morfoclimáticos",
+              "descricao": "Cobre domínios morfoclimáticos de Aziz Ab'Saber, transições, faixas de contato e relação relevo-clima-vegetação. NÃO cobre bioma isolado sem análise integrada.",
+              "keywords": [
+                "domínios morfoclimáticos",
+                "mares de morros",
+                "cerrado",
+                "caatinga",
+                "faixas de transição",
+                "Aziz Ab'Saber"
+              ],
+              "keywordsContexto": [
+                "relevo",
+                "clima",
+                "vegetação"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar domínios morfoclimáticos para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "ecossistema",
+                "população biológica"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.biomas.biomas_brasileiros"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        },
+        {
+          "id": "geo.fisica_ambiental.impactos_ambientais",
+          "label": "Impactos ambientais e sustentabilidade",
+          "escopos": [
+            {
+              "id": "geo.fisica_ambiental.impactos_ambientais.desmatamento_queimadas",
+              "label": "Desmatamento, queimadas e uso da terra",
+              "descricao": "Cobre desmatamento, queimadas, fronteira agrícola, perda de cobertura vegetal e impactos espaciais do uso da terra. NÃO cobre fotossíntese ou ciclos biogeoquímicos como Biologia/Química.",
+              "keywords": [
+                "desmatamento",
+                "queimadas",
+                "fronteira agrícola",
+                "uso da terra",
+                "perda de vegetação"
+              ],
+              "keywordsContexto": [
+                "Amazônia",
+                "Cerrado",
+                "matriz energética",
+                "pastagem"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar desmatamento, queimadas e uso da terra para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "fotossíntese",
+                "ciclo do carbono",
+                "respiração celular"
+              ],
+              "naoConfundirCom": [
+                "geo.agraria.espaco_rural.frente_agricola"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas",
+              "label": "Mudanças climáticas e efeito estufa",
+              "descricao": "Cobre aquecimento global, gases de efeito estufa, política climática, vulnerabilidade territorial e acordos climáticos. NÃO cobre tempo atmosférico cotidiano sem escala climática.",
+              "keywords": [
+                "mudanças climáticas",
+                "aquecimento global",
+                "efeito estufa",
+                "gases de efeito estufa",
+                "Acordo de Paris",
+                "Protocolo de Kyoto"
+              ],
+              "keywordsContexto": [
+                "emissões",
+                "carbono",
+                "adaptação",
+                "mitigação"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar mudanças climáticas e efeito estufa para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "frente fria",
+                "massa de ar",
+                "tempo atmosférico"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.climatologia.tempo_clima"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "mudancas_climaticas"
+            },
+            {
+              "id": "geo.fisica_ambiental.impactos_ambientais.poluicao_residuos",
+              "label": "Poluição, resíduos e degradação ambiental",
+              "descricao": "Cobre poluição do ar, água e solo, resíduos sólidos, contaminação, saneamento ambiental e impactos territoriais. NÃO cobre reação química de poluentes como Química se o cálculo/estequiometria for central.",
+              "keywords": [
+                "poluição",
+                "resíduos sólidos",
+                "lixo",
+                "contaminação",
+                "degradação ambiental",
+                "saneamento ambiental"
+              ],
+              "keywordsContexto": [
+                "aterro",
+                "esgoto",
+                "rios urbanos"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar poluição, resíduos e degradação ambiental para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "concentração molar",
+                "reação química",
+                "estequiometria"
+              ],
+              "naoConfundirCom": [
+                "quim.solucoes.concentracao.concentracao_comum"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "poluicao_ambiental"
+            },
+            {
+              "id": "geo.fisica_ambiental.impactos_ambientais.sustentabilidade",
+              "label": "Sustentabilidade e conservação ambiental",
+              "descricao": "Cobre desenvolvimento sustentável, unidades de conservação, preservação, conservação, manejo ambiental e conflitos socioambientais. NÃO cobre ética ambiental se a questão for filosófica normativa.",
+              "keywords": [
+                "sustentabilidade",
+                "desenvolvimento sustentável",
+                "unidade de conservação",
+                "preservação",
+                "conservação",
+                "manejo ambiental"
+              ],
+              "keywordsContexto": [
+                "reserva",
+                "parque nacional",
+                "populações tradicionais"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar sustentabilidade e conservação ambiental para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "ética ambiental",
+                "responsabilidade moral",
+                "imperativo categórico"
+              ],
+              "naoConfundirCom": [
+                "fil.etica.aplicada.etica_ambiental"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "sustentabilidade"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "cartografia",
+      "assuntoLabel": "Cartografia e representação do espaço",
+      "dominios": [
+        {
+          "id": "geo.cartografia.representacao",
+          "label": "Representação cartográfica",
+          "escopos": [
+            {
+              "id": "geo.cartografia.representacao.coordenadas_orientacao",
+              "label": "Coordenadas geográficas e orientação",
+              "descricao": "Cobre latitude, longitude, hemisférios, orientação, fusos e localização absoluta/relativa. NÃO cobre movimento da Terra como Astronomia/Física se o foco for cálculo físico.",
+              "keywords": [
+                "latitude",
+                "longitude",
+                "coordenadas geográficas",
+                "paralelos",
+                "meridianos",
+                "orientação"
+              ],
+              "keywordsContexto": [
+                "hemisfério",
+                "GPS",
+                "localização"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar coordenadas geográficas e orientação para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "velocidade angular",
+                "gravitação"
+              ],
+              "naoConfundirCom": [
+                "fis.mecanica.gravitacao.movimentos_orbitais"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.cartografia.representacao.escala_cartografica",
+              "label": "Escala cartográfica",
+              "descricao": "Cobre escala numérica/gráfica, cálculo de distância real ou no mapa e proporção espacial. NÃO cobre razão/proporção puramente matemática sem leitura cartográfica.",
+              "keywords": [
+                "escala cartográfica",
+                "escala numérica",
+                "escala gráfica",
+                "distância no mapa",
+                "distância real"
+              ],
+              "keywordsContexto": [
+                "mapa",
+                "proporção",
+                "redução"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar escala cartográfica para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "função afim",
+                "porcentagem",
+                "regra de três sem mapa"
+              ],
+              "naoConfundirCom": [
+                "mat.proporcionalidade.razao_proporcao.regra_de_tres"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.cartografia.representacao.projecoes",
+              "label": "Projeções cartográficas",
+              "descricao": "Cobre Mercator, Peters, Robinson, distorções, equivalência, conformidade e escolhas políticas da representação. NÃO cobre eurocentrismo como processo histórico se não houver análise cartográfica.",
+              "keywords": [
+                "projeção cartográfica",
+                "Mercator",
+                "Peters",
+                "Robinson",
+                "distorção",
+                "mapamúndi"
+              ],
+              "keywordsContexto": [
+                "área",
+                "forma",
+                "representação do mundo"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar projeções cartográficas para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "colonialismo europeu",
+                "imperialismo"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.seculo_xix.imperialismo_neocolonialismo"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.cartografia.representacao.altimetria_curvas_nivel",
+              "label": "Altimetria, curvas de nível e perfis topográficos",
+              "descricao": "Cobre leitura de relevo em cartas topográficas, curvas de nível, declividade e perfis. NÃO cobre processos geomorfológicos se não houver leitura cartográfica.",
+              "keywords": [
+                "curvas de nível",
+                "altimetria",
+                "perfil topográfico",
+                "declividade",
+                "carta topográfica"
+              ],
+              "keywordsContexto": [
+                "relevo",
+                "altitude",
+                "encosta"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar altimetria, curvas de nível e perfis topográficos para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "erosão",
+                "intemperismo"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.relevo_hidrografia.relevo_processos"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        },
+        {
+          "id": "geo.cartografia.geotecnologias",
+          "label": "Geotecnologias e análise espacial",
+          "escopos": [
+            {
+              "id": "geo.cartografia.geotecnologias.sensoriamento_remoto",
+              "label": "Sensoriamento remoto e imagens de satélite",
+              "descricao": "Cobre interpretação de imagens orbitais, sensores, monitoramento ambiental, uso do solo e comparação temporal por satélite. NÃO cobre imagem como gênero textual de Linguagens.",
+              "keywords": [
+                "sensoriamento remoto",
+                "imagem de satélite",
+                "satélite",
+                "sensor",
+                "monitoramento",
+                "uso do solo"
+              ],
+              "keywordsContexto": [
+                "NDVI",
+                "desmatamento",
+                "mancha urbana"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar sensoriamento remoto e imagens de satélite para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "charge",
+                "tirinha",
+                "propaganda"
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.multimodal.imagem_grafico"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.cartografia.geotecnologias.sig_gps",
+              "label": "SIG, GPS e geoprocessamento",
+              "descricao": "Cobre sistemas de informação geográfica, GPS, georreferenciamento, camadas, análise espacial e mapeamento digital. NÃO cobre tecnologia digital como tema sociológico/linguístico se não houver análise espacial.",
+              "keywords": [
+                "SIG",
+                "GIS",
+                "GPS",
+                "geoprocessamento",
+                "georreferenciamento",
+                "camadas"
+              ],
+              "keywordsContexto": [
+                "mapa digital",
+                "dados espaciais",
+                "coordenadas"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar sig, gps e geoprocessamento para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "redes sociais",
+                "cultura digital"
+              ],
+              "naoConfundirCom": [
+                "soc.cultura.midia.cultura_digital"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "populacao",
+      "assuntoLabel": "População e dinâmica demográfica",
+      "dominios": [
+        {
+          "id": "geo.populacao.demografia",
+          "label": "Demografia",
+          "escopos": [
+            {
+              "id": "geo.populacao.demografia.crescimento_transicao",
+              "label": "Crescimento populacional e transição demográfica",
+              "descricao": "Cobre taxas de natalidade, mortalidade, crescimento vegetativo, transição demográfica e dinâmica populacional. NÃO cobre progressões ou porcentagens se o foco for cálculo matemático abstrato.",
+              "keywords": [
+                "crescimento populacional",
+                "transição demográfica",
+                "natalidade",
+                "mortalidade",
+                "crescimento vegetativo"
+              ],
+              "keywordsContexto": [
+                "população",
+                "taxa",
+                "pirâmide etária"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar crescimento populacional e transição demográfica para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "progressão geométrica",
+                "função exponencial"
+              ],
+              "naoConfundirCom": [
+                "mat.funcoes.exponencial.modelagem_exponencial"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "dinamica_demografica"
+            },
+            {
+              "id": "geo.populacao.demografia.estrutura_etaria",
+              "label": "Estrutura etária e envelhecimento populacional",
+              "descricao": "Cobre pirâmide etária, bônus demográfico, envelhecimento, razão de dependência e políticas associadas. NÃO cobre previdência como política econômica isolada sem análise demográfica.",
+              "keywords": [
+                "pirâmide etária",
+                "envelhecimento populacional",
+                "bônus demográfico",
+                "estrutura etária",
+                "razão de dependência"
+              ],
+              "keywordsContexto": [
+                "idosos",
+                "jovens",
+                "população ativa"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar estrutura etária e envelhecimento populacional para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "reforma previdenciária",
+                "déficit público"
+              ],
+              "naoConfundirCom": [
+                "geo.economia.desenvolvimento.indicadores_socioeconomicos"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.populacao.demografia.distribuicao_densidade",
+              "label": "Distribuição populacional e densidade demográfica",
+              "descricao": "Cobre povoamento, concentração/dispersão populacional, densidade demográfica e fatores de distribuição no território. NÃO cobre urbanização se o foco for rede urbana e metropolização.",
+              "keywords": [
+                "densidade demográfica",
+                "distribuição populacional",
+                "povoamento",
+                "populoso",
+                "povoado"
+              ],
+              "keywordsContexto": [
+                "território",
+                "concentração populacional"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar distribuição populacional e densidade demográfica para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "metrópole",
+                "hierarquia urbana",
+                "conurbação"
+              ],
+              "naoConfundirCom": [
+                "geo.urbana.rede_urbana.hierarquia_urbana"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        },
+        {
+          "id": "geo.populacao.migracoes",
+          "label": "Migrações e mobilidade populacional",
+          "escopos": [
+            {
+              "id": "geo.populacao.migracoes.internas_brasil",
+              "label": "Migrações internas no Brasil",
+              "descricao": "Cobre êxodo rural, migração Nordeste-Sudeste, fronteira agrícola, retorno migratório e mobilidade interna brasileira. NÃO cobre bandeirismo/interiorização colonial como História.",
+              "keywords": [
+                "migração interna",
+                "êxodo rural",
+                "migração nordestina",
+                "retorno migratório",
+                "fronteira agrícola"
+              ],
+              "keywordsContexto": [
+                "Sudeste",
+                "Nordeste",
+                "Centro-Oeste"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar migrações internas no brasil para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "bandeirantes",
+                "capitanias",
+                "colonização"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.colonizacao.expansao_interior_bandeirismo"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.populacao.migracoes.internacionais_refugiados",
+              "label": "Migrações internacionais e refugiados",
+              "descricao": "Cobre fluxos migratórios internacionais, refugiados, xenofobia, diásporas, fronteiras e causas econômicas/políticas/ambientais da migração. NÃO cobre guerra específica se o foco for cronologia histórica.",
+              "keywords": [
+                "migração internacional",
+                "refugiados",
+                "xenofobia",
+                "diáspora",
+                "fronteiras",
+                "imigrantes"
+              ],
+              "keywordsContexto": [
+                "Síria",
+                "Venezuela",
+                "crise migratória"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar migrações internacionais e refugiados para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "Primeira Guerra",
+                "Guerra Fria",
+                "ditadura"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.guerra_fria.conflitos_revolucoes"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "migracoes"
+            },
+            {
+              "id": "geo.populacao.migracoes.mobilidade_trabalho",
+              "label": "Mobilidade do trabalho e migração pendular",
+              "descricao": "Cobre deslocamentos pendulares, mobilidade cotidiana, trabalho, periferia-centro e circulação metropolitana. NÃO cobre alienação do trabalho como conceito sociológico.",
+              "keywords": [
+                "migração pendular",
+                "mobilidade cotidiana",
+                "deslocamento casa-trabalho",
+                "trabalho",
+                "periferia-centro"
+              ],
+              "keywordsContexto": [
+                "transporte",
+                "metrópole",
+                "commuting"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar mobilidade do trabalho e migração pendular para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "alienação",
+                "mais-valia",
+                "classe trabalhadora"
+              ],
+              "naoConfundirCom": [
+                "soc.trabalho.relacoes_trabalho.alienacao"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "urbana",
+      "assuntoLabel": "Geografia urbana",
+      "dominios": [
+        {
+          "id": "geo.urbana.urbanizacao",
+          "label": "Urbanização e problemas urbanos",
+          "escopos": [
+            {
+              "id": "geo.urbana.urbanizacao.processo_urbanizacao",
+              "label": "Processo de urbanização",
+              "descricao": "Cobre crescimento urbano, êxodo rural, industrialização e urbanização, transição campo-cidade e formação de cidades. NÃO cobre industrialização como processo histórico europeu/brasileiro se o foco for temporal.",
+              "keywords": [
+                "urbanização",
+                "crescimento urbano",
+                "êxodo rural",
+                "cidade",
+                "industrialização e urbanização"
+              ],
+              "keywordsContexto": [
+                "população urbana",
+                "campo-cidade"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar processo de urbanização para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "Revolução Industrial",
+                "Era Vargas",
+                "Estado Novo"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.revolucoes.revolucao_industrial",
+                "hist.brasil_republica.vargas.industrializacao_nacional_desenvolvimentismo"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.urbana.urbanizacao.metropolizacao_conurbacao",
+              "label": "Metropolização e conurbação",
+              "descricao": "Cobre metrópoles, regiões metropolitanas, conurbação, macrocefalia urbana e concentração de funções urbanas. NÃO cobre rede urbana se o foco for hierarquia e centralidade entre cidades.",
+              "keywords": [
+                "metropolização",
+                "conurbação",
+                "região metropolitana",
+                "metrópole",
+                "macrocefalia urbana"
+              ],
+              "keywordsContexto": [
+                "mancha urbana",
+                "grande cidade"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar metropolização e conurbação para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "hierarquia urbana",
+                "cidade global",
+                "rede urbana"
+              ],
+              "naoConfundirCom": [
+                "geo.urbana.rede_urbana.hierarquia_urbana"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.urbana.urbanizacao.segregacao_socioespacial",
+              "label": "Segregação socioespacial e periferização",
+              "descricao": "Cobre segregação urbana, periferização, favelização, desigualdade territorial e acesso desigual a moradia/serviços. NÃO cobre desigualdade social como teoria sociológica se não houver espacialidade urbana.",
+              "keywords": [
+                "segregação socioespacial",
+                "periferização",
+                "favela",
+                "favelização",
+                "desigualdade urbana",
+                "gentrificação"
+              ],
+              "keywordsContexto": [
+                "moradia",
+                "infraestrutura",
+                "centro-periferia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar segregação socioespacial e periferização para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "classe social",
+                "estratificação",
+                "mobilidade social"
+              ],
+              "naoConfundirCom": [
+                "soc.desigualdade.estratificacao.classes_sociais"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "desigualdade_urbana"
+            },
+            {
+              "id": "geo.urbana.urbanizacao.problemas_urbanos",
+              "label": "Problemas urbanos e infraestrutura",
+              "descricao": "Cobre saneamento, mobilidade, habitação, enchentes urbanas, ilhas de calor, violência urbana e déficit de infraestrutura. NÃO cobre poluição ambiental geral sem contexto urbano.",
+              "keywords": [
+                "problemas urbanos",
+                "saneamento",
+                "mobilidade urbana",
+                "habitação",
+                "enchentes urbanas",
+                "ilha de calor"
+              ],
+              "keywordsContexto": [
+                "transporte coletivo",
+                "moradia",
+                "infraestrutura"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar problemas urbanos e infraestrutura para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "mudanças climáticas",
+                "bacia hidrográfica",
+                "bioma"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.impactos_ambientais.poluicao_residuos"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        },
+        {
+          "id": "geo.urbana.rede_urbana",
+          "label": "Rede urbana e funções das cidades",
+          "escopos": [
+            {
+              "id": "geo.urbana.rede_urbana.hierarquia_urbana",
+              "label": "Rede e hierarquia urbana",
+              "descricao": "Cobre rede urbana, hierarquia entre cidades, centralidade, metrópoles nacionais/regionais e influência urbana. NÃO cobre metropolização intraurbana se o foco for conurbação/periferização.",
+              "keywords": [
+                "rede urbana",
+                "hierarquia urbana",
+                "centralidade",
+                "metrópole nacional",
+                "cidade média",
+                "influência urbana"
+              ],
+              "keywordsContexto": [
+                "IBGE",
+                "REGIC",
+                "serviços"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar rede e hierarquia urbana para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "periferização",
+                "favela",
+                "conurbação"
+              ],
+              "naoConfundirCom": [
+                "geo.urbana.urbanizacao.metropolizacao_conurbacao"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.urbana.rede_urbana.cidades_globais",
+              "label": "Cidades globais e economia urbana",
+              "descricao": "Cobre cidades globais, comando financeiro, serviços avançados, metrópoles conectadas a fluxos mundiais. NÃO cobre globalização como processo histórico/político amplo.",
+              "keywords": [
+                "cidade global",
+                "Saskia Sassen",
+                "serviços avançados",
+                "financeirização",
+                "metrópole global"
+              ],
+              "keywordsContexto": [
+                "Nova York",
+                "Londres",
+                "São Paulo",
+                "fluxos"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar cidades globais e economia urbana para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "Guerra Fria",
+                "neoliberalismo histórico"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.mundo_recente.globalizacao_neoliberalismo"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "agraria",
+      "assuntoLabel": "Geografia agrária e espaço rural",
+      "dominios": [
+        {
+          "id": "geo.agraria.espaco_rural",
+          "label": "Espaço rural, produção e conflitos",
+          "escopos": [
+            {
+              "id": "geo.agraria.espaco_rural.estrutura_fundiaria",
+              "label": "Estrutura fundiária e concentração de terras",
+              "descricao": "Cobre latifúndio, minifúndio, concentração fundiária, reforma agrária e distribuição da terra. NÃO cobre sesmarias coloniais se o foco for administração portuguesa.",
+              "keywords": [
+                "estrutura fundiária",
+                "latifúndio",
+                "minifúndio",
+                "concentração de terras",
+                "reforma agrária"
+              ],
+              "keywordsContexto": [
+                "terra",
+                "propriedade rural",
+                "INCRA"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar estrutura fundiária e concentração de terras para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "sesmarias",
+                "capitanias hereditárias"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.colonizacao.capitanias_governo_geral"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "questao_agraria"
+            },
+            {
+              "id": "geo.agraria.espaco_rural.agricultura_familiar",
+              "label": "Agricultura familiar e produção camponesa",
+              "descricao": "Cobre agricultura familiar, campesinato, produção de alimentos, técnicas tradicionais e permanência no campo. NÃO cobre movimentos sociais rurais como organização política se o foco for Sociologia.",
+              "keywords": [
+                "agricultura familiar",
+                "campesinato",
+                "pequena propriedade",
+                "produção de alimentos",
+                "camponês"
+              ],
+              "keywordsContexto": [
+                "subsistência",
+                "cooperativa",
+                "PRONAF"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar agricultura familiar e produção camponesa para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "movimento social",
+                "identidade coletiva",
+                "ação coletiva"
+              ],
+              "naoConfundirCom": [
+                "soc.movimentos_sociais.campo.mst"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.agraria.espaco_rural.agronegocio",
+              "label": "Agronegócio e modernização agrícola",
+              "descricao": "Cobre commodities, mecanização, monocultura, agroindústria, pacote tecnológico e integração ao mercado global. NÃO cobre Revolução Verde como história da ciência sem análise territorial.",
+              "keywords": [
+                "agronegócio",
+                "commodities",
+                "monocultura",
+                "mecanização",
+                "agroindústria",
+                "soja"
+              ],
+              "keywordsContexto": [
+                "exportação",
+                "produtividade",
+                "máquinas"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar agronegócio e modernização agrícola para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "CLT",
+                "Estado Novo",
+                "Revolução Industrial"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.vargas.trabalhismo_clt"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.agraria.espaco_rural.frente_agricola",
+              "label": "Fronteira agrícola e expansão agropecuária",
+              "descricao": "Cobre avanço da fronteira agrícola, MATOPIBA, Cerrado, Amazônia, desmatamento associado e transformação do uso da terra. NÃO cobre bandeirismo como expansão territorial colonial.",
+              "keywords": [
+                "fronteira agrícola",
+                "MATOPIBA",
+                "expansão agropecuária",
+                "Cerrado",
+                "Amazônia",
+                "uso da terra"
+              ],
+              "keywordsContexto": [
+                "soja",
+                "pastagem",
+                "desmatamento"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar fronteira agrícola e expansão agropecuária para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "bandeirantes",
+                "entradas",
+                "mineração colonial"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.colonizacao.expansao_interior_bandeirismo"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.agraria.espaco_rural.conflitos_campo",
+              "label": "Conflitos no campo e movimentos rurais",
+              "descricao": "Cobre conflitos por terra, violência no campo, posseiros, grilagem, MST e disputas territoriais rurais. NÃO cobre movimentos sociais apenas como teoria sociológica se não houver território rural.",
+              "keywords": [
+                "conflitos no campo",
+                "MST",
+                "posseiros",
+                "grilagem",
+                "violência no campo",
+                "terra indígena"
+              ],
+              "keywordsContexto": [
+                "reforma agrária",
+                "assentamento",
+                "território"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar conflitos no campo e movimentos rurais para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "ação coletiva",
+                "movimentos sociais urbanos"
+              ],
+              "naoConfundirCom": [
+                "soc.movimentos_sociais.campo.mst"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "conflitos_fundiarios"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "economica",
+      "assuntoLabel": "Geografia econômica e produção do espaço",
+      "dominios": [
+        {
+          "id": "geo.economia.industrializacao",
+          "label": "Industrialização e organização produtiva",
+          "escopos": [
+            {
+              "id": "geo.economia.industrializacao.industrializacao_mundial",
+              "label": "Industrialização mundial e localização industrial",
+              "descricao": "Cobre fatores locacionais, concentração industrial, desconcentração produtiva e padrões espaciais da indústria. NÃO cobre Revolução Industrial como processo histórico se o foco for século XVIII/XIX.",
+              "keywords": [
+                "localização industrial",
+                "indústria",
+                "fatores locacionais",
+                "desconcentração industrial",
+                "parque industrial"
+              ],
+              "keywordsContexto": [
+                "matéria-prima",
+                "energia",
+                "mão de obra",
+                "mercado consumidor"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar industrialização mundial e localização industrial para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "Revolução Industrial",
+                "proletariado",
+                "burguesia industrial"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.revolucoes.revolucao_industrial"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.economia.industrializacao.industrializacao_brasileira",
+              "label": "Industrialização brasileira e concentração regional",
+              "descricao": "Cobre formação do parque industrial brasileiro, concentração no Sudeste, desconcentração recente e políticas territoriais. NÃO cobre Era Vargas se a questão pedir cronologia política/trabalhista.",
+              "keywords": [
+                "industrialização brasileira",
+                "concentração industrial",
+                "Sudeste",
+                "ABC paulista",
+                "desconcentração industrial"
+              ],
+              "keywordsContexto": [
+                "São Paulo",
+                "região industrial",
+                "incentivos fiscais"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar industrialização brasileira e concentração regional para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "Getúlio Vargas",
+                "Estado Novo",
+                "CLT"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.vargas.industrializacao_nacional_desenvolvimentismo"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.economia.industrializacao.reestruturacao_produtiva",
+              "label": "Reestruturação produtiva e trabalho no espaço global",
+              "descricao": "Cobre toyotismo, fordismo em perspectiva espacial, terceirização, cadeias produtivas, relocalização e flexibilização territorial. NÃO cobre alienação/mais-valia como teoria sociológica primária.",
+              "keywords": [
+                "reestruturação produtiva",
+                "toyotismo",
+                "fordismo",
+                "terceirização",
+                "cadeias produtivas",
+                "flexibilização"
+              ],
+              "keywordsContexto": [
+                "fábricas",
+                "trabalho",
+                "globalização produtiva"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar reestruturação produtiva e trabalho no espaço global para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "alienação",
+                "mais-valia",
+                "Marx"
+              ],
+              "naoConfundirCom": [
+                "soc.trabalho.relacoes_trabalho.alienacao"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "trabalho_producao"
+            }
+          ]
+        },
+        {
+          "id": "geo.economia.globalizacao",
+          "label": "Globalização, redes e fluxos",
+          "escopos": [
+            {
+              "id": "geo.economia.globalizacao.fluxos_redes",
+              "label": "Globalização, redes e fluxos",
+              "descricao": "Cobre fluxos de mercadorias, capitais, informações e pessoas, redes técnicas e integração desigual do espaço mundial. NÃO cobre globalização como período histórico se o foco for cronologia política.",
+              "keywords": [
+                "globalização",
+                "fluxos",
+                "redes",
+                "capital",
+                "mercadorias",
+                "informação"
+              ],
+              "keywordsContexto": [
+                "internet",
+                "transporte",
+                "logística"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar globalização, redes e fluxos para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "fim da URSS",
+                "Guerra Fria",
+                "neoliberalismo histórico"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.mundo_recente.globalizacao_neoliberalismo"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "globalizacao"
+            },
+            {
+              "id": "geo.economia.globalizacao.divisao_internacional_trabalho",
+              "label": "Divisão internacional do trabalho",
+              "descricao": "Cobre DIT, Nova DIT, centro-periferia, dependência produtiva e especialização econômica dos países. NÃO cobre imperialismo do século XIX como evento histórico central.",
+              "keywords": [
+                "divisão internacional do trabalho",
+                "DIT",
+                "Nova DIT",
+                "centro-periferia",
+                "dependência",
+                "especialização produtiva"
+              ],
+              "keywordsContexto": [
+                "países centrais",
+                "países periféricos",
+                "commodities"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar divisão internacional do trabalho para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "partilha da África",
+                "neocolonialismo"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.seculo_xix.imperialismo_neocolonialismo"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "divisao_internacional_trabalho"
+            },
+            {
+              "id": "geo.economia.globalizacao.blocos_economicos",
+              "label": "Blocos econômicos e integração regional",
+              "descricao": "Cobre Mercosul, União Europeia, USMCA/NAFTA, integração regional, comércio e regionalização econômica. NÃO cobre União Europeia como consequência histórica da Segunda Guerra se o foco for história política.",
+              "keywords": [
+                "blocos econômicos",
+                "Mercosul",
+                "União Europeia",
+                "NAFTA",
+                "USMCA",
+                "integração regional"
+              ],
+              "keywordsContexto": [
+                "comércio",
+                "tarifas",
+                "mercado comum"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar blocos econômicos e integração regional para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "Tratado de Versalhes",
+                "Segunda Guerra"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.guerras_totalitarismos.segunda_guerra"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        },
+        {
+          "id": "geo.economia.desenvolvimento",
+          "label": "Desenvolvimento e desigualdades socioeconômicas",
+          "escopos": [
+            {
+              "id": "geo.economia.desenvolvimento.indicadores_socioeconomicos",
+              "label": "Indicadores socioeconômicos: IDH, renda e desigualdade",
+              "descricao": "Cobre IDH, PIB, renda per capita, Gini, pobreza, desenvolvimento humano e desigualdades territoriais. NÃO cobre estatística matemática se o foco for cálculo de média/mediana sem interpretação geográfica.",
+              "keywords": [
+                "IDH",
+                "PIB",
+                "renda per capita",
+                "índice de Gini",
+                "desenvolvimento humano",
+                "pobreza"
+              ],
+              "keywordsContexto": [
+                "indicadores",
+                "desigualdade",
+                "país desenvolvido"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar indicadores socioeconômicos: idh, renda e desigualdade para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "média",
+                "mediana",
+                "desvio padrão"
+              ],
+              "naoConfundirCom": [
+                "mat.estatistica_probabilidade.estatistica.medidas_tendencia"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "desenvolvimento_humano"
+            },
+            {
+              "id": "geo.economia.desenvolvimento.desigualdades_regionais",
+              "label": "Desigualdades regionais no Brasil",
+              "descricao": "Cobre desigualdades entre regiões brasileiras, concentração econômica, políticas regionais, Sudene, Amazônia Legal e disparidades territoriais. NÃO cobre desigualdade de classe sem recorte espacial.",
+              "keywords": [
+                "desigualdades regionais",
+                "regiões brasileiras",
+                "Sudene",
+                "Amazônia Legal",
+                "Nordeste",
+                "Centro-Sul"
+              ],
+              "keywordsContexto": [
+                "desenvolvimento regional",
+                "concentração econômica"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar desigualdades regionais no brasil para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "classe social",
+                "estratificação",
+                "mobilidade social"
+              ],
+              "naoConfundirCom": [
+                "soc.desigualdade.estratificacao.classes_sociais"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "desigualdade_regional"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "politica_geopolitica",
+      "assuntoLabel": "Geografia política e geopolítica",
+      "dominios": [
+        {
+          "id": "geo.politica_geopolitica.estado_territorio",
+          "label": "Estado, território e poder",
+          "escopos": [
+            {
+              "id": "geo.politica_geopolitica.estado_territorio.territorio_fronteiras",
+              "label": "Território, fronteiras e soberania",
+              "descricao": "Cobre território, fronteiras, soberania, Estado-nação e disputas por controle espacial. NÃO cobre formação histórica de Estados se o foco for cronologia histórica.",
+              "keywords": [
+                "território",
+                "fronteira",
+                "soberania",
+                "Estado-nação",
+                "limite",
+                "disputa territorial"
+              ],
+              "keywordsContexto": [
+                "controle",
+                "poder",
+                "fronteira política"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar território, fronteiras e soberania para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "absolutismo",
+                "Estado moderno",
+                "monarquia"
+              ],
+              "naoConfundirCom": [
+                "hist.moderna.formacao_mundo_moderno.absolutismo_estado_moderno"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.politica_geopolitica.estado_territorio.regionalizacao_mundial",
+              "label": "Regionalização do espaço mundial",
+              "descricao": "Cobre critérios de regionalização, Norte-Sul, centro-periferia, Primeiro/Terceiro Mundo, blocos regionais e classificações do espaço mundial. NÃO cobre regionalização brasileira física se o foco for clima/biomas.",
+              "keywords": [
+                "regionalização",
+                "Norte-Sul",
+                "centro-periferia",
+                "Primeiro Mundo",
+                "Terceiro Mundo",
+                "mundo multipolar"
+              ],
+              "keywordsContexto": [
+                "regiões",
+                "critério",
+                "desenvolvimento"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar regionalização do espaço mundial para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "biomas",
+                "domínios morfoclimáticos"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.biomas.dominios_morfoclimaticos"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.politica_geopolitica.estado_territorio.geopolitica_brasileira",
+              "label": "Geopolítica brasileira e integração territorial",
+              "descricao": "Cobre integração do território brasileiro, fronteiras, Amazônia, defesa, infraestrutura estratégica e ocupação territorial. NÃO cobre bandeirismo colonial como História.",
+              "keywords": [
+                "geopolítica brasileira",
+                "integração territorial",
+                "Amazônia",
+                "fronteira brasileira",
+                "defesa",
+                "infraestrutura estratégica"
+              ],
+              "keywordsContexto": [
+                "território nacional",
+                "ocupação",
+                "rodovias"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar geopolítica brasileira e integração territorial para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "bandeirantes",
+                "Tratado de Tordesilhas"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_colonial.colonizacao.expansao_interior_bandeirismo"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        },
+        {
+          "id": "geo.politica_geopolitica.conflitos",
+          "label": "Geopolítica mundial e conflitos",
+          "escopos": [
+            {
+              "id": "geo.politica_geopolitica.conflitos.ordem_mundial",
+              "label": "Ordem mundial, bipolaridade e multipolaridade",
+              "descricao": "Cobre ordem mundial em chave geopolítica, bipolaridade, multipolaridade, hegemonia, polos de poder e disputas espaciais globais. NÃO cobre Guerra Fria como sequência histórica de eventos se o foco for cronologia.",
+              "keywords": [
+                "ordem mundial",
+                "bipolaridade",
+                "multipolaridade",
+                "hegemonia",
+                "polos de poder",
+                "geopolítica"
+              ],
+              "keywordsContexto": [
+                "EUA",
+                "China",
+                "Rússia",
+                "União Europeia"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar ordem mundial, bipolaridade e multipolaridade para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "Guerra Fria",
+                "queda do Muro",
+                "URSS"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.guerra_fria.bipolaridade"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.politica_geopolitica.conflitos.conflitos_territoriais",
+              "label": "Conflitos territoriais e separatismos",
+              "descricao": "Cobre conflitos por território, separatismos, fronteiras, nacionalismos territoriais, Kosovo, Catalunha, Curdos e disputas regionais. NÃO cobre nacionalismo do século XIX como História se o foco for ideologia histórica.",
+              "keywords": [
+                "conflito territorial",
+                "separatismo",
+                "fronteiras",
+                "nacionalismo",
+                "Kosovo",
+                "Catalunha",
+                "curdos"
+              ],
+              "keywordsContexto": [
+                "autonomia",
+                "independência",
+                "território"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar conflitos territoriais e separatismos para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "Revoluções de 1848",
+                "unificação italiana",
+                "unificação alemã"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.seculo_xix.liberalismo_nacionalismo_socialismo"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            },
+            {
+              "id": "geo.politica_geopolitica.conflitos.oriente_medio_geopolitica",
+              "label": "Oriente Médio em perspectiva geopolítica",
+              "descricao": "Cobre petróleo, território, água, religião como fator geopolítico, Israel-Palestina e disputas regionais em leitura espacial. NÃO cobre cronologia histórica detalhada dos conflitos se o foco for História.",
+              "keywords": [
+                "Oriente Médio",
+                "petróleo",
+                "Israel",
+                "Palestina",
+                "geopolítica",
+                "água",
+                "território"
+              ],
+              "keywordsContexto": [
+                "Golfo Pérsico",
+                "Jerusalém",
+                "conflito árabe-israelense"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar oriente médio em perspectiva geopolítica para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "Holocausto",
+                "Segunda Guerra",
+                "criação de Israel como evento histórico"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.mundo_recente.conflitos_oriente_medio"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "conceitoCanonic": "oriente_medio"
+            },
+            {
+              "id": "geo.politica_geopolitica.conflitos.organismos_internacionais",
+              "label": "Organismos internacionais e governança global",
+              "descricao": "Cobre ONU, OMC, FMI, Banco Mundial, OTAN e governança global em disputas geopolíticas/econômicas. NÃO cobre direitos humanos como desenvolvimento histórico se o foco for História.",
+              "keywords": [
+                "ONU",
+                "OMC",
+                "FMI",
+                "Banco Mundial",
+                "OTAN",
+                "governança global"
+              ],
+              "keywordsContexto": [
+                "organismo internacional",
+                "cooperação",
+                "sanções"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão exige aplicar organismos internacionais e governança global para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+              ],
+              "negativeHints": [
+                "Declaração Universal dos Direitos Humanos",
+                "pós-guerra"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.mundo_recente.organismos_internacionais_direitos_humanos"
+              ],
+              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "nao_classificado",
+      "assuntoLabel": "Não classificado",
+      "dominios": [
+        {
+          "id": "geo.nao_classificado",
+          "label": "Não classificado",
+          "escopos": [
+            {
+              "id": "geo.__nao_classificado",
+              "label": "Não classificado — Geografia",
+              "descricao": "Usar quando o texto estiver ilegível, a rota disciplinar estiver incerta, a confiança for inferior ao limiar ou nenhum escopo de Geografia for adequado.",
+              "keywords": [],
+              "keywordsContexto": [],
+              "exemplosEnunciado": [],
+              "negativeHints": [],
+              "naoConfundirCom": [],
+              "regraDesempate": "Fallback obrigatório: não usar como escopo pedagógico quando houver escopo geo.* confiável."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

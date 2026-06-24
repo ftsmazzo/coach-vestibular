@@ -1,0 +1,1124 @@
+{
+  "schemaVersion": "1.2.0",
+  "catalogVersion": "1.0.0",
+  "materiaId": "espanhol",
+  "materiaLabel": "Espanhol",
+  "areaEnem": "Linguagens, Códigos e suas Tecnologias",
+  "notas": "Catálogo disciplinar de Espanhol v1.0.0. Área ENEM é metadado; escopoId esp.* é unidade diagnóstica. O comando em português não define Português; se o texto-base/competência cobrada é espanhol, usar este catálogo.",
+  "regras": {
+    "idImutavel": true,
+    "iaSoEscolheIds": true,
+    "iaSoEscolheIdsNota": "Aplica-se a N0–N2. Em N3 ver politicaN3.",
+    "maxN2PorMateria": 80,
+    "fallbackNaoContaNoMax": true,
+    "confiancaMinima": 0.45,
+    "roteamentoObrigatorio": {
+      "etapa1": "Determinar se a questão é Português, Inglês ou Espanhol antes de classificar N2.",
+      "etapa2": "Enviar ao classificador apenas este catálogo quando disciplinaId=espanhol.",
+      "regraCritica": "O português do comando não define Português. Para Espanhol, observar língua dominante do texto-base, alternativas, expressões destacadas e competência cobrada."
+    },
+    "multiLabel": {
+      "permitido": true,
+      "maxPrimarios": 1,
+      "maxSecundarios": 2
+    },
+    "politicaN3": "A IA escolhe APENAS IDs em N0–N2. Em N3 (conhecimentoExigido) PROPÕE texto livre para revisão humana; N3 nunca é um ID.",
+    "regraDesempate": "Aplicar negativeHints + naoConfundirCom + regraDesempate do escopo. Persistindo empate ou confiança < confiancaMinima → esp.__nao_classificado.",
+    "pesos": {
+      "descricao": "regra mais forte: o que o escopo cobre e não cobre",
+      "exemplosEnunciado": "referência semântica, não match literal",
+      "keywords": 1.0,
+      "keywordsContexto": 0.4,
+      "negativeHints": "penalidade: presença do termo reduz a probabilidade deste escopo"
+    }
+  },
+  "assuntos": [
+    {
+      "assuntoId": "lectura",
+      "assuntoLabel": "Comprensión lectora",
+      "dominios": [
+        {
+          "id": "esp.lectura.comprension",
+          "label": "Compreensão leitora",
+          "escopos": [
+            {
+              "id": "esp.lectura.comprension.idea_principal",
+              "label": "Idea principal y comprensión global",
+              "descricao": "Cobre identificação da ideia principal, tema, finalidade geral ou sentido global de texto em espanhol. NÃO cobre inferência específica, referência pronominal ou gramática isolada.",
+              "keywords": [
+                "idea principal",
+                "tema del texto",
+                "sentido global",
+                "comprensión global",
+                "finalidad del texto",
+                "propósito general"
+              ],
+              "keywordsContexto": [
+                "el texto trata de",
+                "el autor pretende",
+                "en conjunto"
+              ],
+              "negativeHints": [
+                "main idea",
+                "ideia central em português",
+                "texto-base em inglês",
+                "texto-base em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação da ideia principal, tema, finalidade geral ou sentido global de texto em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.lectura.comprension.inferencia",
+                "esp.genero.proposito.finalidad_comunicativa"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.lectura.comprension.inferencia",
+              "label": "Inferencia y sentido implícito",
+              "descricao": "Cobre inferências, informação implícita, conclusão provável, intenção não explícita e sentido subentendido em texto em espanhol. NÃO cobre mera localização literal de informação.",
+              "keywords": [
+                "inferir",
+                "inferencia",
+                "implícito",
+                "sugiere",
+                "se desprende",
+                "se deduce",
+                "entre líneas"
+              ],
+              "keywordsContexto": [
+                "puede inferirse",
+                "el texto sugiere",
+                "probablemente"
+              ],
+              "negativeHints": [
+                "inference em inglês",
+                "infere-se em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre inferências, informação implícita, conclusão provável, intenção não explícita e sentido subentendido em texto em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.lectura.comprension.informacion_explicita",
+                "esp.vocabulario.contexto.sentido_expresion"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.lectura.comprension.informacion_explicita",
+              "label": "Información explícita y evidencia textual",
+              "descricao": "Cobre localização de informação explícita, dado, fonte, afirmação ou evidência textual em texto em espanhol. NÃO cobre conteúdo temático citado como Biologia/História se a operação é leitura em espanhol.",
+              "keywords": [
+                "según el texto",
+                "de acuerdo con el texto",
+                "información explícita",
+                "afirma el texto",
+                "fuente",
+                "OMS",
+                "informe"
+              ],
+              "keywordsContexto": [
+                "el texto dice",
+                "se menciona",
+                "referencia textual"
+              ],
+              "negativeHints": [
+                "WHO",
+                "conteúdo de biologia",
+                "conteúdo de história",
+                "texto em inglês"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre localização de informação explícita, dado, fonte, afirmação ou evidência textual em texto em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.lectura.comprension.inferencia",
+                "esp.cohesion.referencia.pronombres_referentes"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.lectura.comprension.opinion_tono",
+              "label": "Opinión, tono y actitud del autor",
+              "descricao": "Cobre identificação de opinião, tom, atitude, posicionamento ou intenção do autor em texto em espanhol. NÃO cobre tese/argumento em Português.",
+              "keywords": [
+                "opinión del autor",
+                "actitud del autor",
+                "tono",
+                "punto de vista",
+                "postura",
+                "crítica",
+                "ironía"
+              ],
+              "keywordsContexto": [
+                "el autor considera",
+                "el tono es",
+                "actitud frente a"
+              ],
+              "negativeHints": [
+                "author's opinion",
+                "opinião do autor em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação de opinião, tom, atitude, posicionamento ou intenção do autor em texto em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.genero.argumentacion.tesis_argumento"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.lectura.comprension.comparacion_textos",
+              "label": "Comparación de textos y perspectivas",
+              "descricao": "Cobre comparação entre textos, opiniões, perspectivas ou informações em espanhol. NÃO cobre intertextualidade literária em Português.",
+              "keywords": [
+                "comparar textos",
+                "ambos textos",
+                "diferentes puntos de vista",
+                "semejanza",
+                "contraste",
+                "mientras que"
+              ],
+              "keywordsContexto": [
+                "texto I y texto II",
+                "mismo tema",
+                "perspectiva distinta"
+              ],
+              "negativeHints": [
+                "comparing texts",
+                "intertextualidade em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre comparação entre textos, opiniões, perspectivas ou informações em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.genero.argumentacion.tesis_argumento"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "esp.cohesion.referencia",
+          "label": "Coesão, referência e organização textual",
+          "escopos": [
+            {
+              "id": "esp.cohesion.referencia.pronombres_referentes",
+              "label": "Pronombres, referentes y antecedentes",
+              "descricao": "Cobre identificação do antecedente/referente de pronomes, demonstrativos, possessivos e expressões referenciais em espanhol. NÃO cobre função gramatical do clítico se a pergunta cobra estrutura verbal.",
+              "keywords": [
+                "pronombre",
+                "referente",
+                "antecedente",
+                "se refiere a",
+                "lo",
+                "la",
+                "los",
+                "las",
+                "este",
+                "esa",
+                "aquello"
+              ],
+              "keywordsContexto": [
+                "el pronombre retoma",
+                "la expresión se refiere"
+              ],
+              "negativeHints": [
+                "pronoun reference em inglês",
+                "pronome em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação do antecedente/referente de pronomes, demonstrativos, possessivos e expressões referenciais em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.gramatica.pronombres.cliticos_se",
+                "esp.lectura.comprension.informacion_explicita"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.cohesion.referencia.conectores",
+              "label": "Conectores y relaciones lógicas",
+              "descricao": "Cobre conectores, marcadores discursivos, relações de causa, consequência, contraste, adição e conclusão em espanhol. NÃO cobre operadores argumentativos em Português.",
+              "keywords": [
+                "conector",
+                "aunque",
+                "sin embargo",
+                "por lo tanto",
+                "porque",
+                "pues",
+                "además",
+                "mientras",
+                "por consiguiente"
+              ],
+              "keywordsContexto": [
+                "contraste",
+                "causa",
+                "consecuencia",
+                "adición",
+                "conclusión"
+              ],
+              "negativeHints": [
+                "connectors em inglês",
+                "conectivo em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre conectores, marcadores discursivos, relações de causa, consequência, contraste, adição e conclusão em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.genero.argumentacion.tesis_argumento"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.cohesion.referencia.organizacion_textual",
+              "label": "Organización textual y progresión temática",
+              "descricao": "Cobre organização textual, sequência de ideias, progressão temática, estrutura de parágrafos e desenvolvimento do texto em espanhol. NÃO cobre gênero textual se o foco é apenas tipo de texto.",
+              "keywords": [
+                "organización textual",
+                "párrafo",
+                "secuencia",
+                "progresión temática",
+                "estructura del texto",
+                "desarrollo"
+              ],
+              "keywordsContexto": [
+                "primero",
+                "luego",
+                "finalmente",
+                "el párrafo desarrolla"
+              ],
+              "negativeHints": [
+                "text organization em inglês",
+                "organização textual em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre organização textual, sequência de ideias, progressão temática, estrutura de parágrafos e desenvolvimento do texto em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.genero.proposito.genero_textual"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.cohesion.referencia.marcadores_discursivos",
+              "label": "Marcadores discursivos y función pragmática",
+              "descricao": "Cobre função pragmática de marcadores discursivos, expressões conversacionais e marcas de interação em espanhol. NÃO cobre vocabulário isolado sem função discursiva.",
+              "keywords": [
+                "marcador discursivo",
+                "bueno",
+                "pues",
+                "o sea",
+                "es decir",
+                "en fin",
+                "por cierto",
+                "función pragmática"
+              ],
+              "keywordsContexto": [
+                "conversación",
+                "interacción",
+                "marcador"
+              ],
+              "negativeHints": [
+                "discourse marker em inglês",
+                "marcador discursivo em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre função pragmática de marcadores discursivos, expressões conversacionais e marcas de interação em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.vocabulario.contexto.sentido_expresion"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "vocabulario",
+      "assuntoLabel": "Vocabulario en contexto",
+      "dominios": [
+        {
+          "id": "esp.vocabulario.contexto",
+          "label": "Vocabulário, sentido e expressão em contexto",
+          "escopos": [
+            {
+              "id": "esp.vocabulario.contexto.sentido_palabra",
+              "label": "Sentido de palabra en contexto",
+              "descricao": "Cobre sentido de palavra em espanhol definido pelo contexto, equivalência lexical e escolha semântica adequada. NÃO cobre tradução de trecho inteiro ou gramática verbal.",
+              "keywords": [
+                "sentido de la palabra",
+                "significado de la palabra",
+                "en contexto",
+                "vocabulario",
+                "equivalente",
+                "la palabra significa"
+              ],
+              "keywordsContexto": [
+                "más cercano",
+                "en el texto",
+                "se refiere a"
+              ],
+              "negativeHints": [
+                "word meaning em inglês",
+                "sentido de palavra em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre sentido de palavra em espanhol definido pelo contexto, equivalência lexical e escolha semântica adequada."
+              ],
+              "naoConfundirCom": [
+                "esp.vocabulario.contexto.sentido_expresion",
+                "esp.gramatica.verbos.tiempos_pasados"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.vocabulario.contexto.sentido_expresion",
+              "label": "Sentido de expresión, locución o modismo",
+              "descricao": "Cobre sentido contextual de expressão, locução, modismo ou frase figurada em espanhol. NÃO cobre palavra isolada simples quando não há expressão idiomática.",
+              "keywords": [
+                "expresión",
+                "locución",
+                "modismo",
+                "frase hecha",
+                "sentido de la expresión",
+                "lenguaje figurado"
+              ],
+              "keywordsContexto": [
+                "en este contexto",
+                "la expresión sugiere",
+                "idiomático"
+              ],
+              "negativeHints": [
+                "expression meaning em inglês",
+                "expressão em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre sentido contextual de expressão, locução, modismo ou frase figurada em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.vocabulario.contexto.sentido_palabra"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.vocabulario.contexto.falsos_cognatos",
+              "label": "Falsos cognatos y heterosemánticos",
+              "descricao": "Cobre falsos cognatos, heterosemânticos e armadilhas lexicais entre espanhol e português. NÃO cobre cognatos transparentes sem risco interpretativo.",
+              "keywords": [
+                "falso cognato",
+                "falso amigo",
+                "heterosemántico",
+                "embarazada",
+                "apellido",
+                "oficina",
+                "vaso",
+                "rato"
+              ],
+              "keywordsContexto": [
+                "cognado",
+                "palabra engañosa",
+                "no significa"
+              ],
+              "negativeHints": [
+                "false cognates em inglês",
+                "parônimos em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre falsos cognatos, heterosemânticos e armadilhas lexicais entre espanhol e português."
+              ],
+              "naoConfundirCom": [
+                "esp.vocabulario.contexto.sentido_palabra"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.vocabulario.contexto.sinonimia_parafrasis",
+              "label": "Sinonimia, paráfrasis y equivalencia semántica",
+              "descricao": "Cobre equivalência semântica, paráfrase, substituição por sinônimo ou reformulação em espanhol. NÃO cobre tradução livre para Português sem leitura do contexto.",
+              "keywords": [
+                "sinónimo",
+                "paráfrasis",
+                "equivalente",
+                "mismo sentido",
+                "significado semejante",
+                "reformular"
+              ],
+              "keywordsContexto": [
+                "puede sustituirse por",
+                "sentido similar"
+              ],
+              "negativeHints": [
+                "synonym em inglês",
+                "sinonímia em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre equivalência semântica, paráfrase, substituição por sinônimo ou reformulação em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.lectura.comprension.idea_principal"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.vocabulario.contexto.formacion_palabras",
+              "label": "Formación de palabras, prefijos y sufijos",
+              "descricao": "Cobre prefixos, sufixos, formação de palavras, famílias lexicais e inferência por morfologia em espanhol. NÃO cobre morfologia do português.",
+              "keywords": [
+                "prefijo",
+                "sufijo",
+                "formación de palabras",
+                "raíz",
+                "derivación",
+                "composición",
+                "des-",
+                "-mente"
+              ],
+              "keywordsContexto": [
+                "familia léxica",
+                "morfema",
+                "se forma por"
+              ],
+              "negativeHints": [
+                "word formation em inglês",
+                "formação de palavras em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre prefixos, sufixos, formação de palavras, famílias lexicais e inferência por morfologia em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.vocabulario.contexto.sentido_palabra"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "gramatica_funcional",
+      "assuntoLabel": "Gramática funcional",
+      "dominios": [
+        {
+          "id": "esp.gramatica.verbos",
+          "label": "Verbos, tempos e modos",
+          "escopos": [
+            {
+              "id": "esp.gramatica.verbos.tiempos_pasados",
+              "label": "Pretéritos y temporalidad narrativa",
+              "descricao": "Cobre valor contextual dos pretéritos em espanhol, como pretérito perfecto, indefinido, imperfecto e pluscuamperfecto. NÃO cobre tempos verbais de Português/Inglês.",
+              "keywords": [
+                "pretérito perfecto",
+                "pretérito indefinido",
+                "pretérito imperfecto",
+                "pluscuamperfecto",
+                "tiempo pasado",
+                "forma verbal"
+              ],
+              "keywordsContexto": [
+                "ha sido",
+                "fue",
+                "era",
+                "había",
+                "acción pasada"
+              ],
+              "negativeHints": [
+                "present perfect em inglês",
+                "pretérito perfeito em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre valor contextual dos pretéritos em espanhol, como pretérito perfecto, indefinido, imperfecto e pluscuamperfecto."
+              ],
+              "naoConfundirCom": [
+                "esp.gramatica.verbos.subjuntivo"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.gramatica.verbos.subjuntivo",
+              "label": "Subjuntivo, deseo y eventualidad",
+              "descricao": "Cobre uso do subjuntivo em espanhol para desejo, dúvida, hipótese, finalidade, eventualidade, opinião ou avaliação. NÃO cobre subjuntivo do português.",
+              "keywords": [
+                "subjuntivo",
+                "deseo",
+                "duda",
+                "posibilidad",
+                "ojalá",
+                "aunque",
+                "para que",
+                "quiera"
+              ],
+              "keywordsContexto": [
+                "eventualidad",
+                "hipótesis",
+                "valor del subjuntivo"
+              ],
+              "negativeHints": [
+                "subjunctive em inglês",
+                "subjuntivo em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre uso do subjuntivo em espanhol para desejo, dúvida, hipótese, finalidade, eventualidade, opinião ou avaliação."
+              ],
+              "naoConfundirCom": [
+                "esp.gramatica.verbos.tiempos_pasados",
+                "esp.cohesion.referencia.conectores"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.gramatica.verbos.perifrasis_verbales",
+              "label": "Perífrasis verbales y aspecto",
+              "descricao": "Cobre perífrases verbais, aspecto, continuidade, obrigação, início/fim de ação e valor modal em espanhol. NÃO cobre locuções verbais do português.",
+              "keywords": [
+                "perífrasis verbal",
+                "tener que",
+                "ir a",
+                "estar gerundio",
+                "seguir gerundio",
+                "acabar de",
+                "volver a"
+              ],
+              "keywordsContexto": [
+                "obligación",
+                "continuidad",
+                "aspecto verbal",
+                "acción en desarrollo"
+              ],
+              "negativeHints": [
+                "phrasal verb em inglês",
+                "locução verbal em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre perífrases verbais, aspecto, continuidade, obrigação, início/fim de ação e valor modal em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.gramatica.verbos.tiempos_pasados"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.gramatica.verbos.modo_imperativo",
+              "label": "Imperativo e instrucción",
+              "descricao": "Cobre formas de imperativo, ordem, conselho, instrução, apelo ao interlocutor e comando em espanhol. NÃO cobre finalidade comunicativa do texto se a forma verbal não é foco.",
+              "keywords": [
+                "imperativo",
+                "ordem",
+                "instrucción",
+                "consejo",
+                "mandato",
+                "haz",
+                "haga",
+                "venga"
+              ],
+              "keywordsContexto": [
+                "forma imperativa",
+                "dirigirse al lector"
+              ],
+              "negativeHints": [
+                "imperative em inglês",
+                "imperativo em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre formas de imperativo, ordem, conselho, instrução, apelo ao interlocutor e comando em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.genero.proposito.finalidad_comunicativa"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "esp.gramatica.pronombres",
+          "label": "Pronomes, clíticos e estrutura frasal",
+          "escopos": [
+            {
+              "id": "esp.gramatica.pronombres.cliticos_se",
+              "label": "Clíticos y usos de 'se'",
+              "descricao": "Cobre função do pronome/clítico 'se' em construções reflexivas, recíprocas, impessoais, passivas reflexas, pronominais e voz média em espanhol. NÃO cobre simples referente textual de pronome.",
+              "keywords": [
+                "se",
+                "clítico",
+                "pronombre se",
+                "se impersonal",
+                "pasiva refleja",
+                "reflexivo",
+                "recíproco",
+                "verbo pronominal"
+              ],
+              "keywordsContexto": [
+                "función de se",
+                "valor pronominal",
+                "voz media"
+              ],
+              "negativeHints": [
+                "pronome se em português",
+                "pronoun reference em inglês"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre função do pronome/clítico 'se' em construções reflexivas, recíprocas, impessoais, passivas reflexas, pronominais e voz média em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.cohesion.referencia.pronombres_referentes"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.gramatica.pronombres.objeto_directo_indirecto",
+              "label": "Pronombres de objeto directo e indirecto",
+              "descricao": "Cobre lo, la, los, las, le, les, duplicação pronominal e função de objeto direto/indireto em espanhol. NÃO cobre pronomes do português.",
+              "keywords": [
+                "objeto directo",
+                "objeto indirecto",
+                "lo",
+                "la",
+                "los",
+                "las",
+                "le",
+                "les",
+                "duplicación pronominal"
+              ],
+              "keywordsContexto": [
+                "pronombre átono",
+                "complemento directo",
+                "complemento indirecto"
+              ],
+              "negativeHints": [
+                "object pronoun em inglês",
+                "pronome oblíquo em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre lo, la, los, las, le, les, duplicação pronominal e função de objeto direto/indireto em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.cohesion.referencia.pronombres_referentes"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.gramatica.pronombres.relativos",
+              "label": "Pronombres relativos y oraciones relativas",
+              "descricao": "Cobre pronomes relativos, orações relativas, antecedente e função textual/sintática em espanhol. NÃO cobre simples retomada pronominal sem oração relativa.",
+              "keywords": [
+                "pronombre relativo",
+                "que",
+                "quien",
+                "cuyo",
+                "donde",
+                "oración relativa",
+                "antecedente"
+              ],
+              "keywordsContexto": [
+                "el relativo retoma",
+                "función del pronombre"
+              ],
+              "negativeHints": [
+                "relative pronoun em inglês",
+                "pronome relativo em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre pronomes relativos, orações relativas, antecedente e função textual/sintática em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.cohesion.referencia.pronombres_referentes"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.gramatica.estructura.genero_numero_articulos",
+              "label": "Género, número, artículos y determinantes",
+              "descricao": "Cobre gênero, número, artigos, determinantes, concordância nominal e quantificadores em espanhol. NÃO cobre concordância do português.",
+              "keywords": [
+                "género",
+                "número",
+                "artículo",
+                "determinante",
+                "concordancia nominal",
+                "un",
+                "una",
+                "el",
+                "la",
+                "lo"
+              ],
+              "keywordsContexto": [
+                "masculino",
+                "femenino",
+                "plural",
+                "singular"
+              ],
+              "negativeHints": [
+                "article em inglês",
+                "artigo em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre gênero, número, artigos, determinantes, concordância nominal e quantificadores em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.vocabulario.contexto.sentido_palabra"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.gramatica.estructura.preposiciones",
+              "label": "Preposiciones y relaciones de sentido",
+              "descricao": "Cobre uso e sentido de preposições em espanhol, relações espaciais, temporais, causais e idiomáticas. NÃO cobre regência/crase do português.",
+              "keywords": [
+                "preposición",
+                "a",
+                "de",
+                "en",
+                "por",
+                "para",
+                "con",
+                "desde",
+                "hacia"
+              ],
+              "keywordsContexto": [
+                "relación espacial",
+                "relación temporal",
+                "valor de la preposición"
+              ],
+              "negativeHints": [
+                "preposition em inglês",
+                "crase em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre uso e sentido de preposições em espanhol, relações espaciais, temporais, causais e idiomáticas."
+              ],
+              "naoConfundirCom": [
+                "esp.vocabulario.contexto.sentido_expresion"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "genero_discurso",
+      "assuntoLabel": "Géneros, discurso y cultura",
+      "dominios": [
+        {
+          "id": "esp.genero.proposito",
+          "label": "Gênero, finalidade e situação comunicativa",
+          "escopos": [
+            {
+              "id": "esp.genero.proposito.finalidad_comunicativa",
+              "label": "Finalidad comunicativa",
+              "descricao": "Cobre identificação da finalidade comunicativa de texto em espanhol: informar, persuadir, instruir, advertir, entreter ou relatar. NÃO cobre apenas tema central do texto.",
+              "keywords": [
+                "finalidad",
+                "propósito",
+                "objetivo del texto",
+                "pretende",
+                "informar",
+                "persuadir",
+                "advertir",
+                "instruir",
+                "entretener"
+              ],
+              "keywordsContexto": [
+                "el texto busca",
+                "la finalidad es",
+                "propósito comunicativo"
+              ],
+              "negativeHints": [
+                "communicative purpose em inglês",
+                "finalidade em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre identificação da finalidade comunicativa de texto em espanhol: informar, persuadir, instruir, advertir, entreter ou relatar."
+              ],
+              "naoConfundirCom": [
+                "esp.lectura.comprension.idea_principal",
+                "esp.genero.proposito.genero_textual"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.genero.proposito.genero_textual",
+              "label": "Reconocimiento de género textual",
+              "descricao": "Cobre reconhecimento de gênero textual em espanhol: noticia, artículo, anuncio, poema, canción, historieta, carta, campaña, publicación. NÃO cobre finalidade se o gênero não é exigido.",
+              "keywords": [
+                "género textual",
+                "noticia",
+                "artículo",
+                "anuncio",
+                "poema",
+                "canción",
+                "historieta",
+                "carta",
+                "campaña"
+              ],
+              "keywordsContexto": [
+                "tipo de texto",
+                "formato",
+                "estructura del género"
+              ],
+              "negativeHints": [
+                "text genre em inglês",
+                "gênero textual em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre reconhecimento de gênero textual em espanhol: noticia, artículo, anuncio, poema, canción, historieta, carta, campaña, publicación."
+              ],
+              "naoConfundirCom": [
+                "esp.genero.proposito.finalidad_comunicativa"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.genero.proposito.publico_registro",
+              "label": "Público, contexto y registro",
+              "descricao": "Cobre público-alvo, contexto de circulação, formalidade, registro, interlocutores e adequação comunicativa em espanhol. NÃO cobre variação linguística do português.",
+              "keywords": [
+                "público",
+                "destinatario",
+                "contexto",
+                "registro",
+                "formal",
+                "informal",
+                "interlocutor",
+                "lector"
+              ],
+              "keywordsContexto": [
+                "dirigido a",
+                "se destina a",
+                "grado de formalidad"
+              ],
+              "negativeHints": [
+                "audience em inglês",
+                "variação linguística em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre público-alvo, contexto de circulação, formalidade, registro, interlocutores e adequação comunicativa em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.genero.proposito.finalidad_comunicativa"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.genero.proposito.texto_multimodal",
+              "label": "Lectura multimodal en español",
+              "descricao": "Cobre integração entre texto em espanhol e imagem, anúncio, meme, tirinha, campanha ou infográfico. NÃO cobre leitura de imagem artística sem espanhol como competência.",
+              "keywords": [
+                "imagen y texto",
+                "multimodal",
+                "viñeta",
+                "historieta",
+                "meme",
+                "cartel",
+                "infografía"
+              ],
+              "keywordsContexto": [
+                "elementos visuales",
+                "leyenda",
+                "diseño"
+              ],
+              "negativeHints": [
+                "comic strip em inglês",
+                "charge em português",
+                "mapa geográfico"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre integração entre texto em espanhol e imagem, anúncio, meme, tirinha, campanha ou infográfico."
+              ],
+              "naoConfundirCom": [
+                "esp.genero.proposito.genero_textual"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        },
+        {
+          "id": "esp.genero.argumentacion",
+          "label": "Argumentação, opinião e cultura",
+          "escopos": [
+            {
+              "id": "esp.genero.argumentacion.tesis_argumento",
+              "label": "Tesis, argumento y evidencia",
+              "descricao": "Cobre tese, argumento, evidência, exemplo e sustentação de ponto de vista em texto argumentativo em espanhol. NÃO cobre apenas opinião/tom sem estrutura argumentativa.",
+              "keywords": [
+                "tesis",
+                "argumento",
+                "evidencia",
+                "punto de vista",
+                "opinión",
+                "razón",
+                "artículo de opinión"
+              ],
+              "keywordsContexto": [
+                "defiende la idea",
+                "el autor argumenta",
+                "sostiene"
+              ],
+              "negativeHints": [
+                "claim em inglês",
+                "argumentação em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre tese, argumento, evidência, exemplo e sustentação de ponto de vista em texto argumentativo em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.lectura.comprension.opinion_tono"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.genero.argumentacion.persuasion_publicidad",
+              "label": "Persuasión y publicidad",
+              "descricao": "Cobre estratégias persuasivas em anúncios, campanhas e textos de convencimento em espanhol. NÃO cobre publicidade em português.",
+              "keywords": [
+                "publicidad",
+                "anuncio",
+                "persuasión",
+                "eslogan",
+                "campaña",
+                "convencer",
+                "apelación"
+              ],
+              "keywordsContexto": [
+                "consumidor",
+                "estrategia persuasiva",
+                "llamado a la acción"
+              ],
+              "negativeHints": [
+                "advertising em inglês",
+                "propaganda em português"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre estratégias persuasivas em anúncios, campanhas e textos de convencimento em espanhol."
+              ],
+              "naoConfundirCom": [
+                "esp.genero.proposito.finalidad_comunicativa"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.genero.cultura.temas_sociales",
+              "label": "Cultura y temas sociales en textos en español",
+              "descricao": "Cobre interpretação de temas culturais, diversidade, tecnologia, educação, saúde, ambiente ou questões sociais quando a competência cobrada é leitura em espanhol. NÃO classifica pelo conteúdo temático de outra disciplina.",
+              "keywords": [
+                "cultura",
+                "tema social",
+                "diversidad",
+                "educación",
+                "salud",
+                "medio ambiente",
+                "tecnología",
+                "identidad"
+              ],
+              "keywordsContexto": [
+                "debate",
+                "problema social",
+                "contexto cultural"
+              ],
+              "negativeHints": [
+                "questão de sociologia",
+                "questão de biologia",
+                "questão de geografia"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre interpretação de temas culturais, diversidade, tecnologia, educação, saúde, ambiente ou questões sociais quando a competência cobrada é leitura em espanhol. não classifica pelo conteúdo temático de outra disciplina."
+              ],
+              "naoConfundirCom": [
+                "esp.lectura.comprension.idea_principal"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            },
+            {
+              "id": "esp.genero.cultura.literario_cancion_poetico",
+              "label": "Textos literarios, canciones y lenguaje poético",
+              "descricao": "Cobre leitura de poema, canção, trecho literário ou texto poético em espanhol pela compreensão, efeito de sentido ou linguagem figurada. NÃO cobre literatura brasileira/portuguesa.",
+              "keywords": [
+                "poema",
+                "canción",
+                "letra",
+                "texto literario",
+                "lenguaje poético",
+                "estrofa",
+                "verso"
+              ],
+              "keywordsContexto": [
+                "sentido figurado",
+                "voz poética",
+                "hablante lírico"
+              ],
+              "negativeHints": [
+                "song em inglês",
+                "poema em português",
+                "literatura brasileira"
+              ],
+              "exemplosEnunciado": [
+                "A questão exige cobre leitura de poema, canção, trecho literário ou texto poético em espanhol pela compreensão, efeito de sentido ou linguagem figurada."
+              ],
+              "naoConfundirCom": [
+                "esp.vocabulario.contexto.sentido_expresion",
+                "esp.lectura.comprension.inferencia"
+              ],
+              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "nao_classificado",
+      "assuntoLabel": "Não classificado",
+      "dominios": [
+        {
+          "id": "esp.nao_classificado",
+          "label": "Não classificado",
+          "escopos": [
+            {
+              "id": "esp.__nao_classificado",
+              "label": "Não classificado — Espanhol",
+              "descricao": "Usar quando o texto estiver ilegível, a rota disciplinar estiver incerta, a questão for de Português/Inglês ou outra disciplina, a confiança for inferior ao limiar ou nenhum escopo de Espanhol for adequado.",
+              "keywords": [],
+              "keywordsContexto": [],
+              "negativeHints": [],
+              "exemplosEnunciado": [],
+              "naoConfundirCom": [],
+              "regraDesempate": "Fallback obrigatório de Espanhol.",
+              "conceitoCanonic": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
