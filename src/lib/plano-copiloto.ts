@@ -11,6 +11,7 @@ import type { StudyPlanItem } from "@/lib/study-plan";
 import { materiasComDadosReais } from "@/lib/jornada-analytics";
 import { aggregateJourneyLearning } from "@/lib/jornada-analytics";
 import { getAnamneseMotorContext } from "@/lib/anamnese-motor";
+import { getFocosPedagogicosRecentes } from "@/lib/learning-motor-foco";
 
 function blocosPlanoSóAnamnese(
   anamneseCtx: Awaited<ReturnType<typeof getAnamneseMotorContext>>,
@@ -84,11 +85,12 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
   recoveryMode: boolean;
   fonte: "jornada" | "anamnese" | "vazio";
 }> {
-  const [motor, resumo, analytics, anamneseCtx] = await Promise.all([
+  const [motor, resumo, analytics, anamneseCtx, focosPedagogicos] = await Promise.all([
     buildDiagnosticoMotor(userId),
     buildResumoJornada(userId),
     aggregateJourneyLearning(userId, "todos"),
     getAnamneseMotorContext(userId),
+    getFocosPedagogicosRecentes(userId, 3),
   ]);
 
   const recoveryMode = resumo.pctAcertoPonderado < 50 && resumo.totalRegistros >= 2;
@@ -126,7 +128,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     errosContexto: "jornada",
   });
 
-  if (!motor.temDados || !motor.clusterPrincipal) {
+  if ((!motor.temDados || !motor.clusterPrincipal) && focosPedagogicos.length === 0) {
     if (anamneseCtx.completed) {
       items.push(...blocosPlanoSóAnamnese(anamneseCtx, ordem));
       return { items, recoveryMode, fonte: "anamnese" };
@@ -143,7 +145,35 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     return { items, recoveryMode, fonte: "vazio" };
   }
 
-  const principal = motor.clusterPrincipal;
+  const focoEscopo = focosPedagogicos[0];
+  let metaFocoLabel = "seus focos da jornada";
+
+  if (focoEscopo) {
+    items.push({
+      ordem: ordem++,
+      titulo: `Prioridade 1 — ${focoEscopo.escopoLabel}`,
+      descricao:
+        `${focoEscopo.hipoteseCausa}\n\n` +
+        `Objetivo da semana: ${focoEscopo.objetivoDaSemana}\n\n` +
+        formatarPassos(
+          [
+            `Escopo: ${focoEscopo.escopoLabel} (${focoEscopo.materiaLabel}).`,
+            `Revise questões ${focoEscopo.numerosErrados.slice(0, 6).join(", ")} da jornada.`,
+            "Corrija com gabarito e anote o passo que faltou.",
+            "Faça 3 exercícios novos só desse escopo.",
+          ],
+          `foco calculado pelo motor (${focoEscopo.totalErros} erro(s) neste escopo).`,
+          recoveryMode ? 35 : 45
+        ),
+      duracaoMin: recoveryMode ? 35 : 45,
+      bloco: "foco_profundo",
+      materiaDestaque: focoEscopo.materiaLabel,
+      geraQuest: false,
+      errosContexto: "jornada",
+    });
+    metaFocoLabel = `${focoEscopo.escopoLabel} em ${focoEscopo.materiaLabel}`;
+  } else {
+  const principal = motor.clusterPrincipal!;
   const narrativa = narrativaCopiloto(
     principal,
     motor.materiaDeficit,
@@ -170,9 +200,32 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     geraQuest: false,
     errosContexto: "jornada",
   });
+    metaFocoLabel = `${def.tituloHumano.toLowerCase()} em ${materia}`;
+  }
 
-  const secundario = motor.clusters[1];
+  const secundario = focoEscopo ? focosPedagogicos[1] : motor.clusters[1];
   if (secundario && !recoveryMode) {
+    if (focoEscopo && "escopoLabel" in secundario) {
+      const fp = secundario;
+      items.push({
+        ordem: ordem++,
+        titulo: `Também vale atenção — ${fp.escopoLabel}`,
+        descricao: formatarPassos(
+          [
+            `${fp.materiaLabel}: ${fp.hipoteseCausa}`,
+            `Questões ${fp.numerosErrados.slice(0, 4).join(", ")}.`,
+            "Refaça com calma e compare com o gabarito.",
+          ],
+          "segundo foco por escopo na jornada.",
+          35
+        ),
+        duracaoMin: 35,
+        bloco: "consolidacao",
+        materiaDestaque: fp.materiaLabel,
+        geraQuest: false,
+        errosContexto: "jornada",
+      });
+    } else if (!focoEscopo) {
     const def2 = CLUSTERS_PEDAGOGICOS[secundario.clusterId];
     const mat2 = secundario.materias[0]?.nome ?? "outra matéria";
     items.push({
@@ -189,6 +242,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
       geraQuest: false,
       errosContexto: "jornada",
     });
+    }
   }
 
   const materiasBase = materiasComDadosReais(analytics.materiasMedia, 5);
@@ -218,7 +272,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     ordem: ordem++,
     titulo: "Meta da semana",
     descricao:
-      `Completar os blocos na ordem. O foco central é ${def.tituloHumano.toLowerCase()} em ${materia}. ` +
+      `Completar os blocos na ordem. O foco central é ${metaFocoLabel}. ` +
       `Tempo total sugerido: ${recoveryMode ? "2–3h" : "4–6h"} distribuídas na semana. ` +
       `Depois de registrar uma nova prova, use "Regenerar plano" para atualizar com a jornada inteira.`,
     duracaoMin: 0,

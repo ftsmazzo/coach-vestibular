@@ -11,6 +11,12 @@ import { buildResumoJornada } from "@/lib/jornada";
 import { aggregateJourneyLearning, materiasComDadosReais } from "@/lib/jornada-analytics";
 import { getAnamneseMotorContext } from "@/lib/anamnese-motor";
 import { formatarPassos } from "@/lib/copiloto-passos";
+import type { FocoPedagogico } from "@/lib/diagnosis-escopo";
+import {
+  formatFocosPedagogicosParaPrompt,
+  getFocosPedagogicosRecentes,
+  metadadosQuestFromFoco,
+} from "@/lib/learning-motor-foco";
 import type { BlocoPlano, StudyPlanItem } from "@/lib/study-plan";
 import type { CopilotoGerado, CopilotoNarrativa, QuestGerada } from "@/lib/copiloto-ia-types";
 
@@ -31,6 +37,7 @@ type CopilotoInput = {
   }>;
   materiaDeficit: { label: string; pct: number } | null;
   materiasFortes: string[];
+  focosPedagogicos: FocoPedagogico[];
   anamnese: {
     resumo: string | null;
     padroesDeclarados: string[];
@@ -53,7 +60,7 @@ const BLOCO_VALIDOS: BlocoPlano[] = [
 ];
 
 async function buildInput(userId: string): Promise<CopilotoInput> {
-  const [motor, resumo, analytics, anamneseCtx, user] = await Promise.all([
+  const [motor, resumo, analytics, anamneseCtx, user, focosPedagogicos] = await Promise.all([
     buildDiagnosticoMotor(userId),
     buildResumoJornada(userId),
     aggregateJourneyLearning(userId, "todos"),
@@ -62,6 +69,7 @@ async function buildInput(userId: string): Promise<CopilotoInput> {
       where: { id: userId },
       select: { name: true, vestibularAlvo: true, metaProva: true },
     }),
+    getFocosPedagogicosRecentes(userId, 5),
   ]);
 
   const recoveryMode = resumo.pctAcertoPonderado < 50 && resumo.totalRegistros >= 2;
@@ -95,6 +103,7 @@ async function buildInput(userId: string): Promise<CopilotoInput> {
     clusters,
     materiaDeficit: motor.materiaDeficit,
     materiasFortes,
+    focosPedagogicos,
     anamnese: anamneseCtx.completed
       ? {
           resumo: anamneseCtx.summary,
@@ -232,7 +241,15 @@ Regras:
 - COERÊNCIA OBRIGATÓRIA: a soma dos duracaoMin das quests deve refletir a carga real da semana; não prometa horas no plano que as quests não cobrem.
 - 3 a 5 quests, cada uma 25–50 min. Distribua na semana (ex.: foco principal em 2 sessões + 1 secundária + 1 de matéria).
 - Tom calibrado pela confiança/ansiedade declaradas: mais acolhedor se confiança baixa.
-- Diferencie hipótese (anamnese) de confirmação (provas): se os dados confirmam o que ele disse, diga; se contradizem, aponte com cuidado.`;
+- Diferencie hipótese (anamnese) de confirmação (provas): se os dados confirmam o que ele disse, diga; se contradizem, aponte com cuidado.
+
+## FOCOS PEDAGÓGICOS (OBRIGATÓRIO quando listados)
+
+Os focos por escopo N2 já foram calculados pelo motor determinístico (classificação fina + metadados cognitivos).
+- Transforme cada foco em linguagem humana e quests acionáveis.
+- NUNCA substitua um foco por outro assunto inventado. NUNCA troque disciplina ou escopoId.
+- Cada quest deve referenciar o escopoId correspondente quando houver foco mapeável.
+- Priorize os focos [alta] antes dos [media].`;
 
 function buildInstrucao(input: CopilotoInput): string {
   const a = input.anamnese;
@@ -260,6 +277,9 @@ ${
   }
 ${input.materiaDeficit ? `Matéria com mais espaço de ganho: ${input.materiaDeficit.label} (${input.materiaDeficit.pct}%).` : ""}
 ${input.materiasFortes.length ? `Matérias sólidas (manter): ${input.materiasFortes.join(", ")}.` : ""}
+
+FOCOS PEDAGÓGICOS (escopo N2 — NÃO invente outros):
+${formatFocosPedagogicosParaPrompt(input.focosPedagogicos)}
 
 ANAMNESE (o que o aluno declarou):
 ${
@@ -289,6 +309,27 @@ function slugMateria(s: string): string {
     .slice(0, 24);
 }
 
+function resolverFocoQuest(
+  focos: FocoPedagogico[],
+  materiaLabel: string,
+  index = 0
+): FocoPedagogico | undefined {
+  const norm = (s: string) =>
+    s
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
+  const nm = norm(materiaLabel);
+  if (nm) {
+    const byMateria = focos.find(
+      (f) => norm(f.materiaLabel).includes(nm) || nm.includes(norm(f.materiaLabel))
+    );
+    if (byMateria) return byMateria;
+  }
+  return focos[index];
+}
+
 function montarGerado(input: CopilotoInput, ia: IAOutput): CopilotoGerado {
   const agora = new Date();
   const geradoEm = agora.toISOString();
@@ -297,6 +338,8 @@ function montarGerado(input: CopilotoInput, ia: IAOutput): CopilotoGerado {
     .slice(0, 6)
     .map((q, i) => {
       const dur = Math.min(60, Math.max(20, Math.round(q.duracaoMin || 35)));
+      const foco = resolverFocoQuest(input.focosPedagogicos, q.materia, i);
+      const meta = foco ? metadadosQuestFromFoco(foco) : {};
       return {
         slug: `ia-${i + 1}-${slugMateria(q.materia || q.rotulo || String(i))}`,
         titulo: q.titulo.trim().slice(0, 120),
@@ -308,6 +351,7 @@ function montarGerado(input: CopilotoInput, ia: IAOutput): CopilotoGerado {
         duracaoMin: dur,
         ordem: i + 1,
         rotulo: q.rotulo.trim() || (i === 0 ? "Prioridade da semana" : "Esta semana"),
+        ...meta,
       };
     })
     .filter((q) => q.titulo.length > 0);

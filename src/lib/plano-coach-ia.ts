@@ -4,6 +4,9 @@ import {
   modeloPipelineFallback,
   modeloPipelinePrincipal,
 } from "./openai-modelos";
+import {
+  formatFocosPedagogicosParaPrompt,
+} from "@/lib/learning-motor-foco";
 import type { StudyPlanItem } from "./study-plan";
 import { getTipoErroLabel, taxonomy } from "./taxonomy";
 
@@ -59,21 +62,7 @@ function sanitizarParaAluno(texto: string): string {
 }
 
 function montarFocosPedagogicos(diagnosis: DiagnosisResult): string {
-  const focos = diagnosis.focosPedagogicos;
-  if (!focos?.length) return "Nenhum foco por escopo N2 (prova ainda sem classificação fina ou só erros em escopos fallback).";
-  return focos
-    .map(
-      (f, i) =>
-        `${i + 1}. [${f.prioridade}] ${f.escopoLabel} (${f.materiaLabel})
-   escopoId: ${f.escopoId}
-   erros: ${f.totalErros} | questões: ${f.numerosErrados.join(", ")}
-   taxa acerto: ${Math.round(f.taxaAcerto * 100)}%
-   hipótese: ${f.hipoteseCausa}
-   objetivo da semana: ${f.objetivoDaSemana}
-   estratégia: ${f.estrategiaRecomendada}
-   conhecimento exigido: ${f.conhecimentoExigido.slice(0, 2).join(" | ") || "—"}`
-    )
-    .join("\n\n");
+  return formatFocosPedagogicosParaPrompt(diagnosis.focosPedagogicos ?? []);
 }
 
 function montarResumoMaterias(diagnosis: DiagnosisResult): string {

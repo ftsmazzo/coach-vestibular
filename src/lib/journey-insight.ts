@@ -18,6 +18,8 @@ import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { prisma } from "@/lib/prisma";
 import { getAnamneseMotorContext } from "@/lib/anamnese-motor";
 import { linhaContrasteAnamnese } from "@/lib/anamnese-contexto";
+import type { FocoPedagogico } from "@/lib/diagnosis-escopo";
+import { getFocosPedagogicosRecentes } from "@/lib/learning-motor-foco";
 import type { AnamneseMotorContext } from "@/lib/anamnese-types";
 import type { CopilotoNarrativa } from "@/lib/copiloto-ia-types";
 
@@ -89,6 +91,8 @@ export type JourneyInsight = {
   alavancas: AlavancaJornada[];
   lacunasConhecimento: LacunaConhecimento[];
   atividadesRecentes: RegistroDashboardCard[];
+  /** Focos por escopo N2 (motor v1) */
+  focosPedagogicos: FocoPedagogico[];
   anamnese: AnamneseMotorContext;
   /** Linha extra quando anamnese cruza com jornada */
   linhaAnamnese: string | null;
@@ -174,6 +178,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     motor,
     anamneseCtx,
     ultimosExams,
+    focosPedagogicos,
   ] = await Promise.all([
       buildResumoJornada(userId),
       buildMetacognicaoGlobalJornada(userId),
@@ -191,6 +196,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
           questionAttempts: { select: { correto: true } },
         },
       }),
+      getFocosPedagogicosRecentes(userId, 5),
     ]);
 
   const usaIa =
@@ -227,6 +233,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       lacunasConhecimento: [],
       atividadesRecentes: [],
       anamnese: anamneseCtx,
+      focosPedagogicos,
       linhaAnamnese: linhaContrasteAnamnese(anamneseCtx, false),
     };
 
@@ -290,17 +297,22 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
 
   const topAlavanca = alavancas[0];
 
+  const focoEscopo = focosPedagogicos[0];
+
   const missaoDraft =
-    narrativa || topAlavanca
+    focoEscopo || narrativa || topAlavanca
       ? {
           focoTitulo:
+            focoEscopo?.escopoLabel ??
             narrativa?.titulo ??
             (topAlavanca ? `Reforço: ${topAlavanca.label}` : "Missão da semana"),
           focoDescricao:
+            focoEscopo?.objetivoDaSemana ??
             narrativa?.proximoPasso ??
             topAlavanca?.mensagem ??
             "Abra suas quests e siga o passo da semana.",
-          impactoEstimado: narrativa?.linhaFoco ?? null,
+          impactoEstimado:
+            focoEscopo?.hipoteseCausa ?? narrativa?.linhaFoco ?? null,
           questsPendentes: [] as Array<{ id: string; titulo: string }>,
           temPlano: Boolean(planoData.plan),
         }
@@ -315,7 +327,11 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   if (resumo.totalRegistros >= 3) consistenciaLabel = "Você está construindo histórico — bom para o plano";
 
   const focoSemana =
-    principalGargalo?.tipoLabel ?? missaoDraft?.focoTitulo ?? principalAlavanca?.label ?? null;
+    focoEscopo?.escopoLabel ??
+    principalGargalo?.tipoLabel ??
+    missaoDraft?.focoTitulo ??
+    principalAlavanca?.label ??
+    null;
 
   const insightSemQuests: JourneyInsight = {
     context: "JOURNEY",
@@ -349,6 +365,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     lacunasConhecimento,
     atividadesRecentes: analytics.registrosRecentes.slice(0, 4),
     anamnese: anamneseCtx,
+    focosPedagogicos,
     linhaAnamnese: linhaContrasteAnamnese(anamneseCtx, true),
   };
 

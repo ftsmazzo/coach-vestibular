@@ -68,3 +68,46 @@ export function baselineCicloFromFoco(foco: FocoPedagogico): BaselineCiclo {
     capturadoEm: new Date().toISOString(),
   };
 }
+
+/** Texto para prompts de IA — focos calculados pelo motor (escopo N2). */
+export function formatFocosPedagogicosParaPrompt(focos: FocoPedagogico[]): string {
+  if (!focos.length) {
+    return "Nenhum foco por escopo N2 (prova ainda sem classificação fina ou só erros em escopos fallback).";
+  }
+  return focos
+    .map(
+      (f, i) =>
+        `${i + 1}. [${f.prioridade}] ${f.escopoLabel} (${f.materiaLabel})
+   escopoId: ${f.escopoId}
+   erros: ${f.totalErros} | questões: ${f.numerosErrados.join(", ")}
+   taxa acerto: ${Math.round(f.taxaAcerto * 100)}%
+   hipótese: ${f.hipoteseCausa}
+   objetivo da semana: ${f.objetivoDaSemana}
+   estratégia: ${f.estrategiaRecomendada}${
+          f.metadadosCognitivosResumo?.resumoTexto
+            ? `\n   metacognição: ${f.metadadosCognitivosResumo.resumoTexto}`
+            : ""
+        }
+   conhecimento exigido: ${f.conhecimentoExigido.slice(0, 2).join(" | ") || "—"}`
+    )
+    .join("\n\n");
+}
+
+/** Vincula metadados de escopo N2 a uma quest gerada (IA ou template). */
+export function metadadosQuestFromFoco(foco: FocoPedagogico) {
+  return {
+    materiaId: foco.materiaId,
+    conhecimentoEscopoId: foco.escopoId,
+    conhecimentoDominioId: foco.dominioId,
+    conceitosCanonicosJson:
+      foco.conceitosCanonicos.length > 0
+        ? JSON.stringify(foco.conceitosCanonicos)
+        : undefined,
+    fonteDiagnosticoJson: JSON.stringify({
+      focoId: foco.focoId,
+      escopoId: foco.escopoId,
+      estrategia: foco.estrategiaRecomendada,
+    }),
+    tipoQuest: foco.estrategiaRecomendada,
+  };
+}
