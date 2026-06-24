@@ -28,7 +28,7 @@ Tarefa por questão:
 ${listaAreasBlocoParaPrompt()}
 - enunciado: cópia literal ("ipsis litteris") de TODO o texto de apoio, poemas, charges (descreva entre colchetes se for imagem), referências e o comando/pergunta. PROIBIDO resumir ou parafrasear.
 - alternativas: texto literal das alternativas A, B, C, D, E (e E/F se houver). Se não houver alternativas visíveis, string vazia.
-- dificuldade: facil, media ou dificil quando legível no documento; senão string vazia.
+- dificuldade: OPCIONAL — use facil, media ou dificil só se o PDF indicar explicitamente; na dúvida, string vazia "".
 
 Regras:
 - NÃO classifique matéria, assunto nem taxonomia — só área/bloco + texto literal + dificuldade.

@@ -108,7 +108,6 @@ export function validarExtracaoLiteralLote(
 
   let semEnunciado = 0;
   let enunciadoCurto = 0;
-  let semDificuldade = 0;
   for (const q of noLote) {
     const d = (q.dificuldade ?? "").trim().toLowerCase();
     if (d && !["facil", "media", "dificil", "fácil", "média", "difícil"].includes(d)) {
@@ -117,7 +116,6 @@ export function validarExtracaoLiteralLote(
     const en = textoEnunciadoQuestao(q);
     if (!en) semEnunciado++;
     else if (en.length < ENUNCIADO_LITERAL_MIN_CHARS) enunciadoCurto++;
-    if (!d) semDificuldade++;
   }
 
   const maxSemEnunciado = Math.ceil(noLote.length * 0.15);
@@ -131,13 +129,6 @@ export function validarExtracaoLiteralLote(
   if (enunciadoCurto > maxCurto) {
     throw new Error(
       `Muitas questões com enunciado muito curto — possível resumo em vez de texto literal (${enunciadoCurto}/${noLote.length})`
-    );
-  }
-
-  const maxSemDificuldade = Math.floor(noLote.length * 0.85);
-  if (semDificuldade > maxSemDificuldade) {
-    throw new Error(
-      `Poucas questões com dificuldade (${noLote.length - semDificuldade}/${noLote.length}); preencha facil/media/dificil quando legível`
     );
   }
 }
