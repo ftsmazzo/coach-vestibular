@@ -61,6 +61,7 @@ export function AdminValidacaoExtracao({
   const [formEnunciado, setFormEnunciado] = useState("");
   const [formAlternativas, setFormAlternativas] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [aceitando, setAceitando] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
@@ -129,6 +130,35 @@ export function AdminValidacaoExtracao({
     }
   }
 
+  async function aceitarLinha(linha: LinhaExtracaoRelatorio) {
+    setAceitando(linha.chave);
+    onMensagem("");
+    try {
+      const res = await fetch(`/api/admin/provas/${provaId}/extracao/aceitar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          numero: linha.numero,
+          idiomaVariante: linha.idiomaVariante,
+        }),
+      });
+      const data = await res.json();
+      setAceitando(null);
+      if (!res.ok) {
+        onMensagem(data.error ?? "Erro ao aceitar");
+        return;
+      }
+      onMensagem(
+        `Questão ${linha.numero}${labelVariante(linha.idiomaVariante) ? ` ${labelVariante(linha.idiomaVariante)}` : ""} aceita como completa.`
+      );
+      await carregar();
+      onAtualizado();
+    } catch {
+      setAceitando(null);
+      onMensagem("Falha de rede.");
+    }
+  }
+
   async function validarExtracao() {
     setValidando(true);
     onMensagem("");
@@ -175,8 +205,10 @@ export function AdminValidacaoExtracao({
         <div>
           <h2 className="font-semibold text-teal-900">Passo 3 — Validar extração</h2>
           <p className="mt-1 text-sm text-teal-800">
-            Revise enunciados e alternativas antes de qualquer classificação. Mínimo{" "}
-            {ENUNCIADO_VALIDACAO_MIN_CHARS} caracteres no enunciado.
+            Revise enunciados e alternativas antes de qualquer classificação. Enunciados com menos de{" "}
+            {ENUNCIADO_VALIDACAO_MIN_CHARS} caracteres aparecem como <strong>Curto</strong> — se o
+            texto já está completo (comum em matemática), use <strong>Aceitar enunciado</strong> na
+            linha. Depois clique <strong>Confirmar extração completa</strong>.
             {relatorio.linhasNoBanco > relatorio.linhasEsperadas && (
               <span className="block text-xs text-teal-700 mt-1">
                 {relatorio.linhasNoBanco} linhas no banco ({relatorio.linhasEsperadas} esperadas
@@ -253,6 +285,7 @@ export function AdminValidacaoExtracao({
                       className={`rounded px-2 py-0.5 text-xs font-medium ${badgeStatus(linha.status)}`}
                     >
                       {labelStatus(linha.status)}
+                      {linha.aceitoManualmente ? " ✓" : ""}
                     </span>
                   </td>
                   <td className="p-2 max-w-[280px] truncate text-xs text-slate-600">
@@ -268,6 +301,18 @@ export function AdminValidacaoExtracao({
                       >
                         {linha.status === "faltando" ? "Colar texto" : "Corrigir"}
                       </Button>
+                      {linha.status === "curto" && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="text-xs px-2 py-1 border-emerald-300 text-emerald-800"
+                          disabled={aceitando === linha.chave}
+                          title="Enunciado curto mas completo — ex.: matemática direta"
+                          onClick={() => void aceitarLinha(linha)}
+                        >
+                          {aceitando === linha.chave ? "…" : "Aceitar enunciado"}
+                        </Button>
+                      )}
                       {linha.status !== "ok" && (
                         <Button
                           type="button"

@@ -26,12 +26,38 @@ export function truncarTextoProva(raw: string, max = 12000): string {
 
 export type StatusExtracaoQuestao = "faltando" | "curto" | "ok";
 
+/** Marcador interno em observacoes — admin confirmou enunciado curto como completo. */
+export const MARCADOR_EXTRACAO_ACEITA = "__extracao_ok__";
+
+export function observacaoComExtracaoAceita(observacoes?: string | null): string {
+  const base = observacoes?.trim() ?? "";
+  if (base.includes(MARCADOR_EXTRACAO_ACEITA)) return base;
+  return base ? `${base}\n${MARCADOR_EXTRACAO_ACEITA}` : MARCADOR_EXTRACAO_ACEITA;
+}
+
+export function extracaoAceitaPorObservacao(observacoes?: string | null): boolean {
+  return Boolean(observacoes?.includes(MARCADOR_EXTRACAO_ACEITA));
+}
+
+export function observacaoSemMarcadorExtracao(observacoes?: string | null): string | null {
+  if (!observacoes?.trim()) return null;
+  const limpo = observacoes
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && l !== MARCADOR_EXTRACAO_ACEITA)
+    .join("\n")
+    .trim();
+  return limpo || null;
+}
+
 export function statusEnunciadoExtracao(
   enunciado: string | null | undefined,
-  minChars = ENUNCIADO_VALIDACAO_MIN_CHARS
+  minChars = ENUNCIADO_VALIDACAO_MIN_CHARS,
+  opts?: { aceitoManual?: boolean }
 ): StatusExtracaoQuestao {
   const t = sanitizarTextoProva(enunciado);
   if (!t) return "faltando";
+  if (opts?.aceitoManual || t.length >= minChars) return "ok";
   if (t.length < minChars) return "curto";
   return "ok";
 }

@@ -1,6 +1,7 @@
 import type { IdiomaVarianteQuestao } from "@/generated/prisma/client";
 import {
   ENUNCIADO_VALIDACAO_MIN_CHARS,
+  extracaoAceitaPorObservacao,
   sanitizarTextoProva,
   statusEnunciadoExtracao,
   type StatusExtracaoQuestao,
@@ -25,6 +26,7 @@ export type LinhaExtracaoRelatorio = {
   tamanhoEnunciado: number;
   tamanhoAlternativas: number;
   status: StatusExtracaoQuestao;
+  aceitoManualmente?: boolean;
 };
 
 export type RelatorioExtracaoProva = {
@@ -45,6 +47,7 @@ type QuestaoDb = {
   areaBloco?: string | null;
   enunciado?: string | null;
   alternativas?: string | null;
+  observacoes?: string | null;
 };
 
 /** Se o banco tem linhas EN/ES mas a prova ainda não tem politicaIdiomas gravada, infere a faixa. */
@@ -105,7 +108,10 @@ export function montarRelatorioExtracao(
     const q = porChave.get(chave);
     const en = sanitizarTextoProva(q?.enunciado);
     const alt = sanitizarTextoProva(q?.alternativas);
-    const status = q ? statusEnunciadoExtracao(en) : "faltando";
+    const aceitoManual = extracaoAceitaPorObservacao(q?.observacoes);
+    const status = q
+      ? statusEnunciadoExtracao(en, ENUNCIADO_VALIDACAO_MIN_CHARS, { aceitoManual })
+      : "faltando";
     return {
       chave,
       numero,
@@ -117,6 +123,7 @@ export function montarRelatorioExtracao(
       tamanhoEnunciado: en.length,
       tamanhoAlternativas: alt.length,
       status,
+      aceitoManualmente: aceitoManual && status === "ok",
     };
   });
 

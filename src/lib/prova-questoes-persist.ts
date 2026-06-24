@@ -7,7 +7,7 @@ import { chaveQuestaoVariante } from "@/lib/prova-idioma";
 import { normalizarLabelAssunto, normalizarLabelMateria } from "@/lib/taxonomia-validacao";
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import { normalizarGabaritoOficial } from "@/lib/gabarito-anulada";
-import { sanitizarTextoProva, truncarTextoProva } from "@/lib/prova-texto-prova";
+import { sanitizarTextoProva, truncarTextoProva, observacaoComExtracaoAceita, observacaoSemMarcadorExtracao } from "@/lib/prova-texto-prova";
 
 function truncarEnunciado(t?: string | null): string | null {
   if (!t?.trim()) return null;
@@ -186,6 +186,11 @@ export async function upsertQuestaoExtracaoManual(
     throw new Error("Enunciado muito curto.");
   }
 
+  const anterior = await prisma.provaQuestao.findFirst({
+    where: whereVariante(provaId, input.numero, variante),
+    select: { observacoes: true },
+  });
+
   const row = await prisma.provaQuestao.upsert({
     where: whereVariante(provaId, input.numero, variante),
     create: {
@@ -212,6 +217,38 @@ export async function upsertQuestaoExtracaoManual(
       classificacaoConfianca: null,
       classificacaoSecundariosJson: null,
       conceitosCanonicosJson: null,
+      observacoes: observacaoSemMarcadorExtracao(anterior?.observacoes),
+    },
+  });
+
+  await prisma.prova.update({
+    where: { id: provaId },
+    data: { extracaoValidada: false },
+  });
+
+  return { id: row.id };
+}
+
+/** Admin confirmou que enunciado curto está completo (ex.: matemática direta). */
+export async function aceitarEnunciadoExtracaoProva(
+  provaId: string,
+  input: { numero: number; idiomaVariante?: IdiomaVarianteQuestao }
+): Promise<{ id: string }> {
+  const variante = (input.idiomaVariante ?? "COMUM") as IdiomaVarianteQuestao;
+  const existente = await prisma.provaQuestao.findFirst({
+    where: whereVariante(provaId, input.numero, variante),
+  });
+  if (!existente) {
+    throw new Error("Questão não encontrada no banco.");
+  }
+  if (!existente.enunciado?.trim()) {
+    throw new Error("Questão sem enunciado — cole o texto antes de aceitar.");
+  }
+
+  const row = await prisma.provaQuestao.update({
+    where: { id: existente.id },
+    data: {
+      observacoes: observacaoComExtracaoAceita(existente.observacoes),
     },
   });
 
