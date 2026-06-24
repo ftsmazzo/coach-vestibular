@@ -13,7 +13,7 @@ export type QuestionAttemptRow = {
   correto: boolean;
   materiaId?: string | null;
   temaId?: string | null;
-  tipoErro?: ErrorType | null;
+  tipoErro?: ErrorType | string | null;
   observacao?: string | null;
   respostaAluno?: string | null;
   conhecimentoDominioId?: string | null;
@@ -60,7 +60,7 @@ export function mapQuestionAttemptToInput(a: QuestionAttemptRow): AttemptInput {
     correto: a.correto,
     materiaId: a.materiaId ?? mapped?.materiaId,
     temaId: a.temaId ?? mapped?.temaId,
-    tipoErro: a.tipoErro,
+    tipoErro: (a.tipoErro as ErrorType | null | undefined) ?? undefined,
     observacao: a.observacao ?? undefined,
     respostaAluno: a.respostaAluno ?? undefined,
     conhecimentoDominioId:
