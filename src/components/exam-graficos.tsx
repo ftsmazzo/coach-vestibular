@@ -57,9 +57,9 @@ export function ExamGraficos({ data }: { data: ExamGraficosData }) {
     fill: c.cor,
   }));
 
-  const materiasData = data.materias.map((m) => ({
-    nome: truncar(m.nome, 16),
-    completo: m.nome,
+  const materiasData = data.escopos.map((m) => ({
+    nome: truncar(m.label, 16),
+    completo: m.label,
     pct: m.pct,
     total: m.total,
   }));
@@ -89,8 +89,8 @@ export function ExamGraficos({ data }: { data: ExamGraficosData }) {
 
       {materiasData.length > 0 && (
         <Card>
-          <h2 className="text-base font-semibold text-slate-900">Acerto por matéria</h2>
-          <p className="mt-0.5 text-xs text-slate-500">Só nesta prova — da menor para a maior.</p>
+          <h2 className="text-base font-semibold text-slate-900">Acerto por escopo N2</h2>
+          <p className="mt-0.5 text-xs text-slate-500">Classificação pedagógica — só nesta prova.</p>
           <div className="mt-3 w-full" style={{ height: Math.max(150, materiasData.length * 40) }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={materiasData} layout="vertical" margin={{ left: 4, right: 16 }}>
@@ -172,8 +172,8 @@ export function ExamGraficos({ data }: { data: ExamGraficosData }) {
 
       {conhecimentosData.length > 0 && (
         <Card>
-          <h2 className="text-base font-semibold text-slate-900">Conhecimentos com mais erro</h2>
-          <p className="mt-0.5 text-xs text-slate-500">O que mais pesou nesta prova.</p>
+          <h2 className="text-base font-semibold text-slate-900">Escopos com mais erro (N2/N3)</h2>
+          <p className="mt-0.5 text-xs text-slate-500">Onde você mais errou nesta prova.</p>
           <div
             className="mt-3 w-full"
             style={{ height: Math.max(150, conhecimentosData.length * 46) }}

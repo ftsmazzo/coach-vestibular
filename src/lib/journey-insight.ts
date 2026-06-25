@@ -1,12 +1,9 @@
 /**
- * Síntese pedagógica da Home — contexto JOURNEY apenas.
- * Sem comparações entre provas/bancas diferentes (isso fica em BOARD / EXAM).
+ * Síntese pedagógica da Home — motor v1 (escopo N2).
+ * Consumidores só leem focosPedagogicos para decisão de missão/plano.
  */
 import type { RegistroDashboardCard } from "@/lib/jornada-analytics";
 import { aggregateJourneyLearning, materiasComDadosReais } from "@/lib/jornada-analytics";
-import { aggregateKnowledgeGaps, type LacunaConhecimento } from "@/lib/knowledge-gaps";
-import { buildDiagnosticoMotor, type ClusterAgregado } from "@/lib/diagnostic-motor";
-import { narrativaCopiloto, type NarrativaCopiloto } from "@/lib/narrativa-copiloto";
 import { buildMetacognicaoGlobalJornada } from "@/lib/jornada-metacognicao";
 import { buildResumoJornada } from "@/lib/jornada";
 import { getPlanoAtual } from "@/lib/plano-atual";
@@ -17,11 +14,14 @@ import {
 import { pctAcertoRegistro } from "@/lib/exam-stats";
 import { prisma } from "@/lib/prisma";
 import { getAnamneseMotorContext } from "@/lib/anamnese-motor";
-import { linhaContrasteAnamnese } from "@/lib/anamnese-contexto";
+import { linhaContrasteAnamneseEscopo } from "@/lib/anamnese-contexto";
 import type { FocoPedagogico } from "@/lib/diagnosis-escopo";
 import { getFocosPedagogicosRecentes } from "@/lib/learning-motor-foco";
+import { getCoberturaN2 } from "@/lib/motor-cobertura-n2";
 import type { AnamneseMotorContext } from "@/lib/anamnese-types";
 import type { CopilotoNarrativa } from "@/lib/copiloto-ia-types";
+import { buildCicloInicioStory } from "@/lib/learning-storytelling";
+import { getCicloAtivo } from "@/lib/ciclo";
 
 export type TendenciaJornada = "subindo" | "estavel" | "cuidado" | "inicio";
 
@@ -36,15 +36,15 @@ export type AlavancaJornada = {
   mensagem: string;
 };
 
-export type GargaloCognitivoInsight = {
+export type GargaloEscopoInsight = {
   descricao: string;
-  tipoLabel: string;
+  escopoLabel: string;
   materiaContexto: string | null;
-  pctAcertoMateria: number | null;
+  pctAcertoEscopo: number | null;
   erros: number;
-  exemploConhecimento: string | null;
-  causaMetacognitiva: string | null;
-  pctCausaMetacognitiva: number | null;
+  hipoteseCausa: string | null;
+  objetivoSemana: string | null;
+  metadadosResumo: string | null;
   materiaDeficitPrincipal: string | null;
 };
 
@@ -54,15 +54,31 @@ export type DiagnosticoIntegrado = {
   lacunaChave: string;
 };
 
+export type CopilotoCamadas = {
+  oQueAcontece: string;
+  comoCognitivo: string;
+  quandoAparece: string;
+  naoSignifica: string;
+  caminho: string;
+};
+
+export type NarrativaEscopo = {
+  titulo: string;
+  paragrafo: string;
+  camadas: CopilotoCamadas;
+  linhaFoco: string;
+  proximoPasso: string;
+};
+
 export type JourneyInsight = {
   context: "JOURNEY";
   temDados: boolean;
-  /** Eixo principal — operação cognitiva, não matéria */
-  principalGargalo: GargaloCognitivoInsight | null;
-  /** Texto copiloto (camadas narrativas) */
-  copiloto: NarrativaCopiloto | null;
-  clustersPedagogicos: ClusterAgregado[];
-  temDiagnosticoCognitivo: boolean;
+  focoPrincipal: FocoPedagogico | null;
+  focosSecundarios: FocoPedagogico[];
+  principalGargalo: GargaloEscopoInsight | null;
+  copiloto: NarrativaEscopo | null;
+  temDiagnosticoEscopo: boolean;
+  coberturaN2: Awaited<ReturnType<typeof getCoberturaN2>> | null;
   principalAlavanca: AlavancaJornada | null;
   focoSemana: string | null;
   missao: {
@@ -89,16 +105,11 @@ export type JourneyInsight = {
   } | null;
   diagnosticoIntegrado: DiagnosticoIntegrado | null;
   alavancas: AlavancaJornada[];
-  lacunasConhecimento: LacunaConhecimento[];
   atividadesRecentes: RegistroDashboardCard[];
-  /** Focos por escopo N2 (motor v1) */
   focosPedagogicos: FocoPedagogico[];
   anamnese: AnamneseMotorContext;
-  /** Linha extra quando anamnese cruza com jornada */
   linhaAnamnese: string | null;
 };
-
-export type { ClusterAgregado, LacunaConhecimento, NarrativaCopiloto };
 
 function calcularTendencia(pcts: number[]): { tendencia: TendenciaJornada; label: string } {
   if (pcts.length === 0) return { tendencia: "inicio", label: "Comece registrando uma atividade" };
@@ -168,36 +179,53 @@ function calcularAlavancas(
     .map(({ score: _s, ...rest }) => rest);
 }
 
+function narrativaFromFoco(foco: FocoPedagogico): NarrativaEscopo {
+  const meta = foco.metadadosCognitivosResumo?.resumoTexto;
+  return {
+    titulo: foco.escopoLabel,
+    paragrafo: foco.hipoteseCausa,
+    camadas: {
+      oQueAcontece: `Na jornada, ${foco.totalErros} erro(s) concentrados em ${foco.escopoLabel} (${foco.materiaLabel}).`,
+      comoCognitivo: meta ?? foco.hipoteseCausa,
+      quandoAparece: `Questões ${foco.numerosErrados.slice(0, 6).join(", ")}${foco.numerosErrados.length > 6 ? "…" : ""}.`,
+      naoSignifica: "Isso não define seu vestibular — é o ponto onde treinar esta semana rende mais.",
+      caminho: foco.objetivoDaSemana,
+    },
+    linhaFoco: foco.hipoteseCausa,
+    proximoPasso: foco.objetivoDaSemana,
+  };
+}
+
 export async function buildJourneyInsight(userId: string): Promise<JourneyInsight> {
   const [
     resumo,
     metacognicao,
     planoData,
     analytics,
-    lacunasConhecimento,
-    motor,
     anamneseCtx,
     ultimosExams,
     focosPedagogicos,
+    coberturaN2,
+    cicloAtivo,
   ] = await Promise.all([
-      buildResumoJornada(userId),
-      buildMetacognicaoGlobalJornada(userId),
-      getPlanoAtual(userId),
-      aggregateJourneyLearning(userId, "todos"),
-      aggregateKnowledgeGaps(userId, 5),
-      buildDiagnosticoMotor(userId),
-      getAnamneseMotorContext(userId),
-      prisma.exam.findMany({
-        where: { userId },
-        orderBy: { data: "asc" },
-        take: 6,
-        select: {
-          recoveryMode: true,
-          questionAttempts: { select: { correto: true } },
-        },
-      }),
-      getFocosPedagogicosRecentes(userId, 5),
-    ]);
+    buildResumoJornada(userId),
+    buildMetacognicaoGlobalJornada(userId),
+    getPlanoAtual(userId),
+    aggregateJourneyLearning(userId, "todos"),
+    getAnamneseMotorContext(userId),
+    prisma.exam.findMany({
+      where: { userId },
+      orderBy: { data: "asc" },
+      take: 6,
+      select: {
+        recoveryMode: true,
+        questionAttempts: { select: { correto: true } },
+      },
+    }),
+    getFocosPedagogicosRecentes(userId, 5),
+    getCoberturaN2(userId),
+    getCicloAtivo(userId),
+  ]);
 
   const usaIa =
     planoData.plan?.fonteGeracao === "ia" && Boolean(planoData.plan?.narrative);
@@ -209,7 +237,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
             focoTitulo: anamneseCtx.focoInicialTitulo,
             focoDescricao:
               anamneseCtx.focoInicialDescricao ??
-              "Registre sua primeira atividade quando puder — até lá, siga o passo em Quests.",
+              "Registre sua primeira prova do catálogo quando puder — até lá, siga o passo em Quests.",
             impactoEstimado: "Baseado na conversa inicial com o copiloto",
             questsPendentes: [] as Array<{ id: string; titulo: string }>,
             temPlano: Boolean(planoData.plan),
@@ -219,10 +247,12 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     const base: JourneyInsight = {
       context: "JOURNEY",
       temDados: false,
+      focoPrincipal: null,
+      focosSecundarios: [],
       principalGargalo: null,
       copiloto: null,
-      clustersPedagogicos: [],
-      temDiagnosticoCognitivo: false,
+      temDiagnosticoEscopo: false,
+      coberturaN2,
       principalAlavanca: null,
       focoSemana: null,
       missao: missaoAnamnese,
@@ -230,11 +260,10 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       padraoCognitivo: null,
       diagnosticoIntegrado: null,
       alavancas: [],
-      lacunasConhecimento: [],
       atividadesRecentes: [],
       anamnese: anamneseCtx,
       focosPedagogicos,
-      linhaAnamnese: linhaContrasteAnamnese(anamneseCtx, false),
+      linhaAnamnese: linhaContrasteAnamneseEscopo(anamneseCtx, false, null),
     };
 
     if (usaIa && planoData.plan?.narrative) {
@@ -258,61 +287,66 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   const materiasBase = materiasComDadosReais(analytics.materiasMedia, 3);
   const alavancas = calcularAlavancas(materiasBase);
   const principalAlavanca = alavancas[0] ?? null;
-  const clustersPedagogicos = motor.clusters;
-  const temDiagnosticoCognitivo = motor.temDados;
-  const principalCluster = motor.clusterPrincipal;
-  const materiaDeficit = motor.materiaDeficit;
 
-  const narrativa =
-    principalCluster && temDiagnosticoCognitivo
-      ? narrativaCopiloto(principalCluster, materiaDeficit, motor.totalExames, anamneseCtx)
-      : null;
+  const focoPrincipal = focosPedagogicos[0] ?? null;
+  const focosSecundarios = focosPedagogicos.slice(1, 3);
+  const temDiagnosticoEscopo = focosPedagogicos.length > 0;
 
-  const principalGargalo: GargaloCognitivoInsight | null =
-    principalCluster && narrativa
-      ? {
-          descricao: narrativa.paragrafo,
-          tipoLabel: narrativa.titulo,
-          materiaContexto: principalCluster.materias[0]?.nome ?? null,
-          pctAcertoMateria:
-            principalCluster.materias[0]?.pctAcerto ??
-            materiaDeficit?.pct ??
-            null,
-          erros: principalCluster.erros,
-          exemploConhecimento: narrativa.exemploConcreto,
-          causaMetacognitiva: narrativa.causaComoVoceErra,
-          pctCausaMetacognitiva: principalCluster.causaDominante?.pct ?? null,
-          materiaDeficitPrincipal: materiaDeficit?.label ?? null,
-        }
-      : null;
+  let narrativa = focoPrincipal ? narrativaFromFoco(focoPrincipal) : null;
 
-  const diagnosticoIntegrado: DiagnosticoIntegrado | null =
-    narrativa && principalCluster
-      ? {
-          titulo: narrativa.titulo,
-          paragrafo: narrativa.paragrafo,
-          lacunaChave: principalCluster.clusterId,
-        }
-      : null;
+  if (cicloAtivo?.narrativaInicioJson && focoPrincipal) {
+    try {
+      const ni = JSON.parse(cicloAtivo.narrativaInicioJson) as {
+        hipotese?: string;
+        objetivo?: string;
+      };
+      const story = buildCicloInicioStory(cicloAtivo, ni);
+      if (story.paragrafos.length) {
+        narrativa = {
+          ...narrativaFromFoco(focoPrincipal),
+          paragrafo: story.paragrafos.join(" "),
+        };
+      }
+    } catch {
+      /* ignora */
+    }
+  }
+
+  const principalGargalo: GargaloEscopoInsight | null = focoPrincipal
+    ? {
+        descricao: focoPrincipal.hipoteseCausa,
+        escopoLabel: focoPrincipal.escopoLabel,
+        materiaContexto: focoPrincipal.materiaLabel,
+        pctAcertoEscopo: Math.round(focoPrincipal.taxaAcerto * 100),
+        erros: focoPrincipal.totalErros,
+        hipoteseCausa: focoPrincipal.hipoteseCausa,
+        objetivoSemana: focoPrincipal.objetivoDaSemana,
+        metadadosResumo: focoPrincipal.metadadosCognitivosResumo?.resumoTexto ?? null,
+        materiaDeficitPrincipal: principalAlavanca?.label ?? null,
+      }
+    : null;
+
+  const diagnosticoIntegrado: DiagnosticoIntegrado | null = focoPrincipal
+    ? {
+        titulo: focoPrincipal.escopoLabel,
+        paragrafo: focoPrincipal.hipoteseCausa,
+        lacunaChave: focoPrincipal.escopoId,
+      }
+    : null;
 
   const topAlavanca = alavancas[0];
 
-  const focoEscopo = focosPedagogicos[0];
-
   const missaoDraft =
-    focoEscopo || narrativa || topAlavanca
+    focoPrincipal || topAlavanca
       ? {
           focoTitulo:
-            focoEscopo?.escopoLabel ??
-            narrativa?.titulo ??
+            focoPrincipal?.escopoLabel ??
             (topAlavanca ? `Reforço: ${topAlavanca.label}` : "Missão da semana"),
           focoDescricao:
-            focoEscopo?.objetivoDaSemana ??
-            narrativa?.proximoPasso ??
+            focoPrincipal?.objetivoDaSemana ??
             topAlavanca?.mensagem ??
             "Abra suas quests e siga o passo da semana.",
-          impactoEstimado:
-            focoEscopo?.hipoteseCausa ?? narrativa?.linhaFoco ?? null,
+          impactoEstimado: focoPrincipal?.hipoteseCausa ?? null,
           questsPendentes: [] as Array<{ id: string; titulo: string }>,
           temPlano: Boolean(planoData.plan),
         }
@@ -327,19 +361,17 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   if (resumo.totalRegistros >= 3) consistenciaLabel = "Você está construindo histórico — bom para o plano";
 
   const focoSemana =
-    focoEscopo?.escopoLabel ??
-    principalGargalo?.tipoLabel ??
-    missaoDraft?.focoTitulo ??
-    principalAlavanca?.label ??
-    null;
+    focoPrincipal?.escopoLabel ?? missaoDraft?.focoTitulo ?? principalAlavanca?.label ?? null;
 
   const insightSemQuests: JourneyInsight = {
     context: "JOURNEY",
     temDados: true,
+    focoPrincipal,
+    focosSecundarios,
     principalGargalo,
     copiloto: narrativa,
-    clustersPedagogicos,
-    temDiagnosticoCognitivo,
+    temDiagnosticoEscopo,
+    coberturaN2,
     principalAlavanca,
     focoSemana,
     missao: missaoDraft,
@@ -362,11 +394,10 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
       : null,
     diagnosticoIntegrado,
     alavancas,
-    lacunasConhecimento,
     atividadesRecentes: analytics.registrosRecentes.slice(0, 4),
     anamnese: anamneseCtx,
     focosPedagogicos,
-    linhaAnamnese: linhaContrasteAnamnese(anamneseCtx, true),
+    linhaAnamnese: linhaContrasteAnamneseEscopo(anamneseCtx, true, focoPrincipal),
   };
 
   if (usaIa && planoData.plan?.narrative) {
@@ -386,7 +417,6 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   return insightSemQuests;
 }
 
-/** Sobrepõe os campos narrativos do insight com a narrativa gravada (IA). */
 function aplicarNarrativaIa(insight: JourneyInsight, narrativa: CopilotoNarrativa): void {
   insight.copiloto = {
     titulo: narrativa.diagnosticoTitulo,
@@ -400,26 +430,24 @@ function aplicarNarrativaIa(insight: JourneyInsight, narrativa: CopilotoNarrativ
     },
     linhaFoco: narrativa.missaoImpacto ?? "",
     proximoPasso: narrativa.missaoDescricao,
-    exemploConcreto: null,
-    causaComoVoceErra: null,
   };
 
   insight.diagnosticoIntegrado = {
     titulo: narrativa.diagnosticoTitulo,
     paragrafo: narrativa.diagnosticoParagrafo,
-    lacunaChave: "ia",
+    lacunaChave: insight.focoPrincipal?.escopoId ?? "ia",
   };
 
   const base = insight.principalGargalo;
   insight.principalGargalo = {
     descricao: narrativa.diagnosticoParagrafo,
-    tipoLabel: narrativa.diagnosticoTitulo,
+    escopoLabel: base?.escopoLabel ?? narrativa.diagnosticoTitulo,
     materiaContexto: base?.materiaContexto ?? null,
-    pctAcertoMateria: base?.pctAcertoMateria ?? null,
+    pctAcertoEscopo: base?.pctAcertoEscopo ?? null,
     erros: base?.erros ?? 0,
-    exemploConhecimento: base?.exemploConhecimento ?? null,
-    causaMetacognitiva: base?.causaMetacognitiva ?? null,
-    pctCausaMetacognitiva: base?.pctCausaMetacognitiva ?? null,
+    hipoteseCausa: base?.hipoteseCausa ?? null,
+    objetivoSemana: base?.objetivoSemana ?? null,
+    metadadosResumo: base?.metadadosResumo ?? null,
     materiaDeficitPrincipal: base?.materiaDeficitPrincipal ?? null,
   };
 

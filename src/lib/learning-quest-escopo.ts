@@ -105,7 +105,7 @@ export function montarQuestEscopoDirigida(
   fp: FocoPedagogico,
   ordem: number,
   rotulo: string,
-  chaveQuest: (tipo: "padrao" | "materia" | "anamnese" | "ia", id: string) => string
+  chaveQuest: (tipo: "escopo" | "padrao" | "materia" | "anamnese" | "ia", id: string) => string
 ): QuestEscopoDirigida {
   const passos = passosPorEstrategia(fp, fp.estrategiaRecomendada);
   const duracao =
@@ -122,7 +122,7 @@ export function montarQuestEscopoDirigida(
       : fp.hipoteseCausa;
 
   return {
-    chave: chaveQuest("padrao", `escopo-${fp.escopoId}-${fp.estrategiaRecomendada}`),
+    chave: chaveQuest("escopo", `${fp.escopoId}-${fp.estrategiaRecomendada}`),
     titulo: tituloQuestEscopo(fp),
     descricao: formatarPassos(
       passos,

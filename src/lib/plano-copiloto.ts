@@ -1,12 +1,8 @@
 /**
- * Plano semanal da jornada — mesmo motor da Home e das alavancas.
- * Sem números de questão de uma prova isolada; foco em padrão + passos.
+ * Plano semanal da jornada — motor v1 (focosPedagogicos por escopo N2).
  */
-import { buildDiagnosticoMotor } from "@/lib/diagnostic-motor";
 import { buildResumoJornada } from "@/lib/jornada";
-import { narrativaCopiloto } from "@/lib/narrativa-copiloto";
-import { formatarPassos, PASSOS_POR_CLUSTER } from "@/lib/copiloto-passos";
-import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
+import { formatarPassos } from "@/lib/copiloto-passos";
 import type { StudyPlanItem } from "@/lib/study-plan";
 import { materiasComDadosReais } from "@/lib/jornada-analytics";
 import { aggregateJourneyLearning } from "@/lib/jornada-analytics";
@@ -28,7 +24,7 @@ function blocosPlanoSóAnamnese(
     descricao:
       (anamneseCtx.summary ?? anamneseCtx.focoInicialDescricao ?? "") +
       "\n\nAinda não há provas registradas — este plano vem da sua anamnese. " +
-      "Quando registrar simulados, o copiloto cruza o que você disse com seus erros reais.",
+      "Quando registrar provas do catálogo, o copiloto cruza o que você disse com seus erros reais por escopo.",
     duracaoMin: 0,
     bloco: "contexto",
     geraQuest: false,
@@ -71,7 +67,7 @@ function blocosPlanoSóAnamnese(
     ordem: ordem++,
     titulo: "Meta da semana",
     descricao:
-      "Completar os passos em Quests. Registrar pelo menos uma atividade no catálogo para o plano passar a usar seus erros reais.",
+      "Completar os passos em Quests. Registrar provas do catálogo classificadas (N2) para o plano usar escopos reais.",
     duracaoMin: 0,
     bloco: "meta",
     geraQuest: false,
@@ -85,8 +81,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
   recoveryMode: boolean;
   fonte: "jornada" | "anamnese" | "vazio";
 }> {
-  const [motor, resumo, analytics, anamneseCtx, focosPedagogicos] = await Promise.all([
-    buildDiagnosticoMotor(userId),
+  const [resumo, analytics, anamneseCtx, focosPedagogicos] = await Promise.all([
     buildResumoJornada(userId),
     aggregateJourneyLearning(userId, "todos"),
     getAnamneseMotorContext(userId),
@@ -120,7 +115,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
       introAnamnese +
       (resumo.totalRegistros > 0
         ? `Este plano usa **todos os ${registrosLabel}** — acerto ponderado: ${resumo.pctAcertoPonderado}%. `
-        : "Registre provas quando puder para cruzar com o que você já contou. ") +
+        : "Registre provas do catálogo quando puder para cruzar com o que você já contou. ") +
       `Passo a passo em Quests → O que fazer agora.`,
     duracaoMin: 0,
     bloco: "contexto",
@@ -128,7 +123,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     errosContexto: "jornada",
   });
 
-  if ((!motor.temDados || !motor.clusterPrincipal) && focosPedagogicos.length === 0) {
+  if (focosPedagogicos.length === 0) {
     if (anamneseCtx.completed) {
       items.push(...blocosPlanoSóAnamnese(anamneseCtx, ordem));
       return { items, recoveryMode, fonte: "anamnese" };
@@ -137,7 +132,7 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
       ordem: ordem++,
       titulo: "Meta da semana",
       descricao:
-        "Faça a conversa inicial na Home (Entendendo sua jornada) e registre provas do catálogo para o copiloto montar passos personalizados.",
+        "Faça a conversa inicial na Home e registre provas do catálogo (classificadas no admin) para o copiloto montar passos por escopo.",
       duracaoMin: 10,
       bloco: "meta",
       geraQuest: false,
@@ -145,66 +140,34 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
     return { items, recoveryMode, fonte: "vazio" };
   }
 
-  const focoEscopo = focosPedagogicos[0];
-  let metaFocoLabel = "seus focos da jornada";
-
-  if (focoEscopo) {
-    items.push({
-      ordem: ordem++,
-      titulo: `Prioridade 1 — ${focoEscopo.escopoLabel}`,
-      descricao:
-        `${focoEscopo.hipoteseCausa}\n\n` +
-        `Objetivo da semana: ${focoEscopo.objetivoDaSemana}\n\n` +
-        formatarPassos(
-          [
-            `Escopo: ${focoEscopo.escopoLabel} (${focoEscopo.materiaLabel}).`,
-            `Revise questões ${focoEscopo.numerosErrados.slice(0, 6).join(", ")} da jornada.`,
-            "Corrija com gabarito e anote o passo que faltou.",
-            "Faça 3 exercícios novos só desse escopo.",
-          ],
-          `foco calculado pelo motor (${focoEscopo.totalErros} erro(s) neste escopo).`,
-          recoveryMode ? 35 : 45
-        ),
-      duracaoMin: recoveryMode ? 35 : 45,
-      bloco: "foco_profundo",
-      materiaDestaque: focoEscopo.materiaLabel,
-      geraQuest: false,
-      errosContexto: "jornada",
-    });
-    metaFocoLabel = `${focoEscopo.escopoLabel} em ${focoEscopo.materiaLabel}`;
-  } else {
-  const principal = motor.clusterPrincipal!;
-  const narrativa = narrativaCopiloto(
-    principal,
-    motor.materiaDeficit,
-    motor.totalExames,
-    anamneseCtx
-  );
-  const def = CLUSTERS_PEDAGOGICOS[principal.clusterId];
-  const materia =
-    principal.materias[0]?.nome ?? motor.materiaDeficit?.label ?? "sua matéria prioritária";
+  const focoEscopo = focosPedagogicos[0]!;
+  let metaFocoLabel = `${focoEscopo.escopoLabel} em ${focoEscopo.materiaLabel}`;
 
   items.push({
     ordem: ordem++,
-    titulo: `Prioridade 1 — ${def.tituloHumano}`,
+    titulo: `Prioridade 1 — ${focoEscopo.escopoLabel}`,
     descricao:
-      `${narrativa.camadas.caminho}\n\n` +
+      `${focoEscopo.hipoteseCausa}\n\n` +
+      `Objetivo da semana: ${focoEscopo.objetivoDaSemana}\n\n` +
       formatarPassos(
-        PASSOS_POR_CLUSTER[principal.clusterId],
-        `padrão mais forte em ${materia} na sua jornada.`,
+        [
+          `Escopo: ${focoEscopo.escopoLabel} (${focoEscopo.materiaLabel}).`,
+          `Revise questões ${focoEscopo.numerosErrados.slice(0, 6).join(", ")} da jornada.`,
+          "Corrija com gabarito e anote o passo que faltou.",
+          "Faça 3 exercícios novos só desse escopo.",
+        ],
+        `foco calculado pelo motor (${focoEscopo.totalErros} erro(s) neste escopo).`,
         recoveryMode ? 35 : 45
       ),
     duracaoMin: recoveryMode ? 35 : 45,
     bloco: "foco_profundo",
-    materiaDestaque: materia,
+    materiaDestaque: focoEscopo.materiaLabel,
     geraQuest: false,
     errosContexto: "jornada",
   });
-    metaFocoLabel = `${def.tituloHumano.toLowerCase()} em ${materia}`;
-  }
 
   if (!recoveryMode) {
-    const fpSecundario = focoEscopo ? focosPedagogicos[1] : undefined;
+    const fpSecundario = focosPedagogicos[1];
     if (fpSecundario) {
       items.push({
         ordem: ordem++,
@@ -224,26 +187,6 @@ export async function buildPlanoSemanalCopiloto(userId: string): Promise<{
         geraQuest: false,
         errosContexto: "jornada",
       });
-    } else {
-      const clusterSecundario = motor.clusters[1];
-      if (clusterSecundario) {
-        const def2 = CLUSTERS_PEDAGOGICOS[clusterSecundario.clusterId];
-        const mat2 = clusterSecundario.materias[0]?.nome ?? "outra matéria";
-        items.push({
-          ordem: ordem++,
-          titulo: `Também vale atenção — ${def2.tituloHumano}`,
-          descricao: formatarPassos(
-            PASSOS_POR_CLUSTER[clusterSecundario.clusterId].slice(0, 4),
-            `segundo padrão na jornada (${mat2}).`,
-            35
-          ),
-          duracaoMin: 35,
-          bloco: "consolidacao",
-          materiaDestaque: mat2,
-          geraQuest: false,
-          errosContexto: "jornada",
-        });
-      }
     }
   }
 

@@ -1,9 +1,9 @@
 /**
- * Dados serializáveis para os gráficos da ANÁLISE de uma prova (uma tentativa).
- * Escopo: só este Exam — não mistura com a jornada.
+ * Dados serializáveis para gráficos da análise de uma prova (motor v1 — escopo N2).
  */
 import type { ErrorType } from "@/generated/prisma/client";
-import { getMateriaLabel, getTipoErroLabel, taxonomy } from "@/lib/taxonomy";
+import { labelEscopo } from "@/lib/escopo-display";
+import { getTipoErroLabel, taxonomy } from "@/lib/taxonomy";
 
 const CORES_CAUSA: Record<string, string> = {
   CONCEITO_TEORICO: "#7c3aed",
@@ -15,8 +15,8 @@ const CORES_CAUSA: Record<string, string> = {
 };
 
 export type ExamCausa = { label: string; count: number; pct: number; cor: string };
-export type ExamMateria = { nome: string; pct: number; total: number };
-export type ExamConhecimento = { texto: string; erros: number };
+export type ExamEscopo = { escopoId: string; label: string; pct: number; total: number; erros: number };
+export type ExamConhecimento = { texto: string; erros: number; escopoId?: string | null };
 
 export type ExamGraficos = {
   total: number;
@@ -25,7 +25,7 @@ export type ExamGraficos = {
   totalErros: number;
   errosClassificados: number;
   pctErrosClassificados: number;
-  materias: ExamMateria[];
+  escopos: ExamEscopo[];
   causas: ExamCausa[];
   conhecimentos: ExamConhecimento[];
 };
@@ -33,13 +33,19 @@ export type ExamGraficos = {
 type AttemptInput = {
   correto: boolean;
   tipoErro: ErrorType | string | null;
-  materiaId: string | null;
-  materiaCorrigida?: string | null;
-  provaQuestao?: { materia: string; conhecimentoExigido: string | null } | null;
+  conhecimentoEscopoId?: string | null;
+  provaQuestao?: {
+    conhecimentoEscopoId?: string | null;
+    conhecimentoExigido?: string | null;
+  } | null;
 };
 
-function normaliza(s: string): string {
-  return s.trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").slice(0, 200);
+function escopoIdDe(a: AttemptInput): string | null {
+  return (
+    a.conhecimentoEscopoId?.trim() ||
+    a.provaQuestao?.conhecimentoEscopoId?.trim() ||
+    null
+  );
 }
 
 export function montarExamGraficos(attempts: AttemptInput[]): ExamGraficos {
@@ -48,28 +54,27 @@ export function montarExamGraficos(attempts: AttemptInput[]): ExamGraficos {
   const incorretas = attempts.filter((a) => !a.correto);
   const totalErros = incorretas.length;
 
-  // Matérias: % de acerto por matéria nesta prova
-  const porMateria = new Map<string, { total: number; acertos: number }>();
+  const porEscopo = new Map<string, { total: number; acertos: number; erros: number }>();
   for (const a of attempts) {
-    const nome =
-      a.provaQuestao?.materia?.trim() ||
-      a.materiaCorrigida?.trim() ||
-      getMateriaLabel(a.materiaId) ||
-      "Sem matéria";
-    const entry = porMateria.get(nome) ?? { total: 0, acertos: 0 };
+    const escopoId = escopoIdDe(a) ?? "__sem_n2__";
+    const entry = porEscopo.get(escopoId) ?? { total: 0, acertos: 0, erros: 0 };
     entry.total += 1;
     if (a.correto) entry.acertos += 1;
-    porMateria.set(nome, entry);
+    else entry.erros += 1;
+    porEscopo.set(escopoId, entry);
   }
-  const materias: ExamMateria[] = [...porMateria.entries()]
-    .map(([nome, v]) => ({
-      nome,
+
+  const escopos: ExamEscopo[] = [...porEscopo.entries()]
+    .filter(([id]) => id !== "__sem_n2__")
+    .map(([escopoId, v]) => ({
+      escopoId,
+      label: labelEscopo(escopoId) ?? escopoId,
       total: v.total,
+      erros: v.erros,
       pct: v.total > 0 ? Math.round((v.acertos / v.total) * 100) : 0,
     }))
-    .sort((a, b) => a.pct - b.pct);
+    .sort((a, b) => a.pct - b.pct || b.erros - a.erros);
 
-  // Causas (metacognição) — só erros classificados
   const counts = new Map<string, number>();
   let errosClassificados = 0;
   for (const a of incorretas) {
@@ -91,20 +96,23 @@ export function montarExamGraficos(attempts: AttemptInput[]): ExamGraficos {
     .filter((c) => c.count > 0)
     .sort((a, b) => b.count - a.count);
 
-  // Conhecimentos exigidos com mais erro nesta prova
-  const porConhecimento = new Map<string, { texto: string; erros: number }>();
+  const porConhecimento = new Map<string, ExamConhecimento>();
   for (const a of incorretas) {
+    const escopoId = escopoIdDe(a);
     const raw = a.provaQuestao?.conhecimentoExigido?.trim();
-    if (!raw || raw.length < 8) continue;
-    const chave = normaliza(raw);
-    const entry = porConhecimento.get(chave) ?? {
-      texto: raw.length > 140 ? `${raw.slice(0, 137)}…` : raw,
-      erros: 0,
-    };
+    const chave = escopoId ?? raw ?? "";
+    if (!chave) continue;
+    const texto =
+      raw && raw.length >= 8
+        ? raw.length > 140
+          ? `${raw.slice(0, 137)}…`
+          : raw
+        : labelEscopo(escopoId) ?? "Escopo sem N3";
+    const entry = porConhecimento.get(chave) ?? { texto, erros: 0, escopoId };
     entry.erros += 1;
     porConhecimento.set(chave, entry);
   }
-  const conhecimentos: ExamConhecimento[] = [...porConhecimento.values()]
+  const conhecimentos = [...porConhecimento.values()]
     .sort((a, b) => b.erros - a.erros)
     .slice(0, 6);
 
@@ -116,7 +124,7 @@ export function montarExamGraficos(attempts: AttemptInput[]): ExamGraficos {
     errosClassificados,
     pctErrosClassificados:
       totalErros > 0 ? Math.round((errosClassificados / totalErros) * 100) : 0,
-    materias,
+    escopos,
     causas,
     conhecimentos,
   };

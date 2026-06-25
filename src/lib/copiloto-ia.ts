@@ -6,7 +6,6 @@
  */
 import { prisma } from "@/lib/prisma";
 import { responsesComSchema } from "@/lib/openai-responses-client";
-import { buildDiagnosticoMotor } from "@/lib/diagnostic-motor";
 import { buildResumoJornada } from "@/lib/jornada";
 import { aggregateJourneyLearning, materiasComDadosReais } from "@/lib/jornada-analytics";
 import { getAnamneseMotorContext } from "@/lib/anamnese-motor";
@@ -28,14 +27,6 @@ type CopilotoInput = {
     pctAcertoPonderado: number;
     recoveryMode: boolean;
   };
-  clusters: Array<{
-    tituloHumano: string;
-    label: string;
-    materias: string;
-    erros: number;
-    recorrenciaForte: boolean;
-    causaDominante: string | null;
-  }>;
   materiaDeficit: { label: string; pct: number } | null;
   materiasFortes: string[];
   focosPedagogicos: FocoPedagogico[];
@@ -61,8 +52,7 @@ const BLOCO_VALIDOS: BlocoPlano[] = [
 ];
 
 async function buildInput(userId: string): Promise<CopilotoInput> {
-  const [motor, resumo, analytics, anamneseCtx, user, focosPedagogicos] = await Promise.all([
-    buildDiagnosticoMotor(userId),
+  const [resumo, analytics, anamneseCtx, user, focosPedagogicos] = await Promise.all([
     buildResumoJornada(userId),
     aggregateJourneyLearning(userId, "todos"),
     getAnamneseMotorContext(userId),
@@ -75,16 +65,15 @@ async function buildInput(userId: string): Promise<CopilotoInput> {
 
   const recoveryMode = resumo.pctAcertoPonderado < 50 && resumo.totalRegistros >= 2;
 
-  const clusters = motor.clusters.slice(0, 3).map((c) => ({
-    tituloHumano: c.label,
-    label: c.label,
-    materias: c.materias.map((m) => m.nome).join(", ") || "—",
-    erros: c.erros,
-    recorrenciaForte: c.comportamento.recorrencia === "forte",
-    causaDominante: c.causaDominante?.label ?? null,
-  }));
+  const materiasBase = materiasComDadosReais(analytics.materiasMedia, 5);
+  const materiaDeficit = materiasBase
+    .filter((m) => m.pctAcerto < 55)
+    .sort((a, b) => a.pctAcerto - b.pctAcerto)[0];
+  const materiaDeficitFmt = materiaDeficit
+    ? { label: materiaDeficit.label, pct: materiaDeficit.pctAcerto }
+    : null;
 
-  const materiasFortes = materiasComDadosReais(analytics.materiasMedia, 5)
+  const materiasFortes = materiasBase
     .filter((m) => m.pctAcerto >= 65)
     .map((m) => m.label);
 
@@ -101,8 +90,7 @@ async function buildInput(userId: string): Promise<CopilotoInput> {
       pctAcertoPonderado: resumo.pctAcertoPonderado,
       recoveryMode,
     },
-    clusters,
-    materiaDeficit: motor.materiaDeficit,
+    materiaDeficit: materiaDeficitFmt,
     materiasFortes,
     focosPedagogicos,
     anamnese: anamneseCtx.completed
@@ -263,24 +251,10 @@ JORNADA (provas registradas):
 - Acerto ponderado: ${input.jornada.totalRegistros > 0 ? `${input.jornada.pctAcertoPonderado}%` : "sem provas ainda"}
 - Modo recuperação: ${input.jornada.recoveryMode ? "sim (ritmo leve)" : "não"}
 
-PADRÕES DETECTADOS NOS ERROS (estatística real):
-${
-    input.clusters.length
-      ? input.clusters
-          .map(
-            (c, i) =>
-              `${i + 1}. ${c.tituloHumano} — matérias: ${c.materias}; ${c.erros} erros${
-                c.recorrenciaForte ? "; recorrente" : ""
-              }${c.causaDominante ? `; causa frequente: ${c.causaDominante}` : ""}`
-          )
-          .join("\n")
-      : "Nenhum padrão estatístico ainda (sem provas suficientes)."
-  }
+FOCOS PEDAGÓGICOS (escopo N2 — fonte única de decisão):
+${formatFocosPedagogicosParaPrompt(input.focosPedagogicos)}
 ${input.materiaDeficit ? `Matéria com mais espaço de ganho: ${input.materiaDeficit.label} (${input.materiaDeficit.pct}%).` : ""}
 ${input.materiasFortes.length ? `Matérias sólidas (manter): ${input.materiasFortes.join(", ")}.` : ""}
-
-FOCOS PEDAGÓGICOS (escopo N2 — NÃO invente outros):
-${formatFocosPedagogicosParaPrompt(input.focosPedagogicos)}
 
 ANAMNESE (o que o aluno declarou):
 ${

@@ -5,11 +5,12 @@
  */
 import { prisma } from "@/lib/prisma";
 import { responsesComSchema } from "@/lib/openai-responses-client";
-import { buildDiagnosticoMotor } from "@/lib/diagnostic-motor";
 import { buildDiagnosisForProva, buildDiagnosisForConjunto } from "@/lib/jornada-diagnostico";
 import { buildHistoricoProva } from "@/lib/jornada-historico";
 import { getMateriaLabel } from "@/lib/taxonomy";
 import { formatarPassos } from "@/lib/copiloto-passos";
+import { formatFocosPedagogicosParaPrompt } from "@/lib/learning-motor-foco";
+import type { FocoPedagogico } from "@/lib/diagnosis-escopo";
 import type { BlocoPlano, StudyPlanItem } from "@/lib/study-plan";
 import type { CopilotoNarrativa, QuestGerada } from "@/lib/copiloto-ia-types";
 
@@ -29,12 +30,7 @@ type ProvaInput = {
   ultimaPct: number | null;
   evolucao: Array<{ data: string; pct: number }>;
   materias: Array<{ nome: string; pct: number }>;
-  clusters: Array<{
-    label: string;
-    materias: string;
-    erros: number;
-    causaDominante: string | null;
-  }>;
+  focosPedagogicos: FocoPedagogico[];
 };
 
 const BLOCO_VALIDOS: BlocoPlano[] = [
@@ -46,19 +42,25 @@ const BLOCO_VALIDOS: BlocoPlano[] = [
 ];
 
 async function buildInput(userId: string, provaId: string): Promise<ProvaInput | null> {
-  const [historico, diagnosis, motor, user] = await Promise.all([
+  const [historico, diagnosis, user] = await Promise.all([
     buildHistoricoProva(userId, provaId),
     buildDiagnosisForProva(userId, provaId),
-    buildDiagnosticoMotor(userId, { provaId }),
     prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
   ]);
 
-  if (!historico || historico.tentativas.length === 0) return null;
+  if (!historico || historico.tentativas.length === 0 || !diagnosis) return null;
 
-  const materias = (diagnosis?.materiaScores ?? [])
-    .map((m) => ({
-      nome: m.materiaLabel ?? getMateriaLabel(m.materiaId),
-      pct: Math.round(m.taxaAcerto * 100),
+  const porMateria = new Map<string, { acertos: number; total: number }>();
+  for (const s of diagnosis.escopoScores) {
+    const m = porMateria.get(s.materiaLabel) ?? { acertos: 0, total: 0 };
+    m.total += s.total;
+    m.acertos += s.acertos;
+    porMateria.set(s.materiaLabel, m);
+  }
+  const materias = [...porMateria.entries()]
+    .map(([nome, m]) => ({
+      nome,
+      pct: Math.round((m.acertos / Math.max(1, m.total)) * 100),
     }))
     .sort((a, b) => a.pct - b.pct);
 
@@ -75,12 +77,7 @@ async function buildInput(userId: string, provaId: string): Promise<ProvaInput |
     ultimaPct: historico.ultimaPct ?? null,
     evolucao: historico.evolucao.map((e) => ({ data: e.data, pct: e.taxaAcerto })),
     materias,
-    clusters: motor.clusters.slice(0, 3).map((c) => ({
-      label: c.label,
-      materias: c.materias.map((m) => m.nome).join(", ") || "—",
-      erros: c.erros,
-      causaDominante: c.causaDominante?.label ?? null,
-    })),
+    focosPedagogicos: diagnosis.focosPedagogicos,
   };
 }
 
@@ -215,19 +212,8 @@ ${input.evolucao.length ? input.evolucao.map((e) => `- ${e.data}: ${e.pct}%`).jo
 Desempenho por matéria NESTA prova (pior → melhor):
 ${input.materias.length ? input.materias.map((m) => `- ${m.nome}: ${m.pct}%`).join("\n") : "- sem dados por matéria"}
 
-Padrões de erro detectados NESTA prova:
-${
-    input.clusters.length
-      ? input.clusters
-          .map(
-            (c) =>
-              `- ${c.label} (matérias: ${c.materias}); ${c.erros} erros${
-                c.causaDominante ? `; causa: ${c.causaDominante}` : ""
-              }`
-          )
-          .join("\n")
-      : "- sem padrão estatístico ainda"
-  }
+FOCOS PEDAGÓGICOS (escopo N2 — NESTA prova):
+${formatFocosPedagogicosParaPrompt(input.focosPedagogicos)}
 
 Gere o diagnóstico (missao + diagnostico em camadas), blocos do micro-plano e quests — tudo específico desta prova, para ${input.aluno.nome}.`;
 }
@@ -351,9 +337,8 @@ export async function gerarProvaIAConjunto(
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) return null;
 
-  const [diagnosis, motor, user, conjunto] = await Promise.all([
+  const [diagnosis, user, conjunto] = await Promise.all([
     buildDiagnosisForConjunto(userId, examIdDia1, examIdDia2),
-    buildDiagnosticoMotor(userId, { examIds: [examIdDia1, examIdDia2] }),
     prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
     prisma.exam.findFirst({
       where: { id: examIdDia1, userId },
@@ -370,6 +355,14 @@ export async function gerarProvaIAConjunto(
   const acertos = conjunto.questionAttempts?.filter((q) => q.correto).length ?? 0;
   const pct = total > 0 ? Math.round((acertos / total) * 100) : null;
 
+  const porMateria = new Map<string, { acertos: number; total: number }>();
+  for (const s of diagnosis.escopoScores) {
+    const m = porMateria.get(s.materiaLabel) ?? { acertos: 0, total: 0 };
+    m.total += s.total;
+    m.acertos += s.acertos;
+    porMateria.set(s.materiaLabel, m);
+  }
+
   const input: ProvaInput = {
     prova: {
       nome: nomeConjunto,
@@ -382,18 +375,13 @@ export async function gerarProvaIAConjunto(
     melhorPct: pct,
     ultimaPct: pct,
     evolucao: pct != null ? [{ data: "completa", pct }] : [],
-    materias: (diagnosis.materiaScores ?? [])
-      .map((m) => ({
-        nome: m.materiaLabel ?? getMateriaLabel(m.materiaId),
-        pct: Math.round(m.taxaAcerto * 100),
+    materias: [...porMateria.entries()]
+      .map(([nome, m]) => ({
+        nome,
+        pct: Math.round((m.acertos / Math.max(1, m.total)) * 100),
       }))
       .sort((a, b) => a.pct - b.pct),
-    clusters: motor.clusters.slice(0, 3).map((c) => ({
-      label: c.label,
-      materias: c.materias.map((m) => m.nome).join(", ") || "—",
-      erros: c.erros,
-      causaDominante: c.causaDominante?.label ?? null,
-    })),
+    focosPedagogicos: diagnosis.focosPedagogicos,
   };
 
   try {

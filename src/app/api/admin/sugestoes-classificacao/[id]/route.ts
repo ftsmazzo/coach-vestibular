@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
-import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import { concederXp, XP_VALORES } from "@/lib/xp";
 import { enviarNotificacao, telefoneParaWhatsapp } from "@/lib/notificacoes";
 import { prisma } from "@/lib/prisma";
-import {
-  normalizarLabelAssunto,
-  normalizarLabelMateria,
-} from "@/lib/taxonomia-validacao";
+import { camposManualEscopoN2 } from "@/lib/prova-classificacao-manual-n2";
+import { recalcularDiagnosticoExam } from "@/lib/prova-attempt";
+import { resolverCatalogoN1Questao } from "@/lib/resolver-catalogo-n1-questao";
 
 const patchSchema = z.object({
   acao: z.enum(["aceitar", "rejeitar"]),
   respostaAdmin: z.string().optional(),
   aplicarNaQuestao: z.boolean().optional(),
+  /** Escopo N2 do catálogo admin — prioridade sobre matéria/assunto legado */
+  escopoId: z.string().optional(),
+  catalogoId: z.string().optional(),
 });
 
 export async function PATCH(
@@ -52,29 +53,34 @@ export async function PATCH(
     }
 
     await prisma.$transaction(async (tx) => {
-      if (
-        body.aplicarNaQuestao !== false &&
-        sugestao.provaQuestaoId &&
-        (sugestao.materiaSugerida || sugestao.assuntoSugerido || sugestao.areaBlocoSugerida)
-      ) {
-        const materia = sugestao.materiaSugerida
-          ? normalizarLabelMateria(sugestao.materiaSugerida)
-          : sugestao.provaQuestao?.materia ?? sugestao.materiaAtual;
-        const assunto = sugestao.assuntoSugerido
-          ? normalizarLabelAssunto(materia, sugestao.assuntoSugerido)
-          : sugestao.provaQuestao?.assunto ?? sugestao.assuntoAtual;
-        const areaBloco = sugestao.areaBlocoSugerida
-          ? normalizarAreaBloco(sugestao.areaBlocoSugerida, materia)
-          : sugestao.provaQuestao?.areaBloco;
+      if (body.aplicarNaQuestao !== false && sugestao.provaQuestaoId) {
+        const escopoId =
+          body.escopoId?.trim() || sugestao.escopoSugeridoId?.trim() || undefined;
+        const catalogoId =
+          body.catalogoId?.trim() ||
+          sugestao.catalogoId?.trim() ||
+          (sugestao.provaQuestao
+            ? resolverCatalogoN1Questao(sugestao.provaQuestao)
+            : undefined);
 
-        await tx.provaQuestao.update({
-          where: { id: sugestao.provaQuestaoId },
-          data: {
-            materia,
-            assunto,
-            areaBloco: areaBloco ?? undefined,
-          },
-        });
+        if (escopoId && catalogoId) {
+          const n2 = camposManualEscopoN2(catalogoId, escopoId);
+          if (n2) {
+            await tx.provaQuestao.update({
+              where: { id: sugestao.provaQuestaoId },
+              data: {
+                materia: n2.materia,
+                assunto: n2.assunto,
+                conhecimentoEscopoId: n2.conhecimentoEscopoId,
+                conhecimentoDominioId: n2.conhecimentoDominioId,
+                classificacaoConfianca: n2.classificacaoConfianca,
+                classificacaoVersao: n2.classificacaoVersao,
+                classificacaoSecundariosJson: n2.classificacaoSecundariosJson,
+                conceitosCanonicosJson: n2.conceitosCanonicosJson,
+              },
+            });
+          }
+        }
       }
 
       await tx.sugestaoClassificacao.update({
@@ -87,6 +93,14 @@ export async function PATCH(
         },
       });
     });
+
+    if (body.aplicarNaQuestao !== false) {
+      try {
+        await recalcularDiagnosticoExam(sugestao.examId, sugestao.userId);
+      } catch (e) {
+        console.warn("Recalcular diagnóstico após sugestão:", e);
+      }
+    }
 
     const { ganhou: xp } = await concederXp(
       sugestao.userId,

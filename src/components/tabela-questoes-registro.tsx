@@ -8,6 +8,9 @@ export type LinhaQuestaoRegistro = {
   gabarito: string | null;
   materia: string;
   assunto: string;
+  conhecimentoEscopoId?: string | null;
+  escopoId?: string | null;
+  escopoLabel?: string | null;
   conhecimento: string | null;
   nivelDificuldade: string | null;
   correto: boolean;
@@ -62,8 +65,8 @@ function CardQuestao({
           <SugerirClassificacao
             examId={examId}
             numero={q.numero}
-            materiaAtual={q.materia}
-            assuntoAtual={q.assunto}
+            escopoAtualId={q.escopoId}
+            escopoLabelAtual={q.escopoLabel}
           />
         </div>
       )}
@@ -118,8 +121,8 @@ export function TabelaQuestoesRegistro({
                       <SugerirClassificacao
                         examId={examId}
                         numero={q.numero}
-                        materiaAtual={q.materia}
-                        assuntoAtual={q.assunto}
+                        escopoAtualId={q.escopoId}
+                        escopoLabelAtual={q.escopoLabel}
                       />
                     )}
                   </td>

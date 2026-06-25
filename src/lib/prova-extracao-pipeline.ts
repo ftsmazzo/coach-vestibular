@@ -1,5 +1,4 @@
 import type { QuestaoExtraida } from "@/lib/ai-extract-prova";
-import { classificarMateriaEAssuntoMotor } from "@/lib/prova-classificacao-motor";
 import {
   mesclarTextoParaBlocos,
   processarTextoProvaIdioma,
@@ -247,16 +246,20 @@ const PROMPT_CONHECIMENTO = `Para cada questão, escreva UMA frase curta do conh
 Use o enunciado e a classificação já definida. Não invente gabarito.
 JSON: { "conhecimentos": [{ "numero": 1, "conhecimentoExigido": "..." }] }`;
 
-/** Motor principal: gpt-4o, lotes paralelos, revisão unitária nas suspeitas. */
+/** Heurística local — classificação N1/N2 fica no pipeline admin (enem-classificar). */
 export async function classificarMateriaEAssunto(
   base: QuestaoExtraida[],
   avisosIn: string[] = [],
-  textoCaderno?: string,
-  opts?: { excluirBlocoEspanhol?: boolean }
+  _textoCaderno?: string,
+  _opts?: { excluirBlocoEspanhol?: boolean }
 ): Promise<{ questoes: QuestaoExtraida[]; avisos: string[] }> {
-  const r = await classificarMateriaEAssuntoMotor(base, avisosIn, textoCaderno, opts);
-  r.avisos.push(...aplicarFallbacksClassificacao(r.questoes));
-  return r;
+  const questoes = base.map((q) => ({ ...q }));
+  const avisos = [
+    ...avisosIn,
+    ...aplicarFallbacksClassificacao(questoes),
+    "Extração usa heurística grossa — classifique N1/N2 no admin para o motor v1.",
+  ];
+  return { questoes, avisos: dedupeAvisos(avisos) };
 }
 
 export async function classificarMaterias(

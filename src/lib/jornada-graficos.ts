@@ -1,27 +1,20 @@
 /**
  * Dados serializáveis para a página de gráficos da jornada (contexto JOURNEY).
- * Foca em metacognição (como erra) + conhecimentos/padrões com mais erro.
+ * Foca em metacognição + top escopos N2 com mais erro.
  */
 import { buildMetacognicaoGlobalJornada } from "@/lib/jornada-metacognicao";
-import { aggregateKnowledgeGaps, aggregateCognitiveClusters } from "@/lib/knowledge-gaps";
+import { getFocosPedagogicosRecentes } from "@/lib/learning-motor-foco";
 import { buildResumoJornada } from "@/lib/jornada";
 
 export type CausaGrafico = { label: string; count: number; pct: number; cor: string };
 export type CheckInGrafico = { score: number; dataLabel: string };
-export type ConhecimentoGrafico = {
-  texto: string;
-  materia: string | null;
-  tipoCognitivoLabel: string;
+export type EscopoGrafico = {
+  escopoId: string;
+  escopoLabel: string;
+  materiaLabel: string;
   erros: number;
-  pctAcertoMateria: number | null;
-  causa: string | null;
-};
-export type ClusterGrafico = {
-  label: string;
-  erros: number;
-  verboTreino: string;
-  causa: string | null;
-  materias: string[];
+  taxaAcerto: number;
+  estrategia: string | null;
 };
 
 export type JornadaGraficos = {
@@ -38,15 +31,13 @@ export type JornadaGraficos = {
     checkIns: CheckInGrafico[];
     insight: string;
   } | null;
-  conhecimentos: ConhecimentoGrafico[];
-  clustersCognitivos: ClusterGrafico[];
+  topEscopos: EscopoGrafico[];
 };
 
 export async function buildJornadaGraficos(userId: string): Promise<JornadaGraficos> {
-  const [meta, lacunas, clusters, resumo] = await Promise.all([
+  const [meta, focos, resumo] = await Promise.all([
     buildMetacognicaoGlobalJornada(userId),
-    aggregateKnowledgeGaps(userId, 7),
-    aggregateCognitiveClusters(userId, 6),
+    getFocosPedagogicosRecentes(userId, 8),
     buildResumoJornada(userId),
   ]);
 
@@ -78,20 +69,13 @@ export async function buildJornadaGraficos(userId: string): Promise<JornadaGrafi
           insight: meta.insight,
         }
       : null,
-    conhecimentos: lacunas.map((l) => ({
-      texto: l.texto,
-      materia: l.materia,
-      tipoCognitivoLabel: l.tipoCognitivoLabel,
-      erros: l.erros,
-      pctAcertoMateria: l.pctAcertoMateria,
-      causa: l.causaDominante?.label ?? null,
-    })),
-    clustersCognitivos: clusters.map((c) => ({
-      label: c.label,
-      erros: c.erros,
-      verboTreino: c.verboTreino,
-      causa: c.causaDominante?.label ?? null,
-      materias: c.materias.slice(0, 3),
+    topEscopos: focos.map((f) => ({
+      escopoId: f.escopoId,
+      escopoLabel: f.escopoLabel,
+      materiaLabel: f.materiaLabel,
+      erros: f.totalErros,
+      taxaAcerto: Math.round(f.taxaAcerto * 100),
+      estrategia: f.estrategiaRecomendada,
     })),
   };
 }

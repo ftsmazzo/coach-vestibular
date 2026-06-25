@@ -4,7 +4,7 @@ import { aplicarPlanoCoachIA } from "@/lib/diagnosis";
 import { buildDiagnosisForConjunto, attemptsPonderadosJornada } from "@/lib/jornada-diagnostico";
 import { prisma } from "@/lib/prisma";
 import { parseConjuntoExamId, PROVA_SELECT_MULTIDIA } from "@/lib/prova-multidia";
-import { generateStudyPlan, planToQuests, type StudyPlanItem } from "@/lib/study-plan";
+import { planToQuests, type StudyPlanItem } from "@/lib/study-plan";
 
 export type ConjuntoPlanMeta = {
   conjuntoExamId: string;
@@ -165,10 +165,7 @@ export async function gerarMicroPlanoConjunto(userId: string, conjuntoExamId: st
     examLabel: `${conjunto.nome} (completa)`,
   });
 
-  let items: StudyPlanItem[] =
-    withIA.aiStudyPlanItems?.length
-      ? withIA.aiStudyPlanItems
-      : generateStudyPlan(withIA, { ehProvaOficial: true }).items;
+  let items: StudyPlanItem[] = withIA.aiStudyPlanItems ?? [];
 
   items = [
     {
@@ -260,7 +257,10 @@ export async function getLeituraCoachConjunto(userId: string, conjuntoExamId: st
   return {
     tituloProva: conjunto.nome,
     mensagem: diagnosis.mensagem,
-    focos: diagnosis.focos.map((f) => ({ label: f.label, prioridade: f.prioridade })),
+    focos: diagnosis.focosPedagogicos.map((f) => ({
+      label: f.escopoLabel,
+      prioridade: f.prioridade === "manutencao" ? "media" : f.prioridade,
+    })),
     pctReferencia: pct,
   };
 }

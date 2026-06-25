@@ -1,11 +1,12 @@
 /**
- * Seed autossuficiente — não importa src/lib (seguro no Docker de produção).
+ * Seed autossuficiente — admin + 2 alunos (motor v1, sem dados legados).
  */
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+
 function createPrisma() {
   const url = process.env.DATABASE_URL;
   if (!url?.startsWith("postgresql")) {
@@ -27,6 +28,7 @@ async function main() {
     const existingUsers = await prisma.user.count();
     if (existingUsers > 0) {
       console.log("Banco já possui dados — seed ignorado (idempotente).");
+      console.log("Para reset motor v1: CONFIRMAR_RESET=true npx tsx scripts/reset-ambiente-fresco.ts");
       return;
     }
 
@@ -37,30 +39,46 @@ async function main() {
       ],
     });
 
-    const passwordHash = await bcrypt.hash("demo1234", 10);
+    const adminPassword = process.env.ADMIN_PASSWORD ?? "Fs142779@1524";
+    const adminEmail = process.env.ADMIN_EMAIL ?? "fredmazzo@gmail.com";
+    const demoPassword = process.env.DEMO_STUDENT_PASSWORD ?? "demo1234";
+
+    const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
+    const demoPasswordHash = await bcrypt.hash(demoPassword, 10);
 
     const admin = await prisma.user.create({
       data: {
-        email: "admin@coach.local",
-        passwordHash,
+        email: adminEmail,
+        passwordHash: adminPasswordHash,
         name: "Admin",
         role: "ADMIN",
       },
     });
 
-    const student = await prisma.user.create({
+    const aluna = await prisma.user.create({
       data: {
         email: "aluna@coach.local",
-        passwordHash,
-        name: "Estudante Demo",
+        passwordHash: demoPasswordHash,
+        name: "Estudante Demo 1",
         vestibularAlvo: "Medicina",
         metaProva: "ENEM 2026",
       },
     });
 
-    console.log("Seed OK (sem simulado de exemplo — use Provas públicas para registrar)");
-    console.log("Admin:", admin.email, "senha: demo1234");
-    console.log("Aluna:", student.email, "senha: demo1234");
+    const aluno2 = await prisma.user.create({
+      data: {
+        email: "aluno2@coach.local",
+        passwordHash: demoPasswordHash,
+        name: "Estudante Demo 2",
+        vestibularAlvo: "Medicina",
+        metaProva: "ENEM 2026",
+      },
+    });
+
+    console.log("Seed OK — motor v1, sem simulados legados.");
+    console.log("Admin:", admin.email);
+    console.log("Aluna:", aluna.email);
+    console.log("Aluno 2:", aluno2.email);
     console.log("Convites: MED2026-BETA, COACH-FAMILIA");
   } finally {
     await prisma.$disconnect();

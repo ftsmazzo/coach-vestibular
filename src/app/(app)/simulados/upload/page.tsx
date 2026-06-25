@@ -23,6 +23,12 @@ export default function UploadPage() {
 
   return (
     <div className="space-y-6">
+      <Card className="border-amber-200 bg-amber-50/60 p-4">
+        <p className="text-sm text-amber-950">
+          Upload de PDF não alimenta o motor v1. Para plano e copiloto por escopo N2, registre
+          provas do <strong>catálogo público</strong> após o admin classificar N1/N2.
+        </p>
+      </Card>
       <h1 className="text-2xl font-bold">Upload de prova (Fase 2)</h1>
       <Card>
         <p className="mb-4 text-sm text-slate-600">

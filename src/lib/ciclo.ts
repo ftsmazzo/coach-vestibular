@@ -1,10 +1,8 @@
 /**
  * Ciclo de Aprendizagem (semana): meta mensurável, prazo, baseline e agenda.
- * Abre/renova um ciclo na regeneração do plano e dá data (dueDate) às quests.
+ * Só abre ciclo quando há foco por escopo N2.
  */
 import { prisma } from "@/lib/prisma";
-import { buildDiagnosticoMotor } from "@/lib/diagnostic-motor";
-import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
 import { isQuestCopiloto } from "@/lib/quests-alavanca";
 import {
   baselineCicloFromFoco,
@@ -15,12 +13,13 @@ import { buildStorytellingFechamento } from "@/lib/learning-storytelling";
 const DIAS_CICLO = 7;
 
 export type CicloBaseline = {
-  clusterId: string | null;
+  escopoId: string | null;
   materia: string | null;
-  pctMateria: number | null;
+  pctEscopo: number | null;
   erros: number;
   recorrencia: number;
   capturadoEm: string;
+  focos?: Array<{ taxaAcerto?: number; escopoId?: string }>;
 };
 
 export async function getCicloAtivo(userId: string) {
@@ -30,7 +29,7 @@ export async function getCicloAtivo(userId: string) {
   });
 }
 
-/** Abre um ciclo novo se não houver ativo ou se o ativo já venceu (fecha o antigo). */
+/** Abre um ciclo novo se não houver ativo ou se o ativo já venceu. Sem foco escopo → null. */
 export async function abrirOuRenovarCiclo(userId: string) {
   const agora = new Date();
   const ativo = await getCicloAtivo(userId);
@@ -48,58 +47,9 @@ export async function abrirOuRenovarCiclo(userId: string) {
   }
 
   const focoEscopo = await getFocoPedagogicoPrincipal(userId);
+  if (!focoEscopo) return null;
 
-  if (focoEscopo) {
-    const baseline = baselineCicloFromFoco(focoEscopo);
-    const endAt = new Date(agora);
-    endAt.setDate(endAt.getDate() + DIAS_CICLO);
-
-    return prisma.learningCycle.create({
-      data: {
-        userId,
-        indice: proxIndice,
-        status: "ATIVO",
-        startAt: agora,
-        endAt,
-        metaEscopoId: focoEscopo.escopoId,
-        metaDominioId: focoEscopo.dominioId,
-        metaMateria: focoEscopo.materiaLabel,
-        metaConceitosJson: JSON.stringify(focoEscopo.conceitosCanonicos),
-        metaCognitivaJson: focoEscopo.metadadosCognitivosResumo
-          ? JSON.stringify(focoEscopo.metadadosCognitivosResumo)
-          : null,
-        metaTitulo: `Dominar: ${focoEscopo.escopoLabel}`,
-        baselineJson: JSON.stringify(baseline),
-        narrativaInicioJson: JSON.stringify({
-          hipotese: focoEscopo.hipoteseCausa,
-          objetivo: focoEscopo.objetivoDaSemana,
-          estrategia: focoEscopo.estrategiaRecomendada,
-        }),
-      },
-    });
-  }
-
-  const motor = await buildDiagnosticoMotor(userId);
-  const principal = motor.clusterPrincipal;
-  const metaClusterId = principal?.clusterId ?? null;
-  const metaMateria =
-    principal?.materias[0]?.nome ?? motor.materiaDeficit?.label ?? null;
-  const metaTitulo = principal
-    ? CLUSTERS_PEDAGOGICOS[principal.clusterId].tituloHumano
-    : metaMateria
-      ? `Avançar em ${metaMateria}`
-      : "Construir sua base de estudo";
-
-  const baseline: CicloBaseline = {
-    clusterId: metaClusterId,
-    materia: metaMateria,
-    pctMateria:
-      motor.materiaDeficit?.pct ?? principal?.materias[0]?.pctAcerto ?? null,
-    erros: principal?.erros ?? 0,
-    recorrencia: principal?.recorrencia ?? 0,
-    capturadoEm: agora.toISOString(),
-  };
-
+  const baseline = baselineCicloFromFoco(focoEscopo);
   const endAt = new Date(agora);
   endAt.setDate(endAt.getDate() + DIAS_CICLO);
 
@@ -110,15 +60,24 @@ export async function abrirOuRenovarCiclo(userId: string) {
       status: "ATIVO",
       startAt: agora,
       endAt,
-      metaClusterId,
-      metaMateria,
-      metaTitulo,
+      metaEscopoId: focoEscopo.escopoId,
+      metaDominioId: focoEscopo.dominioId,
+      metaMateria: focoEscopo.materiaLabel,
+      metaConceitosJson: JSON.stringify(focoEscopo.conceitosCanonicos),
+      metaCognitivaJson: focoEscopo.metadadosCognitivosResumo
+        ? JSON.stringify(focoEscopo.metadadosCognitivosResumo)
+        : null,
+      metaTitulo: `Dominar: ${focoEscopo.escopoLabel}`,
       baselineJson: JSON.stringify(baseline),
+      narrativaInicioJson: JSON.stringify({
+        hipotese: focoEscopo.hipoteseCausa,
+        objetivo: focoEscopo.objetivoDaSemana,
+        estrategia: focoEscopo.estrategiaRecomendada,
+      }),
     },
   });
 }
 
-/** Vincula as quests da jornada (copiloto) ao ciclo e espalha o dueDate pelos dias. */
 export async function vincularQuestsAoCiclo(
   userId: string,
   ciclo: { id: string; startAt: Date }
@@ -139,10 +98,9 @@ export async function vincularQuestsAoCiclo(
   }
 }
 
-/** Chamado na regeneração do plano: garante o ciclo da semana e agenda as quests. */
 export async function sincronizarCicloDaSemana(userId: string) {
   const ciclo = await abrirOuRenovarCiclo(userId);
-  await vincularQuestsAoCiclo(userId, ciclo);
+  if (ciclo) await vincularQuestsAoCiclo(userId, ciclo);
   return ciclo;
 }
 
@@ -155,7 +113,6 @@ export type CicloResultado = {
   fechadoEm: string;
 };
 
-/** Fecha o ciclo ativo (grava resultado: quiz x baseline) e abre o próximo. */
 export async function fecharCiclo(
   userId: string,
   opts?: { quizPct?: number | null; quizAcertos?: number; quizTotal?: number }
@@ -171,13 +128,11 @@ export async function fecharCiclo(
   let baselinePct: number | null = null;
   if (ativo.baselineJson) {
     try {
-      const bl = JSON.parse(ativo.baselineJson) as CicloBaseline & {
-        focos?: Array<{ taxaAcerto?: number }>;
-      };
+      const bl = JSON.parse(ativo.baselineJson) as CicloBaseline;
       baselinePct =
         bl.focos?.[0]?.taxaAcerto != null
           ? Math.round(bl.focos[0].taxaAcerto * 100)
-          : bl.pctMateria ?? null;
+          : bl.pctEscopo ?? null;
     } catch {
       baselinePct = null;
     }
@@ -252,7 +207,6 @@ export type CicloFechadoView = {
   proximoPasso?: string;
 };
 
-/** Ciclos já fechados, com o resultado (para progressão e card de resultado). */
 export async function getCiclosFechados(
   userId: string,
   limit = 8
@@ -320,7 +274,6 @@ export async function getUltimoCicloFechado(
   return c ?? null;
 }
 
-/** Resumo do ciclo ativo para a UI (Home/Plano/Quests). Null se não houver. */
 export async function getCicloResumo(userId: string): Promise<CicloResumo | null> {
   const ciclo = await getCicloAtivo(userId);
   if (!ciclo) return null;

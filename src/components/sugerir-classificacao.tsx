@@ -1,27 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Card } from "@/components/ui";
-import { taxonomy } from "@/lib/taxonomy";
+import { labelEscopo } from "@/lib/escopo-display";
+
+type EscopoOpcao = { id: string; label: string; areaEnem?: string };
 
 type Props = {
   examId: string;
   numero: number;
-  materiaAtual: string;
-  assuntoAtual: string;
+  escopoAtualId?: string | null;
+  escopoLabelAtual?: string | null;
   onEnviado?: () => void;
 };
 
-export function SugerirClassificacao({ examId, numero, materiaAtual, assuntoAtual, onEnviado }: Props) {
+export function SugerirClassificacao({
+  examId,
+  numero,
+  escopoAtualId,
+  escopoLabelAtual,
+  onEnviado,
+}: Props) {
   const [aberto, setAberto] = useState(false);
   const [texto, setTexto] = useState("");
-  const [materiaSugerida, setMateriaSugerida] = useState("");
-  const [assuntoSugerido, setAssuntoSugerido] = useState("");
+  const [busca, setBusca] = useState("");
+  const [opcoes, setOpcoes] = useState<EscopoOpcao[]>([]);
+  const [escopoSugeridoId, setEscopoSugeridoId] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [erro, setErro] = useState("");
 
-  const materias = taxonomy.materias.map((m) => m.label);
+  const labelAtual =
+    escopoLabelAtual?.trim() ||
+    labelEscopo(escopoAtualId) ||
+    "Sem escopo N2 (admin precisa classificar)";
+
+  useEffect(() => {
+    if (!aberto || busca.trim().length < 2) {
+      setOpcoes([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      const res = await fetch(`/api/escopos/busca?q=${encodeURIComponent(busca.trim())}`);
+      const data = await res.json();
+      if (Array.isArray(data.escopos)) setOpcoes(data.escopos);
+    }, 280);
+    return () => clearTimeout(t);
+  }, [busca, aberto]);
 
   async function enviar() {
     setLoading(true);
@@ -33,8 +58,7 @@ export function SugerirClassificacao({ examId, numero, materiaAtual, assuntoAtua
       body: JSON.stringify({
         numero,
         texto,
-        materiaSugerida: materiaSugerida || undefined,
-        assuntoSugerido: assuntoSugerido.trim() || undefined,
+        escopoSugeridoId: escopoSugeridoId || undefined,
       }),
     });
     const data = await res.json();
@@ -45,8 +69,8 @@ export function SugerirClassificacao({ examId, numero, materiaAtual, assuntoAtua
     }
     setMsg(data.mensagem ?? "Sugestão enviada!");
     setTexto("");
-    setAssuntoSugerido("");
-    setMateriaSugerida("");
+    setBusca("");
+    setEscopoSugeridoId("");
     setAberto(false);
     onEnviado?.();
   }
@@ -65,50 +89,55 @@ export function SugerirClassificacao({ examId, numero, materiaAtual, assuntoAtua
 
   return (
     <Card className="mt-2 border-violet-200 bg-violet-50/50 p-3">
-      <p className="text-xs font-semibold text-violet-900">
-        Sugerir correção — Q{numero}
-      </p>
+      <p className="text-xs font-semibold text-violet-900">Sugerir correção — Q{numero}</p>
       <p className="mt-0.5 text-xs text-violet-800">
-        Atual: {materiaAtual} / {assuntoAtual}
+        Escopo atual (N2): <strong>{labelAtual}</strong>
+        {escopoAtualId && (
+          <span className="ml-1 font-mono text-[10px] text-violet-600">{escopoAtualId}</span>
+        )}
       </p>
       <div className="mt-2 space-y-2">
         <textarea
           className="w-full rounded-lg border border-violet-200 p-2 text-sm"
           rows={3}
-          placeholder="Explique por que a matéria ou assunto não bate com o enunciado..."
+          placeholder="Explique por que o escopo N2 não bate com o enunciado..."
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
         />
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="text-xs text-slate-600">
-            Matéria sugerida (opcional)
-            <select
-              className="mt-0.5 w-full rounded-lg border px-2 py-1 text-sm"
-              value={materiaSugerida}
-              onChange={(e) => setMateriaSugerida(e.target.value)}
-            >
-              <option value="">—</option>
-              {materias.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-slate-600">
-            Assunto correto
-            <input
-              type="text"
-              className="mt-0.5 w-full rounded-lg border px-2 py-1 text-sm"
-              placeholder="Ex.: Funções do 2º grau, Genética mendeliana..."
-              value={assuntoSugerido}
-              onChange={(e) => setAssuntoSugerido(e.target.value)}
-            />
-          </label>
-        </div>
+        <label className="block text-xs text-slate-600">
+          Escopo correto (busca no catálogo)
+          <input
+            type="search"
+            className="mt-0.5 w-full rounded-lg border px-2 py-1.5 text-sm"
+            placeholder="Ex.: funções, genética, interpretação..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+        </label>
+        {opcoes.length > 0 && (
+          <ul className="max-h-36 overflow-y-auto rounded-lg border border-violet-100 bg-white text-sm">
+            {opcoes.map((o) => (
+              <li key={o.id}>
+                <button
+                  type="button"
+                  className={`w-full px-2 py-1.5 text-left hover:bg-violet-50 ${
+                    escopoSugeridoId === o.id ? "bg-violet-100 font-medium" : ""
+                  }`}
+                  onClick={() => {
+                    setEscopoSugeridoId(o.id);
+                    setBusca(o.label);
+                  }}
+                >
+                  {o.label}
+                  <span className="ml-1 text-[10px] text-slate-400">{o.id}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         <p className="text-[10px] text-violet-700">
-          A área do caderno (Línguas, Humanas…) é ajustada pela equipe com base na IA. Se a equipe
-          aceitar sua sugestão, você ganha XP.
+          A equipe mapeia sua sugestão para o catálogo N2. Se aceita, você ganha XP e o motor
+          recalcula seus focos.
         </p>
         {erro && <p className="text-xs text-rose-600">{erro}</p>}
         {msg && <p className="text-xs text-teal-700">{msg}</p>}

@@ -326,6 +326,13 @@ export default function NovoSimuladoPage() {
 
   return (
     <div className="space-y-6">
+      <Card className="border-amber-200 bg-amber-50/60">
+        <p className="text-sm text-amber-950">
+          <strong>Motor v1 — provas do catálogo.</strong> Plano, copiloto e focos por escopo N2
+          funcionam apenas quando você registra uma prova publicada no catálogo (com classificação
+          admin). Registro manual ou upload isolado fica só como histórico.
+        </p>
+      </Card>
       <div>
         <Link href="/provas" className="text-sm text-teal-700 hover:underline">
           ← Voltar às atividades

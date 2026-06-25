@@ -1,15 +1,15 @@
 import Link from "next/link";
-import type { ResumoProvaDiagnostico, MateriaErroResumo } from "@/lib/diagnosis-prova";
+import type { ResumoProvaDiagnostico, EscopoErroResumo } from "@/lib/diagnosis-prova";
 import { Card, Badge } from "@/components/ui";
 
-function BarraMateria({ m, jornada }: { m: MateriaErroResumo; jornada?: boolean }) {
-  const pctErro = m.total > 0 ? Math.round((m.erros / m.total) * 100) : 0;
+function BarraEscopo({ e, jornada }: { e: EscopoErroResumo; jornada?: boolean }) {
+  const pctErro = e.total > 0 ? Math.round((e.erros / e.total) * 100) : 0;
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-semibold text-slate-900">{m.materia}</span>
+        <span className="font-semibold text-slate-900">{e.escopoLabel}</span>
         <span className="text-sm font-medium text-rose-700">
-          {m.erros} erro{m.erros > 1 ? "s" : ""}
+          {e.erros} erro{e.erros > 1 ? "s" : ""}
         </span>
       </div>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
@@ -19,10 +19,10 @@ function BarraMateria({ m, jornada }: { m: MateriaErroResumo; jornada?: boolean 
         />
       </div>
       <p className="mt-2 text-xs text-slate-500">
-        {m.acertos} acertos de {m.total}
+        {e.materia} · {e.acertos} acertos de {e.total}
         {jornada
-          ? " · agregado na sua jornada"
-          : ` · questões erradas: nº ${m.numerosErrados.slice(0, 12).join(", ")}${m.numerosErrados.length > 12 ? ` +${m.numerosErrados.length - 12}` : ""}`}
+          ? " · agregado na jornada"
+          : ` · questões erradas: nº ${e.numerosErrados.slice(0, 12).join(", ")}${e.numerosErrados.length > 12 ? ` +${e.numerosErrados.length - 12}` : ""}`}
       </p>
     </div>
   );
@@ -36,13 +36,14 @@ export function ResumoDiagnosticoCard({
 }: {
   resumo: ResumoProvaDiagnostico;
   checkIn?: number | null;
-  /** No dashboard: menos assuntos, link para o plano */
   compact?: boolean;
-  /** Dados agregados de todos os registros (não uma prova só) */
   escopoJornada?: boolean;
 }) {
-  const assuntos = compact ? resumo.assuntosPrioritarios.slice(0, 3) : resumo.assuntosPrioritarios;
-  const restantes = resumo.assuntosPrioritarios.length - assuntos.length;
+  const escopos = compact
+    ? resumo.escoposPrioritarios.slice(0, 3)
+    : resumo.escoposPrioritarios;
+  const restantes = resumo.escoposPrioritarios.length - escopos.length;
+  const focoPrincipal = resumo.escoposPrioritarios[0];
 
   return (
     <Card className="border-slate-200/80 shadow-sm">
@@ -77,38 +78,38 @@ export function ResumoDiagnosticoCard({
         <div className="rounded-xl bg-teal-50 px-4 py-4 ring-1 ring-teal-100 sm:col-span-1">
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">Foco</p>
           <p className="mt-1 text-lg font-bold leading-snug text-teal-900">
-            {resumo.materiasComMaisErros[0]?.materia ?? "—"}
+            {focoPrincipal?.escopoLabel ?? "—"}
           </p>
           <p className="text-sm text-teal-800">
-            {resumo.materiasComMaisErros[0]
-              ? `maior taxa de erro (${resumo.materiasComMaisErros[0].erros} questões)`
-              : "Registre mais questões"}
+            {focoPrincipal
+              ? `${focoPrincipal.erros} erro(s) neste escopo`
+              : "Classifique escopos N2 no admin"}
           </p>
         </div>
       </div>
 
-      {resumo.materiasComMaisErros.length > 0 && (
+      {escopos.length > 0 && (
         <div className="mt-6">
           <h3 className="text-sm font-semibold text-slate-800">
-            Matérias que mais precisam de atenção
+            Escopos que mais precisam de atenção
           </h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {resumo.materiasComMaisErros.map((m) => (
-              <BarraMateria key={m.materia} m={m} jornada={escopoJornada} />
+            {escopos.map((e) => (
+              <BarraEscopo key={e.escopoId} e={e} jornada={escopoJornada} />
             ))}
           </div>
         </div>
       )}
 
-      {assuntos.length > 0 && (
+      {escopos.length > 0 && !compact && (
         <div className="mt-6">
           <h3 className="text-sm font-semibold text-slate-800">
-            Assuntos que entram no seu plano
+            Escopos que entram no seu plano
           </h3>
           <ul className="mt-3 space-y-3">
-            {assuntos.map((a, i) => (
+            {escopos.map((e, i) => (
               <li
-                key={`${a.materia}-${a.assunto}`}
+                key={e.escopoId}
                 className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-3"
               >
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
@@ -116,37 +117,29 @@ export function ResumoDiagnosticoCard({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-900">
-                    {a.materia} — {a.assunto}
+                    {e.escopoLabel}
                   </p>
                   <p className="mt-1 text-xs text-slate-600">
+                    {e.materia} ·{" "}
                     {escopoJornada
-                      ? `${a.erros} erro${a.erros > 1 ? "s" : ""} na jornada`
-                      : `Questões erradas: nº ${a.numerosErrados.slice(0, 8).join(", ")}${a.numerosErrados.length > 8 ? "…" : ""}`}
-                    {a.nivelDificuldade && (
-                      <span className="ml-2">
-                        <Badge tone={a.erros >= 2 ? "danger" : "warning"}>
-                          {a.nivelDificuldade}
-                        </Badge>
-                      </span>
-                    )}
+                      ? `${e.erros} erro${e.erros > 1 ? "s" : ""} na jornada`
+                      : `Questões erradas: nº ${e.numerosErrados.slice(0, 8).join(", ")}${e.numerosErrados.length > 8 ? "…" : ""}`}
                   </p>
-                  {a.conhecimentoExigido && !compact && (
-                    <p className="mt-1 text-xs text-slate-500">{a.conhecimentoExigido}</p>
-                  )}
                 </div>
               </li>
             ))}
           </ul>
-          {compact && restantes > 0 && (
-            <p className="mt-2 text-sm text-slate-500">
-              +{restantes} assunto{restantes > 1 ? "s" : ""} no{" "}
-              <Link href="/plano" className="text-teal-700 underline">
-                plano semanal
-              </Link>
-              .
-            </p>
-          )}
         </div>
+      )}
+
+      {compact && restantes > 0 && (
+        <p className="mt-2 text-sm text-slate-500">
+          +{restantes} escopo{restantes > 1 ? "s" : ""} no{" "}
+          <Link href="/plano" className="text-teal-700 underline">
+            plano semanal
+          </Link>
+          .
+        </p>
       )}
 
       {checkIn != null && (

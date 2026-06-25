@@ -24,8 +24,6 @@ export type QuestionAttemptRow = {
   conceitosCanonicosJson?: string | null;
   classificacaoSecundariosJson?: string | null;
   metadadosCognitivosJson?: string | null;
-  materiaCorrigida?: string | null;
-  assuntoCorrigido?: string | null;
   provaQuestao?: {
     materia?: string;
     assunto?: string;

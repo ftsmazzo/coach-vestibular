@@ -36,7 +36,14 @@ export async function getLeituraCoachProva(
 
   if (ultimoExam?.diagnosticSnapshot?.focosJson) {
     try {
-      focos = JSON.parse(ultimoExam.diagnosticSnapshot.focosJson);
+      const parsed = JSON.parse(ultimoExam.diagnosticSnapshot.focosJson) as
+        | Array<{ escopoLabel?: string; prioridade?: string; label?: string }>
+        | { pedagogicos?: Array<{ escopoLabel: string; prioridade: string }> };
+      const list = Array.isArray(parsed) ? parsed : parsed.pedagogicos ?? [];
+      focos = list.map((f) => ({
+        label: ("escopoLabel" in f && f.escopoLabel) || ("label" in f && f.label) || "Escopo",
+        prioridade: f.prioridade ?? "media",
+      }));
     } catch {
       focos = [];
     }
@@ -46,9 +53,9 @@ export async function getLeituraCoachProva(
     const diagnosis = await buildDiagnosisForProva(userId, provaId);
     if (!diagnosis) return null;
     mensagem = diagnosis.mensagem;
-    focos = diagnosis.focos.map((f) => ({
-      label: f.label,
-      prioridade: f.prioridade,
+    focos = diagnosis.focosPedagogicos.map((f) => ({
+      label: f.escopoLabel,
+      prioridade: f.prioridade === "manutencao" ? "media" : f.prioridade,
     }));
   }
 

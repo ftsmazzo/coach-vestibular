@@ -4,7 +4,7 @@ import { loadConjuntoExamView } from "@/lib/conjunto-exam-view";
 import { prisma } from "@/lib/prisma";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { parseConjuntoExamId } from "@/lib/prova-multidia";
-import { getMateriaLabel, getTemaLabel } from "@/lib/taxonomy";
+import { labelEscopo } from "@/lib/escopo-display";
 import { PageBackLink } from "@/components/page-back-link";
 import { TabelaQuestoesRegistro } from "@/components/tabela-questoes-registro";
 import { SugestoesRegistroResumo } from "@/components/sugestoes-registro-resumo";
@@ -70,10 +70,10 @@ export default async function SimuladoQuestoesPage({
               numero: q.numero,
               respostaAluno: q.respostaAluno,
               gabarito: q.provaQuestao?.gabarito ?? null,
-              materia: q.provaQuestao ? q.provaQuestao.materia : getMateriaLabel(q.materiaId),
-              assunto: q.provaQuestao
-                ? q.provaQuestao.assunto
-                : getTemaLabel(q.materiaId, q.temaId),
+              materia: q.provaQuestao?.materia ?? "—",
+              assunto: q.provaQuestao?.assunto ?? "—",
+              escopoId: q.provaQuestao?.conhecimentoEscopoId ?? null,
+              escopoLabel: labelEscopo(q.provaQuestao?.conhecimentoEscopoId),
               conhecimento: q.provaQuestao?.conhecimentoExigido ?? null,
               nivelDificuldade: q.provaQuestao?.nivelDificuldade ?? null,
               correto: q.correto,
@@ -142,7 +142,7 @@ export default async function SimuladoQuestoesPage({
       <Card>
         <h2 className="mb-1 font-semibold">Todas as questões — seu gabarito × oficial</h2>
         <p className="mb-4 text-xs text-slate-500">
-          Achou matéria ou assunto errado? Use <strong>Classificação errada?</strong> em cada linha —
+          Achou escopo N2 errado? Use <strong>Classificação errada?</strong> em cada linha —
           a equipe revisa e você pode ganhar XP.
         </p>
         <TabelaQuestoesRegistro
@@ -153,10 +153,10 @@ export default async function SimuladoQuestoesPage({
               numero: q.numero,
               respostaAluno: q.respostaAluno,
               gabarito: q.provaQuestao?.gabarito ?? null,
-              materia: q.provaQuestao ? q.provaQuestao.materia : getMateriaLabel(q.materiaId),
-              assunto: q.provaQuestao
-                ? q.provaQuestao.assunto
-                : getTemaLabel(q.materiaId, q.temaId),
+              materia: q.provaQuestao?.materia ?? "—",
+              assunto: q.provaQuestao?.assunto ?? "—",
+              escopoId: q.provaQuestao?.conhecimentoEscopoId ?? null,
+              escopoLabel: labelEscopo(q.provaQuestao?.conhecimentoEscopoId),
               conhecimento: q.provaQuestao?.conhecimentoExigido ?? null,
               nivelDificuldade: q.provaQuestao?.nivelDificuldade ?? null,
               correto: q.correto,

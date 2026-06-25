@@ -1,28 +1,23 @@
 import type { DiagnosisResult } from "./diagnosis";
+import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
 
 export interface QuestaoPedagogica {
   numero: number;
   correto: boolean;
   materia: string;
   assunto: string;
+  conhecimentoEscopoId?: string | null;
   conhecimentoExigido?: string | null;
   nivelDificuldade?: string | null;
 }
 
-export interface MateriaErroResumo {
+export interface EscopoErroResumo {
+  escopoId: string;
+  escopoLabel: string;
   materia: string;
   erros: number;
   acertos: number;
   total: number;
-  numerosErrados: number[];
-}
-
-export interface AssuntoPrioritario {
-  materia: string;
-  assunto: string;
-  conhecimentoExigido?: string | null;
-  nivelDificuldade?: string | null;
-  erros: number;
   numerosErrados: number[];
 }
 
@@ -32,10 +27,10 @@ export interface ResumoProvaDiagnostico {
   erros: number;
   pctAcerto: number;
   pctErro: number;
-  materiasComMaisErros: MateriaErroResumo[];
-  /** Todas as matérias da prova, da que mais falhou à mais estável */
-  todasMaterias: MateriaErroResumo[];
-  assuntosPrioritarios: AssuntoPrioritario[];
+  /** Top escopos N2 com mais erros */
+  escoposPrioritarios: EscopoErroResumo[];
+  /** Todos os escopos da prova, da maior fragilidade para a mais estável */
+  todosEscopos: EscopoErroResumo[];
 }
 
 function formatNumeros(nums: number[], max = 12): string {
@@ -45,62 +40,52 @@ function formatNumeros(nums: number[], max = 12): string {
   return `nº ${slice.join(", ")}${tail}`;
 }
 
+function labelEscopo(q: QuestaoPedagogica): { escopoId: string; escopoLabel: string } {
+  const escopoId = q.conhecimentoEscopoId?.trim() || `${q.materia}::${q.assunto}`;
+  const idx = indexGlobalEscopos();
+  const meta = idx.get(escopoId);
+  const escopoLabel =
+    meta?.escopoLabel ??
+    (q.conhecimentoExigido?.trim() || `${q.materia} — ${q.assunto}`);
+  return { escopoId, escopoLabel };
+}
+
 export function buildResumoProva(questoes: QuestaoPedagogica[]): ResumoProvaDiagnostico {
   const total = questoes.length;
   const acertos = questoes.filter((q) => q.correto).length;
   const erros = total - acertos;
 
-  const porMateria = new Map<string, MateriaErroResumo>();
-  const porAssunto = new Map<string, AssuntoPrioritario>();
+  const porEscopo = new Map<string, EscopoErroResumo>();
 
   for (const q of questoes) {
+    const { escopoId, escopoLabel } = labelEscopo(q);
     const mat = q.materia.trim() || "A classificar";
-    const m =
-      porMateria.get(mat) ??
-      ({ materia: mat, erros: 0, acertos: 0, total: 0, numerosErrados: [] } satisfies MateriaErroResumo);
-    m.total++;
-    if (q.correto) m.acertos++;
-    else {
-      m.erros++;
-      m.numerosErrados.push(q.numero);
-    }
-    porMateria.set(mat, m);
-
-    const keyAssunto = `${mat}::${q.assunto.trim() || "Geral"}`;
-    const a =
-      porAssunto.get(keyAssunto) ??
+    const e =
+      porEscopo.get(escopoId) ??
       ({
+        escopoId,
+        escopoLabel,
         materia: mat,
-        assunto: q.assunto.trim() || "Geral",
-        conhecimentoExigido: q.conhecimentoExigido,
-        nivelDificuldade: q.nivelDificuldade,
         erros: 0,
+        acertos: 0,
+        total: 0,
         numerosErrados: [],
-      } satisfies AssuntoPrioritario);
-    if (!q.correto) {
-      a.erros++;
-      a.numerosErrados.push(q.numero);
-      if (q.conhecimentoExigido && !a.conhecimentoExigido) {
-        a.conhecimentoExigido = q.conhecimentoExigido;
-      }
-      if (q.nivelDificuldade && !a.nivelDificuldade) {
-        a.nivelDificuldade = q.nivelDificuldade;
-      }
+      } satisfies EscopoErroResumo);
+    e.total++;
+    if (q.correto) e.acertos++;
+    else {
+      e.erros++;
+      e.numerosErrados.push(q.numero);
     }
-    porAssunto.set(keyAssunto, a);
+    porEscopo.set(escopoId, e);
   }
 
-  const materiasComMaisErros = [...porMateria.values()]
-    .filter((m) => m.erros > 0)
-    .sort((a, b) => b.erros - a.erros)
-    .slice(0, 2);
-
-  const assuntosPrioritarios = [...porAssunto.values()]
-    .filter((a) => a.erros > 0)
+  const escoposPrioritarios = [...porEscopo.values()]
+    .filter((e) => e.erros > 0)
     .sort((a, b) => b.erros - a.erros)
     .slice(0, 8);
 
-  const todasMaterias = [...porMateria.values()].sort((a, b) => {
+  const todosEscopos = [...porEscopo.values()].sort((a, b) => {
     if (b.erros !== a.erros) return b.erros - a.erros;
     const taxaA = a.total > 0 ? a.erros / a.total : 0;
     const taxaB = b.total > 0 ? b.erros / b.total : 0;
@@ -113,9 +98,8 @@ export function buildResumoProva(questoes: QuestaoPedagogica[]): ResumoProvaDiag
     erros,
     pctAcerto: total > 0 ? Math.round((acertos / total) * 100) : 0,
     pctErro: total > 0 ? Math.round((erros / total) * 100) : 0,
-    materiasComMaisErros,
-    todasMaterias,
-    assuntosPrioritarios,
+    escoposPrioritarios,
+    todosEscopos,
   };
 }
 
@@ -124,31 +108,27 @@ function buildMensagemConcreta(
   resumo: ResumoProvaDiagnostico,
   checkIn?: number | null
 ): string {
-  const { acertos, erros, total, pctAcerto, pctErro } = resumo;
+  const { acertos, total, pctAcerto, pctErro } = resumo;
   const partes: string[] = [
     `Nesta prova você acertou ${acertos} de ${total} questões (${pctAcerto}% de acerto, ${pctErro}% de erro).`,
   ];
 
-  if (resumo.materiasComMaisErros.length > 0) {
-    const matTexto = resumo.materiasComMaisErros
+  if (resumo.escoposPrioritarios.length > 0) {
+    const escTexto = resumo.escoposPrioritarios
+      .slice(0, 3)
       .map(
-        (m) =>
-          `${m.materia} (${m.erros} erro${m.erros > 1 ? "s" : ""} — ${formatNumeros(m.numerosErrados)})`
+        (e) =>
+          `${e.escopoLabel} (${e.erros} erro${e.erros > 1 ? "s" : ""} — ${formatNumeros(e.numerosErrados)})`
       )
       .join("; ");
-    partes.push(`Matérias com mais erros: ${matTexto}.`);
+    partes.push(`Escopos com mais erros: ${escTexto}.`);
   }
 
-  if (resumo.assuntosPrioritarios.length > 0) {
-    const prioridadeTexto = resumo.assuntosPrioritarios
-      .slice(0, 2)
-      .map((a) =>
-        a.conhecimentoExigido?.trim()
-          ? a.conhecimentoExigido.trim()
-          : `${a.materia} — ${a.assunto}`
-      )
-      .join("; ");
-    partes.push(`O que a banca exigiu e você precisa treinar: ${prioridadeTexto}.`);
+  const focoPrincipal = diagnosis.focosPedagogicos[0];
+  if (focoPrincipal) {
+    partes.push(
+      `Foco da semana: ${focoPrincipal.escopoLabel} — ${focoPrincipal.objetivoDaSemana}.`
+    );
   }
 
   if (diagnosis.recoveryMode) {
@@ -171,39 +151,9 @@ export function enriquecerDiagnosticoComProva(
 ): DiagnosisResult {
   const resumoProva = buildResumoProva(questoes);
 
-  const focos = resumoProva.assuntosPrioritarios.map((a, i) => {
-    const prev = diagnosis.focos[i];
-    const nums = formatNumeros(a.numerosErrados, 8);
-    const conhec =
-      a.conhecimentoExigido && a.conhecimentoExigido.length > 0
-        ? a.conhecimentoExigido
-        : null;
-    const dif = a.nivelDificuldade ? ` (${a.nivelDificuldade})` : "";
-    const label = conhec
-      ? conhec.length > 72
-        ? `${conhec.slice(0, 69)}…`
-        : conhec
-      : `${a.materia} — ${a.assunto}`;
-    return {
-      materiaId: prev?.materiaId ?? "geral",
-      temaId: prev?.temaId ?? "geral",
-      label,
-      prioridade: (a.erros >= 2 ? "alta" : "media") as "alta" | "media",
-      motivo: conhec
-        ? `${a.erros} erro(s) · ${a.materia} (contexto) — ${nums}${dif}`
-        : `${a.erros} erro(s) — ${nums}${dif}`,
-      tipoErroDominante: prev?.tipoErroDominante,
-      assunto: a.assunto,
-      conhecimentoExigido: a.conhecimentoExigido,
-      nivelDificuldade: a.nivelDificuldade,
-      numerosErrados: a.numerosErrados,
-    };
-  });
-
   return {
     ...diagnosis,
     resumoProva,
-    focos: focos.length > 0 ? focos : diagnosis.focos,
     mensagem: buildMensagemConcreta(diagnosis, resumoProva, checkIn),
   };
 }

@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
+import { labelEscopo } from "@/lib/escopo-display";
 import { prisma } from "@/lib/prisma";
 
 const createSchema = z.object({
   numero: z.number().int().positive(),
   texto: z.string().min(10, "Descreva o que está errado (mín. 10 caracteres)"),
-  materiaSugerida: z.string().optional(),
-  assuntoSugerido: z.string().optional(),
-  areaBlocoSugerida: z.string().optional(),
+  escopoSugeridoId: z.string().optional(),
 });
 
 export async function POST(
@@ -54,26 +53,30 @@ export async function POST(
     }
 
     const pq = attempt.provaQuestao;
+    const escopoAtualId = pq?.conhecimentoEscopoId ?? null;
+    const escopoSugeridoId = body.escopoSugeridoId?.trim() || null;
+
     const sugestao = await prisma.sugestaoClassificacao.create({
       data: {
         userId: session.userId,
         examId,
         provaQuestaoId: attempt.provaQuestaoId,
         numero: body.numero,
-        materiaAtual: pq?.materia ?? attempt.materiaCorrigida ?? "—",
-        assuntoAtual: pq?.assunto ?? attempt.assuntoCorrigido ?? "—",
+        materiaAtual: pq?.materia ?? "—",
+        assuntoAtual: pq?.assunto ?? "—",
         areaBlocoAtual: pq?.areaBloco,
+        escopoAtualId,
+        escopoLabelAtual: labelEscopo(escopoAtualId),
+        escopoSugeridoId,
+        escopoLabelSugerido: labelEscopo(escopoSugeridoId),
         texto: body.texto.trim(),
-        materiaSugerida: body.materiaSugerida?.trim() || null,
-        assuntoSugerido: body.assuntoSugerido?.trim() || null,
-        areaBlocoSugerida: body.areaBlocoSugerida?.trim() || null,
       },
     });
 
     return NextResponse.json({
       ok: true,
       id: sugestao.id,
-      mensagem: "Obrigado! A equipe vai revisar sua sugestão.",
+      mensagem: "Obrigado! A equipe vai revisar sua sugestão de escopo N2.",
     });
   } catch (e) {
     if (e instanceof z.ZodError) {

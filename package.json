@@ -34,7 +34,8 @@
     "catalog:validate:linguagens": "npx tsx scripts/validate-catalog.ts linguagens",
     "enem:repair-linguagens-idioma": "npx tsx scripts/repair-idioma-linguagens.ts",
     "enem:deploy-linguagens": "npx tsx scripts/deploy-enem-linguagens.ts",
-    "db:reset": "prisma migrate reset --force",
+    "db:reset-fresco": "npx tsx scripts/reset-ambiente-fresco.ts",
+    "db:atualizar-admin": "npx tsx scripts/atualizar-admin.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

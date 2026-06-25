@@ -304,6 +304,12 @@ model SugestaoClassificacao {
   materiaSugerida   String?
   assuntoSugerido   String?
   areaBlocoSugerida String?
+  /// Escopo N2 — fonte de verdade para sugestões (motor v1)
+  escopoAtualId       String?
+  escopoSugeridoId    String?
+  escopoLabelAtual    String?
+  escopoLabelSugerido String?
+  catalogoId          String?
   status            StatusSugestaoClassificacao @default(PENDENTE)
   xpConcedido       Int                         @default(0)
   respostaAdmin     String?                     @db.Text
@@ -344,9 +350,6 @@ model QuestionAttempt {
   tipoErro                ErrorType?
   observacao              String? @db.Text
   metadadosCognitivosJson String? @db.Text
-
-  materiaCorrigida String?
-  assuntoCorrigido String?
 
   exam         Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
   provaQuestao ProvaQuestao? @relation(fields: [provaQuestaoId], references: [id], onDelete: SetNull)
@@ -430,8 +433,6 @@ model LearningCycle {
   startAt       DateTime    @default(now())
   endAt         DateTime
 
-  /// legado
-  metaClusterId String?
   metaMateria   String?
 
   /// alvo pedagógico (motor v1)
@@ -464,7 +465,7 @@ model LearningCycle {
 model CicloQuiz {
   id            String    @id @default(cuid())
   cicloId       String
-  clusterAlvo   String?
+  escopoAlvo    String?
   materiaAlvo   String?
   /// Questões sorteadas (provaQuestaoId, numero, materia, gabarito...)
   itemsJson     String    @db.Text

@@ -66,19 +66,12 @@ export function JornadaGraficos({ data }: { data: JornadaGraficos }) {
   const causasData =
     meta?.causas.map((c) => ({ name: c.label, value: c.count, pct: c.pct, fill: c.cor })) ?? [];
 
-  const conhecimentosData = data.conhecimentos
-    .slice(0, 6)
-    .map((c) => ({
-      nome: truncar(c.texto, 28),
-      completo: c.texto,
-      materia: c.materia,
-      erros: c.erros,
-    }));
-
-  const clustersData = data.clustersCognitivos.map((c) => ({
-    nome: truncar(c.label, 24),
-    erros: c.erros,
-    verbo: c.verboTreino,
+  const escoposData = data.topEscopos.slice(0, 8).map((e) => ({
+    nome: truncar(e.escopoLabel, 28),
+    completo: e.escopoLabel,
+    materia: e.materiaLabel,
+    erros: e.erros,
+    taxaAcerto: e.taxaAcerto,
   }));
 
   const checkInData = meta?.checkIns ?? [];
@@ -163,23 +156,22 @@ export function JornadaGraficos({ data }: { data: JornadaGraficos }) {
         )}
       </Card>
 
-      {/* Conhecimentos que mais pesam — barras horizontais */}
       <Card>
-        <h2 className="text-base font-semibold text-slate-900">Conhecimentos que mais pesam</h2>
+        <h2 className="text-base font-semibold text-slate-900">Escopos N2 com mais erro</h2>
         <p className="mt-0.5 text-xs text-slate-500">
-          O que mais apareceu nos seus erros (toda a jornada). Toque para ver o detalhe.
+          Focos do motor v1 na jornada — classifique provas no admin para preencher.
         </p>
-        {conhecimentosData.length === 0 ? (
+        {escoposData.length === 0 ? (
           <p className="mt-4 text-sm text-slate-500">
-            Registre provas com conhecimento exigido para ver os principais gargalos.
+            Registre provas do catálogo com escopo N2 classificado para ver os principais gargalos.
           </p>
         ) : (
           <div
             className="mt-3 w-full"
-            style={{ height: Math.max(160, conhecimentosData.length * 46) }}
+            style={{ height: Math.max(160, escoposData.length * 46) }}
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={conhecimentosData} layout="vertical" margin={{ left: 4, right: 16 }}>
+              <BarChart data={escoposData} layout="vertical" margin={{ left: 4, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
                 <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
                 <YAxis
@@ -194,7 +186,13 @@ export function JornadaGraficos({ data }: { data: JornadaGraficos }) {
                   contentStyle={TIP_CONTENT}
                   labelStyle={TIP_LABEL}
                   itemStyle={TIP_ITEM}
-                  formatter={(v) => [`${v} erro(s)`, "Erros"]}
+                  formatter={(v, _n, p) => {
+                    const pay = p?.payload as { taxaAcerto?: number; materia?: string };
+                    return [
+                      `${v} erro(s) · ${pay?.taxaAcerto ?? 0}% acerto`,
+                      pay?.materia ?? "",
+                    ];
+                  }}
                   labelFormatter={(_l, p) =>
                     (p?.[0]?.payload as { completo?: string })?.completo ?? ""
                   }
@@ -205,44 +203,6 @@ export function JornadaGraficos({ data }: { data: JornadaGraficos }) {
           </div>
         )}
       </Card>
-
-      {/* Padrões cognitivos — barras horizontais */}
-      {clustersData.length > 0 && (
-        <Card>
-          <h2 className="text-base font-semibold text-slate-900">Padrões de raciocínio</h2>
-          <p className="mt-0.5 text-xs text-slate-500">
-            Agrupando seus erros por tipo de operação mental exigida.
-          </p>
-          <div
-            className="mt-3 w-full"
-            style={{ height: Math.max(150, clustersData.length * 44) }}
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={clustersData} layout="vertical" margin={{ left: 4, right: 16 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="nome" width={120} tick={{ fontSize: 10 }} interval={0} />
-                <Tooltip
-                  wrapperStyle={TIP_WRAPPER}
-                  contentStyle={TIP_CONTENT}
-                  labelStyle={TIP_LABEL}
-                  itemStyle={TIP_ITEM}
-                  formatter={(v) => [`${v} erro(s)`, "Erros"]}
-                  labelFormatter={(l, p) => {
-                    const verbo = (p?.[0]?.payload as { verbo?: string })?.verbo;
-                    return verbo ? `${l} — treinar: ${verbo}` : String(l);
-                  }}
-                />
-                <Bar dataKey="erros" radius={[0, 4, 4, 0]}>
-                  {clustersData.map((_, i) => (
-                    <Cell key={i} fill={CORES_CLUSTER[i % CORES_CLUSTER.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      )}
 
       {/* Energia emocional — linha */}
       {checkInData.length >= 2 && (

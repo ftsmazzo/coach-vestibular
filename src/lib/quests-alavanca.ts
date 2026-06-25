@@ -1,16 +1,13 @@
 import type { JourneyInsight } from "@/lib/journey-insight";
 import type { StructuredAnamneseProfile } from "@/lib/anamnese-types";
 import type { AlavancaJornada } from "@/lib/journey-insight";
-import { formatarPassos, PASSOS_POR_CLUSTER } from "@/lib/copiloto-passos";
+import { formatarPassos } from "@/lib/copiloto-passos";
 import { montarQuestEscopoDirigida } from "@/lib/learning-quest-escopo";
-import { CLUSTERS_PEDAGOGICOS } from "@/lib/pedagogical-clusters";
-import type { ClusterAgregado } from "@/lib/diagnostic-motor";
 import { prisma } from "@/lib/prisma";
 
-/** Legado — novas quests usam marcador na descrição, sem prefixo no título */
 export const PREFIXO_QUEST_ALAVANCA = "[Alavanca] ";
 
-const VERSAO_COPY = "v5";
+const VERSAO_COPY = "v6";
 
 export type QuestCopiloto = {
   id: string;
@@ -22,15 +19,13 @@ export type QuestCopiloto = {
   dueDate: string | null;
 };
 
-/** Identidade estável da quest (sem ordem — evita duplicar ao reordenar). */
-function chaveQuest(tipo: "padrao" | "materia" | "anamnese" | "ia", id: string) {
+function chaveQuest(tipo: "escopo" | "padrao" | "materia" | "anamnese" | "ia", id: string) {
   return `copiloto:${tipo}:${id}:${VERSAO_COPY}`;
 }
 
-/** Agrupa chaves antigas (com ordem no meio) e novas. */
 export function chaveSemanticaQuest(chave: string | null): string | null {
   if (!chave) return null;
-  const m = chave.match(/^copiloto:(?:(\d+):)?(padrao|materia|anamnese|ia):([^:]+)/);
+  const m = chave.match(/^copiloto:(?:(\d+):)?(escopo|padrao|materia|anamnese|ia):([^:]+)/);
   if (m) return `${m[2]}:${m[3]}`;
   return null;
 }
@@ -63,42 +58,6 @@ function materiasCoincidem(a: string, b: string): boolean {
   return na.includes(nb) || nb.includes(na);
 }
 
-function montarQuestPadrao(
-  cluster: ClusterAgregado,
-  materia: string,
-  ordem: number,
-  rotulo: string
-): {
-  chave: string;
-  titulo: string;
-  descricao: string;
-  duracaoMin: number;
-  ordem: number;
-  rotulo: string;
-} {
-  const def = CLUSTERS_PEDAGOGICOS[cluster.clusterId];
-  const passos = PASSOS_POR_CLUSTER[cluster.clusterId];
-  const duracao = ordem === 1 ? 40 : 35;
-
-  const tituloPratica =
-    ordem === 1
-      ? `Comece por aqui: ${def.verboTreino}`
-      : `Também treinar: ${def.verboTreino}`;
-
-  return {
-    chave: chaveQuest("padrao", cluster.clusterId),
-    titulo: tituloPratica,
-    descricao: formatarPassos(
-      passos,
-      `${rotulo.toLowerCase()} em ${materia} — olhando sua jornada inteira, não só a última prova.`,
-      duracao
-    ),
-    duracaoMin: duracao,
-    ordem,
-    rotulo,
-  };
-}
-
 function montarQuestMateria(a: AlavancaJornada, ordem: number): {
   chave: string;
   titulo: string;
@@ -122,7 +81,7 @@ function montarQuestMateria(a: AlavancaJornada, ordem: number): {
     titulo: `${a.label}: bloco de correção`,
     descricao: formatarPassos(
       passos,
-      `${a.label} está com ${a.pctAcerto}% na jornada — reforço curricular além do padrão principal.`,
+      `${a.label} está com ${a.pctAcerto}% na jornada — reforço curricular além do escopo principal.`,
       duracao
     ),
     materiaId: a.materiaId,
@@ -161,58 +120,15 @@ function montarListaDesejada(insight: JourneyInsight) {
       );
     }
     const materiaDoFoco = focos[0]!.materiaLabel;
-    const padraoJaCobreMateria =
+    const focoJaCobreMateria =
       insight.principalGargalo?.materiaContexto &&
       materiasCoincidem(materiaDoFoco, insight.principalGargalo.materiaContexto);
 
-    if (!padraoJaCobreMateria) {
+    if (!focoJaCobreMateria) {
       const alavanca = insight.alavancas.find((x) => x.potencial === "alto");
       if (alavanca) {
         desejadas.push(montarQuestMateria(alavanca, ordem++));
       }
-    }
-
-    if (desejadas.length === 0 && insight.anamnese?.completed && insight.anamnese.profile) {
-      desejadas.push(...montarQuestsDaAnamnese(insight.anamnese.profile));
-    }
-
-    return desejadas;
-  }
-
-  const clusterTop = insight.clustersPedagogicos[0];
-  const cluster2 = insight.clustersPedagogicos[1];
-  const materiaDeficit = insight.principalGargalo?.materiaDeficitPrincipal ?? null;
-
-  if (clusterTop) {
-    const materia =
-      clusterTop.materias[0]?.nome ?? materiaDeficit ?? "sua matéria prioritária";
-    desejadas.push(
-      montarQuestPadrao(clusterTop, materia, ordem++, "Prioridade da semana")
-    );
-  }
-
-  if (
-    cluster2 &&
-    clusterTop &&
-    cluster2.clusterId !== clusterTop.clusterId
-  ) {
-    const mat2 = cluster2.materias[0]?.nome ?? "outra matéria";
-    desejadas.push(
-      montarQuestPadrao(cluster2, mat2, ordem++, "Também vale atenção")
-    );
-  }
-
-  const materiaDoPadrao = clusterTop?.materias[0]?.nome ?? null;
-  const padraoJaCobreMateria =
-    clusterTop &&
-    materiaDoPadrao &&
-    materiaDeficit &&
-    materiasCoincidem(materiaDoPadrao, materiaDeficit);
-
-  if (!padraoJaCobreMateria) {
-    const alavanca = insight.alavancas.find((x) => x.potencial === "alto");
-    if (alavanca) {
-      desejadas.push(montarQuestMateria(alavanca, ordem++));
     }
   }
 
@@ -267,7 +183,6 @@ function montarQuestsDaAnamnese(profile: StructuredAnamneseProfile) {
   return desejadas;
 }
 
-/** Remove quests do plano legado que duplicam o copiloto (Prioridade 1…). */
 async function arquivarQuestsPlanoDuplicadas(userId: string) {
   const pendentes = await prisma.quest.findMany({
     where: { userId, status: "pending" },
@@ -295,7 +210,6 @@ export function isQuestCopiloto(q: { titulo: string; descricao: string | null })
   return (q.descricao ?? "").includes("<!-- copiloto:");
 }
 
-/** @deprecated use isQuestCopiloto */
 export function isQuestAlavanca(titulo: string) {
   return titulo.startsWith(PREFIXO_QUEST_ALAVANCA);
 }
@@ -321,7 +235,6 @@ export function tituloQuestExibicao(titulo: string): string {
   return titulo.replace(/^\[Alavanca\]\s*/i, "").trim();
 }
 
-/** Mantém só uma quest pendente por padrão/matéria; arquiva cópias e chaves antigas. */
 async function deduplicarQuestsCopilotoPendentes(userId: string) {
   const pendentes = await prisma.quest.findMany({
     where: { userId, status: "pending" },
@@ -360,7 +273,6 @@ async function deduplicarQuestsCopilotoPendentes(userId: string) {
   }
 }
 
-/** Sincroniza as quests da jornada (única fonte de tarefas práticas). */
 export async function garantirQuestsAlavanca(
   userId: string,
   insight: JourneyInsight
@@ -460,10 +372,6 @@ export async function garantirQuestsAlavanca(
   await deduplicarQuestsCopilotoPendentes(userId);
 }
 
-/**
- * Substitui as quests do copiloto pelas geradas pela IA (regeneração).
- * Arquiva as antigas e cria as novas com chave estável `copiloto:ia:...`.
- */
 export async function persistirQuestsIA(
   userId: string,
   quests: import("@/lib/copiloto-ia-types").QuestGerada[]
@@ -519,7 +427,7 @@ export async function getOQueFazerAgora(userId: string): Promise<QuestCopiloto[]
       const ordem = extrairOrdemQuest(q.descricao, chave);
       let rotulo = extrairRotuloQuest(q.descricao) ?? "Esta semana";
       if (!extrairRotuloQuest(q.descricao)) {
-        if (chave?.includes(":padrao:")) {
+        if (chave?.includes(":escopo:") || chave?.includes(":padrao:")) {
           rotulo = ordem === 1 ? "Prioridade da semana" : "Também vale atenção";
         } else if (chave?.includes(":materia:")) {
           rotulo = "Reforço de matéria";
@@ -556,7 +464,6 @@ export async function getOQueFazerAgora(userId: string): Promise<QuestCopiloto[]
   return copiloto;
 }
 
-/** @deprecated use getOQueFazerAgora */
 export async function getQuestsAlavancaPendentes(userId: string) {
   return getOQueFazerAgora(userId);
 }

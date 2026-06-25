@@ -1,7 +1,7 @@
 import { attemptsPonderadosJornada, buildDiagnosisForProva } from "@/lib/jornada-diagnostico";
 import { aplicarPlanoCoachIA } from "@/lib/diagnosis";
 import { prisma } from "@/lib/prisma";
-import { generateStudyPlan, planToQuests } from "@/lib/study-plan";
+import { planToQuests } from "@/lib/study-plan";
 import type { StudyPlanItem } from "@/lib/study-plan";
 import type { CopilotoNarrativa } from "@/lib/copiloto-ia-types";
 
@@ -116,10 +116,7 @@ export async function gerarMicroPlanoProva(userId: string, provaId: string) {
     examLabel: `${prova.nome} (foco)`,
   });
 
-  let items: StudyPlanItem[] =
-    withIA.aiStudyPlanItems?.length
-      ? withIA.aiStudyPlanItems
-      : generateStudyPlan(withIA, { ehProvaOficial: true }).items;
+  let items: StudyPlanItem[] = withIA.aiStudyPlanItems ?? [];
 
   items = [
     {

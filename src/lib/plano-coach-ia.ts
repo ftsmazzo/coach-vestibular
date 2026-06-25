@@ -32,7 +32,7 @@ export interface PlanoCoachIAResponse {
     analise: string;
     prioridade?: "alta" | "media" | "manter";
   }>;
-  focos?: DiagnosisResult["focos"];
+  focos?: never;
   quests: Array<{
     titulo: string;
     descricao: string;
@@ -68,17 +68,42 @@ function montarFocosPedagogicos(diagnosis: DiagnosisResult): string {
 function montarResumoMaterias(diagnosis: DiagnosisResult): string {
   const r = diagnosis.resumoProva;
   if (!r) {
-    return diagnosis.materiaScores
+    const porMateria = new Map<string, { acertos: number; total: number; erros: number }>();
+    for (const s of diagnosis.escopoScores) {
+      const m = porMateria.get(s.materiaLabel) ?? { acertos: 0, total: 0, erros: 0 };
+      m.total += s.total;
+      m.acertos += s.acertos;
+      m.erros += s.erros;
+      porMateria.set(s.materiaLabel, m);
+    }
+    return [...porMateria.entries()]
       .map(
-        (m) =>
-          `- ${m.materiaLabel}: ${Math.round(m.taxaAcerto * 100)}% acerto (${m.erros} erros)`
+        ([label, m]) =>
+          `- ${label}: ${Math.round((m.acertos / Math.max(1, m.total)) * 100)}% acerto (${m.erros} erros)`
       )
       .join("\n");
   }
-  return r.todasMaterias
+  const porMateria = new Map<
+    string,
+    { acertos: number; total: number; erros: number; numerosErrados: number[] }
+  >();
+  for (const e of r.todosEscopos) {
+    const m = porMateria.get(e.materia) ?? {
+      acertos: 0,
+      total: 0,
+      erros: 0,
+      numerosErrados: [],
+    };
+    m.acertos += e.acertos;
+    m.total += e.total;
+    m.erros += e.erros;
+    m.numerosErrados.push(...e.numerosErrados);
+    porMateria.set(e.materia, m);
+  }
+  return [...porMateria.entries()]
     .map(
-      (m) =>
-        `- ${m.materia}: ${m.acertos}/${m.total} acertos (${m.erros} erro(s) — questões ${m.numerosErrados.slice(0, 12).join(", ")}${m.numerosErrados.length > 12 ? "…" : ""})`
+      ([materia, m]) =>
+        `- ${materia}: ${m.acertos}/${m.total} acertos (${m.erros} erro(s) — questões ${m.numerosErrados.slice(0, 12).join(", ")}${m.numerosErrados.length > 12 ? "…" : ""})`
     )
     .join("\n");
 }
@@ -93,7 +118,7 @@ function montarCausasMetacognitivas(grouped: GroupedError[]): string {
       const anot = g.anotacoes.length
         ? g.anotacoes.slice(0, 5).join("\n")
         : "Sem anotações.";
-      return `### ${g.materia}
+      return `### ${g.escopoLabel} (${g.materiaLabel})
 - Erros: ${g.errosCount} (Q${g.questoesNumeros.join(", Q")})
 - Causas (metacognição): ${causas || "não informadas"}
 - Anotações do aluno:
@@ -378,13 +403,41 @@ export function planoCoachFallbackLocal(
   }
 
   const analises: PlanoCoachIAResponse["analisePorMateria"] = [];
-  const materias = resumo?.todasMaterias ?? diagnosis.materiaScores.map((m) => ({
-    materia: m.materiaLabel,
-    erros: m.erros,
-    acertos: m.total - m.erros,
-    total: m.total,
-    numerosErrados: [] as number[],
-  }));
+  const porMateriaResumo = new Map<
+    string,
+    { materia: string; erros: number; acertos: number; total: number; numerosErrados: number[] }
+  >();
+  if (resumo) {
+    for (const e of resumo.todosEscopos) {
+      const m = porMateriaResumo.get(e.materia) ?? {
+        materia: e.materia,
+        erros: 0,
+        acertos: 0,
+        total: 0,
+        numerosErrados: [],
+      };
+      m.erros += e.erros;
+      m.acertos += e.acertos;
+      m.total += e.total;
+      m.numerosErrados.push(...e.numerosErrados);
+      porMateriaResumo.set(e.materia, m);
+    }
+  } else {
+    for (const s of diagnosis.escopoScores) {
+      const m = porMateriaResumo.get(s.materiaLabel) ?? {
+        materia: s.materiaLabel,
+        erros: 0,
+        acertos: 0,
+        total: 0,
+        numerosErrados: s.numerosErrados,
+      };
+      m.erros += s.erros;
+      m.acertos += s.acertos;
+      m.total += s.total;
+      porMateriaResumo.set(s.materiaLabel, m);
+    }
+  }
+  const materias = [...porMateriaResumo.values()];
 
   for (const m of materias) {
     const taxa = m.total > 0 ? Math.round((m.acertos / m.total) * 100) : 0;
@@ -397,7 +450,7 @@ export function planoCoachFallbackLocal(
       texto = `Em ${m.materia} o resultado foi misto (${taxa}% de acerto, ${m.erros} erro(s)). Há pontos sólidos e trechos que ainda vazam; o equilíbrio é consolidar sem abandonar o que já funciona.`;
     }
     const gruposMat = grouped.filter(
-      (g) => g.materia.toLowerCase() === m.materia.toLowerCase()
+      (g) => g.materiaLabel.toLowerCase() === m.materia.toLowerCase()
     );
     if (gruposMat.length) {
       const causas = [...new Set(gruposMat.flatMap((g) => g.causas))]
@@ -438,16 +491,17 @@ export function planoCoachFallbackLocal(
     }
   }
 
-  const porMateria = new Map<string, GroupedError[]>();
+  const porEscopo = new Map<string, GroupedError[]>();
   for (const g of grouped) {
-    const list = porMateria.get(g.materia) ?? [];
+    const list = porEscopo.get(g.escopoId) ?? [];
     list.push(g);
-    porMateria.set(g.materia, list);
+    porEscopo.set(g.escopoId, list);
   }
 
   if (quests.length === 0) {
-  for (const [materia, grupos] of porMateria) {
+  for (const [, grupos] of porEscopo) {
     if (quests.length >= maxQ) break;
+    const g0 = grupos[0]!;
     const nums = [...new Set(grupos.flatMap((g) => g.questoesNumeros))].sort((a, b) => a - b);
     const causas = grupos.flatMap((g) => g.causas);
     const causaDom =
@@ -456,26 +510,28 @@ export function planoCoachFallbackLocal(
           causas.filter((x) => x === b).length - causas.filter((x) => x === a).length
       )[0] ?? "CONCEITO_TEORICO";
     const anot = grupos.flatMap((g) => g.anotacoes)[0]?.replace(/^Q\d+:\s*"?|"$/g, "");
-    const at = atividadePorCausa(materia, nums, causaDom, anot);
+    const at = atividadePorCausa(g0.materiaLabel, nums, causaDom, anot);
     quests.push({
-      titulo: at.titulo,
+      titulo: `${g0.escopoLabel} — ${at.titulo}`,
       descricao: at.descricao,
       duracaoMin: at.duracaoMin,
       numerosQuestoes: nums,
       estrategiaInterna: at.estrategia,
+      escopoId: g0.escopoId,
     });
   }
   }
 
   if (quests.length === 0 && resumo) {
-    for (const a of resumo.assuntosPrioritarios.slice(0, maxQ)) {
-      const at = atividadePorCausa(a.materia, a.numerosErrados, "CONCEITO_TEORICO");
+    for (const e of resumo.escoposPrioritarios.slice(0, maxQ)) {
+      const at = atividadePorCausa(e.materia, e.numerosErrados, "CONCEITO_TEORICO");
       quests.push({
-        titulo: at.titulo,
+        titulo: `${e.escopoLabel} — ${at.titulo}`,
         descricao: at.descricao,
         duracaoMin: at.duracaoMin,
-        numerosQuestoes: a.numerosErrados,
+        numerosQuestoes: e.numerosErrados,
         estrategiaInterna: at.estrategia,
+        escopoId: e.escopoId,
       });
     }
   }
@@ -522,7 +578,7 @@ export function planoCoachParaStudyItems(
   }
 
   for (const m of parsed.analisePorMateria) {
-    const matResumo = diagnosis.resumoProva?.todasMaterias.find(
+    const matResumo = diagnosis.resumoProva?.todosEscopos.find(
       (x) => x.materia.toLowerCase() === m.materia.toLowerCase()
     );
     items.push({

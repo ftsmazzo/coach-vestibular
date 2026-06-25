@@ -1,10 +1,7 @@
 /**
- * Mini-quiz dirigido de fechamento do ciclo.
- * Sorteia questões do banco que mapeiam ao cluster-alvo do ciclo, prioriza as
- * que o aluno ainda não fez, corrige pelo gabarito e devolve o % no padrão.
+ * Mini-quiz dirigido de fechamento do ciclo — filtrado por metaEscopoId (N2).
  */
 import { prisma } from "@/lib/prisma";
-import { classificarClusterPedagogico } from "@/lib/pedagogical-clusters";
 import { getCicloAtivo } from "@/lib/ciclo";
 
 const N_ITENS = 6;
@@ -36,20 +33,16 @@ function semGabarito(items: QuizItem[]): QuizItemPublico[] {
 
 async function selecionarItens(
   userId: string,
-  metaClusterId: string | null,
-  metaMateria: string | null,
-  metaEscopoId: string | null = null
+  metaEscopoId: string | null,
+  metaMateria: string | null
 ): Promise<QuizItem[]> {
+  if (!metaEscopoId) return [];
+
   const candidatas = await prisma.provaQuestao.findMany({
     where: {
       gabarito: { not: null },
-      conhecimentoExigido: { not: null },
+      conhecimentoEscopoId: metaEscopoId,
       prova: { publicada: true },
-      ...(metaEscopoId
-        ? { conhecimentoEscopoId: metaEscopoId }
-        : metaMateria
-          ? { materia: { contains: metaMateria.split(/\s+/)[0]!, mode: "insensitive" } }
-          : {}),
     },
     select: {
       id: true,
@@ -64,21 +57,29 @@ async function selecionarItens(
     take: 400,
   });
 
-  const noCluster = metaEscopoId
-    ? candidatas
-    : candidatas.filter((q) => {
-        if (!metaClusterId) return true;
-        const cluster = classificarClusterPedagogico(
-          q.conhecimentoExigido ?? "",
-          q.materia,
-          q.assunto
-        );
-        return cluster === metaClusterId;
-      });
+  let base = candidatas;
+  if (base.length < N_ITENS && metaMateria) {
+    const extra = await prisma.provaQuestao.findMany({
+      where: {
+        gabarito: { not: null },
+        prova: { publicada: true },
+        materia: { contains: metaMateria.split(/\s+/)[0]!, mode: "insensitive" },
+      },
+      select: {
+        id: true,
+        numero: true,
+        materia: true,
+        assunto: true,
+        conhecimentoExigido: true,
+        enunciado: true,
+        gabarito: true,
+        prova: { select: { nome: true } },
+      },
+      take: 200,
+    });
+    base = [...candidatas, ...extra];
+  }
 
-  const base = noCluster.length >= N_ITENS ? noCluster : candidatas;
-
-  // Prioriza questões que o aluno ainda não respondeu.
   const feitas = await prisma.questionAttempt.findMany({
     where: { exam: { userId }, provaQuestaoId: { not: null } },
     select: { provaQuestaoId: true },
@@ -100,7 +101,6 @@ async function selecionarItens(
   }));
 }
 
-/** Gera o quiz do ciclo ativo (ou retorna o que já está em aberto). */
 export async function gerarOuObterQuiz(userId: string): Promise<{
   quizId: string | null;
   itens: QuizItemPublico[];
@@ -124,12 +124,7 @@ export async function gerarOuObterQuiz(userId: string): Promise<{
     };
   }
 
-  const itens = await selecionarItens(
-    userId,
-    ciclo.metaClusterId,
-    ciclo.metaMateria,
-    ciclo.metaEscopoId
-  );
+  const itens = await selecionarItens(userId, ciclo.metaEscopoId, ciclo.metaMateria);
   if (itens.length < 3) {
     return { quizId: null, itens: [], metaTitulo: ciclo.metaTitulo, insuficiente: true };
   }
@@ -137,7 +132,7 @@ export async function gerarOuObterQuiz(userId: string): Promise<{
   const quiz = await prisma.cicloQuiz.create({
     data: {
       cicloId: ciclo.id,
-      clusterAlvo: ciclo.metaClusterId,
+      escopoAlvo: ciclo.metaEscopoId,
       materiaAlvo: ciclo.metaMateria,
       itemsJson: JSON.stringify(itens),
       totalQuestoes: itens.length,
@@ -152,7 +147,6 @@ export async function gerarOuObterQuiz(userId: string): Promise<{
   };
 }
 
-/** Corrige o quiz pelo gabarito e grava o resultado. */
 export async function corrigirQuiz(
   userId: string,
   quizId: string,

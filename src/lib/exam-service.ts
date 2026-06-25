@@ -8,9 +8,7 @@ import {
   registroPassaFiltro,
   type FiltroRegistros,
 } from "./prova-tipo";
-import { aplicarPlanoCoachIA, buildDiagnosis } from "./diagnosis";
 import { mapQuestionAttemptToInput } from "./question-attempt-input";
-import { generateStudyPlan, planToQuests } from "./study-plan";
 import { calcularStreakRegistros } from "./streak";
 
 export interface QuestionInput {
@@ -31,44 +29,23 @@ export interface CreateExamInput {
   nota?: number;
   checkInScore?: number;
   questoes: QuestionInput[];
-  /** Listas pessoais e treinos — nunca OFICIAL por padrão */
   modoUso?: ModoUsoRegistro;
   provaTipoDiagnostico?: ProvaTipo;
 }
 
+/**
+ * Registro histórico de simulado manual — fora do motor v1.
+ * Para plano/copiloto por escopo, use provas do catálogo admin.
+ */
 export async function createExamWithDiagnosis(input: CreateExamInput) {
-  const historicalExams = await prisma.exam.findMany({
-    where: { userId: input.userId },
-    orderBy: { data: "desc" },
-    take: 5,
-    include: {
-      questionAttempts: { include: { provaQuestao: true } },
-    },
-  });
+  const acertos = input.questoes.filter((q) => q.correto).length;
+  const total = input.questoes.length;
+  const overallAcerto = total > 0 ? acertos / total : 0;
+  const recoveryMode =
+    overallAcerto < 0.45 ||
+    (input.checkInScore !== undefined && input.checkInScore !== null && input.checkInScore <= 2);
 
-  const nameUpper = input.nome.toUpperCase();
-  const inferredProvaTipo =
-    input.provaTipoDiagnostico ??
-    (nameUpper.includes("ENEM") || nameUpper.includes("VESTIBULAR") ? "ENEM_OFICIAL" : "SIMULADO");
   const modoUso = input.modoUso ?? "OFICIAL";
-
-  let diagnosis = await buildDiagnosis(
-    input.questoes,
-    historicalExams.map((e) =>
-      e.questionAttempts.map((a) => mapQuestionAttemptToInput(a))
-    ),
-    {
-      checkInScore: input.checkInScore,
-      examLabel: input.nome,
-      provaTipo: inferredProvaTipo,
-      modoUso,
-    }
-  );
-
-  diagnosis = await aplicarPlanoCoachIA(diagnosis, input.questoes, {
-    checkInScore: input.checkInScore,
-    examLabel: input.nome,
-  });
 
   const exam = await prisma.exam.create({
     data: {
@@ -79,7 +56,7 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
       totalQuestoes: input.totalQuestoes,
       nota: input.nota,
       checkInScore: input.checkInScore,
-      recoveryMode: diagnosis.recoveryMode,
+      recoveryMode,
       modoUso,
       questionAttempts: {
         create: input.questoes.map((q) => ({
@@ -95,14 +72,16 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
         create: {
           userId: input.userId,
           scoresJson: JSON.stringify({
-            overallAcerto: diagnosis.overallAcerto,
-            materiaScores: diagnosis.materiaScores,
-            temaScores: diagnosis.temaScores,
-            tipoErroCounts: diagnosis.tipoErroCounts,
+            overallAcerto,
+            manual: true,
+            tipoErroCounts: {},
+            mensagem:
+              "Registro manual — para copiloto por escopo, use provas do catálogo classificadas (N2) no admin.",
           }),
-          focosJson: JSON.stringify(diagnosis.focos),
-          mensagem: diagnosis.mensagem,
-          recoveryMode: diagnosis.recoveryMode,
+          focosJson: JSON.stringify([]),
+          mensagem:
+            "Simulado manual registrado. O plano por escopo N2 usa provas do catálogo.",
+          recoveryMode,
         },
       },
       ...(input.checkInScore
@@ -122,39 +101,14 @@ export async function createExamWithDiagnosis(input: CreateExamInput) {
     },
   });
 
-  const items = diagnosis.aiStudyPlanItems || generateStudyPlan(diagnosis).items;
-  const recoveryMode = diagnosis.recoveryMode;
-  const weekStart = getWeekStart(new Date());
-
-  await prisma.studyPlan.create({
-    data: {
-      userId: input.userId,
-      weekStart,
-      itemsJson: JSON.stringify(items),
+  return {
+    exam,
+    diagnosis: {
+      overallAcerto,
       recoveryMode,
+      manual: true as const,
     },
-  });
-
-  await prisma.quest.updateMany({
-    where: { userId: input.userId, status: "pending" },
-    data: { status: "skipped" },
-  });
-
-  const questData = planToQuests(items, input.userId);
-  if (questData.length > 0) {
-    await prisma.quest.createMany({ data: questData });
-  }
-
-  return { exam, diagnosis };
-}
-
-function getWeekStart(date: Date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
+  };
 }
 
 export async function getDashboardData(userId: string, filtro: FiltroRegistros = "todos") {

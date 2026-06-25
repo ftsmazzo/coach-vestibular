@@ -66,8 +66,23 @@ export async function concederXpMelhoriaMaterias(
   try {
     const parsed = JSON.parse(anterior.diagnosticSnapshot.scoresJson) as {
       materiaScores?: MateriaScoreLite[];
+      escopoScores?: Array<{ materiaId: string; acertos: number; erros: number; total: number }>;
     };
-    scoresAnt = parsed.materiaScores ?? [];
+    if (parsed.materiaScores?.length) {
+      scoresAnt = parsed.materiaScores;
+    } else if (parsed.escopoScores?.length) {
+      const map = new Map<string, { acertos: number; total: number }>();
+      for (const s of parsed.escopoScores) {
+        const m = map.get(s.materiaId) ?? { acertos: 0, total: 0 };
+        m.total += s.total;
+        m.acertos += s.acertos;
+        map.set(s.materiaId, m);
+      }
+      scoresAnt = [...map.entries()].map(([materiaId, m]) => ({
+        materiaId,
+        taxaAcerto: m.total > 0 ? m.acertos / m.total : 0,
+      }));
+    }
   } catch {
     return [];
   }

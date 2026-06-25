@@ -33,8 +33,6 @@ export type QuestionAttemptMultidia = {
   temaId?: string | null;
   tipoErro?: string | null;
   observacao?: string | null;
-  materiaCorrigida?: string | null;
-  assuntoCorrigido?: string | null;
   respostaAluno?: string | null;
   provaQuestao?: {
     materia: string;

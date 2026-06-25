@@ -24,7 +24,10 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({
       examId: result.exam.id,
-      mensagem: result.diagnosis.mensagem,
+      mensagem:
+        "mensagem" in result.diagnosis && typeof result.diagnosis.mensagem === "string"
+          ? result.diagnosis.mensagem
+          : "Lista registrada.",
     });
   } catch (e) {
     if (e instanceof z.ZodError) {

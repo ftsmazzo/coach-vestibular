@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import { aplicarPlanoCoachIA, buildDiagnosis, type AttemptInput } from "./diagnosis";
+import { aplicarPlanoCoachIA, buildDiagnosis, escopoScoresToMateriaLite, type AttemptInput } from "./diagnosis";
 import { enriquecerDiagnosticoComProva } from "./diagnosis-prova";
 import { taxonomyFromQuestao } from "./canonical-question/taxonomy-from-questao";
 import {
@@ -259,6 +259,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
       correto: a.correto,
       materia: q.materia,
       assunto: q.assunto,
+      conhecimentoEscopoId: q.conhecimentoEscopoId,
       conhecimentoExigido: q.conhecimentoExigido,
       nivelDificuldade: q.nivelDificuldade,
     };
@@ -338,19 +339,13 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
           userId: input.userId,
           scoresJson: JSON.stringify({
             overallAcerto: diagnosis.overallAcerto,
-            materiaScores: diagnosis.materiaScores,
-            temaScores: diagnosis.temaScores,
             escopoScores: diagnosis.escopoScores,
             focosPedagogicos: diagnosis.focosPedagogicos,
             resumoProva: diagnosis.resumoProva,
             provaId: prova.id,
             analiseCompleta,
           }),
-          focosJson: JSON.stringify(
-            diagnosis.focosPedagogicos?.length
-              ? { legado: diagnosis.focos, pedagogicos: diagnosis.focosPedagogicos }
-              : diagnosis.focos
-          ),
+          focosJson: JSON.stringify(diagnosis.focosPedagogicos),
           mensagem: diagnosis.mensagem,
           recoveryMode: diagnosis.recoveryMode,
         },
@@ -377,7 +372,7 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
   const xpMelhorias = await concederXpMelhoriaMaterias(
     input.userId,
     exam.id,
-    diagnosis.materiaScores
+    escopoScoresToMateriaLite(diagnosis.escopoScores)
   );
   const xpRegistro = await concederXpRegistro(input.userId, exam.id, exam.data);
 
@@ -557,8 +552,9 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
     return {
       numero: a.numero,
       correto: a.correto,
-      materia: a.materiaCorrigida || q.materia,
-      assunto: a.assuntoCorrigido || q.assunto,
+      materia: q.materia,
+      assunto: q.assunto,
+      conhecimentoEscopoId: q.conhecimentoEscopoId,
       conhecimentoExigido: q.conhecimentoExigido,
       nivelDificuldade: q.nivelDificuldade,
     };
@@ -590,19 +586,13 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
       data: {
         scoresJson: JSON.stringify({
           overallAcerto: diagnosis.overallAcerto,
-          materiaScores: diagnosis.materiaScores,
-          temaScores: diagnosis.temaScores,
           escopoScores: diagnosis.escopoScores,
           focosPedagogicos: diagnosis.focosPedagogicos,
           resumoProva: diagnosis.resumoProva,
           provaId: prova.id,
           analiseCompleta,
         }),
-        focosJson: JSON.stringify(
-          diagnosis.focosPedagogicos?.length
-            ? { legado: diagnosis.focos, pedagogicos: diagnosis.focosPedagogicos }
-            : diagnosis.focos
-        ),
+        focosJson: JSON.stringify(diagnosis.focosPedagogicos),
         mensagem: diagnosis.mensagem,
         recoveryMode: diagnosis.recoveryMode,
       },
@@ -619,7 +609,7 @@ export async function recalcularDiagnosticoExam(examId: string, requestUserId?: 
   const xpMelhorias = await concederXpMelhoriaMaterias(
     userId,
     exam.id,
-    diagnosis.materiaScores
+    escopoScoresToMateriaLite(diagnosis.escopoScores)
   );
   const xpRegistro = await concederXpRegistro(userId, exam.id, exam.data);
 

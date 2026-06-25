@@ -31,7 +31,9 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     resultado: r.resultado,
-    proximoIndice: r.proximo.indice,
-    mensagem: "Ciclo fechado. Novo ciclo aberto com base no seu momento atual.",
+    proximoIndice: r.proximo?.indice ?? null,
+    mensagem: r.proximo
+      ? "Ciclo fechado. Novo ciclo aberto com base no seu momento atual."
+      : "Ciclo fechado. Classifique escopos N2 para abrir o próximo ciclo.",
   });
 }

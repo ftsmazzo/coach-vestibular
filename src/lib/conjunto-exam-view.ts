@@ -30,6 +30,7 @@ export type ConjuntoExamView = {
       assunto: string;
       gabarito: string | null;
       conhecimentoExigido: string | null;
+      conhecimentoEscopoId: string | null;
       nivelDificuldade: string | null;
     } | null;
   }>;

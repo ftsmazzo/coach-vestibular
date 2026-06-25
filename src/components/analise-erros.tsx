@@ -11,6 +11,7 @@ import {
   sugerirEtapaDeTipoErro,
   type MetadadosErroForm,
 } from "@/lib/metadados-cognitivos-labels";
+import { formatClassificacaoTresNiveis } from "@/lib/escopo-display";
 import { Card, Button, Badge } from "./ui";
 
 interface Attempt {
@@ -29,6 +30,9 @@ interface Attempt {
     gabarito?: string | null;
     conhecimentoExigido?: string | null;
     conhecimentoEscopoId?: string | null;
+    conhecimentoDominioId?: string | null;
+    classificacaoN1Json?: string | null;
+    classificacaoConfianca?: number | null;
   } | null;
 }
 
@@ -58,6 +62,41 @@ function escopoLabelCurto(escopoId: string | null | undefined): string | null {
   if (!escopoId?.trim()) return null;
   const parts = escopoId.split(".");
   return parts[parts.length - 1]?.replace(/_/g, " ") ?? escopoId;
+}
+
+function ClassificacaoBloco({ q }: { q: Attempt }) {
+  const cls = formatClassificacaoTresNiveis({
+    classificacaoN1Json: q.provaQuestao?.classificacaoN1Json,
+    materia: q.provaQuestao?.materia,
+    conhecimentoEscopoId: q.provaQuestao?.conhecimentoEscopoId,
+    conhecimentoDominioId: q.provaQuestao?.conhecimentoDominioId,
+    conhecimentoExigido: q.provaQuestao?.conhecimentoExigido,
+    classificacaoConfianca: q.provaQuestao?.classificacaoConfianca,
+  });
+
+  return (
+    <div className="mt-2 space-y-1 rounded-lg bg-slate-50 px-2 py-1.5 text-xs">
+      <p>
+        <span className="font-semibold text-slate-600">N1 </span>
+        {cls.n1Catalogo ?? cls.n1Area ?? "—"}
+      </p>
+      <p>
+        <span className="font-semibold text-teal-700">N2 </span>
+        {cls.n2EscopoLabel ?? "Sem escopo — classifique no admin"}
+      </p>
+      {cls.n3Conhecimento && (
+        <p className="text-slate-600 line-clamp-2">
+          <span className="font-semibold text-slate-600">N3 </span>
+          {cls.n3Conhecimento}
+        </p>
+      )}
+      {cls.confianca != null && (
+        <p className="text-[10px] text-slate-400">
+          Confiança classificação: {Math.round(cls.confianca * 100)}%
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
@@ -173,8 +212,6 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {erradas.map((q) => {
-          const materia = q.provaQuestao?.materia || q.materiaId || "Matéria geral";
-          const assunto = q.provaQuestao?.assunto || q.temaId || "Assunto geral";
           const escopo = escopoLabelCurto(q.provaQuestao?.conhecimentoEscopoId);
           const form = formData[q.id];
 
@@ -192,16 +229,14 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
                     <Badge tone="danger">Incorreta</Badge>
                   </div>
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    {materia}
+                    Q{q.numero}
                   </span>
                 </div>
 
                 <div className="mb-4">
-                  <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{assunto}</h4>
+                  <ClassificacaoBloco q={q} />
                   {escopo && (
-                    <p className="mt-1 text-xs text-teal-700 font-medium">
-                      Escopo: {escopo}
-                    </p>
+                    <p className="mt-1 font-mono text-[10px] text-slate-400">{escopo}</p>
                   )}
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded-md bg-rose-100 px-2 py-0.5 font-medium text-rose-700">
@@ -211,9 +246,9 @@ export function AnaliseErros({ examId, attempts }: AnaliseErrosProps) {
                       Gabarito {q.provaQuestao?.gabarito ?? "—"}
                     </span>
                   </div>
-                  {q.provaQuestao?.conhecimentoExigido && (
+                  {q.provaQuestao?.conhecimentoExigido && !q.provaQuestao?.conhecimentoEscopoId && (
                     <p className="mt-2 text-xs leading-snug text-slate-500 line-clamp-3">
-                      <span className="font-medium text-slate-600">Conhecimento exigido: </span>
+                      <span className="font-medium text-slate-600">Conhecimento: </span>
                       {q.provaQuestao.conhecimentoExigido}
                     </p>
                   )}

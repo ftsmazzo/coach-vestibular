@@ -4,106 +4,6 @@ import { prisma } from "@/lib/prisma";
 import type { ErrorType } from "@/generated/prisma/client";
 import type { MetadadosCognitivosErro } from "@/lib/metadados-cognitivos";
 
-function parseMateriaAssuntoFromObservacao(obsText: string): { materiaCorrigida: string; assuntoCorrigido: string } | null {
-  const obs = obsText.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  
-  if (obs.includes("geografia")) {
-    return {
-      materiaCorrigida: "Geografia",
-      assuntoCorrigido: obs.includes("fisic") ? "Geografia Física" : "Geografia Humana"
-    };
-  }
-  if (obs.includes("historia")) {
-    return {
-      materiaCorrigida: "História",
-      assuntoCorrigido: obs.includes("brasil") ? "Brasil República" : "História Contemporânea"
-    };
-  }
-  if (obs.includes("ingles") || obs.includes("english")) {
-    return {
-      materiaCorrigida: "Português", // Languages grouped under Português in taxonomy
-      assuntoCorrigido: "Interpretação de Texto"
-    };
-  }
-  if (obs.includes("gramatica") || obs.includes("pronome") || obs.includes("tempo verbal") || obs.includes("tempos verbais") || obs.includes("conjuncao") || obs.includes("regencia") || obs.includes("crase")) {
-    return {
-      materiaCorrigida: "Português",
-      assuntoCorrigido: "Gramática"
-    };
-  }
-  if (obs.includes("literatura")) {
-    return {
-      materiaCorrigida: "Português",
-      assuntoCorrigido: "Literatura"
-    };
-  }
-  if (obs.includes("redacao")) {
-    return {
-      materiaCorrigida: "Português",
-      assuntoCorrigido: "Redação"
-    };
-  }
-  if (obs.includes("interpretacao") || obs.includes("leitura")) {
-    return {
-      materiaCorrigida: "Português",
-      assuntoCorrigido: "Interpretação de Texto"
-    };
-  }
-  if (obs.includes("biologia") || obs.includes("biologica") || obs.includes("citologia") || obs.includes("genetica") || obs.includes("ecologia") || obs.includes("fisiologia") || obs.includes("evolucao") || obs.includes("botanica")) {
-    let assunto = "Biologia Geral";
-    if (obs.includes("citologia")) assunto = "Citologia";
-    else if (obs.includes("genetica")) assunto = "Genética";
-    else if (obs.includes("ecologia")) assunto = "Ecologia";
-    else if (obs.includes("fisiologia")) assunto = "Fisiologia Humana";
-    else if (obs.includes("evolucao")) assunto = "Evolução";
-    else if (obs.includes("botanica")) assunto = "Botânica";
-    return {
-      materiaCorrigida: "Biologia",
-      assuntoCorrigido: assunto
-    };
-  }
-  if (obs.includes("quimica") || obs.includes("estequiometria") || obs.includes("termoquimica") || obs.includes("equilibrio") || obs.includes("eletroquimica") || obs.includes("organica") || obs.includes("atomistica")) {
-    let assunto = "Química Geral";
-    if (obs.includes("estequiometria")) assunto = "Estequiometria";
-    else if (obs.includes("termoquimica")) assunto = "Termoquímica";
-    else if (obs.includes("equilibrio")) assunto = "Equilíbrio Químico";
-    else if (obs.includes("eletroquimica")) assunto = "Eletroquímica";
-    else if (obs.includes("organica")) assunto = "Química Orgânica";
-    else if (obs.includes("atomistica")) assunto = "Atomística";
-    return {
-      materiaCorrigida: "Química",
-      assuntoCorrigido: assunto
-    };
-  }
-  if (obs.includes("fisica") || obs.includes("optica") || obs.includes("cinematica") || obs.includes("eletricidade") || obs.includes("ondas") || obs.includes("trabalho") || obs.includes("lente") || obs.includes("espelho") || obs.includes("dinamica") || obs.includes("energia")) {
-    let assunto = "Física Geral";
-    if (obs.includes("optica") || obs.includes("lente") || obs.includes("espelho")) assunto = "Óptica";
-    else if (obs.includes("cinematica")) assunto = "Cinemática";
-    else if (obs.includes("eletricidade")) assunto = "Eletricidade";
-    else if (obs.includes("ondas")) assunto = "Ondas";
-    else if (obs.includes("dinamica")) assunto = "Dinâmica";
-    else if (obs.includes("energia") || obs.includes("trabalho")) assunto = "Trabalho e Energia";
-    return {
-      materiaCorrigida: "Física",
-      assuntoCorrigido: assunto
-    };
-  }
-  if (obs.includes("matematica") || obs.includes("calculo") || obs.includes("geometria") || obs.includes("trigonometria") || obs.includes("probabilidade") || obs.includes("algebra") || obs.includes("funcao")) {
-    let assunto = "Matemática Geral";
-    if (obs.includes("trigonometria")) assunto = "Trigonometria";
-    else if (obs.includes("probabilidade")) assunto = "Probabilidade e Estatística";
-    else if (obs.includes("algebra")) assunto = "Álgebra";
-    else if (obs.includes("geometria")) assunto = "Geometria";
-    else if (obs.includes("funcao")) assunto = "Funções";
-    return {
-      materiaCorrigida: "Matemática",
-      assuntoCorrigido: assunto
-    };
-  }
-
-  return null;
-}
-
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -112,8 +12,7 @@ export async function POST(
   if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
   const { id } = await params;
-  
-  // Verify that the exam belongs to the user
+
   const exam = await prisma.exam.findFirst({
     where: { id, userId: session.userId },
   });
@@ -130,8 +29,6 @@ export async function POST(
         tipoErro: ErrorType | null;
         observacao: string | null;
         metadadosCognitivos?: MetadadosCognitivosErro | null;
-        materiaCorrigida?: string | null;
-        assuntoCorrigido?: string | null;
       }>;
     };
 
@@ -139,21 +36,8 @@ export async function POST(
       return NextResponse.json({ error: "Formato inválido" }, { status: 400 });
     }
 
-    // Update all attempts in a transaction
     await prisma.$transaction(
       attempts.map((att) => {
-        let materiaCorrigida = att.materiaCorrigida || null;
-        let assuntoCorrigido = att.assuntoCorrigido || null;
-
-        // Fallback: heuristic parse from observacao text if not explicitly passed
-        if (!materiaCorrigida && !assuntoCorrigido && att.observacao) {
-          const parsed = parseMateriaAssuntoFromObservacao(att.observacao);
-          if (parsed) {
-            materiaCorrigida = parsed.materiaCorrigida;
-            assuntoCorrigido = parsed.assuntoCorrigido;
-          }
-        }
-
         const meta: MetadadosCognitivosErro | null = att.metadadosCognitivos ?? null;
         const observacao =
           att.observacao !== undefined && att.observacao !== null
@@ -166,8 +50,6 @@ export async function POST(
             tipoErro: att.tipoErro || null,
             observacao,
             metadadosCognitivosJson: meta ? JSON.stringify(meta) : null,
-            materiaCorrigida: materiaCorrigida !== undefined ? materiaCorrigida : undefined,
-            assuntoCorrigido: assuntoCorrigido !== undefined ? assuntoCorrigido : undefined,
           },
         });
       })

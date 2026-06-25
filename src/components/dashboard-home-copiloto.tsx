@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { JourneyInsight, TendenciaJornada } from "@/lib/journey-insight";
-import { resumoClusterHumano } from "@/lib/narrativa-copiloto";
 import { Badge, Card, LinkButton } from "@/components/ui";
 
 function tomTendencia(t: TendenciaJornada) {
@@ -22,7 +21,7 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
       <Card className="border-dashed border-teal-200 bg-teal-50/40 p-6 text-center">
         <h2 className="text-lg font-semibold text-slate-900">Sua jornada começa aqui</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Registre uma atividade para receber missão da semana, padrões de erro e prioridades
+          Registre uma prova do catálogo para receber missão da semana, focos por escopo e prioridades
           personalizadas.
         </p>
         <LinkButton href="/provas" className="mt-4">
@@ -37,8 +36,9 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
     estado,
     padraoCognitivo,
     principalGargalo,
-    clustersPedagogicos,
-    temDiagnosticoCognitivo,
+    focosSecundarios,
+    temDiagnosticoEscopo,
+    coberturaN2,
     diagnosticoIntegrado,
     copiloto,
     alavancas,
@@ -47,12 +47,14 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
 
   const padraoSeparado =
     padraoCognitivo &&
-    !principalGargalo?.causaMetacognitiva &&
+    !principalGargalo?.metadadosResumo &&
     padraoCognitivo.pctErrosClassificados >= 40;
+
+  const coberturaBaixa =
+    coberturaN2 && !coberturaN2.motorOperacional && coberturaN2.totalErros >= 3;
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      {/* A — Missão */}
       {missao && (
         <Card className="border-teal-200 bg-gradient-to-br from-teal-50 to-white p-5 sm:p-6">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-800">
@@ -85,7 +87,6 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
         </Card>
       )}
 
-      {/* B — Por que isso importa (história + metacognição) */}
       {principalGargalo && (
         <Card className="border-amber-200 bg-gradient-to-br from-amber-50/90 to-white p-4 sm:p-6">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-900">
@@ -112,24 +113,27 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
             {principalGargalo.materiaDeficitPrincipal && (
               <Badge tone="danger">
                 Onde mais dá para subir: {principalGargalo.materiaDeficitPrincipal}
-                {principalGargalo.pctAcertoMateria != null &&
-                  ` (${principalGargalo.pctAcertoMateria}% na jornada)`}
               </Badge>
             )}
-            {principalGargalo.causaMetacognitiva && (
-              <Badge tone="warning">Na prática: {principalGargalo.causaMetacognitiva}</Badge>
+            {principalGargalo.pctAcertoEscopo != null && (
+              <Badge tone="warning">
+                {principalGargalo.escopoLabel}: {principalGargalo.pctAcertoEscopo}% de acerto neste escopo
+              </Badge>
+            )}
+            {principalGargalo.metadadosResumo && (
+              <Badge tone="warning">Metacognição: {principalGargalo.metadadosResumo}</Badge>
             )}
           </div>
 
-          {clustersPedagogicos.length > 1 && (
+          {focosSecundarios.length > 0 && (
             <div className="mt-4 border-t border-amber-100 pt-3">
               <p className="text-[10px] font-semibold uppercase text-amber-900/80">
                 Também vale atenção
               </p>
               <ul className="mt-2 space-y-2">
-                {clustersPedagogicos.slice(1, 3).map((c) => (
-                  <li key={c.clusterId} className="text-xs leading-relaxed text-slate-700">
-                    {resumoClusterHumano(c)}
+                {focosSecundarios.map((f) => (
+                  <li key={f.escopoId} className="text-xs leading-relaxed text-slate-700">
+                    {f.escopoLabel} ({f.materiaLabel}) — {f.hipoteseCausa}
                   </li>
                 ))}
               </ul>
@@ -148,15 +152,19 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
         </p>
       )}
 
-      {!temDiagnosticoCognitivo && (
+      {coberturaBaixa && (
         <Card className="border-dashed border-slate-200 bg-slate-50/50 p-4 text-xs text-slate-600">
-          Registre provas do catálogo com gabarito completo para o diagnóstico por conhecimento
-          exigido.
+          Cobertura N2: {coberturaN2!.pctCobertura}% dos erros com escopo classificado. Classifique a
+          prova no admin para ativar o copiloto por escopo.
         </Card>
       )}
 
+      {!temDiagnosticoEscopo && !coberturaBaixa && (
+        <Card className="border-dashed border-slate-200 bg-slate-50/50 p-4 text-xs text-slate-600">
+          Registre provas do catálogo com classificação N2 no admin para o diagnóstico por escopo.
+        </Card>
+      )}
 
-      {/* C — Estado (ritmo) */}
       {estado && (
         <Card className="p-4 sm:p-5">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
@@ -186,7 +194,6 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
         </Card>
       )}
 
-      {/* D — Metacognição global (só se não entrou no bloco integrado) */}
       {padraoSeparado && (
         <Card className="border-violet-100 bg-violet-50/40 p-4 sm:p-5">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-800">
@@ -209,8 +216,8 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
           </summary>
           <div className="space-y-2 border-t border-slate-200 px-4 py-3">
             <p className="text-xs text-slate-500">
-              Visão por matéria — o foco da semana acima usa o padrão que mais se repete nas suas
-              provas registradas.
+              Visão por matéria — o foco da semana acima usa o escopo N2 que mais se repete nos seus
+              erros.
             </p>
             {alavancas.slice(0, 4).map((a) => (
               <div
@@ -227,7 +234,6 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
           </div>
         </details>
       )}
-
     </div>
   );
 }
