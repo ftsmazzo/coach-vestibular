@@ -69,7 +69,6 @@ interface Prova {
   textoFonte?: string | null;
   cadernoFileName?: string | null;
   cadernoStoragePath?: string | null;
-  cadernoStoragePath?: string | null;
   tentativas?: {
     id: string;
     data: string;
