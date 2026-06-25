@@ -342,10 +342,9 @@ Preencha o schema estrutural:
   const numerosLogicos = [...new Set(estrutura.numeros_logicos ?? [])]
     .filter((n) => n > 0 && n <= 500)
     .sort((a, b) => a - b);
+  const declaradoLogicas = estrutura.total_questoes_logicas ?? 0;
   const totalLogicas =
-    estrutura.total_questoes_logicas > 0
-      ? estrutura.total_questoes_logicas
-      : numerosLogicos.length;
+    declaradoLogicas > 0 ? declaradoLogicas : numerosLogicos.length;
 
   etapas.push(
     `Estrutura (${estruturaExec.model}): ${totalOcorrencias} ocorrência(s) física(s) · ${totalLogicas} lógica(s) · ${estrutura.blocos?.length ?? 0} bloco(s) · layout ${estrutura.formato_layout ?? "?"}`
