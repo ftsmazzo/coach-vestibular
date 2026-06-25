@@ -17,7 +17,6 @@ export const ENUNCIADO_LITERAL_MIN_CHARS = 40;
 export type ExtracaoLiteralLoteRes = {
   questoes?: Array<{
     ordem: number;
-    numero: number;
     enunciado?: string;
     alternativas?: string;
     resumo_enunciado?: string;
