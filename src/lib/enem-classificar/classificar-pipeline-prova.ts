@@ -58,7 +58,7 @@ export type MetaPipelineProva = {
     materia: MateriaNatureza | "Transversal" | null;
     confianca: number;
     motivo: string;
-    via: "ia";
+    via: "ia" | "manual";
   };
   rota?: {
     disciplinaId: string;
@@ -545,7 +545,7 @@ export function metaFromClassificacaoN1(n1: ClassificacaoN1): MetaPipelineProva 
     catalogoDestino: n1.catalogoId,
     triagemNatureza: n1.triagemNatureza
       ? {
-          materia: (n1.triagemNatureza.materia as MateriaNatureza | null) ?? null,
+          materia: (n1.triagemNatureza.materia as MateriaNatureza | "Transversal" | null) ?? null,
           confianca: n1.confianca,
           motivo: n1.triagemNatureza.motivo,
           via: n1.triagemNatureza.via,
