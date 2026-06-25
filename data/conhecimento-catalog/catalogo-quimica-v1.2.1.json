@@ -1,11 +1,12 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.4",
+  "catalogVersion": "1.2.5",
   "materiaId": "quimica",
   "materiaLabel": "Química",
   "areaEnem": "Ciências da Natureza",
   "notas": "N0=área ENEM. Assunto=taxonomia Coach. N1=domínio. N2=escopo. N3=conhecimentoExigido livre por questão. Campos por escopo: descricao (cobre / NÃO cobre), keywords (fortes, peso 1.0), keywordsContexto (fracas, peso 0.4), exemplosEnunciado (referência semântica), negativeHints (termos que NÃO devem puxar a questão para cá), naoConfundirCom (IDs irmãos), regraDesempate, conceitoCanonic.",
   "changelog": [
+    "1.2.5: quim.organica.reacoes.esterificacao (Q74); desempate vs adicao_substituicao.",
     "1.2.4: quim.solucoes.concentracao.massa_volume (Q70); negativeHints em massa_molar para concentração mg/L.",
     "1.2.3: Refino Bio×Quím×Geo — esgoto/eutrofização/saneamento → Geografia; separação de misturas (decantação/destilação); negativeHints ambientais; plantas como contexto não puxam Biologia se pergunta método de separação.",
     "1.2.1: Correção textual no changelog do fallback; sem mudança estrutural de IDs.",
@@ -1765,9 +1766,50 @@
                 "A adição de H2 a um alceno na presença de catalisador produz um..."
               ],
               "naoConfundirCom": [
-                "quim.organica.reacoes.polimeros"
+                "quim.organica.reacoes.polimeros",
+                "quim.organica.reacoes.esterificacao"
               ],
-              "negativeHints": []
+              "negativeHints": [
+                "esterificação",
+                "éster",
+                "ácido carboxílico + álcool",
+                "formação de éster"
+              ],
+              "regraDesempate": "Adição/substituição/eliminação genérica — se o foco for esterificação ou formação de éster, use esterificacao."
+            },
+            {
+              "id": "quim.organica.reacoes.esterificacao",
+              "label": "Esterificação e formação de ésteres",
+              "descricao": "Cobre reação de esterificação entre ácido carboxílico e álcool, formação de éster, nomenclatura de ésteres e propriedades da função éster. NÃO cobre identificação genérica de função oxigenada sem reação de esterificação.",
+              "keywords": [
+                "esterificação",
+                "éster",
+                "formação de éster",
+                "ácido carboxílico",
+                "álcool",
+                "grupo éster",
+                "COO-R",
+                "reação de esterificação"
+              ],
+              "keywordsContexto": [
+                "catalisador ácido",
+                "água como subproduto",
+                "aroma de frutas"
+              ],
+              "exemplosEnunciado": [
+                "A reação entre um ácido carboxílico e um álcool produz um éster e água."
+              ],
+              "negativeHints": [
+                "hidrogenação",
+                "halogenação",
+                "Markovnikov",
+                "polimerização"
+              ],
+              "naoConfundirCom": [
+                "quim.organica.reacoes.adicao_substituicao",
+                "quim.organica.funcoes.oxigenadas"
+              ],
+              "regraDesempate": "Se a questão cobra esterificação ou formação/nomenclatura de éster, classifique aqui — não adição/substituição genérica."
             },
             {
               "id": "quim.organica.reacoes.polimeros",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.0.1",
+  "catalogVersion": "1.0.2",
   "materiaId": "historia",
   "materiaLabel": "História",
   "areaEnem": "Ciências Humanas e suas Tecnologias",
@@ -662,6 +662,45 @@
               "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
             },
             {
+              "id": "hist.brasil_republica.primeira_republica.modernismo_cultura",
+              "label": "Modernismo e cultura na Primeira República",
+              "descricao": "Cobre Semana de Arte Moderna de 1922, modernismo brasileiro, renovação cultural, antropofagia, vanguardas e cultura artística/literária no contexto histórico da Primeira República. NÃO cobre tenentismo, Coluna Prestes ou Revolução de 1930 como processo político-militar.",
+              "keywords": [
+                "modernismo",
+                "Semana de Arte Moderna",
+                "1922",
+                "antropofagia",
+                "vanguardas",
+                "Mário de Andrade",
+                "Oswald de Andrade",
+                "cultura na Primeira República",
+                "renovação cultural"
+              ],
+              "keywordsContexto": [
+                "arte moderna",
+                "literatura de 1922",
+                "ruptura estética",
+                "nacionalismo crítico"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão sobre o modernismo e a renovação cultural brasileira no contexto da Primeira República."
+              ],
+              "negativeHints": [
+                "tenentismo",
+                "Coluna Prestes",
+                "Revolução de 1930",
+                "Washington Luís",
+                "Júlio Prestes",
+                "crise oligárquica de 1930"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.primeira_republica.tenentismo_1930",
+                "pt.literatura.periodos.modernismo_22"
+              ],
+              "regraDesempate": "Se o foco é movimento cultural/modernista dos anos 1920 na PR, classifique aqui — não tenentismo nem Revolução de 1930. Só use Português se a cobrança for análise literária/linguística da obra.",
+              "conceitoCanonic": "modernismo_brasileiro"
+            },
+            {
               "id": "hist.brasil_republica.primeira_republica.tenentismo_1930",
               "label": "Tenentismo e Revolução de 1930",
               "descricao": "Cobre tenentismo, crise oligárquica, Coluna Prestes, Aliança Liberal e Revolução de 1930 como ruptura da Primeira República. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
@@ -683,12 +722,18 @@
               ],
               "negativeHints": [
                 "Estado Novo",
-                "ditadura militar"
+                "ditadura militar",
+                "modernismo",
+                "Semana de Arte Moderna",
+                "1922",
+                "antropofagia",
+                "vanguardas artísticas"
               ],
               "naoConfundirCom": [
-                "hist.brasil_republica.vargas.estado_novo"
+                "hist.brasil_republica.vargas.estado_novo",
+                "hist.brasil_republica.primeira_republica.modernismo_cultura"
               ],
-              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+              "regraDesempate": "Tenentismo e ruptura política de 1930 — não modernismo cultural de 1922."
             }
           ]
         },
@@ -2100,6 +2145,7 @@
     }
   ],
   "changelog": [
+    "v1.0.2: hist.brasil_republica.primeira_republica.modernismo_cultura (Q39); desempate vs tenentismo_1930.",
     "v1.0.1: hist.brasil_imperio.crise_escravidao.abolicao_pos_abolicao (Q37); negativeHints em vargas.industrializacao_nacional.",
     "v1.0.0: desmembrado de humanas agregado para catálogo próprio de História com prefixo hist.*.",
     "v1.0.0: versão operacional enxuta com 62 escopos reais + hist.__nao_classificado, evitando teto de 80.",

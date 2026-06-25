@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.3",
+  "catalogVersion": "1.2.4",
   "materiaId": "matematica",
   "materiaLabel": "Matemática",
   "areaEnem": "Matemática e suas Tecnologias",
@@ -796,20 +796,35 @@
             },
             {
               "id": "mat.geometria_plana.relacoes.lugar_geometrico",
-              "label": "Mediatriz, bissetriz e circunferência",
+              "label": "Circunferência, mediatriz e relações métricas no plano",
+              "descricao": "Cobre circunferência inscrita/circunscrita, raio, corda, arco, mediatriz, bissetriz e relações métricas em figuras planas sem coordenadas cartesianas. NÃO cobre distância entre pontos com fórmula d=√((x₂−x₁)²+(y₂−y₁)²) no plano cartesiano.",
               "keywords": [
                 "mediatriz",
                 "bissetriz",
                 "circunferência inscrita",
                 "circunferência circunscrita",
-                "centro e raio"
+                "circunferência",
+                "centro e raio",
+                "raio",
+                "corda",
+                "arco",
+                "diâmetro",
+                "relações métricas"
               ],
-              "descricao": "Questões que exigem procedimento matemático de mediatriz, bissetriz e circunferência. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar mediatriz, bissetriz e circunferência para chegar à alternativa correta."
+                "Uma questão sobre relações métricas em circunferência ou figura plana sem plano cartesiano."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "plano cartesiano",
+                "coordenadas (x,y)",
+                "d=√",
+                "equação da circunferência"
+              ],
+              "naoConfundirCom": [
+                "mat.geometria_analitica.plano.distancia_ponto",
+                "mat.geometria_analitica.plano.circulo"
+              ],
+              "regraDesempate": "Circunferência/raio/corda em geometria plana sem coordenadas → aqui. Com coordenadas ou equação (x-a)²+(y-b)² → circulo analítico ou distancia_ponto.",
               "keywordsContexto": []
             }
           ]
@@ -1090,13 +1105,21 @@
                 "paralelepípedo",
                 "face do cubo",
                 "aresta do cubo",
-                "diagonal espacial"
+                "diagonal espacial",
+                "circunferência inscrita",
+                "circunferência circunscrita",
+                "raio da circunferência",
+                "corda",
+                "arco",
+                "mediatriz",
+                "centro do círculo sem coordenadas"
               ],
               "naoConfundirCom": [
                 "mat.geometria_espacial.metricas.distancia_pontos_cubo",
-                "mat.geometria_plana.relacoes.pitagoras"
+                "mat.geometria_plana.relacoes.pitagoras",
+                "mat.geometria_plana.relacoes.lugar_geometrico"
               ],
-              "regraDesempate": "Se há coordenadas (x, y) no plano → aqui. Se o contexto é cubo/paralelepípedo com segmentos no sólido → mat.geometria_espacial.metricas.distancia_pontos_cubo.",
+              "regraDesempate": "Fórmula de distância com coordenadas (x,y) → aqui. Circunferência/raio/corda em figura plana sem cartesiano → lugar_geometrico.",
               "keywordsContexto": []
             },
             {
@@ -1129,8 +1152,12 @@
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar circunferência no plano para chegar à alternativa correta."
               ],
+              "naoConfundirCom": [
+                "mat.geometria_plana.relacoes.lugar_geometrico",
+                "mat.geometria_analitica.plano.distancia_ponto"
+              ],
+              "regraDesempate": "Equação (x-a)²+(y-b)²=r² com coordenadas → aqui. Relações métricas de circunferência sem cartesiano → lugar_geometrico.",
               "negativeHints": [],
-              "naoConfundirCom": [],
               "keywordsContexto": []
             },
             {
@@ -1743,6 +1770,7 @@
     }
   ],
   "changelog": [
+    "1.2.4: Refino lugar_geometrico vs distancia_ponto (Q88) — circunferência e relações métricas no plano.",
     "1.2.2: Desempate Física×Matemática (fisica_prevalece_quando_ha_grandezas_e_fenomeno) — negativeHints em escopos aritmética/funções/gráficos que roubavam Física matematizada.",
     "1.2.1: Novo domínio geometria_espacial.metricas e escopo distancia_pontos_cubo (distância entre pontos/vértices em cubo via Pitágoras). Refino de desempate em prisma_cubo, pitagoras e distancia_ponto.",
     "1.2.0: Refatoração para o padrão Química v1.2 — descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate em escopos críticos.",

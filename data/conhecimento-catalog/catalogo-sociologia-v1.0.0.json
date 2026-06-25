@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.0.2",
+  "catalogVersion": "1.0.3",
   "materiaId": "sociologia",
   "materiaLabel": "Sociologia",
   "areaEnem": "Ciências Humanas e suas Tecnologias",
@@ -1018,12 +1018,20 @@
               "negativeHints": [
                 "segregação socioespacial",
                 "metropolização",
-                "mapa urbano"
+                "mapa urbano",
+                "mudanças climáticas",
+                "aquecimento global",
+                "transição energética",
+                "energia renovável",
+                "ativismo climático",
+                "carbono",
+                "meio ambiente como movimento"
               ],
               "naoConfundirCom": [
-                "geo.urbana.metropolizacao.segregacao"
+                "geo.urbana.metropolizacao.segregacao",
+                "soc.movimentos.especificos.ambientalismo"
               ],
-              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "regraDesempate": "Pobreza e exclusão social genérica — não ativismo ambiental, clima ou transição energética (use ambientalismo).",
               "conceitoCanonic": "desigualdade_social"
             },
             {
@@ -1414,33 +1422,44 @@
             },
             {
               "id": "soc.movimentos.especificos.ambientalismo",
-              "label": "Movimento ambientalista e justiça ambiental",
-              "descricao": "Cobre ambientalismo como movimento social, justiça ambiental, conflitos socioambientais e mobilização coletiva. NÃO cobre clima, biomas ou impactos ambientais como Geografia física/ambiental se o foco for fenômeno natural/territorial.",
+              "label": "Ambientalismo, ativismo climático e transição energética",
+              "descricao": "Cobre ambientalismo como movimento social, ativismo climático, justiça ambiental, mobilização por sustentabilidade, crítica ao modelo energético e transição energética como fenômeno sociopolítico. NÃO cobre pobreza genérica nem biomas/clima como fenômeno geográfico natural sem mobilização social.",
               "keywords": [
                 "movimento ambientalista",
                 "justiça ambiental",
                 "conflito socioambiental",
                 "ambientalismo",
-                "mobilização ambiental"
+                "mobilização ambiental",
+                "ativismo climático",
+                "transição energética",
+                "energias renováveis",
+                "crise climática",
+                "sustentabilidade"
               ],
               "keywordsContexto": [
-                "sustentabilidade",
                 "direitos",
-                "comunidades"
+                "comunidades",
+                "petróleo",
+                "carbono",
+                "descarbonização",
+                "política energética"
               ],
               "exemplosEnunciado": [
-                "Uma questão pede interpretar movimento ambientalista e justiça ambiental como fenômeno social para chegar à alternativa correta."
+                "Uma questão sobre ativismo climático, transição energética ou mobilização ambientalista como fenômeno social."
               ],
               "negativeHints": [
-                "clima",
-                "bioma",
-                "desmatamento como dinâmica territorial"
+                "pobreza",
+                "fome",
+                "moradia precária",
+                "renda mínima",
+                "bioma como descrição territorial"
               ],
               "naoConfundirCom": [
-                "geo.fisica_ambiental.ambiental.desmatamento_queimadas",
-                "geo.fisica_ambiental.clima.clima_tempo"
+                "soc.desigualdades.sociais.pobreza_exclusao",
+                "geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas",
+                "quim.ambiental.combustiveis.renovavel"
               ],
-              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "regraDesempate": "Se o foco é movimento social, ativismo ou transição energética como disputa sociopolítica, classifique aqui — não pobreza genérica. Geografia/Química só se o procedimento central for territorial ou molecular.",
               "conceitoCanonic": "justica_ambiental"
             }
           ]

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.3",
+  "catalogVersion": "1.2.4",
   "materiaId": "fisica",
   "materiaLabel": "Física",
   "areaEnem": "Ciências da Natureza",
@@ -1080,6 +1080,45 @@
           "label": "Óptica geométrica",
           "escopos": [
             {
+              "id": "fis.optica.geometrica.camara_escura",
+              "label": "Câmara escura e propagação retilínea da luz",
+              "descricao": "Cobre câmara escura (camera obscura), orifício, formação de imagem invertida, propagação retilínea da luz e princípios da óptica geométrica sem lei de Snell. NÃO cobre refração, índice de refração ou lentes esféricas.",
+              "keywords": [
+                "câmara escura",
+                "camera obscura",
+                "orifício",
+                "furo",
+                "propagação retilínea",
+                "propagacao retilinea",
+                "raio de luz",
+                "formação de imagem",
+                "imagem invertida",
+                "pinhole"
+              ],
+              "keywordsContexto": [
+                "caixa escura",
+                "luz atravessa orifício",
+                "sombra",
+                "projeção"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão sobre formação de imagem em câmara escura pela propagação retilínea da luz."
+              ],
+              "negativeHints": [
+                "snell",
+                "índice de refração",
+                "refração total",
+                "lente convergente",
+                "equação de gauss"
+              ],
+              "naoConfundirCom": [
+                "fis.optica.geometrica.refracao",
+                "fis.optica.geometrica.lentes",
+                "fis.optica.geometrica.reflexao"
+              ],
+              "regraDesempate": "Câmara escura ou propagação retilínea para formar imagem — aqui. Refração/Snell → refracao. Espelho plano → reflexao."
+            },
+            {
               "id": "fis.optica.geometrica.reflexao",
               "label": "Reflexão da luz",
               "keywords": [
@@ -1115,6 +1154,7 @@
               ],
               "naoConfundirCom": [
                 "fis.optica.geometrica.refracao",
+                "fis.optica.geometrica.camara_escura",
                 "mat.geometria_analitica.plano.distancia_ponto",
                 "mat.geometria_plana.angulos_poligonos.soma_angulos"
               ],
@@ -1136,12 +1176,20 @@
                 "refração total",
                 "despersão"
               ],
-              "descricao": "Questões que exigem aplicar conceitos físicos de refração e lei de snell no domínio Óptica geométrica. Classifique aqui quando o procedimento de resolução depender diretamente desse conceito, não apenas quando ele aparecer no contexto.",
+              "descricao": "Refração da luz e lei de Snell; índice de refração e refração total. NÃO cobre câmara escura, orifício ou formação de imagem só por propagação retilínea.",
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar refração e lei de snell para chegar à alternativa correta."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "câmara escura",
+                "camera obscura",
+                "orifício",
+                "propagação retilínea",
+                "pinhole"
+              ],
+              "naoConfundirCom": [
+                "fis.optica.geometrica.camara_escura"
+              ],
               "keywordsContexto": []
             },
             {
@@ -1854,6 +1902,7 @@
     }
   ],
   "changelog": [
+    "1.2.4: fis.optica.geometrica.camara_escura (Q79); desempate vs refracao.",
     "1.2.2: Refino FAMERP 61–70 — enriquecidos 11 escopos (MRU ônibus, Newton+gráfico, órbitas, Arquimedes, dilatação esfera, gás ideal densidade, espelho plano, kWh, Lorentz, fotoelétrico) com keywords, exemplos e desempate vs Mat.",
     "1.2.1: Regra global fisica_prevalece_quando_ha_grandezas_e_fenomeno — Física matematizada (FAMERP) não deve ir para Matemática no N1/N2.",
     "1.2.0: Refatoração para o padrão Química v1.2 — descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate em escopos críticos.",
