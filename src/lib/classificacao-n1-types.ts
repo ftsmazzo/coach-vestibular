@@ -12,7 +12,7 @@ export type ClassificacaoN1 = {
   justificativa: string;
   triagemNatureza?: {
     materia: string | null;
-    via: "ia" | "manual";
+    via: "ia" | "manual" | "heuristica";
     motivo: string;
   };
   rota?: {

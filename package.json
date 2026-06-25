@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prebuild": "npm run test:regressao",
+    "test:regressao": "node --import tsx --test src/lib/enem-classificar/__tests__/regression-classificacao.test.ts",
     "prestart": "prisma migrate deploy",
     "start": "next start",
     "lint": "eslint",

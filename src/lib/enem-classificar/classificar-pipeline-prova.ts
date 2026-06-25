@@ -31,10 +31,28 @@ import {
 } from "@/lib/enem-classificar/classificar-catalogo-v11";
 import { resolverChaveFonteId } from "@/lib/enem-classificar/fonte-id-utils";
 import {
+  triarMateriaNatureza,
   type MateriaNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
 import { triarQuestaoIA, iaClassificacaoDisponivel } from "@/lib/enem-classificar/triagem-ia";
-import { aplicarMetadadoVarianteLinguagens } from "@/lib/enem-classificar/roteamento-metadado-linguagens";
+import {
+  triarNaturezaTransversal,
+  REGRA_NATUREZA_TRANSVERSAL_ID,
+} from "@/lib/enem-classificar/triagem-natureza-transversal";
+import {
+  REGRA_FISICA_PREVALECE_ID,
+} from "@/lib/enem-classificar/fisica-vs-matematica";
+import {
+  aplicarRoteamentoDeterministicoHumanas,
+  aplicarRoteamentoDeterministicoLinguagens,
+  roteamentoHumanasPorHeuristica,
+  roteamentoLinguagensPorHeuristica,
+} from "@/lib/enem-classificar/heuristica-roteamento-disciplina";
+import {
+  CONFIANCA_HEURISTICA_NATUREZA_MIN,
+  validarExatasPosIA,
+  validarTriagemNaturezaPosIA,
+} from "@/lib/enem-classificar/validacao-pos-ia-n1";
 import type { ClassificacaoN1 } from "@/lib/classificacao-n1-types";
 import { CLASSIFICACAO_N1_VERSAO } from "@/lib/classificacao-n1-types";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
@@ -58,7 +76,7 @@ export type MetaPipelineProva = {
     materia: MateriaNatureza | "Transversal" | null;
     confianca: number;
     motivo: string;
-    via: "ia" | "manual";
+    via: "heuristica" | "ia" | "manual";
   };
   rota?: {
     disciplinaId: string;
@@ -203,67 +221,151 @@ function schemaRoteamento(enumDisciplinas: string[]) {
   } as const;
 }
 
-function rotaMetadadoLinguagens(q: PayloadQuestaoCompleto, rota: RotaIa): RotaIa {
-  return aplicarMetadadoVarianteLinguagens(q.idiomaVariante, null, rota);
+function rotaDeterministicaLinguagens(
+  q: PayloadQuestaoCompleto,
+  rota: RotaIa
+): RotaIa {
+  return aplicarRoteamentoDeterministicoLinguagens(
+    textoCompleto(q),
+    q.idiomaVariante,
+    rota
+  );
 }
 
-/** Passo 2a — triagem Bio/Quím/Fís/Transversal (1 questão, só IA). */
+function rotaDeterministicaHumanas(q: PayloadQuestaoCompleto, rota: RotaIa): RotaIa {
+  return aplicarRoteamentoDeterministicoHumanas(textoCompleto(q), rota);
+}
+
+/** Passo 2a — triagem híbrida: transversal → heurística forte → IA → pós-validação. */
 export async function passoTriagemNatureza(
   q: PayloadQuestaoCompleto,
   meta: MetaPipelineProva
 ): Promise<{ meta: MetaPipelineProva; etapa: EtapaPipeline; materiaId: MateriaCorpusId | null }> {
   const texto = textoCompleto(q);
 
-  if (!iaClassificacaoDisponivel()) {
+  const trans = triarNaturezaTransversal(texto);
+  if (trans.catalogoId) {
     const metaOut: MetaPipelineProva = {
       ...meta,
       triagemNatureza: {
-        materia: null,
-        confianca: 0,
-        motivo: "API de classificação indisponível",
-        via: "ia",
+        materia: "Transversal",
+        confianca: trans.confianca,
+        motivo: trans.motivo,
+        via: "heuristica",
       },
     };
     return {
       meta: metaOut,
-      materiaId: null,
+      materiaId: trans.catalogoId,
       etapa: {
         passo: "triagem-natureza",
-        detalhe: `Q${q.numero} → triagem bloqueada (sem API)`,
+        detalhe: `Q${q.numero} → natureza_transversal (${REGRA_NATUREZA_TRANSVERSAL_ID}, conf=${trans.confianca.toFixed(2)})`,
       },
     };
   }
 
-  const tri = await triarQuestaoIA(q.fonteId, texto);
-  const materiaId =
-    tri.materia === "Transversal"
-      ? "natureza_transversal"
-      : tri.materia
-        ? MAP_NATUREZA_CORPUS[tri.materia]
-        : null;
+  const heur = triarMateriaNatureza(texto);
+  if (heur.materia && heur.confianca >= CONFIANCA_HEURISTICA_NATUREZA_MIN) {
+    const materiaId = MAP_NATUREZA_CORPUS[heur.materia];
+    const metaOut: MetaPipelineProva = {
+      ...meta,
+      triagemNatureza: { ...heur, via: "heuristica" },
+    };
+    return {
+      meta: metaOut,
+      materiaId,
+      etapa: {
+        passo: "triagem-natureza",
+        detalhe: `Q${q.numero} → ${heur.materia} (heurística, conf=${heur.confianca.toFixed(2)})`,
+      },
+    };
+  }
+
+  if (!iaClassificacaoDisponivel()) {
+    const metaOut: MetaPipelineProva = {
+      ...meta,
+      triagemNatureza: {
+        materia: heur.materia,
+        confianca: heur.confianca,
+        motivo: heur.materia
+          ? `API indisponível; heurística insuficiente (conf=${heur.confianca.toFixed(2)})`
+          : "API indisponível e heurística inconclusiva",
+        via: "heuristica",
+      },
+    };
+    const materiaId = heur.materia ? MAP_NATUREZA_CORPUS[heur.materia] : null;
+    return {
+      meta: metaOut,
+      materiaId,
+      etapa: {
+        passo: "triagem-natureza",
+        detalhe: materiaId
+          ? `Q${q.numero} → ${heur.materia} (heurística fraca, sem IA)`
+          : `Q${q.numero} → triagem bloqueada (sem API)`,
+      },
+    };
+  }
+
+  const ia = await triarQuestaoIA(q.fonteId, texto);
+  const validada = validarTriagemNaturezaPosIA(texto, ia, heur);
+  const via = validada.via;
+
   const metaOut: MetaPipelineProva = {
     ...meta,
-    triagemNatureza: { ...tri, via: "ia" },
+    triagemNatureza: {
+      materia: validada.triagem.materia,
+      confianca: validada.triagem.confianca,
+      motivo: validada.triagem.motivo,
+      via,
+    },
   };
 
   return {
     meta: metaOut,
-    materiaId,
+    materiaId: validada.catalogoId,
     etapa: {
       passo: "triagem-natureza",
-      detalhe: materiaId
-        ? `Q${q.numero} → ${tri.materia} (ia, conf=${tri.confianca.toFixed(2)})`
-        : `Q${q.numero} → triagem inconclusiva (ia)`,
+      detalhe: validada.catalogoId
+        ? `Q${q.numero} → ${validada.triagem.materia ?? validada.catalogoId} (${via}, conf=${validada.triagem.confianca.toFixed(2)})`
+        : `Q${q.numero} → triagem inconclusiva (${via})`,
     },
   };
 }
 
-/** Passo 2b — roteamento disciplinar (1 questão, 1 prompt). */
+/** Passo 2b — roteamento disciplinar: heurística forte → IA → pós-validação. */
 export async function passoRoteamentoDisciplina(
   q: PayloadQuestaoCompleto,
   meta: MetaPipelineProva,
   area: "humanas" | "linguagens"
 ): Promise<{ meta: MetaPipelineProva; etapa: EtapaPipeline; rota: RotaIa | null }> {
+  const texto = textoCompleto(q);
+
+  const rotaHeuristica =
+    area === "linguagens"
+      ? roteamentoLinguagensPorHeuristica(texto, q.idiomaVariante)
+      : roteamentoHumanasPorHeuristica(texto);
+
+  if (rotaHeuristica) {
+    const metaOut: MetaPipelineProva = {
+      ...meta,
+      rota: {
+        disciplinaId: rotaHeuristica.disciplinaId,
+        criterio: rotaHeuristica.criterio,
+        confianca: rotaHeuristica.confianca,
+        justificativa: rotaHeuristica.justificativa,
+        area,
+      },
+    };
+    return {
+      meta: metaOut,
+      rota: rotaHeuristica,
+      etapa: {
+        passo: `roteamento-${area}`,
+        detalhe: `Q${q.numero} → ${rotaHeuristica.disciplinaId} (heurística, conf=${rotaHeuristica.confianca.toFixed(2)})`,
+      },
+    };
+  }
+
   const enumDisciplinas =
     area === "humanas"
       ? [...DISCIPLINAS_HUMANAS, "indefinido"]
@@ -305,7 +407,9 @@ export async function passoRoteamentoDisciplina(
   }
 
   if (area === "linguagens") {
-    rota = rotaMetadadoLinguagens(q, rota);
+    rota = rotaDeterministicaLinguagens(q, rota);
+  } else {
+    rota = rotaDeterministicaHumanas(q, rota);
   }
 
   const metaOut: MetaPipelineProva = {
@@ -545,7 +649,8 @@ export function metaFromClassificacaoN1(n1: ClassificacaoN1): MetaPipelineProva 
     catalogoDestino: n1.catalogoId,
     triagemNatureza: n1.triagemNatureza
       ? {
-          materia: (n1.triagemNatureza.materia as MateriaNatureza | "Transversal" | null) ?? null,
+          materia:
+            (n1.triagemNatureza.materia as MateriaNatureza | "Transversal" | null) ?? null,
           confianca: n1.confianca,
           motivo: n1.triagemNatureza.motivo,
           via: n1.triagemNatureza.via,
@@ -581,16 +686,39 @@ export async function executarN1Questao(
   let meta: MetaPipelineProva = { area };
 
   if (area === "exatas") {
+    const validada = validarExatasPosIA(textoCompleto(q), "matematica");
+    if (validada.catalogoId === "fisica") {
+      const n1: ClassificacaoN1 = {
+        versao: CLASSIFICACAO_N1_VERSAO,
+        area: "natureza",
+        catalogoId: "fisica",
+        confianca: validada.confianca,
+        criterio: validada.criterio,
+        justificativa: validada.justificativa,
+        triagemNatureza: {
+          materia: "Física",
+          via: "heuristica",
+          motivo: validada.justificativa,
+        },
+        classificadoEm,
+      };
+      etapas.push({
+        passo: "n1-cat",
+        detalhe: `Q${q.numero} → fisica (${REGRA_FISICA_PREVALECE_ID}, conf=${validada.confianca.toFixed(2)})`,
+      });
+      return { n1, etapas, avisos };
+    }
+
     const n1: ClassificacaoN1 = {
       versao: CLASSIFICACAO_N1_VERSAO,
       area,
-      catalogoId: "matematica",
-      confianca: 1,
-      criterio: "area_bloco",
-      justificativa: "Área Exatas → catálogo matemática.",
+      catalogoId: validada.catalogoId,
+      confianca: validada.confianca,
+      criterio: validada.criterio,
+      justificativa: validada.justificativa,
       classificadoEm,
     };
-    etapas.push({ passo: "n1-cat", detalhe: `Q${q.numero} → matematica` });
+    etapas.push({ passo: "n1-cat", detalhe: `Q${q.numero} → ${validada.catalogoId}` });
     return { n1, etapas, avisos };
   }
 
@@ -608,7 +736,11 @@ export async function executarN1Questao(
       catalogoId: tri.materiaId,
       confianca: tri.meta.triagemNatureza?.confianca ?? 0.5,
       criterio:
-        tri.materiaId === "natureza_transversal" ? "triagem_ia_transversal" : "triagem_ia",
+        tri.materiaId === "natureza_transversal"
+          ? REGRA_NATUREZA_TRANSVERSAL_ID
+          : tri.meta.triagemNatureza?.via === "heuristica"
+            ? "heuristica"
+            : "triagem_ia",
       justificativa: tri.meta.triagemNatureza?.motivo ?? "Triagem natureza",
       triagemNatureza: tri.meta.triagemNatureza
         ? {

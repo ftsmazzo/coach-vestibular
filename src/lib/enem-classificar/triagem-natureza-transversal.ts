@@ -16,16 +16,24 @@ function norm(s: string): string {
 
 const PADROES_METODOLOGIA: RegExp[] = [
   /\bmetodo cientifico\b/,
+  /\bnatureza da ciencia\b/,
   /\bformulacao de (uma )?hipotese\b/,
   /\bapos a formulacao de (uma )?hipotese\b/,
   /\bsequencialmente\b.*\bhipotese\b/,
   /\bhipotese\b.*\b(experimento|experimentacao|coleta de dados)\b/,
   /\bcoleta de dados\b/,
+  /\banalise de dados\b/,
+  /\banalise critica\b/,
   /\binvestigacao cientifica\b/,
   /\babordagem sistematica\b/,
   /\betapas do metodo\b/,
+  /\bsequencia do metodo cientifico\b/,
+  /\bobservacao rigorosa\b/,
+  /\bobservacao controlada\b/,
   /\bobservacao\b.*\bhipotese\b/,
   /\bexperimentacao\b.*\banalise\b/,
+  /\bexperimentacao\b/,
+  /\bexperimento\b.*\b(conclusao|analise)\b/,
 ];
 
 /** Sinais fortes de disciplina — metodologia pura não deve perder para menção incidental. */
