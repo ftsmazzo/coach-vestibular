@@ -4,7 +4,7 @@ import { loadConjuntoExamView } from "@/lib/conjunto-exam-view";
 import { prisma } from "@/lib/prisma";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { parseConjuntoExamId } from "@/lib/prova-multidia";
-import { labelEscopo } from "@/lib/escopo-display";
+import { labelEscopo } from "@/lib/escopo-display-server";
 import { PageBackLink } from "@/components/page-back-link";
 import { TabelaQuestoesRegistro } from "@/components/tabela-questoes-registro";
 import { SugestoesRegistroResumo } from "@/components/sugestoes-registro-resumo";

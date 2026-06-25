@@ -1,17 +1,11 @@
+import "server-only";
+
 import { parseClassificacaoN1 } from "@/lib/classificacao-n1-types";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
 import { resolverCatalogoN1Questao } from "@/lib/resolver-catalogo-n1-questao";
 import { opcoesCatalogoN1 } from "@/lib/catalogos-n1-destino";
 
-export type ClassificacaoTresNiveis = {
-  n1Area: string | null;
-  n1Catalogo: string | null;
-  n2EscopoId: string | null;
-  n2EscopoLabel: string | null;
-  n2DominioId: string | null;
-  n3Conhecimento: string | null;
-  confianca: number | null;
-};
+export type { ClassificacaoTresNiveis } from "@/lib/escopo-display-client";
 
 type FonteQuestao = {
   classificacaoN1Json?: string | null;
@@ -29,7 +23,7 @@ export function labelEscopo(escopoId: string | null | undefined): string | null 
   return entry?.escopoLabel ?? escopoId;
 }
 
-export function formatClassificacaoTresNiveis(q: FonteQuestao): ClassificacaoTresNiveis {
+export function formatClassificacaoTresNiveis(q: FonteQuestao) {
   const escopoId = q.conhecimentoEscopoId?.trim() || null;
   const idx = escopoId ? indexGlobalEscopos().get(escopoId) : null;
   const n1 = parseClassificacaoN1(q.classificacaoN1Json);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button, Card } from "@/components/ui";
-import { labelEscopo } from "@/lib/escopo-display";
+import { labelEscopoCurto } from "@/lib/escopo-display-client";
 
 type EscopoOpcao = { id: string; label: string; areaEnem?: string };
 
@@ -32,7 +32,7 @@ export function SugerirClassificacao({
 
   const labelAtual =
     escopoLabelAtual?.trim() ||
-    labelEscopo(escopoAtualId) ||
+    labelEscopoCurto(escopoAtualId) ||
     "Sem escopo N2 (admin precisa classificar)";
 
   useEffect(() => {

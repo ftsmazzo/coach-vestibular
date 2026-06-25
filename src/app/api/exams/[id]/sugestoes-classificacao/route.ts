@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
-import { labelEscopo } from "@/lib/escopo-display";
+import { labelEscopo } from "@/lib/escopo-display-server";
 import { prisma } from "@/lib/prisma";
 
 const createSchema = z.object({

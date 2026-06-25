@@ -11,7 +11,7 @@ import {
   sugerirEtapaDeTipoErro,
   type MetadadosErroForm,
 } from "@/lib/metadados-cognitivos-labels";
-import { formatClassificacaoTresNiveis } from "@/lib/escopo-display";
+import { formatClassificacaoTresNiveis, labelEscopoCurto } from "@/lib/escopo-display-client";
 import { Card, Button, Badge } from "./ui";
 
 interface Attempt {
@@ -59,9 +59,7 @@ const ERROR_OPTIONS = [
 ];
 
 function escopoLabelCurto(escopoId: string | null | undefined): string | null {
-  if (!escopoId?.trim()) return null;
-  const parts = escopoId.split(".");
-  return parts[parts.length - 1]?.replace(/_/g, " ") ?? escopoId;
+  return labelEscopoCurto(escopoId);
 }
 
 function ClassificacaoBloco({ q }: { q: Attempt }) {

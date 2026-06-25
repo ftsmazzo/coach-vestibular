@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AttemptInput } from "@/lib/diagnosis";
 import { buildEscopoScores, buildFocosPedagogicos } from "@/lib/diagnosis-escopo";
 import { montarQuestEscopoDirigida } from "@/lib/learning-quest-escopo";
-import { buscarEscoposPorTexto } from "@/lib/escopo-display";
+import { buscarEscoposPorTexto } from "@/lib/escopo-display-server";
 
 describe("motor v1 — escopo N2", () => {
   it("buildFocosPedagogicos prioriza escopo com erros N2", () => {

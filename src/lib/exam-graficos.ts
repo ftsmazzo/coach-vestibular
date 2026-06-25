@@ -2,7 +2,7 @@
  * Dados serializáveis para gráficos da análise de uma prova (motor v1 — escopo N2).
  */
 import type { ErrorType } from "@/generated/prisma/client";
-import { labelEscopo } from "@/lib/escopo-display";
+import { labelEscopo } from "@/lib/escopo-display-server";
 import { getTipoErroLabel, taxonomy } from "@/lib/taxonomy";
 
 const CORES_CAUSA: Record<string, string> = {

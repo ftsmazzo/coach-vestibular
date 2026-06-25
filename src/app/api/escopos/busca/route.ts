@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { buscarEscoposPorTexto } from "@/lib/escopo-display";
+import { buscarEscoposPorTexto } from "@/lib/escopo-display-server";
 
 export async function GET(request: Request) {
   const session = await getSession();
