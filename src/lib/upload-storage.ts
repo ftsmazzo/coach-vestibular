@@ -40,13 +40,24 @@ export async function saveSolicitacaoGabarito(jobId: string, file: File): Promis
 
 /** Salva o caderno (PDF/imagem) de uma prova para download do aluno. */
 export async function saveProvaCaderno(provaId: string, file: File): Promise<string> {
-  const safeName = sanitizeFileName(file.name);
+  const buf = Buffer.from(await file.arrayBuffer());
+  const { storagePath } = await saveProvaCadernoBuffer(provaId, buf, file.name, file.type);
+  return storagePath;
+}
+
+/** Salva caderno a partir de buffer (pipeline de extração). */
+export async function saveProvaCadernoBuffer(
+  provaId: string,
+  buffer: Buffer,
+  fileName: string,
+  mimeType = "application/pdf"
+): Promise<{ storagePath: string; fileName: string; mimeType: string }> {
+  const safeName = sanitizeFileName(fileName);
   const rel = path.posix.join(SUBDIR_PROVAS, provaId, "caderno", safeName);
   const abs = path.join(getUploadRoot(), rel);
   await fs.mkdir(path.dirname(abs), { recursive: true });
-  const buf = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(abs, buf);
-  return rel;
+  await fs.writeFile(abs, buffer);
+  return { storagePath: rel, fileName: safeName, mimeType: mimeType || "application/pdf" };
 }
 
 /** Salva o anexo (print) de um report de erro. */

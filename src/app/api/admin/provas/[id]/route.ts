@@ -47,6 +47,7 @@ export async function GET(
   return NextResponse.json({
     ...provaSemTexto,
     questoes: questoesOrdenadas,
+    textoFonte: textoFonte ?? null,
     temTextoFonte: Boolean(textoFonte?.trim()),
     tamanhoTextoFonte: textoFonte?.length ?? 0,
     questoesCadastradas: stats.cadastradas,

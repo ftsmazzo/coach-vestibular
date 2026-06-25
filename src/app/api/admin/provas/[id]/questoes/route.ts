@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { parseProvaQuestoesCsv } from "@/lib/parse-prova-csv";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
-import { persistirQuestoesClassificadas } from "@/lib/prova-questoes-persist";
+import { persistirQuestoesClassificadas, persistirTextoFonteProva, montarTextoFonteDeRows } from "@/lib/prova-questoes-persist";
 
 const questaoSchema = z.object({
   numero: z.number().int().positive(),
@@ -54,6 +54,8 @@ export async function POST(
     }
 
     const imported = await persistirQuestoesClassificadas(provaId, rows, { substituir });
+
+    await persistirTextoFonteProva(provaId, montarTextoFonteDeRows(rows));
 
     await refreshProvaGabaritoFlag(provaId);
 

@@ -63,6 +63,36 @@ function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
   });
 }
 
+/** Monta texto-fonte auditável a partir das questões gravadas. */
+export function montarTextoFonteDeRows(rows: ProvaQuestaoRow[]): string {
+  const sorted = [...rows].sort((a, b) => {
+    if (a.numero !== b.numero) return a.numero - b.numero;
+    const va = a.idiomaVariante ?? "COMUM";
+    const vb = b.idiomaVariante ?? "COMUM";
+    return va.localeCompare(vb);
+  });
+  const partes: string[] = [];
+  for (const r of sorted) {
+    const variante =
+      r.idiomaVariante && r.idiomaVariante !== "COMUM" ? ` [${r.idiomaVariante}]` : "";
+    const bloco: string[] = [`=== Questão ${r.numero}${variante} ===`];
+    if (r.enunciado?.trim()) bloco.push(r.enunciado.trim());
+    if (r.alternativas?.trim()) bloco.push(r.alternativas.trim());
+    if (bloco.length > 1) partes.push(bloco.join("\n"));
+  }
+  return partes.join("\n\n").trim();
+}
+
+/** Persiste texto-fonte da prova (extração/CSV) para reclassificar sem reenviar PDF. */
+export async function persistirTextoFonteProva(provaId: string, texto: string): Promise<void> {
+  const t = texto.trim();
+  if (t.length < 50) return;
+  await prisma.prova.update({
+    where: { id: provaId },
+    data: { textoFonte: t.slice(0, 500_000) },
+  });
+}
+
 function camposN2(r: ProvaQuestaoRow) {
   return {
     conhecimentoEscopoId: r.conhecimentoEscopoId ?? null,

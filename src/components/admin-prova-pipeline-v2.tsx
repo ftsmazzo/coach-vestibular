@@ -9,6 +9,9 @@ interface Props {
   provaId: string;
   totalQuestoes: number;
   pdfFile: File | null;
+  temCadernoSalvo?: boolean;
+  cadernoFileName?: string | null;
+  questoesGravadas?: number;
   gabaritoLote: string;
   incluirGabarito: boolean;
   onMensagem: (msg: string) => void;
@@ -30,6 +33,9 @@ export function AdminProvaPipelineV2({
   provaId,
   totalQuestoes,
   pdfFile,
+  temCadernoSalvo = false,
+  cadernoFileName,
+  questoesGravadas = 0,
   gabaritoLote,
   incluirGabarito,
   onMensagem,
@@ -47,10 +53,14 @@ export function AdminProvaPipelineV2({
   } | null>(null);
 
   const montarFormData = useCallback(
-    (aplicar: boolean) => {
+    (aplicar: boolean, origem: "upload" | "salvo") => {
       const fd = new FormData();
-      if (!pdfFile) throw new Error("PDF");
-      fd.append("file", pdfFile);
+      if (origem === "upload") {
+        if (!pdfFile) throw new Error("PDF");
+        fd.append("file", pdfFile);
+      } else {
+        fd.append("usarCadernoSalvo", "true");
+      }
       fd.append("aplicar", String(aplicar));
       fd.append("substituir", "true");
       const temGabarito = gabaritoLote.trim().length > 0;
@@ -64,10 +74,12 @@ export function AdminProvaPipelineV2({
     [pdfFile, incluirGabarito, somenteIngles, gabaritoLote]
   );
 
+  const podeExtrair = Boolean(pdfFile) || temCadernoSalvo;
+
   const extrairPdf = useCallback(
-    async (aplicar: boolean) => {
-      if (!pdfFile) {
-        onMensagem("Selecione o PDF da prova acima.");
+    async (aplicar: boolean, origem: "upload" | "salvo" = pdfFile ? "upload" : "salvo") => {
+      if (!pdfFile && !temCadernoSalvo) {
+        onMensagem("Selecione o PDF da prova acima ou use o caderno já salvo no servidor.");
         return;
       }
 
@@ -81,7 +93,7 @@ export function AdminProvaPipelineV2({
       try {
         const res = await fetch(`/api/admin/provas/${provaId}/pipeline`, {
           method: "POST",
-          body: montarFormData(aplicar),
+          body: montarFormData(aplicar, origem),
         });
         const data = await res.json();
         setCarregando(false);
@@ -120,11 +132,11 @@ export function AdminProvaPipelineV2({
         onMensagem("Falha de rede.");
       }
     },
-    [provaId, pdfFile, montarFormData, totalQuestoes, onMensagem, onAtualizado]
+    [provaId, pdfFile, temCadernoSalvo, montarFormData, totalQuestoes, onMensagem, onAtualizado]
   );
 
   async function gravarPreview() {
-    await extrairPdf(true);
+    await extrairPdf(true, pdfFile ? "upload" : "salvo");
   }
 
   function baixarCsvPreview() {
@@ -181,8 +193,18 @@ export function AdminProvaPipelineV2({
       <p className="mb-3 text-sm text-indigo-800">
         Envie o PDF da prova ou simulado. A IA extrai <strong>enunciado literal</strong>,{" "}
         <strong>alternativas</strong> e área/bloco — sem classificar matéria ou assunto. Depois de
-        gravar, valide na seção abaixo antes de qualquer roteamento.
+        gravar, valide na seção abaixo antes de qualquer roteamento. O PDF e o texto-fonte ficam
+        salvos no servidor — não precisa reenviar após atualizar a página.
       </p>
+
+      {temCadernoSalvo && (
+        <p className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          <strong>PDF persistido:</strong> {cadernoFileName}
+          {questoesGravadas > 0
+            ? ` · ${questoesGravadas} questão(ões) no banco`
+            : " · ainda sem questões no banco"}
+        </p>
+      )}
 
       <label className="mb-3 flex cursor-pointer items-start gap-2 text-sm text-indigo-900">
         <input
@@ -201,16 +223,16 @@ export function AdminProvaPipelineV2({
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          disabled={carregando || !pdfFile}
-          onClick={() => extrairPdf(true)}
+          disabled={carregando || !podeExtrair}
+          onClick={() => extrairPdf(true, pdfFile ? "upload" : "salvo")}
         >
-          {carregando ? "Extraindo…" : "Extrair PDF e gravar no banco"}
+          {carregando ? "Extraindo…" : pdfFile ? "Extrair PDF e gravar no banco" : "Reextrair do PDF salvo"}
         </Button>
         <Button
           type="button"
           variant="secondary"
-          disabled={carregando || !pdfFile}
-          onClick={() => extrairPdf(false)}
+          disabled={carregando || !podeExtrair}
+          onClick={() => extrairPdf(false, pdfFile ? "upload" : "salvo")}
         >
           Só pré-visualizar
         </Button>

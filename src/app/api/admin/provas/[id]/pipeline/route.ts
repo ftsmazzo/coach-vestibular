@@ -7,8 +7,15 @@ import { executarExtracaoProvaV2 } from "@/lib/prova-pipeline-v2";
 import {
   persistirQuestoesExtracaoProva,
   chaveObservacaoQuestao,
+  montarTextoFonteDeRows,
+  persistirTextoFonteProva,
 } from "@/lib/prova-questoes-persist";
 import { montarRelatorioExtracao, resumoExtracao } from "@/lib/prova-extracao-relatorio";
+import {
+  readStoredFile,
+  saveProvaCadernoBuffer,
+  storedFileExists,
+} from "@/lib/upload-storage";
 
 export const maxDuration = 600;
 
@@ -31,6 +38,8 @@ export async function POST(
   let excluirBlocoEspanhol = false;
   let gabaritoTexto = "";
   let pdfBuffer: Buffer | null = null;
+  let pdfNome = "prova.pdf";
+  let pdfMime = "application/pdf";
 
   if (contentType.includes("multipart/form-data")) {
     let form: FormData;
@@ -48,11 +57,29 @@ export async function POST(
     incluirBlocoEspanhol = form.get("incluirBlocoEspanhol") === "true";
     excluirBlocoEspanhol = form.get("excluirBlocoEspanhol") === "true";
     gabaritoTexto = String(form.get("gabarito") ?? "").trim();
+    const usarCadernoSalvo = form.get("usarCadernoSalvo") === "true";
     const file = form.get("file") as File | null;
-    if (!file) {
-      return NextResponse.json({ error: "Envie o PDF da prova." }, { status: 400 });
+    if (file?.size) {
+      pdfBuffer = Buffer.from(await file.arrayBuffer());
+      pdfNome = file.name || pdfNome;
+      pdfMime = file.type || pdfMime;
+    } else if (usarCadernoSalvo && prova.cadernoStoragePath) {
+      if (!(await storedFileExists(prova.cadernoStoragePath))) {
+        return NextResponse.json(
+          { error: "Caderno salvo não encontrado no servidor. Envie o PDF de novo." },
+          { status: 404 }
+        );
+      }
+      const lido = await readStoredFile(prova.cadernoStoragePath);
+      pdfBuffer = lido.buffer;
+      pdfNome = prova.cadernoFileName ?? pdfNome;
+      pdfMime = prova.cadernoMimeType ?? pdfMime;
+    } else {
+      return NextResponse.json(
+        { error: "Envie o PDF da prova ou use o caderno já salvo." },
+        { status: 400 }
+      );
     }
-    pdfBuffer = Buffer.from(await file.arrayBuffer());
   } else {
     const body = z
       .object({
@@ -61,6 +88,7 @@ export async function POST(
         incluirGabarito: z.boolean().default(false),
         incluirBlocoEspanhol: z.boolean().default(false),
         excluirBlocoEspanhol: z.boolean().default(false),
+        usarCadernoSalvo: z.boolean().optional(),
         gabarito: z.string().optional(),
         pdfBase64: z.string().optional(),
       })
@@ -73,6 +101,17 @@ export async function POST(
     gabaritoTexto = body.gabarito?.trim() ?? "";
     if (body.pdfBase64) {
       pdfBuffer = Buffer.from(body.pdfBase64, "base64");
+    } else if (body.usarCadernoSalvo && prova.cadernoStoragePath) {
+      if (!(await storedFileExists(prova.cadernoStoragePath))) {
+        return NextResponse.json(
+          { error: "Caderno salvo não encontrado no servidor." },
+          { status: 404 }
+        );
+      }
+      const lido = await readStoredFile(prova.cadernoStoragePath);
+      pdfBuffer = lido.buffer;
+      pdfNome = prova.cadernoFileName ?? pdfNome;
+      pdfMime = prova.cadernoMimeType ?? pdfMime;
     }
     if (!pdfBuffer) {
       return NextResponse.json({ error: "Envie o PDF." }, { status: 400 });
@@ -139,6 +178,18 @@ export async function POST(
 
       gravadas = await persistirQuestoesExtracaoProva(provaId, rowsComHints, {
         substituir,
+      });
+
+      await persistirTextoFonteProva(provaId, montarTextoFonteDeRows(rowsComHints));
+
+      const caderno = await saveProvaCadernoBuffer(provaId, pdfBuffer, pdfNome, pdfMime);
+      await prisma.prova.update({
+        where: { id: provaId },
+        data: {
+          cadernoStoragePath: caderno.storagePath,
+          cadernoFileName: caderno.fileName,
+          cadernoMimeType: caderno.mimeType,
+        },
       });
 
       if (resultado.politicaIdiomas === "DUPLICATA_EN_ES" && resultado.faixaIdioma) {

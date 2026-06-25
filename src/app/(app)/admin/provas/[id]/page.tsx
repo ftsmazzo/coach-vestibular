@@ -66,7 +66,9 @@ interface Prova {
   questoes: ProvaQuestao[];
   temTextoFonte?: boolean;
   tamanhoTextoFonte?: number | null;
+  textoFonte?: string | null;
   cadernoFileName?: string | null;
+  cadernoStoragePath?: string | null;
   cadernoStoragePath?: string | null;
   tentativas?: {
     id: string;
@@ -281,6 +283,9 @@ export default function AdminProvaDetailPage() {
         descricao: data.descricao ?? "",
         ordemIdiomasFaixa: data.ordemIdiomasFaixa ?? "INGLES_PRIMEIRO",
       });
+      if (data.textoFonte?.trim()) {
+        setTextoProva(data.textoFonte);
+      }
     }
   }, [id]);
 
@@ -772,6 +777,9 @@ export default function AdminProvaDetailPage() {
         provaId={prova.id}
         totalQuestoes={prova.totalQuestoes}
         pdfFile={pdfFile}
+        temCadernoSalvo={Boolean(prova.cadernoStoragePath && prova.cadernoFileName)}
+        cadernoFileName={prova.cadernoFileName}
+        questoesGravadas={prova.questoes.length}
         gabaritoLote={gabaritoLote}
         incluirGabarito={csvIncluirGabarito}
         onMensagem={setMsg}
