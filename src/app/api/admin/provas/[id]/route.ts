@@ -17,7 +17,7 @@ export async function GET(
   const prova = await prisma.prova.findUnique({
     where: { id },
     include: {
-      questoes: { orderBy: { numero: "asc" } },
+      questoes: { orderBy: { ordemExtracao: "asc" } },
       _count: { select: { tentativas: true } },
       tentativas: {
         include: {

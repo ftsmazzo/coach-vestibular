@@ -61,7 +61,7 @@ export async function POST(
 
     const questoes = await prisma.provaQuestao.findMany({
       where: { provaId },
-      orderBy: { numero: "asc" },
+      orderBy: { ordemExtracao: "asc" },
     });
     return NextResponse.json({
       imported,
@@ -75,19 +75,31 @@ export async function POST(
   const list = Array.isArray(body) ? body : [body];
 
   for (const q of list) {
-    await prisma.provaQuestao.upsert({
-      where: {
-        provaId_numero_idiomaVariante: { provaId, numero: q.numero, idiomaVariante: "COMUM" },
-      },
-      create: { provaId, ...q, idiomaVariante: "COMUM", gabarito: q.gabarito?.toUpperCase() },
-      update: { ...q, gabarito: q.gabarito?.toUpperCase() ?? null },
+    const existente = await prisma.provaQuestao.findFirst({
+      where: { provaId, numero: q.numero, idiomaVariante: "COMUM" },
     });
+    const gabarito = q.gabarito?.toUpperCase() ?? null;
+    if (existente) {
+      await prisma.provaQuestao.update({
+        where: { id: existente.id },
+        data: { ...q, gabarito },
+      });
+    } else {
+      const max = await prisma.provaQuestao.aggregate({
+        where: { provaId },
+        _max: { ordemExtracao: true },
+      });
+      const ordemExtracao = (max._max.ordemExtracao ?? 0) + 1;
+      await prisma.provaQuestao.create({
+        data: { provaId, ordemExtracao, ...q, idiomaVariante: "COMUM", gabarito },
+      });
+    }
   }
 
   await refreshProvaGabaritoFlag(provaId);
   const questoes = await prisma.provaQuestao.findMany({
     where: { provaId },
-    orderBy: { numero: "asc" },
+    orderBy: { ordemExtracao: "asc" },
   });
   return NextResponse.json(questoes);
 }

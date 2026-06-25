@@ -103,7 +103,7 @@ export function AdminProvaPipelineV2({
             typeof data.resumoExtracao === "string"
               ? data.resumoExtracao
               : data.relatorio
-                ? `${data.relatorio.ok}/${data.relatorio.linhasEsperadas} OK · ${data.relatorio.curto} curto(s) · ${data.relatorio.faltando} faltando`
+                ? `${data.relatorio.ok}/${data.relatorio.linhasFisicas} OK · ${data.relatorio.curto} curto(s) · ${data.relatorio.faltando} faltando`
                 : null;
           const msgResumo = resumoStr
             ? `${data.gravadas ?? 0} questões gravadas · ${resumoStr}. Revise abaixo e confirme a extração.`
@@ -186,9 +186,9 @@ export function AdminProvaPipelineV2({
       <h2 className="mb-2 font-semibold text-indigo-900">Passo 2 — Extrair prova (PDF → banco)</h2>
       <p className="mb-3 text-sm text-indigo-800">
         Envie o PDF da prova ou simulado. A IA extrai <strong>enunciado literal</strong> e{" "}
-        <strong>alternativas</strong> — uma linha por número, sem classificar matéria, área ou idioma.
-        Depois de gravar, valide na seção abaixo antes do N1. O PDF e o texto-fonte ficam salvos no
-        servidor — não precisa reenviar após atualizar a página.
+        <strong>alternativas</strong> na <strong>ordem física do caderno</strong> — cada ocorrência
+        vira uma linha (número impresso pode repetir em blocos EN/ES). Valide abaixo antes de
+        classificar.
       </p>
 
       {temCadernoSalvo && (

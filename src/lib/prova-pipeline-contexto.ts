@@ -32,7 +32,15 @@ export type EstruturaProvaDetectada = {
   tipo_prova?: string;
   formato_layout?: FormatoLayoutProva;
   idiomas_estrangeiros?: IdiomasEstrangeirosDetectados;
+  /** Ocorrências físicas no PDF (ordem de leitura), incluindo EN+ES duplicados */
+  total_ocorrencias_detectado?: number;
+  /** Números únicos que o aluno responde */
+  total_questoes_logicas?: number;
+  /** @deprecated alias de total_questoes_logicas */
   total_questoes_detectado?: number;
+  /** Números únicos impressos */
+  numeros_logicos?: number[];
+  /** @deprecated use numeros_logicos */
   numeros?: number[];
   blocos?: Array<{ titulo: string; questao_inicio: number; questao_fim: number }>;
   observacoes?: string;

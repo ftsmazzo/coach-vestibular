@@ -159,7 +159,7 @@ export async function POST(
     if (aplicar) {
       const antigas = await prisma.provaQuestao.findMany({
         where: { provaId },
-        select: { numero: true, idiomaVariante: true, observacoes: true },
+        select: { ordemExtracao: true, observacoes: true },
       });
       const obsHumana = new Map(
         antigas
@@ -200,14 +200,7 @@ export async function POST(
         include: { questoes: true },
       });
       relatorio = provaAtual
-        ? montarRelatorioExtracao(provaAtual.questoes, provaAtual.totalQuestoes, {
-            politicaIdiomas: provaAtual.politicaIdiomas,
-            idiomaQuestaoInicio: provaAtual.idiomaQuestaoInicio,
-            idiomaQuestaoFim: provaAtual.idiomaQuestaoFim,
-            ordemIdiomasFaixa: provaAtual.ordemIdiomasFaixa,
-            dia: provaAtual.dia,
-            banca: provaAtual.banca,
-          })
+        ? montarRelatorioExtracao(provaAtual.questoes, provaAtual.totalQuestoes)
         : null;
     }
 

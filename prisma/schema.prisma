@@ -129,6 +129,9 @@ model Prova {
 model ProvaQuestao {
   id                  String  @id @default(cuid())
   provaId             String
+  /// Posição física no PDF (1..N) — identidade da linha na extração
+  ordemExtracao       Int
+  /// Número impresso no caderno (pode repetir em blocos EN/ES)
   numero              Int
   idiomaVariante      IdiomaVarianteQuestao @default(COMUM)
   areaBloco           String?
@@ -159,7 +162,8 @@ model ProvaQuestao {
   tentativas QuestionAttempt[]
   sugestoes  SugestaoClassificacao[]
 
-  @@unique([provaId, numero, idiomaVariante])
+  @@unique([provaId, ordemExtracao])
+  @@index([provaId, numero])
   @@index([provaId, materia])
   @@index([conhecimentoEscopoId])
 }

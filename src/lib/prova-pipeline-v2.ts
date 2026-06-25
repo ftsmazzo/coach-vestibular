@@ -8,10 +8,10 @@ import {
   validarEstruturaProva,
 } from "@/lib/prova-pipeline-v2-validacao";
 import { parseGabaritoLote } from "@/lib/gabarito";
-import { normalizarMapaGabarito, resolverNumerosGradeProva } from "@/lib/prova-numeracao";
+import { normalizarMapaGabarito } from "@/lib/prova-numeracao";
 import { gerarCsvProvaQuestoes } from "@/lib/prova-csv-export";
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
-import { chaveQuestaoVariante, compararQuestoesPorNumeroEOrdem } from "@/lib/prova-idioma";
+import { chaveOrdemExtracao, compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
 import {
   montarContextoProvaTxt,
   resumoEstruturaParaClassificacao,
@@ -33,7 +33,8 @@ export interface PipelineV2Result {
   csv: string;
   avisos: string[];
   modeloUsado: string;
-  numerosDetectados: number[];
+  totalOcorrencias: number;
+  totalLogicas: number;
   etapas: string[];
   estruturaDetectada?: EstruturaProvaDetectada;
 }
@@ -66,8 +67,9 @@ const SCHEMA_ESTRUTURA = {
           "outro",
         ],
       },
-      total_questoes_detectado: { type: "integer" },
-      numeros: {
+      total_ocorrencias_detectado: { type: "integer" },
+      total_questoes_logicas: { type: "integer" },
+      numeros_logicos: {
         type: "array",
         items: { type: "integer" },
       },
@@ -90,8 +92,9 @@ const SCHEMA_ESTRUTURA = {
       "tipo_prova",
       "formato_layout",
       "idiomas_estrangeiros",
-      "total_questoes_detectado",
-      "numeros",
+      "total_ocorrencias_detectado",
+      "total_questoes_logicas",
+      "numeros_logicos",
       "blocos",
       "observacoes",
     ],
@@ -101,7 +104,7 @@ const SCHEMA_ESTRUTURA = {
 
 function schemaExtracaoLiteralLote() {
   return {
-    name: "extracao_literal_questoes",
+    name: "extracao_literal_ocorrencias",
     strict: true,
     schema: {
       type: "object",
@@ -111,18 +114,24 @@ function schemaExtracaoLiteralLote() {
           items: {
             type: "object",
             properties: {
-              numero: { type: "integer" },
+              ordem: {
+                type: "integer",
+                description: "Posição física no caderno (1 = primeira questão do PDF).",
+              },
+              numero: {
+                type: "integer",
+                description: "Número impresso na prova (pode repetir entre blocos EN/ES).",
+              },
               enunciado: {
                 type: "string",
-                description:
-                  "Texto literal completo da questão (apoio + comando). Proibido resumir.",
+                description: "Texto literal completo. Proibido resumir.",
               },
               alternativas: {
                 type: "string",
-                description: "Alternativas A–E literais, ou vazio se não houver.",
+                description: "Alternativas A–E literais, ou vazio.",
               },
             },
-            required: ["numero", "enunciado", "alternativas"],
+            required: ["ordem", "numero", "enunciado", "alternativas"],
             additionalProperties: false,
           },
         },
@@ -137,13 +146,15 @@ type EstruturaRes = EstruturaProvaDetectada & {
   tipo_prova: string;
   formato_layout: string;
   idiomas_estrangeiros: string;
-  total_questoes_detectado: number;
-  numeros: number[];
+  total_ocorrencias_detectado: number;
+  total_questoes_logicas: number;
+  numeros_logicos: number[];
   blocos: Array<{ titulo: string; questao_inicio: number; questao_fim: number }>;
   observacoes: string;
 };
 
 type QuestaoExtraidaPdf = {
+  ordem: number;
   numero: number;
   enunciado: string;
   alternativas: string;
@@ -161,10 +172,10 @@ function chunks<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-function tamanhoLote(totalNumeros: number): number {
+function tamanhoLote(total: number): number {
   const env = parseInt(process.env.PIPELINE_V2_LOTE_SIZE ?? "4", 10);
   const base = Number.isFinite(env) && env >= 2 ? Math.min(env, 6) : 4;
-  if (totalNumeros <= 20) return Math.min(base, 3);
+  if (total <= 20) return Math.min(base, 3);
   return base;
 }
 
@@ -172,6 +183,7 @@ function questaoParaRow(q: QuestaoExtraidaPdf): ProvaQuestaoRow {
   const enunciado = truncarTextoProva(sanitizarTextoProva(q.enunciado));
   const alternativas = truncarTextoProva(sanitizarTextoProva(q.alternativas), 8000);
   return {
+    ordemExtracao: q.ordem,
     numero: q.numero,
     idiomaVariante: "COMUM",
     materia: "A classificar",
@@ -183,55 +195,62 @@ function questaoParaRow(q: QuestaoExtraidaPdf): ProvaQuestaoRow {
 
 function aplicarQuestoesExtraidas(
   questoes: QuestaoExtraidaPdf[],
-  lote: number[],
+  loteOrdens: number[],
   rowsMap: Map<string, ProvaQuestaoRow>
 ): void {
+  const esperadas = new Set(loteOrdens);
   for (const q of questoes) {
-    if (!lote.includes(q.numero)) continue;
-    const row = questaoParaRow(q);
-    rowsMap.set(chaveQuestaoVariante(q.numero, "COMUM"), row);
+    if (!esperadas.has(q.ordem)) continue;
+    rowsMap.set(chaveOrdemExtracao(q.ordem), questaoParaRow(q));
   }
 }
 
 function validarRowsExtracao(
   rows: ProvaQuestaoRow[],
-  totalEsperado: number,
-  numerosPdf: number[],
+  totalLogicoCadastro: number,
+  totalOcorrencias: number,
+  numerosLogicos: number[],
   avisos: string[]
 ): void {
-  const numsList = rows.map((r) => r.numero);
-  const numsLogicos = new Set(numsList);
-  if (numsList.length !== numsLogicos.size) {
-    const dup = numsList.filter((n, i) => numsList.indexOf(n) !== i);
-    avisos.push(`Numeração duplicada no resultado: ${[...new Set(dup)].join(", ")}.`);
+  const ordens = rows.map((r) => r.ordemExtracao ?? 0);
+  if (new Set(ordens).size !== ordens.length) {
+    avisos.push("Ordens de extração duplicadas no resultado — confira na validação.");
   }
 
-  const pdfSet = new Set(numerosPdf);
-  const faltandoNoPdf = numerosPdf.filter((n) => !numsLogicos.has(n));
-  if (faltandoNoPdf.length > 0) {
+  if (rows.length !== totalOcorrencias) {
     avisos.push(
-      `Sem extração para ${faltandoNoPdf.length} número(s) detectado(s) no PDF: ${faltandoNoPdf.slice(0, 12).join(", ")}${faltandoNoPdf.length > 12 ? "…" : ""}.`
+      `Extraídas ${rows.length} linha(s) · estrutura detectou ${totalOcorrencias} ocorrência(s) física(s).`
     );
   }
 
-  const diffCadastro = Math.abs(rows.length - totalEsperado);
-  if (diffCadastro > 0) {
+  const numsLogicosExtraidos = new Set(rows.map((r) => r.numero));
+  const faltando = numerosLogicos.filter((n) => !numsLogicosExtraidos.has(n));
+  if (faltando.length > 0) {
     avisos.push(
-      `Cadastro: ${totalEsperado} questões · banco: ${rows.length} linha(s). ${diffCadastro > 5 ? "Revise o total no cadastro ou reexecute o pipeline." : "Diferença pequena — confira na validação."}`
+      `Nenhuma linha com número impresso ${faltando.slice(0, 8).join(", ")}${faltando.length > 8 ? "…" : ""}.`
     );
   }
 
-  const extras = rows.filter((r) => !pdfSet.has(r.numero));
-  if (extras.length > 0) {
+  const diffLogico = Math.abs(totalLogicoCadastro - (numerosLogicos.length || totalLogicoCadastro));
+  if (numerosLogicos.length > 0 && diffLogico > 0) {
     avisos.push(
-      `${extras.length} questão(ões) extraída(s) fora da lista estrutural do PDF.`
+      `Cadastro: ${totalLogicoCadastro} questões lógicas · PDF: ${numerosLogicos.length} número(s) único(s).`
+    );
+  }
+
+  const duplicados = rows.filter(
+    (r, i, arr) => arr.findIndex((x) => x.numero === r.numero) !== i
+  );
+  if (duplicados.length > 0) {
+    const nums = [...new Set(duplicados.map((r) => r.numero))].sort((a, b) => a - b);
+    avisos.push(
+      `${nums.length} número(s) com mais de uma linha (EN/ES): ${nums.slice(0, 10).join(", ")}${nums.length > 10 ? "…" : ""} — esperado em vestibulares bilíngues.`
     );
   }
 }
 
 /**
- * Extração pura: PDF → numeração + enunciado literal + alternativas (+ gabarito opcional).
- * Uma linha COMUM por número. Classificação (N1+) vem depois.
+ * Extração pura em ordem física: cada ocorrência no PDF → uma linha (ordemExtracao + numero impresso).
  */
 export async function executarExtracaoProvaV2(
   pdfBuffer: Buffer,
@@ -240,12 +259,6 @@ export async function executarExtracaoProvaV2(
     gabaritoTexto?: string;
     incluirGabarito?: boolean;
     gerarCsv?: boolean;
-    /** @deprecated Ignorado — trilhas EN/ES são configuradas após N1. */
-    incluirBlocoEspanhol?: boolean;
-    /** @deprecated Ignorado. */
-    excluirBlocoEspanhol?: boolean;
-    /** @deprecated Ignorado. */
-    faixaIdiomaCadastro?: unknown;
   }
 ): Promise<PipelineV2Result> {
   const avisos: string[] = [];
@@ -262,78 +275,81 @@ export async function executarExtracaoProvaV2(
     systemPrompt: PROMPT_SISTEMA_ESTRUTURA,
     instrucao: `${ctxTxt}
 
-Preencha o schema estrutural completo a partir do PDF.
-- numeros: cada questão objetiva distinta que o aluno responde (numeração lógica, sem duplicar EN/ES)
-- total_questoes_detectado: quantidade de números únicos
-- blocos: seções com título (vazio se não houver seções claras)`,
+Preencha o schema estrutural:
+- total_ocorrencias_detectado: TODAS as questões objetivas na ordem do PDF (inclua EN e ES separados)
+- total_questoes_logicas: números únicos que o aluno responde
+- numeros_logicos: lista dos números únicos impressos
+- blocos: seções com título (vazio se não houver)`,
     schema: SCHEMA_ESTRUTURA,
     validate: (data) => validarEstruturaProva(data, ctx.totalEsperado),
   });
   const estrutura = estruturaExec.data;
 
-  if (estrutura.idiomas_estrangeiros === "duplicata_ingles_espanhol") {
-    avisos.push(
-      "PDF com blocos EN/ES detectado — extraído 1 linha por número. Trilhas duplicadas serão configuradas após validar N1."
-    );
-  }
-
-  etapas.push(
-    `Estrutura (${estruturaExec.model}): ${estrutura.numeros.length} números únicos · layout ${estrutura.formato_layout ?? "?"} · extração literal (COMUM)`
-  );
-
-  let numeros = [...new Set(estrutura.numeros)]
+  const totalOcorrencias = Math.max(1, estrutura.total_ocorrencias_detectado);
+  const numerosLogicos = [...new Set(estrutura.numeros_logicos ?? [])]
     .filter((n) => n > 0 && n <= 500)
     .sort((a, b) => a - b);
+  const totalLogicas =
+    estrutura.total_questoes_logicas > 0
+      ? estrutura.total_questoes_logicas
+      : numerosLogicos.length;
 
-  if (numeros.length === 0) {
-    numeros = resolverNumerosGradeProva({
-      totalQuestoes: ctx.totalEsperado,
-      dia: ctx.dia,
-      banca: ctx.banca,
-    });
+  etapas.push(
+    `Estrutura (${estruturaExec.model}): ${totalOcorrencias} ocorrência(s) física(s) · ${totalLogicas} lógica(s) · layout ${estrutura.formato_layout ?? "?"}`
+  );
+
+  if (estrutura.idiomas_estrangeiros === "duplicata_ingles_espanhol") {
     avisos.push(
-      `Nenhum número detectado no PDF — usando faixa ${numeros[0]}..${numeros[numeros.length - 1]} do cadastro.`
+      "Blocos EN/ES detectados — cada ocorrência física será gravada como linha separada (mesmo número impresso permitido)."
     );
   }
 
+  const ordens = Array.from({ length: totalOcorrencias }, (_, i) => i + 1);
   const resumoEstrutura = resumoEstruturaParaClassificacao(estrutura);
   const rowsMap = new Map<string, ProvaQuestaoRow>();
   let modelExtracao = modeloPipelinePrincipal();
 
-  const montarInstrucaoExtracao = (numsStr: string) => `${ctxTxt}
+  const montarInstrucaoExtracao = (faixa: string) => `${ctxTxt}
 
-${resumoEstrutura ? `Contexto estrutural (só numeração/seções):\n${resumoEstrutura}\n` : ""}
-Extraia texto LITERAL (ipsis litteris) SOMENTE das questões: ${numsStr}
-Para cada item: enunciado completo + alternativas A–E.
-NÃO resuma. NÃO classifique matéria, área, idioma nem dificuldade.`;
+${resumoEstrutura ? `Contexto estrutural:\n${resumoEstrutura}\n` : ""}
+Extraia texto LITERAL (ipsis litteris) das OCORRÊNCIAS FÍSICAS de ordem ${faixa} (ordem = posição no PDF, numero = número impresso).
+Uma entrada por ordem — blocos EN e ES com o mesmo numero geram ordens diferentes.
+NÃO resuma. NÃO classifique matéria, área ou idioma.`;
 
-  const loteSize = tamanhoLote(numeros.length);
-  const lotesNums = chunks(numeros, loteSize);
-  for (let i = 0; i < lotesNums.length; i++) {
-    const lote = lotesNums[i];
+  const loteSize = tamanhoLote(totalOcorrencias);
+  const lotesOrdens = chunks(ordens, loteSize);
+  for (let i = 0; i < lotesOrdens.length; i++) {
+    const lote = lotesOrdens[i];
+    const faixa =
+      lote.length === 1
+        ? String(lote[0])
+        : `${lote[0]} a ${lote[lote.length - 1]}`;
     const extracaoExec = await responsesComPdfSchemaComValidacao<ExtracaoRes>({
       fileId,
       taskName: `extracao-lote-${i + 1}`,
       systemPrompt: PROMPT_SISTEMA_EXTRACAO_LITERAL,
-      instrucao: montarInstrucaoExtracao(lote.join(", ")),
+      instrucao: montarInstrucaoExtracao(faixa),
       schema: schemaExtracaoLiteralLote(),
       validate: (data) => validarExtracaoLiteralLote(data, lote),
     });
     modelExtracao = extracaoExec.model;
     aplicarQuestoesExtraidas(extracaoExec.data.questoes ?? [], lote, rowsMap);
     etapas.push(
-      `Extração lote ${i + 1}/${lotesNums.length} (${extracaoExec.model}): ${extracaoExec.data.questoes?.length ?? 0} itens`
+      `Extração lote ${i + 1}/${lotesOrdens.length} (${extracaoExec.model}): ${extracaoExec.data.questoes?.length ?? 0} ocorrência(s)`
     );
   }
 
-  const rows: ProvaQuestaoRow[] = [...rowsMap.values()].sort((a, b) =>
-    compararQuestoesPorNumeroEOrdem(a, b)
+  const rows: ProvaQuestaoRow[] = [...rowsMap.values()].sort(compararPorOrdemExtracao);
+
+  etapas.push(
+    `Extração concluída: ${rows.length} linha(s) em ordem física — valide o texto antes de qualquer classificação.`
   );
 
-  etapas.push(`Extração concluída: ${rows.length} linha(s) COMUM — valide o texto antes do N1.`);
-
   if (opts?.incluirGabarito && opts.gabaritoTexto?.trim()) {
-    const mapaG = normalizarMapaGabarito(parseGabaritoLote(opts.gabaritoTexto), numeros);
+    const mapaG = normalizarMapaGabarito(
+      parseGabaritoLote(opts.gabaritoTexto),
+      numerosLogicos.length > 0 ? numerosLogicos : rows.map((r) => r.numero)
+    );
     let aplicados = 0;
     for (const r of rows) {
       const g = mapaG.get(r.numero);
@@ -342,10 +358,10 @@ NÃO resuma. NÃO classifique matéria, área, idioma nem dificuldade.`;
         aplicados++;
       }
     }
-    etapas.push(`Gabarito oficial aplicado em ${aplicados} questão(ões) (código, não IA).`);
+    etapas.push(`Gabarito oficial aplicado em ${aplicados} linha(s) (por número impresso).`);
   }
 
-  validarRowsExtracao(rows, ctx.totalEsperado, numeros, avisos);
+  validarRowsExtracao(rows, ctx.totalEsperado, totalOcorrencias, numerosLogicos, avisos);
 
   if (estrutura.observacoes?.trim()) {
     avisos.push(`Leitura do PDF: ${estrutura.observacoes.trim().slice(0, 300)}`);
@@ -356,7 +372,8 @@ NÃO resuma. NÃO classifique matéria, área, idioma nem dificuldade.`;
     csv: opts?.gerarCsv ? gerarCsvProvaQuestoes(rows) : "",
     avisos,
     modeloUsado: modelExtracao,
-    numerosDetectados: numeros,
+    totalOcorrencias,
+    totalLogicas,
     etapas,
     estruturaDetectada: estrutura,
   };

@@ -1,4 +1,5 @@
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
+import { compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
 
 function escCsv(val: string | undefined | null): string {
   const s = (val ?? "").replace(/"/g, '""');
@@ -20,7 +21,7 @@ export function gerarCsvProvaQuestoes(rows: ProvaQuestaoRow[]): string {
     "Gabarito",
   ];
   const lines = [header.join(",")];
-  const sorted = [...rows].sort((a, b) => a.numero - b.numero);
+  const sorted = [...rows].sort(compararPorOrdemExtracao);
   for (const r of sorted) {
     lines.push(
       [

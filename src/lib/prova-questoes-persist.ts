@@ -3,11 +3,20 @@ import type { QuestaoExtraida } from "@/lib/ai-extract-prova";
 import type { EtapaExtracao } from "@/lib/prova-extracao-pipeline";
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
 import { prisma } from "@/lib/prisma";
-import { chaveQuestaoVariante } from "@/lib/prova-idioma";
+import {
+  atribuirOrdemExtracaoSequencial,
+  chaveOrdemExtracao,
+  compararPorOrdemExtracao,
+} from "@/lib/prova-questao-ordem";
 import { normalizarLabelAssunto, normalizarLabelMateria } from "@/lib/taxonomia-validacao";
 import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import { normalizarGabaritoOficial } from "@/lib/gabarito-anulada";
-import { sanitizarTextoProva, truncarTextoProva, observacaoComExtracaoAceita, observacaoSemMarcadorExtracao } from "@/lib/prova-texto-prova";
+import {
+  sanitizarTextoProva,
+  truncarTextoProva,
+  observacaoComExtracaoAceita,
+  observacaoSemMarcadorExtracao,
+} from "@/lib/prova-texto-prova";
 
 function truncarEnunciado(t?: string | null): string | null {
   if (!t?.trim()) return null;
@@ -27,21 +36,35 @@ function varianteExtraida(q: QuestaoExtraida & { idiomaVariante?: IdiomaVariante
   return (q.idiomaVariante ?? "COMUM") as IdiomaVarianteQuestao;
 }
 
-function whereVariante(provaId: string, numero: number, variante: IdiomaVarianteQuestao) {
+function rowParaCreate(provaId: string, r: ProvaQuestaoRow, ordemExtracao: number) {
   return {
-    provaId_numero_idiomaVariante: { provaId, numero, idiomaVariante: variante },
+    provaId,
+    ordemExtracao,
+    numero: r.numero,
+    idiomaVariante: varianteRow(r),
+    areaBloco: r.areaBloco ?? null,
+    materia: r.materia,
+    assunto: r.assunto,
+    conhecimentoExigido: r.conhecimentoExigido ?? null,
+    nivelDificuldade: r.nivelDificuldade ?? null,
+    observacoes: r.observacoes ?? null,
+    enunciado: truncarEnunciado(r.enunciado),
+    alternativas: truncarAlternativas(r.alternativas),
+    gabarito: r.gabarito ?? null,
+    conhecimentoEscopoId: r.conhecimentoEscopoId ?? null,
+    conhecimentoDominioId: r.conhecimentoDominioId ?? null,
+    classificacaoVersao: r.classificacaoVersao ?? null,
+    classificacaoConfianca: r.classificacaoConfianca ?? null,
+    classificacaoSecundariosJson: r.classificacaoSecundariosJson ?? null,
+    conceitosCanonicosJson: r.conceitosCanonicosJson ?? null,
   };
 }
 
-function filtroVariante(provaId: string, numero: number, variante: IdiomaVarianteQuestao) {
-  return { provaId, numero, idiomaVariante: variante };
-}
-
-/** Normaliza rótulos para exibição — sem reclassificar matéria/assunto por regex legado. */
 function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
   return rows.map((r) => {
     const materia = normalizarLabelMateria(r.materia);
     return {
+      ordemExtracao: r.ordemExtracao,
       numero: r.numero,
       idiomaVariante: varianteRow(r),
       areaBloco: normalizarAreaBloco(r.areaBloco, materia) ?? undefined,
@@ -63,19 +86,12 @@ function normalizarRows(rows: ProvaQuestaoRow[]): ProvaQuestaoRow[] {
   });
 }
 
-/** Monta texto-fonte auditável a partir das questões gravadas. */
 export function montarTextoFonteDeRows(rows: ProvaQuestaoRow[]): string {
-  const sorted = [...rows].sort((a, b) => {
-    if (a.numero !== b.numero) return a.numero - b.numero;
-    const va = a.idiomaVariante ?? "COMUM";
-    const vb = b.idiomaVariante ?? "COMUM";
-    return va.localeCompare(vb);
-  });
+  const sorted = [...rows].sort(compararPorOrdemExtracao);
   const partes: string[] = [];
   for (const r of sorted) {
-    const variante =
-      r.idiomaVariante && r.idiomaVariante !== "COMUM" ? ` [${r.idiomaVariante}]` : "";
-    const bloco: string[] = [`=== Questão ${r.numero}${variante} ===`];
+    const ordem = r.ordemExtracao ?? "?";
+    const bloco: string[] = [`=== Ordem ${ordem} · Questão ${r.numero} ===`];
     if (r.enunciado?.trim()) bloco.push(r.enunciado.trim());
     if (r.alternativas?.trim()) bloco.push(r.alternativas.trim());
     if (bloco.length > 1) partes.push(bloco.join("\n"));
@@ -83,7 +99,6 @@ export function montarTextoFonteDeRows(rows: ProvaQuestaoRow[]): string {
   return partes.join("\n\n").trim();
 }
 
-/** Persiste texto-fonte da prova (extração/CSV) para reclassificar sem reenviar PDF. */
 export async function persistirTextoFonteProva(provaId: string, texto: string): Promise<void> {
   const t = texto.trim();
   if (t.length < 50) return;
@@ -93,46 +108,20 @@ export async function persistirTextoFonteProva(provaId: string, texto: string): 
   });
 }
 
-function camposN2(r: ProvaQuestaoRow) {
-  return {
-    conhecimentoEscopoId: r.conhecimentoEscopoId ?? null,
-    conhecimentoDominioId: r.conhecimentoDominioId ?? null,
-    classificacaoVersao: r.classificacaoVersao ?? null,
-    classificacaoConfianca: r.classificacaoConfianca ?? null,
-    classificacaoSecundariosJson: r.classificacaoSecundariosJson ?? null,
-    conceitosCanonicosJson: r.conceitosCanonicosJson ?? null,
-  };
-}
-
-/** Grava classificação no banco (pipeline PDF ou CSV do ChatGPT). */
 export async function persistirQuestoesClassificadas(
   provaId: string,
   rows: ProvaQuestaoRow[],
   opts?: { substituir?: boolean }
 ): Promise<number> {
   const substituir = opts?.substituir !== false;
-  const normalizadas = normalizarRows(rows);
+  const normalizadas = atribuirOrdemExtracaoSequencial(normalizarRows(rows));
   if (normalizadas.length === 0) return 0;
 
   if (substituir) {
     await prisma.$transaction([
       prisma.provaQuestao.deleteMany({ where: { provaId } }),
       prisma.provaQuestao.createMany({
-        data: normalizadas.map((r) => ({
-          provaId,
-          numero: r.numero,
-          idiomaVariante: varianteRow(r),
-          areaBloco: r.areaBloco ?? null,
-          materia: r.materia,
-          assunto: r.assunto,
-          conhecimentoExigido: r.conhecimentoExigido ?? null,
-          nivelDificuldade: r.nivelDificuldade ?? null,
-          observacoes: r.observacoes ?? null,
-          enunciado: truncarEnunciado(r.enunciado),
-          alternativas: truncarAlternativas(r.alternativas),
-          gabarito: r.gabarito ?? null,
-          ...camposN2(r),
-        })),
+        data: normalizadas.map((r) => rowParaCreate(provaId, r, r.ordemExtracao!)),
       }),
     ]);
     return normalizadas.length;
@@ -140,25 +129,12 @@ export async function persistirQuestoesClassificadas(
 
   let n = 0;
   for (const r of normalizadas) {
-    const variante = varianteRow(r);
+    const ordem = r.ordemExtracao!;
     await prisma.provaQuestao.upsert({
-      where: whereVariante(provaId, r.numero, variante),
-      create: {
-        provaId,
-        numero: r.numero,
-        idiomaVariante: variante,
-        areaBloco: r.areaBloco ?? null,
-        materia: r.materia,
-        assunto: r.assunto,
-        conhecimentoExigido: r.conhecimentoExigido ?? null,
-        nivelDificuldade: r.nivelDificuldade ?? null,
-        observacoes: r.observacoes ?? null,
-        enunciado: truncarEnunciado(r.enunciado),
-        alternativas: truncarAlternativas(r.alternativas),
-        gabarito: r.gabarito ?? null,
-        ...camposN2(r),
-      },
+      where: { provaId_ordemExtracao: { provaId, ordemExtracao: ordem } },
+      create: rowParaCreate(provaId, r, ordem),
       update: {
+        numero: r.numero,
         areaBloco: r.areaBloco ?? null,
         materia: r.materia,
         assunto: r.assunto,
@@ -168,7 +144,12 @@ export async function persistirQuestoesClassificadas(
         ...(r.enunciado ? { enunciado: truncarEnunciado(r.enunciado) } : {}),
         ...(r.alternativas ? { alternativas: truncarAlternativas(r.alternativas) } : {}),
         ...(r.gabarito ? { gabarito: r.gabarito } : {}),
-        ...camposN2(r),
+        conhecimentoEscopoId: r.conhecimentoEscopoId ?? null,
+        conhecimentoDominioId: r.conhecimentoDominioId ?? null,
+        classificacaoVersao: r.classificacaoVersao ?? null,
+        classificacaoConfianca: r.classificacaoConfianca ?? null,
+        classificacaoSecundariosJson: r.classificacaoSecundariosJson ?? null,
+        conceitosCanonicosJson: r.conceitosCanonicosJson ?? null,
       },
     });
     n++;
@@ -176,71 +157,113 @@ export async function persistirQuestoesClassificadas(
   return n;
 }
 
-/** Grava só extração (enunciado/alternativas) — limpa classificação e área anteriores. */
 export async function persistirQuestoesExtracaoProva(
   provaId: string,
   rows: ProvaQuestaoRow[],
   opts?: { substituir?: boolean }
 ): Promise<number> {
-  const limpas = rows.map((r) => ({
-    ...r,
-    areaBloco: undefined,
-    materia: "A classificar",
-    assunto: "A classificar",
-    conhecimentoExigido: undefined,
-    conhecimentoEscopoId: null,
-    conhecimentoDominioId: null,
-    classificacaoVersao: null,
-    classificacaoConfianca: null,
-    classificacaoSecundariosJson: null,
-    conceitosCanonicosJson: null,
-  }));
+  const substituir = opts?.substituir !== false;
+  const limpas = rows
+    .filter((r) => r.ordemExtracao != null && r.ordemExtracao > 0)
+    .map((r) => ({
+      ...r,
+      areaBloco: undefined,
+      materia: "A classificar",
+      assunto: "A classificar",
+      idiomaVariante: "COMUM" as const,
+      conhecimentoExigido: undefined,
+      conhecimentoEscopoId: null,
+      conhecimentoDominioId: null,
+      classificacaoVersao: null,
+      classificacaoConfianca: null,
+      classificacaoSecundariosJson: null,
+      conceitosCanonicosJson: null,
+    }));
+
+  if (limpas.length === 0) {
+    throw new Error("Nenhuma linha com ordemExtracao válida para gravar.");
+  }
+
+  const ordens = limpas.map((r) => r.ordemExtracao!);
+  if (new Set(ordens).size !== ordens.length) {
+    throw new Error("Ordens de extração duplicadas — reexecute o pipeline.");
+  }
 
   await prisma.prova.update({
     where: { id: provaId },
     data: { extracaoValidada: false },
   });
 
-  return persistirQuestoesClassificadas(provaId, limpas, opts);
+  const data = limpas.map((r) => ({
+    ...rowParaCreate(provaId, r, r.ordemExtracao!),
+    classificacaoN1Json: null,
+  }));
+
+  if (substituir) {
+    await prisma.$transaction([
+      prisma.provaQuestao.deleteMany({ where: { provaId } }),
+      prisma.provaQuestao.createMany({ data }),
+    ]);
+    return data.length;
+  }
+
+  let n = 0;
+  for (const row of data) {
+    await prisma.provaQuestao.upsert({
+      where: {
+        provaId_ordemExtracao: {
+          provaId,
+          ordemExtracao: row.ordemExtracao,
+        },
+      },
+      create: row,
+      update: {
+        numero: row.numero,
+        enunciado: row.enunciado,
+        alternativas: row.alternativas,
+        materia: row.materia,
+        assunto: row.assunto,
+        areaBloco: null,
+        conhecimentoExigido: null,
+        conhecimentoEscopoId: null,
+        conhecimentoDominioId: null,
+        classificacaoVersao: null,
+        classificacaoConfianca: null,
+        classificacaoSecundariosJson: null,
+        conceitosCanonicosJson: null,
+        classificacaoN1Json: null,
+        observacoes: row.observacoes,
+      },
+    });
+    n++;
+  }
+  return n;
 }
 
-/** Correção manual ou inclusão de questão faltante na validação. */
-export async function upsertQuestaoExtracaoManual(
+export async function atualizarQuestaoExtracaoManual(
   provaId: string,
   input: {
-    numero: number;
-    idiomaVariante?: IdiomaVarianteQuestao;
+    questaoId: string;
     enunciado: string;
     alternativas?: string | null;
-    areaBloco?: string | null;
   }
 ): Promise<{ id: string }> {
-  const variante = (input.idiomaVariante ?? "COMUM") as IdiomaVarianteQuestao;
   const enunciado = truncarEnunciado(input.enunciado);
   if (!enunciado || enunciado.length < 10) {
     throw new Error("Enunciado muito curto.");
   }
 
-  const anterior = await prisma.provaQuestao.findFirst({
-    where: filtroVariante(provaId, input.numero, variante),
-    select: { observacoes: true },
+  const existente = await prisma.provaQuestao.findFirst({
+    where: { id: input.questaoId, provaId },
+    select: { id: true, observacoes: true },
   });
+  if (!existente) {
+    throw new Error("Linha não encontrada.");
+  }
 
-  const row = await prisma.provaQuestao.upsert({
-    where: whereVariante(provaId, input.numero, variante),
-    create: {
-      provaId,
-      numero: input.numero,
-      idiomaVariante: variante,
-      areaBloco: input.areaBloco ?? null,
-      materia: "A classificar",
-      assunto: "A classificar",
-      enunciado,
-      alternativas: truncarAlternativas(input.alternativas),
-      gabarito: null,
-    },
-    update: {
-      areaBloco: input.areaBloco ?? undefined,
+  const row = await prisma.provaQuestao.update({
+    where: { id: existente.id },
+    data: {
       enunciado,
       alternativas: truncarAlternativas(input.alternativas),
       materia: "A classificar",
@@ -252,7 +275,8 @@ export async function upsertQuestaoExtracaoManual(
       classificacaoConfianca: null,
       classificacaoSecundariosJson: null,
       conceitosCanonicosJson: null,
-      observacoes: observacaoSemMarcadorExtracao(anterior?.observacoes),
+      classificacaoN1Json: null,
+      observacoes: observacaoSemMarcadorExtracao(existente.observacoes),
     },
   });
 
@@ -264,20 +288,32 @@ export async function upsertQuestaoExtracaoManual(
   return { id: row.id };
 }
 
-/** Admin confirmou que enunciado curto está completo (ex.: matemática direta). */
+export async function upsertQuestaoExtracaoManual(
+  provaId: string,
+  input: {
+    questaoId?: string;
+    enunciado: string;
+    alternativas?: string | null;
+  }
+): Promise<{ id: string }> {
+  if (!input.questaoId) {
+    throw new Error("Informe questaoId para corrigir uma linha da extração.");
+  }
+  return atualizarQuestaoExtracaoManual(provaId, input as { questaoId: string; enunciado: string; alternativas?: string | null });
+}
+
 export async function aceitarEnunciadoExtracaoProva(
   provaId: string,
-  input: { numero: number; idiomaVariante?: IdiomaVarianteQuestao }
+  input: { questaoId: string }
 ): Promise<{ id: string }> {
-  const variante = (input.idiomaVariante ?? "COMUM") as IdiomaVarianteQuestao;
   const existente = await prisma.provaQuestao.findFirst({
-    where: filtroVariante(provaId, input.numero, variante),
+    where: { id: input.questaoId, provaId },
   });
   if (!existente) {
-    throw new Error("Questão não encontrada no banco.");
+    throw new Error("Linha não encontrada no banco.");
   }
   if (!existente.enunciado?.trim()) {
-    throw new Error("Questão sem enunciado — cole o texto antes de aceitar.");
+    throw new Error("Linha sem enunciado — cole o texto antes de aceitar.");
   }
 
   const row = await prisma.provaQuestao.update({
@@ -292,17 +328,18 @@ export async function aceitarEnunciadoExtracaoProva(
 
 const ENUNCIADO_MIN_RECLASSIFICAR = 80;
 
-/** Atualiza classificação N2 + rótulos legados sem apagar enunciado/gabarito existentes. */
 export async function atualizarClassificacaoLote(
   provaId: string,
   rows: ProvaQuestaoRow[]
 ): Promise<number> {
   let n = 0;
   for (const r of rows) {
-    const variante = varianteRow(r);
+    if (!r.ordemExtracao) continue;
     const existente = await prisma.provaQuestao.findUnique({
-      where: whereVariante(provaId, r.numero, variante),
-      select: { id: true, enunciado: true, gabarito: true },
+      where: {
+        provaId_ordemExtracao: { provaId, ordemExtracao: r.ordemExtracao },
+      },
+      select: { id: true },
     });
     if (!existente) continue;
 
@@ -317,7 +354,12 @@ export async function atualizarClassificacaoLote(
         ...(r.enunciado && r.enunciado.trim().length >= ENUNCIADO_MIN_RECLASSIFICAR
           ? { enunciado: truncarEnunciado(r.enunciado) }
           : {}),
-        ...camposN2(r),
+        conhecimentoEscopoId: r.conhecimentoEscopoId ?? null,
+        conhecimentoDominioId: r.conhecimentoDominioId ?? null,
+        classificacaoVersao: r.classificacaoVersao ?? null,
+        classificacaoConfianca: r.classificacaoConfianca ?? null,
+        classificacaoSecundariosJson: r.classificacaoSecundariosJson ?? null,
+        conceitosCanonicosJson: r.conceitosCanonicosJson ?? null,
       },
     });
     n++;
@@ -326,6 +368,7 @@ export async function atualizarClassificacaoLote(
 }
 
 type QuestaoComN2 = QuestaoExtraida & {
+  ordemExtracao?: number;
   idiomaVariante?: IdiomaVarianteQuestao;
   conhecimentoEscopoId?: string | null;
   conhecimentoDominioId?: string | null;
@@ -335,29 +378,21 @@ type QuestaoComN2 = QuestaoExtraida & {
   conceitosCanonicosJson?: string | null;
 };
 
-function camposN2Questao(q: QuestaoComN2) {
-  return {
-    conhecimentoEscopoId: q.conhecimentoEscopoId ?? null,
-    conhecimentoDominioId: q.conhecimentoDominioId ?? null,
-    classificacaoVersao: q.classificacaoVersao ?? null,
-    classificacaoConfianca: q.classificacaoConfianca ?? null,
-    classificacaoSecundariosJson: q.classificacaoSecundariosJson ?? null,
-    conceitosCanonicosJson: q.conceitosCanonicosJson ?? null,
-  };
-}
-
 export async function upsertQuestoesExtraidas(
   provaId: string,
   questoes: QuestaoComN2[],
   idiomaVariantePadrao: IdiomaVarianteQuestao = "COMUM"
 ): Promise<number> {
   let n = 0;
-  for (const q of questoes) {
+  for (let i = 0; i < questoes.length; i++) {
+    const q = questoes[i]!;
+    const ordem = q.ordemExtracao ?? i + 1;
     const variante = q.idiomaVariante ?? idiomaVariantePadrao;
     await prisma.provaQuestao.upsert({
-      where: whereVariante(provaId, q.numero, variante),
+      where: { provaId_ordemExtracao: { provaId, ordemExtracao: ordem } },
       create: {
         provaId,
+        ordemExtracao: ordem,
         numero: q.numero,
         idiomaVariante: variante,
         areaBloco: q.areaBloco ?? null,
@@ -368,9 +403,15 @@ export async function upsertQuestoesExtraidas(
         observacoes: q.observacoes ?? null,
         enunciado: truncarEnunciado(q.trechoEnunciado),
         gabarito: null,
-        ...camposN2Questao(q),
+        conhecimentoEscopoId: q.conhecimentoEscopoId ?? null,
+        conhecimentoDominioId: q.conhecimentoDominioId ?? null,
+        classificacaoVersao: q.classificacaoVersao ?? null,
+        classificacaoConfianca: q.classificacaoConfianca ?? null,
+        classificacaoSecundariosJson: q.classificacaoSecundariosJson ?? null,
+        conceitosCanonicosJson: q.conceitosCanonicosJson ?? null,
       },
       update: {
+        numero: q.numero,
         areaBloco: q.areaBloco ?? null,
         materia: q.materia,
         assunto: q.assunto,
@@ -378,7 +419,12 @@ export async function upsertQuestoesExtraidas(
         nivelDificuldade: q.nivelDificuldade ?? null,
         observacoes: q.observacoes ?? null,
         enunciado: truncarEnunciado(q.trechoEnunciado),
-        ...camposN2Questao(q),
+        conhecimentoEscopoId: q.conhecimentoEscopoId ?? null,
+        conhecimentoDominioId: q.conhecimentoDominioId ?? null,
+        classificacaoVersao: q.classificacaoVersao ?? null,
+        classificacaoConfianca: q.classificacaoConfianca ?? null,
+        classificacaoSecundariosJson: q.classificacaoSecundariosJson ?? null,
+        conceitosCanonicosJson: q.conceitosCanonicosJson ?? null,
       },
     });
     n++;
@@ -386,14 +432,15 @@ export async function upsertQuestoesExtraidas(
   return n;
 }
 
-/** Atualiza só os campos da etapa escolhida (enunciados já gravados no banco). */
 export async function atualizarQuestoesPorEtapa(
   provaId: string,
   questoes: QuestaoExtraida[],
   etapa: EtapaExtracao
 ): Promise<number> {
   let n = 0;
-  for (const q of questoes) {
+  for (let i = 0; i < questoes.length; i++) {
+    const q = questoes[i]!;
+    const ordem = (q as QuestaoComN2).ordemExtracao ?? i + 1;
     const enunciado = truncarEnunciado(q.trechoEnunciado);
     const update: Record<string, unknown> = {};
 
@@ -424,9 +471,10 @@ export async function atualizarQuestoesPorEtapa(
 
     const variante = varianteExtraida(q);
     await prisma.provaQuestao.upsert({
-      where: whereVariante(provaId, q.numero, variante),
+      where: { provaId_ordemExtracao: { provaId, ordemExtracao: ordem } },
       create: {
         provaId,
+        ordemExtracao: ordem,
         numero: q.numero,
         idiomaVariante: variante,
         areaBloco: (update.areaBloco as string | null) ?? q.areaBloco ?? null,
@@ -452,8 +500,9 @@ export async function substituirQuestoesExtraidas(
   await prisma.provaQuestao.deleteMany({ where: { provaId } });
   if (questoes.length === 0) return;
   await prisma.provaQuestao.createMany({
-    data: questoes.map((q) => ({
+    data: questoes.map((q, i) => ({
       provaId,
+      ordemExtracao: (q as QuestaoComN2).ordemExtracao ?? i + 1,
       numero: q.numero,
       idiomaVariante: varianteExtraida(q),
       areaBloco: q.areaBloco ?? null,
@@ -468,7 +517,7 @@ export async function substituirQuestoesExtraidas(
   });
 }
 
-/** Chave estável para preservar observações humanas no re-pipeline. */
-export function chaveObservacaoQuestao(r: { numero: number; idiomaVariante?: string }): string {
-  return chaveQuestaoVariante(r.numero, r.idiomaVariante ?? "COMUM");
+export function chaveObservacaoQuestao(r: { ordemExtracao?: number | null }): string {
+  if (r.ordemExtracao == null) return "ordem:?";
+  return chaveOrdemExtracao(r.ordemExtracao);
 }

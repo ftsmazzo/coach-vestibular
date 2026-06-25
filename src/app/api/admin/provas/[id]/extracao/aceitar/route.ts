@@ -4,8 +4,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { aceitarEnunciadoExtracaoProva } from "@/lib/prova-questoes-persist";
 
 const bodySchema = z.object({
-  numero: z.number().int().positive(),
-  idiomaVariante: z.enum(["COMUM", "INGLES", "ESPANHOL"]).default("COMUM"),
+  questaoId: z.string().min(1),
 });
 
 export async function POST(
@@ -20,8 +19,7 @@ export async function POST(
 
   try {
     const { id } = await aceitarEnunciadoExtracaoProva(provaId, {
-      numero: body.numero,
-      idiomaVariante: body.idiomaVariante,
+      questaoId: body.questaoId,
     });
     return NextResponse.json({ ok: true, questaoId: id });
   } catch (e) {

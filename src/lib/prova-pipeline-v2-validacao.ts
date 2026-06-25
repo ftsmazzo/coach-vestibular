@@ -10,38 +10,11 @@ export const ENUNCIADO_LITERAL_MIN_CHARS = 40;
 
 export type ExtracaoLiteralLoteRes = {
   questoes?: Array<{
+    ordem: number;
     numero: number;
-    area_bloco?: string;
     enunciado?: string;
     alternativas?: string;
-    dificuldade?: string;
-  }>;
-};
-
-/** @deprecated use ExtracaoLiteralLoteRes */
-export type ExtracaoPedagogicaLoteRes = ExtracaoLiteralLoteRes & {
-  questoes?: Array<{
-    numero: number;
-    area_bloco?: string;
     resumo_enunciado?: string;
-    enunciado?: string;
-    alternativas?: string;
-    dificuldade?: string;
-  }>;
-};
-
-/** @deprecated use ExtracaoLiteralLoteRes */
-export type ClassificacaoLoteRes = ExtracaoPedagogicaLoteRes & {
-  questoes?: Array<{
-    numero: number;
-    area_bloco?: string;
-    materia?: string;
-    assunto?: string;
-    conhecimento?: string;
-    dificuldade?: string;
-    resumo_enunciado?: string;
-    enunciado?: string;
-    alternativas?: string;
   }>;
 };
 
@@ -54,29 +27,29 @@ export function validarEstruturaProva(
   data: EstruturaProvaDetectada,
   totalEsperado: number
 ): void {
-  if (!data || !Array.isArray(data.numeros)) {
-    throw new Error("Resposta estrutural sem lista de números");
+  const ocorrencias = data.total_ocorrencias_detectado;
+  const logicas =
+    data.total_questoes_logicas ??
+    data.total_questoes_detectado ??
+    (Array.isArray(data.numeros_logicos)
+      ? data.numeros_logicos.length
+      : Array.isArray(data.numeros)
+        ? new Set(data.numeros).size
+        : 0);
+
+  if (typeof ocorrencias !== "number" || ocorrencias < 1) {
+    throw new Error("Resposta estrutural sem total_ocorrencias_detectado válido");
   }
 
-  const nums = [...new Set(data.numeros.filter((n) => Number.isInteger(n) && n > 0 && n <= 500))];
-  const minimoCadastro = minimoQuestoesEstrutura(totalEsperado);
-  const detectado = data.total_questoes_detectado;
-  const minimoDetectado =
-    typeof detectado === "number" && detectado > 0
-      ? Math.max(3, Math.ceil(detectado * ratioMinimo()))
-      : minimoCadastro;
-
-  const minimo = Math.min(minimoCadastro, minimoDetectado);
-
-  if (nums.length < minimo) {
-    throw new Error(
-      `Poucos números no PDF (${nums.length}; mínimo ~${minimo} para cadastro de ${totalEsperado})`
-    );
+  const minimoFisico = Math.max(3, Math.ceil(ocorrencias * ratioMinimo()));
+  if (ocorrencias < minimoFisico) {
+    throw new Error(`Poucas ocorrências detectadas no PDF (${ocorrencias})`);
   }
 
-  if (data.numeros.length > nums.length + 5) {
+  const minimoLogico = minimoQuestoesEstrutura(totalEsperado);
+  if (logicas > 0 && logicas < Math.min(minimoLogico, Math.ceil(totalEsperado * ratioMinimo()))) {
     throw new Error(
-      `Muitas numerações duplicadas ou inválidas (${data.numeros.length} → ${nums.length} únicos)`
+      `Poucos números lógicos no PDF (${logicas}; cadastro ${totalEsperado})`
     );
   }
 }
@@ -88,27 +61,34 @@ function textoEnunciadoQuestao(q: {
   return (q.enunciado ?? q.resumo_enunciado ?? "").trim();
 }
 
+/** Valida lote de extração por ordens físicas esperadas (não por numero único). */
 export function validarExtracaoLiteralLote(
   data: ExtracaoLiteralLoteRes,
-  numerosEsperados: number[]
+  ordensEsperadas: number[]
 ): void {
   if (!data?.questoes || !Array.isArray(data.questoes)) {
     throw new Error("Extração sem array de questões");
   }
 
-  const esperados = new Set(numerosEsperados);
-  const noLote = data.questoes.filter((q) => esperados.has(q.numero));
-  const minimo = Math.max(1, Math.ceil(numerosEsperados.length * ratioMinimo()));
+  const esperados = new Set(ordensEsperadas);
+  const noLote = data.questoes.filter((q) => esperados.has(q.ordem));
+  const minimo = Math.max(1, Math.ceil(ordensEsperadas.length * ratioMinimo()));
 
   if (noLote.length < minimo) {
     throw new Error(
-      `Lote incompleto: ${noLote.length}/${numerosEsperados.length} questões (mínimo ${minimo})`
+      `Lote incompleto: ${noLote.length}/${ordensEsperadas.length} ocorrências (mínimo ${minimo})`
     );
   }
 
   let semEnunciado = 0;
   let enunciadoCurto = 0;
   for (const q of noLote) {
+    if (!Number.isInteger(q.ordem) || q.ordem < 1) {
+      throw new Error(`Ordem inválida na extração: ${q.ordem}`);
+    }
+    if (!Number.isInteger(q.numero) || q.numero < 1) {
+      throw new Error(`Número impresso inválido na ordem ${q.ordem}`);
+    }
     const en = textoEnunciadoQuestao(q);
     if (!en) semEnunciado++;
     else if (en.length < ENUNCIADO_LITERAL_MIN_CHARS) enunciadoCurto++;
@@ -117,30 +97,30 @@ export function validarExtracaoLiteralLote(
   const maxSemEnunciado = Math.ceil(noLote.length * 0.15);
   if (semEnunciado > maxSemEnunciado) {
     throw new Error(
-      `Muitas questões sem enunciado literal (${semEnunciado}/${noLote.length})`
+      `Muitas ocorrências sem enunciado literal (${semEnunciado}/${noLote.length})`
     );
   }
 
   const maxCurto = Math.ceil(noLote.length * 0.35);
   if (enunciadoCurto > maxCurto) {
     throw new Error(
-      `Muitas questões com enunciado muito curto — possível resumo em vez de texto literal (${enunciadoCurto}/${noLote.length})`
+      `Muitas ocorrências com enunciado muito curto (${enunciadoCurto}/${noLote.length})`
     );
   }
 }
 
-/** @deprecated use validarExtracaoLiteralLote */
+/** @deprecated */
 export function validarExtracaoPedagogicaLote(
-  data: ExtracaoPedagogicaLoteRes,
-  numerosEsperados: number[]
+  data: ExtracaoLiteralLoteRes,
+  ordensEsperadas: number[]
 ): void {
-  validarExtracaoLiteralLote(data, numerosEsperados);
+  validarExtracaoLiteralLote(data, ordensEsperadas);
 }
 
-/** @deprecated use validarExtracaoLiteralLote */
+/** @deprecated */
 export function validarClassificacaoLote(
-  data: ClassificacaoLoteRes,
-  numerosEsperados: number[]
+  data: ExtracaoLiteralLoteRes,
+  ordensEsperadas: number[]
 ): void {
-  validarExtracaoLiteralLote(data, numerosEsperados);
+  validarExtracaoLiteralLote(data, ordensEsperadas);
 }

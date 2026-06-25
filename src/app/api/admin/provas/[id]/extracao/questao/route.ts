@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
-import { normalizarAreaBloco } from "@/lib/areas-bloco";
-import { upsertQuestaoExtracaoManual } from "@/lib/prova-questoes-persist";
+import { atualizarQuestaoExtracaoManual } from "@/lib/prova-questoes-persist";
 
 const bodySchema = z.object({
-  numero: z.number().int().positive(),
-  idiomaVariante: z.enum(["COMUM", "INGLES", "ESPANHOL"]).default("COMUM"),
+  questaoId: z.string().min(1),
   enunciado: z.string().min(15),
   alternativas: z.string().nullable().optional(),
-  areaBloco: z.string().nullable().optional(),
 });
 
 export async function POST(
@@ -23,15 +20,10 @@ export async function POST(
   const body = bodySchema.parse(await request.json());
 
   try {
-    const { id } = await upsertQuestaoExtracaoManual(provaId, {
-      numero: body.numero,
-      idiomaVariante: body.idiomaVariante,
+    const { id } = await atualizarQuestaoExtracaoManual(provaId, {
+      questaoId: body.questaoId,
       enunciado: body.enunciado,
       alternativas: body.alternativas,
-      areaBloco:
-        body.areaBloco != null
-          ? normalizarAreaBloco(body.areaBloco) ?? body.areaBloco
-          : undefined,
     });
     return NextResponse.json({ ok: true, questaoId: id });
   } catch (e) {

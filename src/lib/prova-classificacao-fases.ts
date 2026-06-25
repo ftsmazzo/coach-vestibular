@@ -6,7 +6,7 @@
 import type { IdiomaVarianteQuestao } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { extrairTrechosPorNumero } from "@/lib/prova-texto-parse";
-import { chaveQuestaoVariante } from "@/lib/prova-idioma";
+import { compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
 import { areaBlocoIdDeLabel, inferirAreaBlocoPorMateria } from "@/lib/areas-bloco";
 import { MARCADOR_EXTRACAO_ACEITA } from "@/lib/prova-texto-prova";
 import {
@@ -57,6 +57,7 @@ export type ResultadoFaseProva = {
 
 type QuestaoDb = {
   id: string;
+  ordemExtracao: number;
   numero: number;
   idiomaVariante: IdiomaVarianteQuestao;
   areaBloco: string | null;
@@ -112,7 +113,7 @@ function questaoParaPayload(
   }
 
   return {
-    fonteId: chaveQuestaoVariante(q.numero, q.idiomaVariante),
+    fonteId: q.id,
     numero: q.numero,
     idiomaVariante: q.idiomaVariante,
     areaBloco: q.areaBloco,
@@ -146,7 +147,7 @@ async function carregarContextoProva(provaId: string) {
 
   const questoes = await prisma.provaQuestao.findMany({
     where: { provaId },
-    orderBy: [{ numero: "asc" }, { idiomaVariante: "asc" }],
+    orderBy: { ordemExtracao: "asc" },
   });
 
   const textoFonte = prova.textoFonte?.trim() ?? "";

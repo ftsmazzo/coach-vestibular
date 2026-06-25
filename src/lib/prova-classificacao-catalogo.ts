@@ -23,7 +23,15 @@ import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
 import { camposClassificacaoFromResultado } from "@/lib/canonical-question/persist-classificacao";
 import { areaBlocoIdDeLabel, inferirAreaBlocoPorMateria } from "@/lib/areas-bloco";
 import { chaveQuestaoVariante } from "@/lib/prova-idioma";
+import { chaveOrdemExtracao } from "@/lib/prova-questao-ordem";
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
+
+function fonteIdRow(row: ProvaQuestaoRow): string {
+  if (row.ordemExtracao != null && row.ordemExtracao > 0) {
+    return chaveOrdemExtracao(row.ordemExtracao);
+  }
+  return chaveQuestaoVariante(row.numero, row.idiomaVariante ?? "COMUM");
+}
 
 type CtxClassificacaoProva = {
   banca?: string;
@@ -111,7 +119,7 @@ function rowParaPayload(
   const trecho = ctx?.trechos?.get(row.numero);
   const enunciado = row.enunciado?.trim() || trecho?.trim() || "";
   return {
-    fonteId: chaveQuestaoVariante(row.numero, row.idiomaVariante ?? "COMUM"),
+    fonteId: fonteIdRow(row),
     numero: row.numero,
     idiomaVariante: row.idiomaVariante ?? "COMUM",
     areaBloco: row.areaBloco ?? null,
@@ -256,7 +264,7 @@ export async function classificarRowsProvaComCatalogo(
   }
 
   const saida = rows.map((row) => {
-    const fonteId = chaveQuestaoVariante(row.numero, row.idiomaVariante ?? "COMUM");
+    const fonteId = fonteIdRow(row);
     const resultado = resultados.get(fonteId);
     if (!resultado) return row;
     return aplicarResultadoNaRow(row, resultado, versaoFromResultado(resultado, row));

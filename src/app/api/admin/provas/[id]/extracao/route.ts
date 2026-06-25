@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { montarRelatorioExtracao, resumoExtracao } from "@/lib/prova-extracao-relatorio";
 import { prisma } from "@/lib/prisma";
-import { compararQuestoesPorNumeroEOrdem } from "@/lib/prova-idioma";
+import { compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
 
 export async function GET(
   _request: Request,
@@ -20,18 +20,8 @@ export async function GET(
     return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
   }
 
-  const questoes = [...prova.questoes].sort((a, b) =>
-    compararQuestoesPorNumeroEOrdem(a, b, prova.ordemIdiomasFaixa)
-  );
-
-  const relatorio = montarRelatorioExtracao(questoes, prova.totalQuestoes, {
-    politicaIdiomas: prova.politicaIdiomas,
-    idiomaQuestaoInicio: prova.idiomaQuestaoInicio,
-    idiomaQuestaoFim: prova.idiomaQuestaoFim,
-    ordemIdiomasFaixa: prova.ordemIdiomasFaixa,
-    dia: prova.dia,
-    banca: prova.banca,
-  });
+  const questoes = [...prova.questoes].sort(compararPorOrdemExtracao);
+  const relatorio = montarRelatorioExtracao(questoes, prova.totalQuestoes);
 
   return NextResponse.json({
     extracaoValidada: prova.extracaoValidada,

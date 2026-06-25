@@ -8,16 +8,9 @@ import { ENUNCIADO_VALIDACAO_MIN_CHARS } from "@/lib/prova-texto-prova";
 interface Props {
   provaId: string;
   extracaoValidada: boolean;
-  /** Muda após gravar extração ou editar questão — força recarregar relatório. */
   refreshKey?: string;
   onMensagem: (msg: string) => void;
   onAtualizado: () => void;
-}
-
-function labelVariante(v: string): string {
-  if (v === "INGLES") return "EN";
-  if (v === "ESPANHOL") return "ES";
-  return "";
 }
 
 function badgeStatus(status: LinhaExtracaoRelatorio["status"]) {
@@ -41,9 +34,8 @@ async function copiarTexto(texto: string, onOk: () => void) {
   }
 }
 
-function rotuloQuestao(linha: LinhaExtracaoRelatorio): string {
-  const v = labelVariante(linha.idiomaVariante);
-  return v ? `Questão ${linha.numero} (${v})` : `Questão ${linha.numero}`;
+function rotuloLinha(linha: LinhaExtracaoRelatorio): string {
+  return `Ordem ${linha.ordemExtracao} · Q${linha.numero} (caderno)`;
 }
 
 export function AdminValidacaoExtracao({
@@ -91,12 +83,20 @@ export function AdminValidacaoExtracao({
   }, [carregar, extracaoValidada, refreshKey]);
 
   function abrirEdicao(linha: LinhaExtracaoRelatorio) {
+    if (!linha.questaoId) {
+      onMensagem("Linha sem id no banco — reextraia a prova.");
+      return;
+    }
     setEditando(linha.chave);
     setFormEnunciado(linha.enunciado ?? "");
     setFormAlternativas(linha.alternativas ?? "");
   }
 
   async function salvarLinha(linha: LinhaExtracaoRelatorio) {
+    if (!linha.questaoId) {
+      onMensagem("Linha sem id no banco.");
+      return;
+    }
     if (formEnunciado.trim().length < 15) {
       onMensagem("Cole o enunciado completo (mínimo 15 caracteres).");
       return;
@@ -108,11 +108,9 @@ export function AdminValidacaoExtracao({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          numero: linha.numero,
-          idiomaVariante: linha.idiomaVariante,
+          questaoId: linha.questaoId,
           enunciado: formEnunciado.trim(),
           alternativas: formAlternativas.trim() || null,
-          areaBloco: null,
         }),
       });
       const data = await res.json();
@@ -122,7 +120,7 @@ export function AdminValidacaoExtracao({
         return;
       }
       setEditando(null);
-      onMensagem(`Questão ${linha.numero}${labelVariante(linha.idiomaVariante) ? ` ${labelVariante(linha.idiomaVariante)}` : ""} atualizada.`);
+      onMensagem(`${rotuloLinha(linha)} atualizada.`);
       await carregar();
       onAtualizado();
     } catch {
@@ -132,16 +130,14 @@ export function AdminValidacaoExtracao({
   }
 
   async function aceitarLinha(linha: LinhaExtracaoRelatorio) {
+    if (!linha.questaoId) return;
     setAceitando(linha.chave);
     onMensagem("");
     try {
       const res = await fetch(`/api/admin/provas/${provaId}/extracao/aceitar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          numero: linha.numero,
-          idiomaVariante: linha.idiomaVariante,
-        }),
+        body: JSON.stringify({ questaoId: linha.questaoId }),
       });
       const data = await res.json();
       setAceitando(null);
@@ -149,9 +145,7 @@ export function AdminValidacaoExtracao({
         onMensagem(data.error ?? "Erro ao aceitar");
         return;
       }
-      onMensagem(
-        `Questão ${linha.numero}${labelVariante(linha.idiomaVariante) ? ` ${labelVariante(linha.idiomaVariante)}` : ""} aceita como completa.`
-      );
+      onMensagem(`${rotuloLinha(linha)} aceita como completa.`);
       await carregar();
       onAtualizado();
     } catch {
@@ -210,7 +204,7 @@ export function AdminValidacaoExtracao({
     );
   }
 
-  if (!relatorio || relatorio.linhasEsperadas === 0) {
+  if (!relatorio || relatorio.linhasFisicas === 0) {
     return null;
   }
 
@@ -225,20 +219,14 @@ export function AdminValidacaoExtracao({
         <div>
           <h2 className="font-semibold text-teal-900">Passo 3 — Validar extração</h2>
           <p className="mt-1 text-sm text-teal-800">
-            Revise enunciados e alternativas antes de qualquer classificação. Enunciados com menos de{" "}
-            {ENUNCIADO_VALIDACAO_MIN_CHARS} caracteres aparecem como <strong>Curto</strong> — se o
-            texto já está completo (comum em matemática), use <strong>Aceitar enunciado</strong> na
-            linha. Depois clique <strong>Confirmar extração completa</strong>.
-            {relatorio.linhasNoBanco > relatorio.linhasEsperadas && (
-              <span className="block text-xs text-teal-700 mt-1">
-                {relatorio.linhasNoBanco} linhas no banco ({relatorio.linhasEsperadas} esperadas no
-                cadastro). Reextraia se houver linhas EN/ES de uma versão anterior.
-              </span>
-            )}
+            Uma linha por ocorrência física no PDF. <strong>Ordem</strong> = posição no caderno;{" "}
+            <strong>Q#</strong> = número impresso (pode repetir em blocos EN/ES). Revise antes de
+            qualquer classificação. Mínimo {ENUNCIADO_VALIDACAO_MIN_CHARS} caracteres no enunciado.
           </p>
           <p className="mt-2 text-sm font-medium text-slate-800">
-            {relatorio.ok}/{relatorio.linhasEsperadas} OK · {relatorio.curto} curto(s) ·{" "}
-            {relatorio.faltando} faltando
+            {relatorio.ok}/{relatorio.linhasFisicas} OK · {relatorio.curto} curto(s) ·{" "}
+            {relatorio.faltando} faltando · {relatorio.linhasFisicas} linha(s) física(s) · cadastro{" "}
+            {relatorio.totalLogicoCadastro} lógica(s)
           </p>
         </div>
         {extracaoValidada ? (
@@ -281,7 +269,7 @@ export function AdminValidacaoExtracao({
           className="text-xs"
           onClick={() => setFiltro("todos")}
         >
-          Todas ({relatorio.linhasEsperadas})
+          Todas ({relatorio.linhasFisicas})
         </Button>
         <Button type="button" variant="secondary" className="text-xs" onClick={() => void carregar()}>
           Atualizar
@@ -292,7 +280,8 @@ export function AdminValidacaoExtracao({
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-slate-50 text-left text-xs text-slate-500">
             <tr>
-              <th className="p-2">#</th>
+              <th className="p-2">Ordem</th>
+              <th className="p-2">Q#</th>
               <th className="p-2">Chars</th>
               <th className="p-2">Status</th>
               <th className="p-2">Prévia</th>
@@ -303,7 +292,8 @@ export function AdminValidacaoExtracao({
             {linhasVisiveis.map((linha) => (
               <Fragment key={linha.chave}>
                 <tr className="border-t align-top">
-                  <td className="p-2 font-medium">{linha.numero}</td>
+                  <td className="p-2 font-medium">{linha.ordemExtracao}</td>
+                  <td className="p-2">{linha.numero || "—"}</td>
                   <td className="p-2">{linha.tamanhoEnunciado}</td>
                   <td className="p-2">
                     <span
@@ -313,7 +303,7 @@ export function AdminValidacaoExtracao({
                       {linha.aceitoManualmente ? " ✓" : ""}
                     </span>
                   </td>
-                  <td className="p-2 max-w-[280px] truncate text-xs text-slate-600">
+                  <td className="p-2 max-w-[260px] truncate text-xs text-slate-600">
                     {linha.enunciado?.slice(0, 120) ?? "—"}
                   </td>
                   <td className="p-2">
@@ -322,54 +312,20 @@ export function AdminValidacaoExtracao({
                         type="button"
                         variant="secondary"
                         className="text-xs px-2 py-1"
+                        disabled={!linha.questaoId}
                         onClick={() => abrirEdicao(linha)}
                       >
                         {linha.status === "faltando" ? "Colar texto" : "Corrigir"}
                       </Button>
-                      {linha.status === "curto" && (
+                      {linha.status === "curto" && linha.questaoId && (
                         <Button
                           type="button"
                           variant="secondary"
                           className="text-xs px-2 py-1 border-emerald-300 text-emerald-800"
                           disabled={aceitando === linha.chave}
-                          title="Enunciado curto mas completo — ex.: matemática direta"
                           onClick={() => void aceitarLinha(linha)}
                         >
                           {aceitando === linha.chave ? "…" : "Aceitar enunciado"}
-                        </Button>
-                      )}
-                      {linha.status !== "ok" && (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="text-xs px-2 py-1"
-                          title="Copia rótulo para colar no PDF ou reportar erro"
-                          onClick={() => {
-                            void copiarTexto(
-                              `${rotuloQuestao(linha)} — status: ${labelStatus(linha.status)}\n\n[COLE AQUI o enunciado literal do PDF]\n\nAlternativas:\nA) \nB) \nC) \nD) \nE) `,
-                              () => {
-                                setCopiado(linha.chave);
-                                setTimeout(() => setCopiado(null), 2000);
-                              }
-                            );
-                          }}
-                        >
-                          {copiado === linha.chave ? "Copiado!" : "Copiar modelo"}
-                        </Button>
-                      )}
-                      {linha.enunciado && (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="text-xs px-2 py-1"
-                          onClick={() => {
-                            void copiarTexto(linha.enunciado ?? "", () => {
-                              setCopiado(`${linha.chave}-en`);
-                              setTimeout(() => setCopiado(null), 2000);
-                            });
-                          }}
-                        >
-                          {copiado === `${linha.chave}-en` ? "Copiado!" : "Copiar enunciado"}
                         </Button>
                       )}
                     </div>
@@ -377,15 +333,10 @@ export function AdminValidacaoExtracao({
                 </tr>
                 {editando === linha.chave && (
                   <tr className="border-t bg-slate-50">
-                    <td colSpan={5} className="p-3">
+                    <td colSpan={6} className="p-3">
                       <p className="mb-2 text-xs font-medium text-slate-700">
-                        Questão {linha.numero}
-                        {labelVariante(linha.idiomaVariante)
-                          ? ` (${labelVariante(linha.idiomaVariante)})`
-                          : ""}{" "}
-                        — cole o texto literal do PDF
+                        {rotuloLinha(linha)} — cole o texto literal do PDF
                       </p>
-                      <label className="mb-1 block text-xs text-slate-500">Enunciado</label>
                       <textarea
                         className="mb-2 w-full rounded border border-slate-200 p-2 font-mono text-xs"
                         rows={8}
@@ -393,29 +344,18 @@ export function AdminValidacaoExtracao({
                         onChange={(e) => setFormEnunciado(e.target.value)}
                         placeholder="Texto de apoio + comando da questão…"
                       />
-                      <label className="mb-1 block text-xs text-slate-500">
-                        Alternativas (opcional)
-                      </label>
                       <textarea
                         className="mb-3 w-full rounded border border-slate-200 p-2 font-mono text-xs"
                         rows={4}
                         value={formAlternativas}
                         onChange={(e) => setFormAlternativas(e.target.value)}
-                        placeholder="A) … B) … C) …"
+                        placeholder="Alternativas A) … B) …"
                       />
                       <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          disabled={salvando}
-                          onClick={() => void salvarLinha(linha)}
-                        >
-                          {salvando ? "Salvando…" : "Salvar questão"}
+                        <Button type="button" disabled={salvando} onClick={() => void salvarLinha(linha)}>
+                          {salvando ? "Salvando…" : "Salvar linha"}
                         </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => setEditando(null)}
-                        >
+                        <Button type="button" variant="secondary" onClick={() => setEditando(null)}>
                           Cancelar
                         </Button>
                       </div>
@@ -430,7 +370,7 @@ export function AdminValidacaoExtracao({
 
       {!extracaoValidada && !relatorio.prontaParaValidar && (
         <p className="mt-3 text-xs text-amber-800">
-          Corrija ou cole o texto das questões marcadas como Faltando ou Curto antes de confirmar.
+          Corrija ou cole o texto das linhas Faltando ou Curto antes de confirmar.
         </p>
       )}
     </Card>

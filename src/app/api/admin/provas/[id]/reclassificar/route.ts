@@ -34,10 +34,8 @@ export async function POST(
   );
   const enunciado = texto.trim();
 
-  const existente = await prisma.provaQuestao.findUnique({
-    where: {
-      provaId_numero_idiomaVariante: { provaId, numero, idiomaVariante },
-    },
+  const existente = await prisma.provaQuestao.findFirst({
+    where: { provaId, numero, idiomaVariante },
   });
 
   const orientacaoHumana =
@@ -72,14 +70,17 @@ export async function POST(
       );
     }
 
-    await upsertQuestoesExtraidas(provaId, [{ ...salva, idiomaVariante }]);
+    await upsertQuestoesExtraidas(provaId, [
+      { ...salva, idiomaVariante, ordemExtracao: existente?.ordemExtracao },
+    ]);
     await refreshProvaGabaritoFlag(provaId);
 
-    const atualizada = await prisma.provaQuestao.findUnique({
-      where: {
-        provaId_numero_idiomaVariante: { provaId, numero, idiomaVariante },
-      },
-    });
+    const atualizada = existente
+      ? await prisma.provaQuestao.findUnique({ where: { id: existente.id } })
+      : await prisma.provaQuestao.findFirst({
+          where: { provaId, numero, idiomaVariante },
+          orderBy: { ordemExtracao: "desc" },
+        });
 
     return NextResponse.json({
       ok: true,

@@ -48,15 +48,11 @@ export async function trocarConteudoParIdioma(
   numero: number
 ): Promise<boolean> {
   const [en, es] = await Promise.all([
-    prisma.provaQuestao.findUnique({
-      where: {
-        provaId_numero_idiomaVariante: { provaId, numero, idiomaVariante: "INGLES" },
-      },
+    prisma.provaQuestao.findFirst({
+      where: { provaId, numero, idiomaVariante: "INGLES" },
     }),
-    prisma.provaQuestao.findUnique({
-      where: {
-        provaId_numero_idiomaVariante: { provaId, numero, idiomaVariante: "ESPANHOL" },
-      },
+    prisma.provaQuestao.findFirst({
+      where: { provaId, numero, idiomaVariante: "ESPANHOL" },
     }),
   ]);
   if (!en || !es) return false;
@@ -93,13 +89,11 @@ export async function resolverQuestaoIdAposMateriaIdioma(
   const varianteAlvo = materiaParaVarianteIdioma(novaMateria);
   if (!varianteAlvo || varianteAlvo === atual.idiomaVariante) return questaoId;
 
-  const irma = await prisma.provaQuestao.findUnique({
+  const irma = await prisma.provaQuestao.findFirst({
     where: {
-      provaId_numero_idiomaVariante: {
-        provaId,
-        numero: atual.numero,
-        idiomaVariante: varianteAlvo,
-      },
+      provaId,
+      numero: atual.numero,
+      idiomaVariante: varianteAlvo,
     },
   });
   if (!irma) return questaoId;

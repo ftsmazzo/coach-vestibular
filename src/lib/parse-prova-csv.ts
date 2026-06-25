@@ -1,6 +1,8 @@
 import { normalizarGabaritoOficial } from "@/lib/gabarito-anulada";
 
 export interface ProvaQuestaoRow {
+  /** Posição física no PDF (1..N) — obrigatório na extração */
+  ordemExtracao?: number;
   numero: number;
   idiomaVariante?: "COMUM" | "INGLES" | "ESPANHOL";
   areaBloco?: string;
