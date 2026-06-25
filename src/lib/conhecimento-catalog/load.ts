@@ -100,15 +100,38 @@ export function promptClassificacaoDisciplina(materiaId: string): string | null 
 export function promptRoteamentoHumanas(): string | null {
   const manifest = carregarManifest();
   const file = manifest.promptRoteamentoHumanas;
-  if (!file) return null;
-  return carregarPromptCatalogo(file);
+  const md = file ? carregarPromptCatalogo(file) : "";
+  const spec = blocoSpecRoteamento(manifest.roteamentoHumanas);
+  const merged = `${md}${spec}`.trim();
+  return merged || null;
 }
 
 export function promptRoteamentoLinguagens(): string | null {
   const manifest = carregarManifest();
   const file = manifest.promptRoteamentoLinguagens;
-  if (!file) return null;
-  return carregarPromptCatalogo(file);
+  const md = file ? carregarPromptCatalogo(file) : "";
+  const spec = blocoSpecRoteamento(manifest.roteamentoLinguagens);
+  const merged = `${md}${spec}`.trim();
+  return merged || null;
+}
+
+function blocoSpecRoteamento(fileName?: string): string {
+  if (!fileName) return "";
+  try {
+    const spec = readJson<{
+      disciplineRoutingRules?: unknown;
+      globalRules?: unknown;
+      tieBreakMatrix?: unknown;
+    }>(fileName);
+    const payload = {
+      disciplineRoutingRules: spec.disciplineRoutingRules,
+      globalRules: spec.globalRules,
+      tieBreakMatrix: spec.tieBreakMatrix,
+    };
+    return `\n\n## Especificação de roteamento (obrigatória)\n\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``;
+  } catch {
+    return "";
+  }
 }
 
 export function materiasCatalogoAtivas(): string[] {

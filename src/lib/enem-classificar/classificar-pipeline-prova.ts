@@ -44,6 +44,10 @@ import {
   fisicaPrevaleceSobreMatematica,
   REGRA_FISICA_PREVALECE_ID,
 } from "@/lib/enem-classificar/fisica-vs-matematica";
+import {
+  aplicarRoteamentoDeterministicoHumanas,
+  aplicarRoteamentoDeterministicoLinguagens,
+} from "@/lib/enem-classificar/heuristica-roteamento-disciplina";
 import type { ClassificacaoN1 } from "@/lib/classificacao-n1-types";
 import { CLASSIFICACAO_N1_VERSAO } from "@/lib/classificacao-n1-types";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
@@ -216,37 +220,15 @@ function rotaDeterministicaLinguagens(
   q: PayloadQuestaoCompleto,
   rota: RotaIa
 ): RotaIa {
-  if (q.idiomaVariante === "INGLES") {
-    if (rota.disciplinaId === "ingles") return rota;
-    return {
-      disciplinaId: "ingles",
-      criterio: "metadata",
-      confianca: Math.max(rota.confianca, 0.95),
-      justificativa: `Rota forçada por idiomaVariante=INGLES; IA sugeriu ${rota.disciplinaId}.`,
-      sinalizadorRevisao: true,
-    };
-  }
-  if (q.idiomaVariante === "ESPANHOL") {
-    if (rota.disciplinaId === "espanhol") return rota;
-    return {
-      disciplinaId: "espanhol",
-      criterio: "metadata",
-      confianca: Math.max(rota.confianca, 0.95),
-      justificativa: `Rota forçada por idiomaVariante=ESPANHOL; IA sugeriu ${rota.disciplinaId}.`,
-      sinalizadorRevisao: true,
-    };
-  }
-  if (rota.disciplinaId === "indefinido") {
-    return {
-      disciplinaId: "portugues",
-      criterio: "metadata",
-      confianca: Math.max(rota.confianca, 0.55),
-      justificativa:
-        "Variante COMUM em Linguagens — roteada para português (comando em PT não exclui LP).",
-      sinalizadorRevisao: true,
-    };
-  }
-  return rota;
+  return aplicarRoteamentoDeterministicoLinguagens(
+    textoCompleto(q),
+    q.idiomaVariante,
+    rota
+  );
+}
+
+function rotaDeterministicaHumanas(q: PayloadQuestaoCompleto, rota: RotaIa): RotaIa {
+  return aplicarRoteamentoDeterministicoHumanas(textoCompleto(q), rota);
 }
 
 /** Passo 2a — triagem Bio/Quím/Fís (heurística, depois IA se necessário). */
@@ -352,6 +334,8 @@ export async function passoRoteamentoDisciplina(
 
   if (area === "linguagens") {
     rota = rotaDeterministicaLinguagens(q, rota);
+  } else {
+    rota = rotaDeterministicaHumanas(q, rota);
   }
 
   const metaOut: MetaPipelineProva = {

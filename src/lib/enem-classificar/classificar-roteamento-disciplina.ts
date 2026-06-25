@@ -14,7 +14,6 @@ import {
 import type {
   CatalogDisciplinaId,
   DisciplinaHumanasId,
-  DisciplinaLinguagensId,
   RotaHumanasId,
   RotaLinguagensId,
 } from "@/lib/conhecimento-catalog/disciplinas-split";
@@ -29,6 +28,10 @@ import {
   fonteIdsFaltantes,
 } from "@/lib/enem-classificar/fonte-id-utils";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
+import {
+  aplicarRoteamentoDeterministicoHumanas,
+  aplicarRoteamentoDeterministicoLinguagens,
+} from "@/lib/enem-classificar/heuristica-roteamento-disciplina";
 
 export const CLASSIFICADOR_DISCIPLINA_V10 = "ia-disciplina-v10";
 
@@ -163,35 +166,22 @@ async function rotearLote(
   return aplicarMapaComChavesFonteId(bruto, esperados);
 }
 
+function textoQuestaoRoteamento(q: QuestaoRoteamento): string {
+  return [q.textoBase?.trim(), q.enunciado, q.alternativas].filter(Boolean).join("\n\n");
+}
+
 function rotaDeterministicaLinguagens(
   item: QuestaoRoteamento,
   rota: RotaItem["rota"]
 ): RotaItem["rota"] {
-  const hint = item.idioma;
-  if (hint === "ingles" || hint === "espanhol") {
-    const forçada = hint as DisciplinaLinguagensId;
-    if (rota.disciplinaId === forçada) return rota;
-    return {
-      disciplinaId: forçada,
-      criterio: "metadata",
-      confianca: Math.max(rota.confianca ?? 0, 0.95),
-      justificativa: `Rota forçada por idiomaVariante (${forçada}); IA sugeriu ${rota.disciplinaId}.`,
-      sinalizadorRevisao: true,
-    };
-  }
+  return aplicarRoteamentoDeterministicoLinguagens(textoQuestaoRoteamento(item), item.idioma, rota);
+}
 
-  if (rota.disciplinaId === "indefinido") {
-    return {
-      disciplinaId: "portugues",
-      criterio: "metadata",
-      confianca: Math.max(rota.confianca ?? 0, 0.55),
-      justificativa:
-        "Variante COMUM em Linguagens — roteada para português (comando em PT não exclui Língua Portuguesa).",
-      sinalizadorRevisao: true,
-    };
-  }
-
-  return rota;
+function rotaDeterministicaHumanas(
+  item: QuestaoRoteamento,
+  rota: RotaItem["rota"]
+): RotaItem["rota"] {
+  return aplicarRoteamentoDeterministicoHumanas(textoQuestaoRoteamento(item), rota);
 }
 
 function resultadoIndefinido(
@@ -379,7 +369,9 @@ async function classificarAreaComRoteamento(
     };
     rotas.set(
       item.fonteId,
-      area === "linguagens" ? rotaDeterministicaLinguagens(item, bruta) : bruta
+      area === "linguagens"
+        ? rotaDeterministicaLinguagens(item, bruta)
+        : rotaDeterministicaHumanas(item, bruta)
     );
   }
 
