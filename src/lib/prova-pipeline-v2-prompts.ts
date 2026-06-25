@@ -19,6 +19,7 @@ Regras:
 - Preserve o número impresso na prova.
 - blocos: seções com título visível e intervalo de questões (array vazio se não houver).
 - formato_layout e idiomas_estrangeiros: inferir do documento.
+- Duplicata EN/ES: em ENEM as questões 1–5 têm versão Inglês e Espanhol; em UFU e similares o bloco de Português vem ANTES (ex.: Q1–15 PT, Q16–20 IN/ES com mesma numeração). Registre blocos separados com intervalos corretos — não estenda Inglês/Espanhol sobre o bloco de Português.
 - NÃO classifique matéria, assunto, dificuldade ou gabarito nesta etapa.`.trim();
 
 export const PROMPT_SISTEMA_EXTRACAO_LITERAL = `Você é um extrator literal de questões de provas de vestibular brasileiro (qualquer banca).
@@ -36,7 +37,7 @@ Regras:
 - Línguas e códigos ≠ Geografia/Biologia/Física/Química salvo conteúdo explícito da disciplina.
 - Ciências Humanas ≠ Biologia/Física/Química.
 - Para bloco em INGLÊS: extraia só o texto em inglês. Para ESPANHOL: só o texto em espanhol.
-- Duplicata EN/ES: em muitos vestibulares vêm 5 questões de Espanhol seguidas e depois 5 de Inglês (mesmos números 1–5). Extraia o bloco correto conforme a instrução da passagem — não copie texto do outro idioma.
+- Duplicata EN/ES: em muitos vestibulares vêm 5 questões de Espanhol seguidas e depois 5 de Inglês (mesmos números 1–5). Em UFU e similares, Inglês/Espanhol ficam no FINAL do caderno de Linguagens (ex.: Q16–20 após Q1–15 de Português). Extraia o bloco correto conforme a instrução da passagem — não copie texto do outro idioma.
 - Texto compartilhado ("Leia o texto… responda às questões X a Y"): em CADA questão do intervalo inclua o texto de apoio compartilhado E o comando/pergunta específico daquele número (não repita só o texto sem a pergunta da questão).
 - Responda somente no formato solicitado.`.trim();
 

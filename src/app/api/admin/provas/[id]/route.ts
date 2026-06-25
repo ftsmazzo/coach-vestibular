@@ -68,6 +68,9 @@ const patchSchema = z.object({
   totalQuestoes: z.number().int().positive().optional(),
   publicada: z.boolean().optional(),
   ordemIdiomasFaixa: z.enum(["INGLES_PRIMEIRO", "ESPANHOL_PRIMEIRO"]).optional(),
+  politicaIdiomas: z.enum(["NENHUMA", "DUPLICATA_EN_ES"]).optional(),
+  idiomaQuestaoInicio: z.number().int().positive().optional().nullable(),
+  idiomaQuestaoFim: z.number().int().positive().optional().nullable(),
 });
 
 export async function PATCH(

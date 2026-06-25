@@ -35,12 +35,15 @@ export function parseListaErros(texto: string): number[] {
 /**
  * Gabarito do aluno ou oficial em lote — uma linha por questão.
  * Ex.: 1,C | 2, A | 3;B | 12.D | 15,* (anulada)
+ * Dual EN/ES: 16,C,en | 16,B,es | 17;D;ingles
  */
 export function parseGabaritoLote(texto: string): Map<number, string> {
   const map = new Map<number, string>();
   for (const linha of texto.split(/\r?\n/)) {
     const trimmed = linha.trim();
     if (!trimmed) continue;
+
+    if (parseGabaritoLinhaDual(trimmed)) continue;
 
     const matchAnulada =
       trimmed.match(/^(\d{1,3})\s*[,;\s]+\s*(\*|anulad[ao]?)\b/i) ??
@@ -62,6 +65,78 @@ export function parseGabaritoLote(texto: string): Map<number, string> {
       map.set(numero, letra);
     }
   }
+  return map;
+}
+
+export type GabaritoDualLinha = {
+  numero: number;
+  comum?: string;
+  ingles?: string;
+  espanhol?: string;
+};
+
+function parseTrilhaGabarito(raw: string): "ingles" | "espanhol" | null {
+  const t = raw.trim().toLowerCase();
+  if (t === "en" || t === "ingles" || t === "inglês" || t === "ing") return "ingles";
+  if (t === "es" || t === "espanhol" || t === "esp") return "espanhol";
+  return null;
+}
+
+function parseGabaritoLinhaDual(trimmed: string): GabaritoDualLinha | null {
+  const match =
+    trimmed.match(/^(\d{1,3})\s*[,;\s]+\s*([A-Ea-e]|\*)\s*[,;\s]+\s*(en|es|ingles|espanhol|ing|esp)\b/i) ??
+    trimmed.match(/^(\d{1,3})\s*[,;\s]+\s*(en|es|ingles|espanhol|ing|esp)\s*[,;\s]+\s*([A-Ea-e]|\*)\b/i);
+  if (!match) return null;
+
+  const numero = parseInt(match[1], 10);
+  if (numero <= 0) return null;
+
+  let letraRaw: string;
+  let trilhaRaw: string;
+  if (/^(en|es|ingles|espanhol)/i.test(match[2])) {
+    trilhaRaw = match[2];
+    letraRaw = match[3];
+  } else {
+    letraRaw = match[2];
+    trilhaRaw = match[3];
+  }
+
+  const trilha = parseTrilhaGabarito(trilhaRaw);
+  if (!trilha) return null;
+
+  const letra =
+    letraRaw === "*" || /^anulad/i.test(letraRaw) ? "*" : letraRaw.toUpperCase();
+  if (letra !== "*" && !/^[A-E]$/.test(letra)) return null;
+
+  return trilha === "ingles"
+    ? { numero, ingles: letra }
+    : { numero, espanhol: letra };
+}
+
+/** Gabarito com trilhas EN/ES explícitas (ex.: 16,C,en). Linhas só com número,letra vão em comum. */
+export function parseGabaritoLoteDual(texto: string): Map<number, GabaritoDualLinha> {
+  const map = new Map<number, GabaritoDualLinha>();
+  const simples = parseGabaritoLote(texto);
+
+  for (const linha of texto.split(/\r?\n/)) {
+    const trimmed = linha.trim();
+    if (!trimmed) continue;
+    const dual = parseGabaritoLinhaDual(trimmed);
+    if (!dual) continue;
+    const prev = map.get(dual.numero) ?? { numero: dual.numero };
+    map.set(dual.numero, {
+      numero: dual.numero,
+      comum: prev.comum,
+      ingles: dual.ingles ?? prev.ingles,
+      espanhol: dual.espanhol ?? prev.espanhol,
+    });
+  }
+
+  for (const [numero, letra] of simples) {
+    if (map.has(numero)) continue;
+    map.set(numero, { numero, comum: letra });
+  }
+
   return map;
 }
 

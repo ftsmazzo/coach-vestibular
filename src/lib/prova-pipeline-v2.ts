@@ -15,9 +15,14 @@ import { normalizarAreaBloco } from "@/lib/areas-bloco";
 import {
   chaveQuestaoVariante,
   compararQuestoesPorNumeroEOrdem,
+  inferirFaixaIdiomaComConfianca,
   inferirFaixaIdiomaDoPdf,
   inferirOrdemIdiomasDoPdf,
+  proporFaixaIdiomaPorConteudo,
+  sanearVariantesIdiomaExtracao,
   type FaixaIdiomaOpcional,
+  type InferirFaixaIdiomaOpts,
+  type PropostaFaixaIdioma,
 } from "@/lib/prova-idioma";
 import { areaBlocoPorNumero } from "@/lib/prova-classificacao-regras";
 import {
@@ -47,6 +52,9 @@ export interface PipelineV2Result {
   estruturaDetectada?: EstruturaProvaDetectada;
   politicaIdiomas?: "NENHUMA" | "DUPLICATA_EN_ES";
   faixaIdioma?: FaixaIdiomaOpcional | null;
+  /** True quando a faixa foi usada na extração (cadastro manual ou confiança alta). */
+  faixaIdiomaConfirmada?: boolean;
+  propostaFaixaIdioma?: PropostaFaixaIdioma | null;
   ordemIdiomasFaixa?: "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO";
 }
 
@@ -301,6 +309,8 @@ export async function executarExtracaoProvaV2(
     /** @deprecated Use incluirBlocoEspanhol (inverso). */
     excluirBlocoEspanhol?: boolean;
     gerarCsv?: boolean;
+    /** Faixa EN/ES já cadastrada na prova (prioridade sobre inferência). */
+    faixaIdiomaCadastro?: FaixaIdiomaOpcional | null;
   }
 ): Promise<PipelineV2Result> {
   const avisos: string[] = [];
@@ -331,16 +341,46 @@ Preencha o schema estrutural completo a partir do PDF.
     incluirBlocoEspanhol: opts?.incluirBlocoEspanhol === true,
     forcarExcluirEspanhol: opts?.excluirBlocoEspanhol === true,
   });
+  const faixaOpts: InferirFaixaIdiomaOpts = {
+    banca: ctx.banca,
+    totalEsperado: ctx.totalEsperado,
+    faixaCadastro: opts?.faixaIdiomaCadastro ?? null,
+  };
+  const inferenciaFaixa = politicaIdioma.modoDuplicata
+    ? inferirFaixaIdiomaComConfianca(estrutura, faixaOpts)
+    : null;
+  const faixaIdiomaConfirmada = Boolean(
+    opts?.faixaIdiomaCadastro ??
+      (inferenciaFaixa?.confianca === "alta" ? inferenciaFaixa.faixa : null)
+  );
   const faixaIdioma =
-    politicaIdioma.modoDuplicata ? inferirFaixaIdiomaDoPdf(estrutura) : null;
+    politicaIdioma.modoDuplicata && faixaIdiomaConfirmada
+      ? (opts?.faixaIdiomaCadastro ?? inferenciaFaixa?.faixa ?? null)
+      : null;
   const ordemIdiomasFaixa = politicaIdioma.modoDuplicata
     ? inferirOrdemIdiomasDoPdf(estrutura)
     : "INGLES_PRIMEIRO";
 
+  if (politicaIdioma.modoDuplicata && !faixaIdiomaConfirmada) {
+    avisos.push(
+      "Duplicata EN/ES detectada no PDF — extração conservadora: todas as questões como COMUM. " +
+        "Confirme a faixa EN/ES no cadastro ou use «Detectar pelo conteúdo» antes de dividir trilhas e gabarito dual."
+    );
+    if (inferenciaFaixa) {
+      avisos.push(
+        `Sugestão estrutural: Q${inferenciaFaixa.faixa.inicio}–${inferenciaFaixa.faixa.fim} (${inferenciaFaixa.confianca}: ${inferenciaFaixa.motivo}).`
+      );
+    }
+  }
+
   etapas.push(
     `Estrutura (${estruturaExec.model}): ${estrutura.numeros.length} números únicos · layout ${estrutura.formato_layout ?? "?"}` +
       (politicaIdioma.modoDuplicata
-        ? ` · EN/ES: faixa ${faixaIdioma?.inicio ?? 1}–${faixaIdioma?.fim ?? 5} (ambas trilhas · ${ordemIdiomasFaixa === "ESPANHOL_PRIMEIRO" ? "ES antes EN" : "EN antes ES"})`
+        ? faixaIdioma
+          ? ` · EN/ES confirmada: Q${faixaIdioma.inicio}–${faixaIdioma.fim} (${ordemIdiomasFaixa === "ESPANHOL_PRIMEIRO" ? "ES antes EN" : "EN antes ES"})`
+          : inferenciaFaixa
+            ? ` · EN/ES pendente (sugestão Q${inferenciaFaixa.faixa.inicio}–${inferenciaFaixa.faixa.fim}, ${inferenciaFaixa.confianca}) — extração COMUM`
+            : " · EN/ES detectada — extração COMUM até confirmar faixa"
         : politicaIdioma.forcarSomenteIngles
           ? " · idioma: só inglês (legado)"
           : "")
@@ -476,6 +516,29 @@ ${extra}`;
     compararQuestoesPorNumeroEOrdem(a, b, ordemIdiomasFaixa)
   );
 
+  if (politicaIdioma.modoDuplicata && faixaIdioma) {
+    rows = sanearVariantesIdiomaExtracao(rows, faixaIdioma, avisos, ordemIdiomasFaixa);
+    etapas.push(
+      `Saneamento EN/ES: faixa ${faixaIdioma.inicio}–${faixaIdioma.fim} · ${rows.length} linha(s) após consolidar variantes.`
+    );
+  }
+
+  let propostaFaixaIdioma: PropostaFaixaIdioma | null = null;
+  if (politicaIdioma.modoDuplicata && !faixaIdiomaConfirmada) {
+    propostaFaixaIdioma = proporFaixaIdiomaPorConteudo(rows, {
+      ...faixaOpts,
+      estrutura,
+    });
+    if (propostaFaixaIdioma) {
+      avisos.push(
+        `Proposta por conteúdo (catálogo EN/ES): Q${propostaFaixaIdioma.faixa.inicio}–${propostaFaixaIdioma.faixa.fim} (${propostaFaixaIdioma.confianca}) — ${propostaFaixaIdioma.motivo}.`
+      );
+      etapas.push(
+        `Faixa sugerida pelo conteúdo: Q${propostaFaixaIdioma.faixa.inicio}–${propostaFaixaIdioma.faixa.fim}.`
+      );
+    }
+  }
+
   etapas.push(`Extração concluída: ${rows.length} linha(s) — classificação pendente de validação.`);
 
   if (opts?.incluirGabarito && opts.gabaritoTexto?.trim()) {
@@ -509,7 +572,9 @@ ${extra}`;
     etapas,
     estruturaDetectada: estrutura,
     politicaIdiomas: politicaIdioma.modoDuplicata ? "DUPLICATA_EN_ES" : "NENHUMA",
-    faixaIdioma,
+    faixaIdioma: faixaIdioma ?? inferenciaFaixa?.faixa ?? null,
+    faixaIdiomaConfirmada,
+    propostaFaixaIdioma,
     ordemIdiomasFaixa: politicaIdioma.modoDuplicata ? ordemIdiomasFaixa : undefined,
   };
 }

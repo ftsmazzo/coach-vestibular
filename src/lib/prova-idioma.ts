@@ -1,7 +1,72 @@
 import type { IdiomaVarianteQuestao, PoliticaIdiomasProva } from "@/generated/prisma/client";
 import type { EstruturaProvaDetectada } from "@/lib/prova-pipeline-contexto";
+import { heuristicaLinguagensDisciplina } from "@/lib/enem-classificar/heuristica-roteamento-disciplina";
+import {
+  detectarPassagemEspanhol,
+  detectarPassagemIngles,
+  textoIndicaPortuguesInterpretacao,
+} from "@/lib/prova-materia-ajuste";
+import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
 
 export type FaixaIdiomaOpcional = { inicio: number; fim: number };
+
+export type InferirFaixaIdiomaOpts = {
+  banca?: string;
+  totalEsperado?: number;
+  /** Faixa já cadastrada na prova — prioridade sobre inferência do PDF. */
+  faixaCadastro?: FaixaIdiomaOpcional | null;
+};
+
+function normTituloBloco(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+function blocoEhPortugues(titulo: string): boolean {
+  const t = normTituloBloco(titulo);
+  if (/ingles|espanhol|estrangeir/.test(t)) return false;
+  return (
+    /portugues|lingua portuguesa/.test(t) ||
+    (/^linguagens\b/.test(t) && /codigos|portug/.test(t))
+  );
+}
+
+function blocoEhIngles(titulo: string): boolean {
+  const t = normTituloBloco(titulo);
+  return (/ingles|lingua inglesa/.test(t) || /ingles e suas/.test(t)) && !/espanhol/.test(t);
+}
+
+function blocoEhEspanhol(titulo: string): boolean {
+  const t = normTituloBloco(titulo);
+  return /espanhol|lingua espanhola/.test(t) && !/ingles/.test(t);
+}
+
+/** Heurística por banca quando blocos do PDF estão incompletos ou errados. */
+export function faixaIdiomaHeuristicaBanca(
+  banca?: string,
+  totalEsperado?: number,
+  numeros?: number[]
+): FaixaIdiomaOpcional | null {
+  const b = normTituloBloco(banca ?? "");
+  const maxNum = numeros?.length ? Math.max(...numeros.filter((n) => n > 0)) : 0;
+  const total = totalEsperado && totalEsperado > 0 ? totalEsperado : maxNum;
+  const isUfu = /\bufu\b|uberlandia/.test(b);
+
+  if (isUfu && total >= 16 && total <= 25) {
+    return { inicio: total - 4, fim: total };
+  }
+
+  return null;
+}
+
+function faixaIdiomaFallback(total: number): FaixaIdiomaOpcional {
+  if (total <= 0) return { inicio: 1, fim: 5 };
+  if (total >= 40 && total <= 50) return { inicio: 1, fim: 5 };
+  return { inicio: Math.max(1, total - 4), fim: total };
+}
 
 export type MetaPoliticaIdiomas = {
   politicaIdiomas?: PoliticaIdiomasProva | string;
@@ -19,15 +84,37 @@ export function temDuplicataEnEs(meta?: MetaPoliticaIdiomas): boolean {
   return meta?.politicaIdiomas === "DUPLICATA_EN_ES";
 }
 
+/** Faixa EN/ES só quando início e fim estão explicitamente cadastrados (evita gabarito «travado» em 1–5). */
 export function faixaIdiomaProva(meta?: MetaPoliticaIdiomas): FaixaIdiomaOpcional | null {
   if (!temDuplicataEnEs(meta)) return null;
-  const inicio = meta?.idiomaQuestaoInicio ?? 1;
-  const fim = meta?.idiomaQuestaoFim ?? 5;
-  if (!Number.isInteger(inicio) || !Number.isInteger(fim) || inicio < 1 || fim < inicio) {
-    return { inicio: 1, fim: 5 };
+  const inicio = meta?.idiomaQuestaoInicio;
+  const fim = meta?.idiomaQuestaoFim;
+  if (
+    !Number.isInteger(inicio) ||
+    !Number.isInteger(fim) ||
+    inicio! < 1 ||
+    fim! < inicio!
+  ) {
+    return null;
   }
-  return { inicio, fim };
+  return { inicio: inicio!, fim: fim! };
 }
+
+export function faixaIdiomaConfirmada(meta?: MetaPoliticaIdiomas): boolean {
+  return faixaIdiomaProva(meta) != null;
+}
+
+export type ConfiancaFaixaIdioma = "alta" | "media" | "baixa";
+
+export type ResultadoInferenciaFaixa = {
+  faixa: FaixaIdiomaOpcional;
+  confianca: ConfiancaFaixaIdioma;
+  motivo: string;
+};
+
+export type PropostaFaixaIdioma = ResultadoInferenciaFaixa & {
+  numerosEstrangeiros: number[];
+};
 
 export function numeroNaFaixaIdioma(numero: number, faixa: FaixaIdiomaOpcional): boolean {
   return numero >= faixa.inicio && numero <= faixa.fim;
@@ -37,28 +124,243 @@ export function chaveQuestaoVariante(numero: number, variante: IdiomaVarianteQue
   return `${numero}:${variante}`;
 }
 
-/** Inferir faixa 1–5 (ou blocos EN/ES) a partir da leitura estrutural do PDF. */
-export function inferirFaixaIdiomaDoPdf(estrutura: EstruturaProvaDetectada): FaixaIdiomaOpcional | null {
+/**
+ * Inferir faixa EN/ES a partir da leitura estrutural do PDF.
+ * ENEM: Q1–5; UFU linguagens (20Q): Q16–20 após bloco de Português.
+ */
+export function inferirFaixaIdiomaComConfianca(
+  estrutura: EstruturaProvaDetectada,
+  opts?: InferirFaixaIdiomaOpts
+): ResultadoInferenciaFaixa | null {
   if (estrutura.idiomas_estrangeiros !== "duplicata_ingles_espanhol") return null;
 
-  const blocos = estrutura.blocos ?? [];
-  const norm = (s: string) =>
-    s
-      .trim()
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "");
-
-  const blocoIng = blocos.find((b) => /ingles|ingl/.test(norm(b.titulo)));
-  const blocoEsp = blocos.find((b) => /espanhol|espan/.test(norm(b.titulo)));
-
-  if (blocoIng && blocoEsp) {
-    const inicio = Math.max(blocoIng.questao_inicio, blocoEsp.questao_inicio);
-    const fim = Math.min(blocoIng.questao_fim, blocoEsp.questao_fim);
-    if (inicio > 0 && fim >= inicio) return { inicio, fim };
+  const cadastro = opts?.faixaCadastro;
+  if (
+    cadastro &&
+    cadastro.inicio > 0 &&
+    cadastro.fim >= cadastro.inicio &&
+    cadastro.fim - cadastro.inicio + 1 <= 15
+  ) {
+    return { faixa: cadastro, confianca: "alta", motivo: "faixa cadastrada manualmente na prova" };
   }
 
-  return { inicio: 1, fim: 5 };
+  const blocos = estrutura.blocos ?? [];
+  const blocoPt = blocos.find((b) => blocoEhPortugues(b.titulo));
+  const blocoIng = blocos.find((b) => blocoEhIngles(b.titulo));
+  const blocoEsp = blocos.find((b) => blocoEhEspanhol(b.titulo));
+  const maxNum = estrutura.numeros?.length
+    ? Math.max(...estrutura.numeros.filter((n) => Number.isInteger(n) && n > 0 && n <= 500))
+    : 0;
+
+  if (blocoIng && blocoEsp) {
+    let inicio = Math.max(blocoIng.questao_inicio, blocoEsp.questao_inicio);
+    let fim = Math.min(blocoIng.questao_fim, blocoEsp.questao_fim);
+    const ajustouAposPt = Boolean(blocoPt && inicio <= blocoPt.questao_fim);
+
+    if (ajustouAposPt) {
+      inicio = blocoPt!.questao_fim + 1;
+      fim = Math.min(
+        inicio + 4,
+        blocoIng.questao_fim,
+        blocoEsp.questao_fim,
+        maxNum || inicio + 4
+      );
+    }
+
+    const largura = fim - inicio + 1;
+    if (inicio > 0 && fim >= inicio && largura >= 1 && largura <= 10) {
+      return {
+        faixa: { inicio, fim },
+        confianca: ajustouAposPt || (!blocoPt && inicio === blocoIng.questao_inicio) ? "alta" : "media",
+        motivo: ajustouAposPt
+          ? `blocos EN/ES após «${blocoPt!.titulo}» (Q${inicio}–${fim})`
+          : `interseção blocos «${blocoIng.titulo}» e «${blocoEsp.titulo}»`,
+      };
+    }
+  }
+
+  const blocoUnico = blocoIng ?? blocoEsp;
+  if (blocoUnico) {
+    const { questao_inicio: inicio, questao_fim: fim } = blocoUnico;
+    const largura = fim - inicio + 1;
+    if (inicio > 0 && fim >= inicio && largura <= 10 && (!blocoPt || inicio > blocoPt.questao_fim)) {
+      return {
+        faixa: { inicio, fim },
+        confianca: "media",
+        motivo: `bloco único «${blocoUnico.titulo}»`,
+      };
+    }
+  }
+
+  if (blocoPt && maxNum > blocoPt.questao_fim) {
+    const inicio = blocoPt.questao_fim + 1;
+    const fim = Math.min(inicio + 4, maxNum);
+    if (fim >= inicio) {
+      return {
+        faixa: { inicio, fim },
+        confianca: "media",
+        motivo: `5 questões após bloco «${blocoPt.titulo}»`,
+      };
+    }
+  }
+
+  const heuristica = faixaIdiomaHeuristicaBanca(
+    opts?.banca,
+    opts?.totalEsperado ?? estrutura.total_questoes_detectado,
+    estrutura.numeros
+  );
+  if (heuristica) {
+    return { faixa: heuristica, confianca: "media", motivo: `heurística banca ${opts?.banca ?? ""}`.trim() };
+  }
+
+  const total = opts?.totalEsperado ?? estrutura.total_questoes_detectado ?? maxNum;
+  const faixa = faixaIdiomaFallback(total);
+  return {
+    faixa,
+    confianca: "baixa",
+    motivo: `fallback por total (${total} questões)`,
+  };
+}
+
+export function inferirFaixaIdiomaDoPdf(
+  estrutura: EstruturaProvaDetectada,
+  opts?: InferirFaixaIdiomaOpts
+): FaixaIdiomaOpcional | null {
+  return inferirFaixaIdiomaComConfianca(estrutura, opts)?.faixa ?? null;
+}
+
+/** Propõe faixa EN/ES pelos enunciados (catálogo/heurística EN·ES) — use antes de dividir trilhas. */
+export function proporFaixaIdiomaPorConteudo(
+  questoes: Array<{ numero: number; enunciado?: string | null; alternativas?: string | null }>,
+  opts?: InferirFaixaIdiomaOpts & { estrutura?: EstruturaProvaDetectada }
+): PropostaFaixaIdioma | null {
+  const estrangeiros: number[] = [];
+
+  for (const q of questoes) {
+    const texto = `${q.enunciado ?? ""}\n${q.alternativas ?? ""}`.trim();
+    if (texto.length < 40) continue;
+
+    const heur = heuristicaLinguagensDisciplina(texto);
+    if (heur?.disciplinaId === "ingles" || heur?.disciplinaId === "espanhol") {
+      estrangeiros.push(q.numero);
+      continue;
+    }
+    if (detectarPassagemIngles(texto) && !textoIndicaPortuguesInterpretacao(texto)) {
+      estrangeiros.push(q.numero);
+    } else if (detectarPassagemEspanhol(texto)) {
+      estrangeiros.push(q.numero);
+    }
+  }
+
+  const nums = [...new Set(estrangeiros)].sort((a, b) => a - b);
+  if (nums.length === 0) {
+    if (opts?.estrutura) {
+      const inf = inferirFaixaIdiomaComConfianca(opts.estrutura, opts);
+      if (inf) {
+        return { ...inf, numerosEstrangeiros: [] };
+      }
+    }
+    return null;
+  }
+
+  let bestStart = nums[0];
+  let bestEnd = nums[0];
+  let curStart = nums[0];
+  let curEnd = nums[0];
+
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] === curEnd + 1) {
+      curEnd = nums[i];
+    } else {
+      if (curEnd - curStart >= bestEnd - bestStart) {
+        bestStart = curStart;
+        bestEnd = curEnd;
+      }
+      curStart = nums[i];
+      curEnd = nums[i];
+    }
+  }
+  if (curEnd - curStart >= bestEnd - bestStart) {
+    bestStart = curStart;
+    bestEnd = curEnd;
+  }
+
+  const faixa = { inicio: bestStart, fim: bestEnd };
+  const largura = bestEnd - bestStart + 1;
+  const naFaixa = nums.filter((n) => n >= bestStart && n <= bestEnd).length;
+  const cobertura = largura > 0 ? naFaixa / largura : 0;
+
+  let confianca: ConfiancaFaixaIdioma = "media";
+  if (largura <= 10 && cobertura >= 0.75 && nums.length >= 3) confianca = "alta";
+  if (largura > 12 || cobertura < 0.45) confianca = "baixa";
+
+  return {
+    faixa,
+    confianca,
+    motivo: `${nums.length} questão(ões) com texto EN/ES; faixa contígua Q${bestStart}–${bestEnd}`,
+    numerosEstrangeiros: nums,
+  };
+}
+
+/** Remove variantes EN/ES fora da faixa e consolida linhas COMUM na faixa duplicada. */
+export function sanearVariantesIdiomaExtracao(
+  rows: ProvaQuestaoRow[],
+  faixa: FaixaIdiomaOpcional | null,
+  avisos: string[],
+  ordemFaixa?: "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO" | null
+): ProvaQuestaoRow[] {
+  if (!faixa) return rows;
+
+  const byChave = new Map(
+    rows.map((r) => [chaveQuestaoVariante(r.numero, r.idiomaVariante ?? "COMUM"), r])
+  );
+  const numeros = [...new Set(rows.map((r) => r.numero))].sort((a, b) => a - b);
+  const out: ProvaQuestaoRow[] = [];
+
+  for (const numero of numeros) {
+    const naFaixa = numeroNaFaixaIdioma(numero, faixa);
+    const comum = byChave.get(chaveQuestaoVariante(numero, "COMUM"));
+    const ing = byChave.get(chaveQuestaoVariante(numero, "INGLES"));
+    const esp = byChave.get(chaveQuestaoVariante(numero, "ESPANHOL"));
+
+    if (!naFaixa) {
+      if (comum) {
+        out.push(comum);
+      } else if (ing || esp) {
+        const candidato = ing ?? esp!;
+        const texto = `${candidato.enunciado ?? ""}\n${candidato.alternativas ?? ""}`;
+        out.push({ ...candidato, idiomaVariante: "COMUM" });
+        avisos.push(
+          `Q${numero}: trilha ${ing ? "INGLES" : "ESPANHOL"} fora da faixa ${faixa.inicio}–${faixa.fim} → consolidada como COMUM.` +
+            (textoIndicaPortuguesInterpretacao(texto) ? " (texto em português)" : "")
+        );
+      }
+      continue;
+    }
+
+    if (ing) {
+      const textoIng = ing.enunciado ?? "";
+      if (textoIndicaPortuguesInterpretacao(textoIng) && !detectarPassagemIngles(textoIng)) {
+        avisos.push(`Q${numero} (INGLES): enunciado parece português — confira na validação.`);
+      }
+      out.push(ing);
+    }
+    if (esp) {
+      const textoEsp = esp.enunciado ?? "";
+      if (textoIndicaPortuguesInterpretacao(textoEsp) && !detectarPassagemEspanhol(textoEsp)) {
+        avisos.push(`Q${numero} (ESPANHOL): enunciado parece português — confira na validação.`);
+      }
+      out.push(esp);
+    }
+    if (!ing && !esp && comum) {
+      out.push(comum);
+      avisos.push(
+        `Q${numero}: só linha COMUM na faixa EN/ES (${faixa.inicio}–${faixa.fim}) — faltam variantes INGLES/ESPANHOL.`
+      );
+    }
+  }
+
+  return out.sort((a, b) => compararQuestoesPorNumeroEOrdem(a, b, ordemFaixa));
 }
 
 /** Ordem física dos blocos EN/ES no PDF (espanhol antes do inglês em alguns vestibulares). */

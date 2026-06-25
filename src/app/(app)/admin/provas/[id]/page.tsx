@@ -19,9 +19,9 @@ import {
   type LinhaRevisaoGabarito,
 } from "@/lib/extrair-gabarito-aluno";
 import { faixaIdiomaProva, temDuplicataEnEs } from "@/lib/prova-idioma";
-import { parseGabaritoLote } from "@/lib/gabarito";
+import { parseGabaritoLoteDual } from "@/lib/gabarito";
 import { buildProvaNome } from "@/lib/prova-nome";
-import { normalizarMapaGabarito, resolverNumerosGradeProva } from "@/lib/prova-numeracao";
+import { resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 
 interface ProvaQuestao {
   id: string;
@@ -248,7 +248,11 @@ export default function AdminProvaDetailPage() {
     totalQuestoes: "",
     descricao: "",
     ordemIdiomasFaixa: "INGLES_PRIMEIRO" as "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO",
+    politicaIdiomas: "NENHUMA" as "NENHUMA" | "DUPLICATA_EN_ES",
+    idiomaQuestaoInicio: "",
+    idiomaQuestaoFim: "",
   });
+  const [detectandoFaixa, setDetectandoFaixa] = useState(false);
 
   const orientacoesSalvas = useMemo(() => {
     if (!prova?.questoes.length) return {};
@@ -296,6 +300,11 @@ export default function AdminProvaDetailPage() {
         totalQuestoes: String(data.totalQuestoes),
         descricao: data.descricao ?? "",
         ordemIdiomasFaixa: data.ordemIdiomasFaixa ?? "INGLES_PRIMEIRO",
+        politicaIdiomas:
+          data.politicaIdiomas === "DUPLICATA_EN_ES" ? "DUPLICATA_EN_ES" : "NENHUMA",
+        idiomaQuestaoInicio:
+          data.idiomaQuestaoInicio != null ? String(data.idiomaQuestaoInicio) : "",
+        idiomaQuestaoFim: data.idiomaQuestaoFim != null ? String(data.idiomaQuestaoFim) : "",
       });
       if (data.textoFonte?.trim()) {
         setTextoProva(data.textoFonte);
@@ -364,25 +373,90 @@ export default function AdminProvaDetailPage() {
 
   function aplicarTextoColadoNoGrid() {
     if (!prova || numerosGrade.length === 0) return;
-    const mapa = normalizarMapaGabarito(parseGabaritoLote(gabaritoLote), numerosGrade);
-    if (mapa.size === 0) {
-      setMsg("Nenhuma linha válida. Use o formato número,letra (ex.: 91,C).");
+    const dualMap = parseGabaritoLoteDual(gabaritoLote);
+    if (dualMap.size === 0) {
+      setMsg("Nenhuma linha válida. Use número,letra ou 16,C,en / 16,B,es na faixa EN/ES.");
       return;
     }
-    const grade = gradeFromQuestoesGabarito(
-      numerosGrade,
-      [...mapa.entries()].map(([numero, gabarito]) => ({ numero, gabarito }))
-    );
+
+    const base =
+      gradeGabarito ??
+      gradeFromQuestoesGabarito(numerosGrade, prova.questoes, faixaIdiomaDual);
+
+    const grade = base.map((linha) => {
+      const item = dualMap.get(linha.numero);
+      if (!item) return linha;
+      const naFaixa =
+        faixaIdiomaDual &&
+        linha.numero >= faixaIdiomaDual.inicio &&
+        linha.numero <= faixaIdiomaDual.fim;
+      if (naFaixa && (item.ingles || item.espanhol)) {
+        return {
+          ...linha,
+          letraEn: item.ingles ?? linha.letraEn ?? "",
+          letraEs: item.espanhol ?? linha.letraEs ?? "",
+          anuladaEn: item.ingles === "*",
+          anuladaEs: item.espanhol === "*",
+        };
+      }
+      if (item.comum) {
+        return {
+          ...linha,
+          letra: item.comum,
+          anulada: item.comum === "*",
+        };
+      }
+      return linha;
+    });
+
     setGradeGabarito(grade);
-    setGabaritoLote(
-      respostasParaGabaritoLote(
-        grade.filter((l) => l.letra).map((l) => ({ numero: l.numero, letra: l.letra }))
-      )
-    );
-    setMsg(`Aplicadas ${mapa.size} resposta(s) no grid. Revise e clique em Salvar.`);
+    setMsg(`Aplicadas ${dualMap.size} resposta(s) no grid. Revise e clique em Salvar.`);
+  }
+
+  async function detectarFaixaIdioma(aplicar: boolean) {
+    setDetectandoFaixa(true);
+    setMsg(aplicar ? "Detectando e aplicando faixa EN/ES…" : "Analisando conteúdo…");
+    try {
+      const inicio = meta.idiomaQuestaoInicio ? parseInt(meta.idiomaQuestaoInicio, 10) : undefined;
+      const fim = meta.idiomaQuestaoFim ? parseInt(meta.idiomaQuestaoFim, 10) : undefined;
+      const res = await fetch(`/api/admin/provas/${id}/detectar-faixa-idioma`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          aplicar,
+          ...(inicio && fim && fim >= inicio ? { inicio, fim } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg(data.error ?? "Não foi possível detectar a faixa.");
+        return;
+      }
+      const p = data.proposta;
+      if (p?.faixa) {
+        setMeta((m) => ({
+          ...m,
+          politicaIdiomas: "DUPLICATA_EN_ES",
+          idiomaQuestaoInicio: String(p.faixa.inicio),
+          idiomaQuestaoFim: String(p.faixa.fim),
+        }));
+      }
+      setMsg(
+        aplicar
+          ? `Faixa EN/ES Q${p.faixa.inicio}–${p.faixa.fim} aplicada (${p.confianca}). Reextraia o PDF para dividir trilhas INGLES/ESPANHOL.`
+          : `Sugestão: Q${p.faixa.inicio}–${p.faixa.fim} (${p.confianca}) — ${p.motivo}. Clique em «Aplicar faixa sugerida» e reextraia.`
+      );
+      if (aplicar) await load();
+    } catch {
+      setMsg("Falha de rede ao detectar faixa.");
+    } finally {
+      setDetectandoFaixa(false);
+    }
   }
 
   async function salvarMetadados() {
+    const inicio = meta.idiomaQuestaoInicio ? parseInt(meta.idiomaQuestaoInicio, 10) : null;
+    const fim = meta.idiomaQuestaoFim ? parseInt(meta.idiomaQuestaoFim, 10) : null;
     const res = await fetch(`/api/admin/provas/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -395,7 +469,16 @@ export default function AdminProvaDetailPage() {
           ? parseInt(meta.totalQuestoes, 10)
           : undefined,
         descricao: meta.descricao || null,
-        ...(temDuplicataEnEs(prova ?? undefined)
+        politicaIdiomas: meta.politicaIdiomas,
+        idiomaQuestaoInicio:
+          meta.politicaIdiomas === "DUPLICATA_EN_ES" && inicio && fim && fim >= inicio
+            ? inicio
+            : null,
+        idiomaQuestaoFim:
+          meta.politicaIdiomas === "DUPLICATA_EN_ES" && inicio && fim && fim >= inicio
+            ? fim
+            : null,
+        ...(meta.politicaIdiomas === "DUPLICATA_EN_ES"
           ? { ordemIdiomasFaixa: meta.ordemIdiomasFaixa }
           : {}),
       }),
@@ -703,28 +786,99 @@ export default function AdminProvaDetailPage() {
               onChange={(e) => setMeta({ ...meta, descricao: e.target.value })}
             />
           </div>
-          {temDuplicataEnEs(prova) && (
-            <div className="sm:col-span-2">
-              <Label>Ordem no caderno (faixa EN/ES)</Label>
-              <select
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                value={meta.ordemIdiomasFaixa}
-                onChange={(e) =>
-                  setMeta({
-                    ...meta,
-                    ordemIdiomasFaixa: e.target.value as "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO",
-                  })
-                }
-              >
-                <option value="INGLES_PRIMEIRO">Inglês antes do Espanhol (padrão ENEM)</option>
-                <option value="ESPANHOL_PRIMEIRO">Espanhol antes do Inglês</option>
-              </select>
-              <p className="mt-1 text-xs text-slate-500">
-                Afeta a ordem na tabela e na auditoria. O gabarito de cada trilha (EN/ES) continua
-                separado — ao corrigir matéria na faixa 1–5, conteúdo e gabarito trocam de linha
-                automaticamente.
+          {meta.politicaIdiomas === "DUPLICATA_EN_ES" && (
+            <div className="sm:col-span-2 space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+              <p className="text-sm font-medium text-slate-800">Faixa EN/ES (duplicata)</p>
+              <p className="text-xs text-slate-600">
+                O gabarito dual só aparece após confirmar início e fim. UFU linguagens: 16–20;
+                ENEM: 1–5; UFMS: conforme o caderno (ex.: 1–10). Não assume faixa automaticamente.
               </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label>Questão inicial EN/ES</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={meta.idiomaQuestaoInicio}
+                    onChange={(e) =>
+                      setMeta({ ...meta, idiomaQuestaoInicio: e.target.value })
+                    }
+                    placeholder="ex.: 16"
+                  />
+                </div>
+                <div>
+                  <Label>Questão final EN/ES</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={meta.idiomaQuestaoFim}
+                    onChange={(e) => setMeta({ ...meta, idiomaQuestaoFim: e.target.value })}
+                    placeholder="ex.: 20"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={detectandoFaixa}
+                  onClick={() => detectarFaixaIdioma(false)}
+                >
+                  {detectandoFaixa ? "Analisando…" : "Detectar pelo conteúdo"}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={detectandoFaixa}
+                  onClick={() => detectarFaixaIdioma(true)}
+                >
+                  Aplicar faixa sugerida
+                </Button>
+              </div>
+              <div>
+                <Label>Ordem no caderno (faixa EN/ES)</Label>
+                <select
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  value={meta.ordemIdiomasFaixa}
+                  onChange={(e) =>
+                    setMeta({
+                      ...meta,
+                      ordemIdiomasFaixa: e.target.value as "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO",
+                    })
+                  }
+                >
+                  <option value="INGLES_PRIMEIRO">Inglês antes do Espanhol (padrão ENEM)</option>
+                  <option value="ESPANHOL_PRIMEIRO">Espanhol antes do Inglês</option>
+                </select>
+                <p className="mt-1 text-xs text-slate-500">
+                  Após salvar a faixa, reextraia o PDF para gerar linhas INGLES e ESPANHOL na faixa
+                  correta. O gabarito dual usa exatamente esses números — não mais 1–5 fixo.
+                </p>
+              </div>
             </div>
+          )}
+          <div className="sm:col-span-2">
+            <Label>Política de idiomas</Label>
+            <select
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              value={meta.politicaIdiomas}
+              onChange={(e) =>
+                setMeta({
+                  ...meta,
+                  politicaIdiomas: e.target.value as "NENHUMA" | "DUPLICATA_EN_ES",
+                  ...(e.target.value === "NENHUMA"
+                    ? { idiomaQuestaoInicio: "", idiomaQuestaoFim: "" }
+                    : {}),
+                })
+              }
+            >
+              <option value="NENHUMA">Sem duplicata EN/ES</option>
+              <option value="DUPLICATA_EN_ES">Duplicata inglês + espanhol (mesma numeração)</option>
+            </select>
+          </div>
+          {temDuplicataEnEs(prova ?? undefined) && meta.politicaIdiomas === "NENHUMA" && (
+            <p className="sm:col-span-2 text-xs text-amber-800">
+              Extração detectou EN/ES — confirme a faixa acima e salve antes do gabarito dual.
+            </p>
           )}
         </div>
         <Button className="mt-3" type="button" onClick={salvarMetadados}>
@@ -820,6 +974,13 @@ export default function AdminProvaDetailPage() {
           A extração <strong>não inventa</strong> gabarito. Envie foto/PDF do oficial, revise no grid
           ou cole texto — opcionalmente marque «Aplicar gabarito ao gravar» ao extrair o PDF.
         </p>
+        {temDuplicataEnEs(prova) && !faixaIdiomaDual && (
+          <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            Prova com duplicata EN/ES, mas a faixa ainda não está confirmada — o grid usa uma coluna
+            por questão (sem EN/ES separados). Defina Q inicial/final no cadastro ou use «Detectar
+            pelo conteúdo» antes de marcar gabarito dual (ex.: UFU 16–20, não 1–10).
+          </p>
+        )}
         <label className="mb-2 flex items-center gap-2 text-sm text-slate-600">
           <input
             type="checkbox"
@@ -893,12 +1054,14 @@ export default function AdminProvaDetailPage() {
             Colar texto em lote (opcional)
           </summary>
           <p className="mt-2 text-xs text-slate-500">
-            Uma linha por questão: número e letra. Ex.: 1,C — depois clique em «Aplicar no grid».
+            Uma linha por questão: <code className="text-xs">1,C</code> (comum) ou na faixa EN/ES{" "}
+            <code className="text-xs">16,C,en</code> e <code className="text-xs">16,B,es</code>.
+            O grid dual só aparece com faixa EN/ES confirmada no cadastro.
           </p>
           <textarea
             className="mt-2 w-full rounded-xl border p-3 font-mono text-sm"
             rows={5}
-            placeholder={"1,C\n2,A\n3,B"}
+            placeholder={"1,C\n2,A\n16,C,en\n16,B,es\n17,D,en\n17,A,es"}
             value={gabaritoLote}
             onChange={(e) => setGabaritoLote(e.target.value)}
           />

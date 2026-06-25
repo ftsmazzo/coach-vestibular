@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   faixaIdiomaProva,
+  faixaIdiomaHeuristicaBanca,
   inferirFaixaIdiomaDoPdf,
   questaoPorNumeroETentativa,
   questoesParaTentativa,
@@ -35,7 +36,7 @@ describe("prova-idioma", () => {
     expect(q?.gabarito).toBe("C");
   });
 
-  it("inferirFaixaIdiomaDoPdf lê blocos EN/ES", () => {
+  it("inferirFaixaIdiomaDoPdf lê blocos EN/ES ENEM", () => {
     const faixa = inferirFaixaIdiomaDoPdf({
       idiomas_estrangeiros: "duplicata_ingles_espanhol",
       blocos: [
@@ -46,7 +47,51 @@ describe("prova-idioma", () => {
     expect(faixa).toEqual({ inicio: 1, fim: 5 });
   });
 
+  it("inferirFaixaIdiomaDoPdf UFU: PT 1–15 depois EN/ES 16–20", () => {
+    const faixa = inferirFaixaIdiomaDoPdf(
+      {
+        idiomas_estrangeiros: "duplicata_ingles_espanhol",
+        total_questoes_detectado: 20,
+        numeros: Array.from({ length: 20 }, (_, i) => i + 1),
+        blocos: [
+          { titulo: "Língua Portuguesa", questao_inicio: 1, questao_fim: 15 },
+          { titulo: "Língua Inglesa", questao_inicio: 1, questao_fim: 20 },
+          { titulo: "Língua Espanhola", questao_inicio: 1, questao_fim: 20 },
+        ],
+      },
+      { banca: "UFU", totalEsperado: 20 }
+    );
+    expect(faixa).toEqual({ inicio: 16, fim: 20 });
+  });
+
+  it("faixaIdiomaHeuristicaBanca UFU 20 questões", () => {
+    expect(faixaIdiomaHeuristicaBanca("UFU", 20)).toEqual({ inicio: 16, fim: 20 });
+  });
+
+  it("inferirFaixaIdiomaDoPdf fallback ENEM 45 questões", () => {
+    const faixa = inferirFaixaIdiomaDoPdf({
+      idiomas_estrangeiros: "duplicata_ingles_espanhol",
+      total_questoes_detectado: 45,
+      numeros: Array.from({ length: 45 }, (_, i) => i + 1),
+      blocos: [],
+    });
+    expect(faixa).toEqual({ inicio: 1, fim: 5 });
+  });
+
   it("faixaIdiomaProva null sem política", () => {
     expect(faixaIdiomaProva({ politicaIdiomas: "NENHUMA" })).toBeNull();
+  });
+
+  it("faixaIdiomaProva null sem início/fim explícitos (evita gabarito travado)", () => {
+    expect(
+      faixaIdiomaProva({ politicaIdiomas: "DUPLICATA_EN_ES" })
+    ).toBeNull();
+    expect(
+      faixaIdiomaProva({
+        politicaIdiomas: "DUPLICATA_EN_ES",
+        idiomaQuestaoInicio: 16,
+        idiomaQuestaoFim: 20,
+      })
+    ).toEqual({ inicio: 16, fim: 20 });
   });
 });
