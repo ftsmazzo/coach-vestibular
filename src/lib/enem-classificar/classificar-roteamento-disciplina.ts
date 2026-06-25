@@ -28,12 +28,7 @@ import {
   fonteIdsFaltantes,
 } from "@/lib/enem-classificar/fonte-id-utils";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
-import {
-  aplicarRoteamentoDeterministicoHumanas,
-  aplicarRoteamentoDeterministicoLinguagens,
-  roteamentoHumanasPorHeuristica,
-  roteamentoLinguagensPorHeuristica,
-} from "@/lib/enem-classificar/heuristica-roteamento-disciplina";
+import { aplicarMetadadoVarianteLinguagens } from "@/lib/enem-classificar/roteamento-metadado-linguagens";
 
 export const CLASSIFICADOR_DISCIPLINA_V10 = "ia-disciplina-v10";
 
@@ -138,24 +133,6 @@ async function rotearLote(
 ): Promise<Map<string, RotaItem["rota"]>> {
   if (items.length === 0) return new Map();
 
-  const map = new Map<string, RotaItem["rota"]>();
-  const pendentes: QuestaoRoteamento[] = [];
-
-  for (const item of items) {
-    const texto = textoQuestaoRoteamento(item);
-    const rotaHeur =
-      area === "linguagens"
-        ? roteamentoLinguagensPorHeuristica(texto, item.idioma)
-        : roteamentoHumanasPorHeuristica(texto);
-    if (rotaHeur) {
-      map.set(item.fonteId, rotaHeur);
-    } else {
-      pendentes.push(item);
-    }
-  }
-
-  if (pendentes.length === 0) return map;
-
   const enumDisciplinas =
     area === "humanas"
       ? [...DISCIPLINAS_HUMANAS, "indefinido"]
@@ -169,7 +146,7 @@ async function rotearLote(
       ? "Roteie questões de Ciências Humanas para historia, geografia, filosofia, sociologia ou indefinido."
       : "Roteie questões de Linguagens para portugues, ingles, espanhol ou indefinido. O comando em PT não define portugues.");
 
-  const blocos = pendentes.map(montarBlocoQuestaoRoteamento).join("\n\n");
+  const blocos = items.map(montarBlocoQuestaoRoteamento).join("\n\n");
 
   const data = await responsesComSchema<RotaLote>({
     systemPrompt,
@@ -178,32 +155,19 @@ async function rotearLote(
     content: [],
   });
 
-  const esperados = pendentes.map((q) => q.fonteId);
+  const esperados = items.map((q) => q.fonteId);
   const bruto = new Map<string, RotaItem["rota"]>();
   for (const row of data.classificacoes) {
     bruto.set(row.fonteId, row.rota);
   }
-  const iaMap = aplicarMapaComChavesFonteId(bruto, esperados);
-  for (const [k, v] of iaMap) map.set(k, v);
-  return map;
+  return aplicarMapaComChavesFonteId(bruto, esperados);
 }
 
-function textoQuestaoRoteamento(q: QuestaoRoteamento): string {
-  return [q.textoBase?.trim(), q.enunciado, q.alternativas].filter(Boolean).join("\n\n");
-}
-
-function rotaDeterministicaLinguagens(
+function rotaMetadadoLinguagens(
   item: QuestaoRoteamento,
   rota: RotaItem["rota"]
 ): RotaItem["rota"] {
-  return aplicarRoteamentoDeterministicoLinguagens(textoQuestaoRoteamento(item), item.idioma, rota);
-}
-
-function rotaDeterministicaHumanas(
-  item: QuestaoRoteamento,
-  rota: RotaItem["rota"]
-): RotaItem["rota"] {
-  return aplicarRoteamentoDeterministicoHumanas(textoQuestaoRoteamento(item), rota);
+  return aplicarMetadadoVarianteLinguagens(item.idioma, null, rota);
 }
 
 function resultadoIndefinido(
@@ -391,9 +355,7 @@ async function classificarAreaComRoteamento(
     };
     rotas.set(
       item.fonteId,
-      area === "linguagens"
-        ? rotaDeterministicaLinguagens(item, bruta)
-        : rotaDeterministicaHumanas(item, bruta)
+      area === "linguagens" ? rotaMetadadoLinguagens(item, bruta) : bruta
     );
   }
 

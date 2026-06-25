@@ -86,15 +86,15 @@ export async function triarLoteIA(
 
   const data = await responsesComSchema<IaTriagemRes>({
     systemPrompt:
-      "Você tria questões do ENEM (Ciências da Natureza) em Biologia, Química ou Física. " +
-      "Biologia: seres vivos, corpo humano, ecologia, evolução, genética, microbiologia, botânica. " +
-      "Química: átomos, ligações, reações, estequiometria, orgânica, soluções, pH. " +
-      "Física: movimento, forças, energia, eletricidade, magnetismo, ondas, óptica, termodinâmica. " +
-      "REGRA CRÍTICA (fisica_prevalece_quando_ha_grandezas_e_fenomeno): se a questão usa números, " +
-      "equações, gráficos ou proporções para modelar grandezas físicas, unidades físicas, leis físicas " +
-      "ou fenômenos físicos (velocidade, força, energia, potência, empuxo, gás ideal, óptica, etc.), " +
-      "classifique como Física — NÃO escolha null por parecer 'matematizada'. " +
-      "Use null só se realmente não der para distinguir. Prefira a matéria dominante do conteúdo exigido.",
+      "Você tria UMA questão de Ciências da Natureza em Biologia, Química ou Física. " +
+      "Classifique pelo conhecimento exigido no comando, não pelo tema superficial do texto-base. " +
+      "Biologia: processos ecológicos, fisiológicos, celulares, genéticos, evolutivos — mesmo que apareçam termos químicos no texto. " +
+      "Química: reações, fórmulas, concentração/cálculo químico, pH, estequiometria, separação de misturas (decantação, destilação) — mesmo com plantas ou produtos naturais no contexto. " +
+      "Física: grandezas físicas, leis, fenômenos (movimento, força, energia, colisões, quantidade de movimento, óptica, eletricidade). " +
+      "REGRA (fisica_prevalece_quando_ha_grandezas_e_fenomeno): números, gráficos ou álgebra para modelar fenômeno físico → Física, não null. " +
+      "Não escolha Química só por nicotina, concentração ou metais se o comando cobra fisiologia. " +
+      "Não escolha Biologia se o comando cobra método de separação de misturas. " +
+      "Use null só se realmente não distinguir.",
     instrucao:
       items.length === 1
         ? `Classifique esta única questão (materia: Biologia | Química | Física | null):\n\n${blocos}`

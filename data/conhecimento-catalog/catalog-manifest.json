@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "notas": "Arquivo ativo por materiaId. roteamentoLinguagens / roteamentoHumanas → specs injetadas no prompt da IA + heurísticas em src/lib/enem-classificar/heuristica-roteamento-disciplina.ts. roteamento-linguagens-v1.0.json é legado (não usar). Catálogos agregados humanas/linguagens são legado — classificação usa disciplinas split.",
+  "notas": "Arquivo ativo por materiaId. Roteamento Humanas/Linguagens: 1 questão → 1 chamada IA com prompt MD + spec JSON (roteamentoLinguagens/Humanas). N2: catálogo disciplinar completo no prompt. roteamento-linguagens-v1.0.json é legado.",
   "active": {
     "biologia": "catalogo-biologia-v1.2.0.json",
     "quimica": "catalogo-quimica-v1.2.1.json",

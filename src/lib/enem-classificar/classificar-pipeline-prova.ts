@@ -35,7 +35,7 @@ import {
   type MateriaNatureza,
   type TriagemNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
-import { triarQuestaoIA } from "@/lib/enem-classificar/triagem-ia";
+import { triarQuestaoIA, iaClassificacaoDisponivel } from "@/lib/enem-classificar/triagem-ia";
 import {
   triarNaturezaTransversal,
   REGRA_NATUREZA_TRANSVERSAL_ID,
@@ -44,12 +44,7 @@ import {
   fisicaPrevaleceSobreMatematica,
   REGRA_FISICA_PREVALECE_ID,
 } from "@/lib/enem-classificar/fisica-vs-matematica";
-import {
-  aplicarRoteamentoDeterministicoHumanas,
-  aplicarRoteamentoDeterministicoLinguagens,
-  roteamentoHumanasPorHeuristica,
-  roteamentoLinguagensPorHeuristica,
-} from "@/lib/enem-classificar/heuristica-roteamento-disciplina";
+import { aplicarMetadadoVarianteLinguagens } from "@/lib/enem-classificar/roteamento-metadado-linguagens";
 import type { ClassificacaoN1 } from "@/lib/classificacao-n1-types";
 import { CLASSIFICACAO_N1_VERSAO } from "@/lib/classificacao-n1-types";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
@@ -218,22 +213,11 @@ function schemaRoteamento(enumDisciplinas: string[]) {
   } as const;
 }
 
-function rotaDeterministicaLinguagens(
-  q: PayloadQuestaoCompleto,
-  rota: RotaIa
-): RotaIa {
-  return aplicarRoteamentoDeterministicoLinguagens(
-    textoCompleto(q),
-    q.idiomaVariante,
-    rota
-  );
+function rotaMetadadoLinguagens(q: PayloadQuestaoCompleto, rota: RotaIa): RotaIa {
+  return aplicarMetadadoVarianteLinguagens(q.idiomaVariante, null, rota);
 }
 
-function rotaDeterministicaHumanas(q: PayloadQuestaoCompleto, rota: RotaIa): RotaIa {
-  return aplicarRoteamentoDeterministicoHumanas(textoCompleto(q), rota);
-}
-
-/** Passo 2a — triagem Bio/Quím/Fís (heurística, depois IA se necessário). */
+/** Passo 2a — triagem Bio/Quím/Fís (1 questão, IA com texto integral). */
 export async function passoTriagemNatureza(
   q: PayloadQuestaoCompleto,
   meta: MetaPipelineProva
@@ -261,14 +245,11 @@ export async function passoTriagemNatureza(
     };
   }
 
-  const heur = triarMateriaNatureza(texto);
-  let tri: TriagemNatureza = heur;
-  let via: "heuristica" | "ia" = "heuristica";
-
-  if (!heur.materia) {
-    tri = await triarQuestaoIA(q.fonteId, texto);
-    via = "ia";
-  }
+  const heur = iaClassificacaoDisponivel()
+    ? await triarQuestaoIA(q.fonteId, texto)
+    : triarMateriaNatureza(texto);
+  const tri: TriagemNatureza = heur;
+  const via: "heuristica" | "ia" = iaClassificacaoDisponivel() ? "ia" : "heuristica";
 
   const materiaId = tri.materia ? MAP_NATUREZA_CORPUS[tri.materia] : null;
   const metaOut: MetaPipelineProva = {
@@ -294,34 +275,6 @@ export async function passoRoteamentoDisciplina(
   meta: MetaPipelineProva,
   area: "humanas" | "linguagens"
 ): Promise<{ meta: MetaPipelineProva; etapa: EtapaPipeline; rota: RotaIa | null }> {
-  const texto = textoCompleto(q);
-
-  const rotaHeuristica =
-    area === "linguagens"
-      ? roteamentoLinguagensPorHeuristica(texto, q.idiomaVariante)
-      : roteamentoHumanasPorHeuristica(texto);
-
-  if (rotaHeuristica) {
-    const metaOut: MetaPipelineProva = {
-      ...meta,
-      rota: {
-        disciplinaId: rotaHeuristica.disciplinaId,
-        criterio: rotaHeuristica.criterio,
-        confianca: rotaHeuristica.confianca,
-        justificativa: rotaHeuristica.justificativa,
-        area,
-      },
-    };
-    return {
-      meta: metaOut,
-      rota: rotaHeuristica,
-      etapa: {
-        passo: `roteamento-${area}`,
-        detalhe: `Q${q.numero} → ${rotaHeuristica.disciplinaId} (heurística, conf=${rotaHeuristica.confianca.toFixed(2)})`,
-      },
-    };
-  }
-
   const enumDisciplinas =
     area === "humanas"
       ? [...DISCIPLINAS_HUMANAS, "indefinido"]
@@ -363,9 +316,7 @@ export async function passoRoteamentoDisciplina(
   }
 
   if (area === "linguagens") {
-    rota = rotaDeterministicaLinguagens(q, rota);
-  } else {
-    rota = rotaDeterministicaHumanas(q, rota);
+    rota = rotaMetadadoLinguagens(q, rota);
   }
 
   const metaOut: MetaPipelineProva = {
