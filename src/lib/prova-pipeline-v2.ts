@@ -14,8 +14,10 @@ import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
 import { chaveOrdemExtracao, compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
 import {
   detectarEnunciadosDuplicados,
+  exigirCoberturaOrdens,
   instrucaoMapaOrdemLote,
   montarMapaOrdemNumero,
+  normalizarEstruturaProva,
   resolverTotalOcorrencias,
 } from "@/lib/prova-pipeline-ordem-numero";
 import {
@@ -325,9 +327,10 @@ Preencha o schema estrutural:
         politicaIdiomas: ctx.politicaIdiomas,
         idiomaQuestaoInicio: ctx.idiomaQuestaoInicio,
         idiomaQuestaoFim: ctx.idiomaQuestaoFim,
+        ordemIdiomasFaixa: ctx.ordemIdiomasFaixa,
       }),
   });
-  const estrutura = estruturaExec.data;
+  const estrutura = normalizarEstruturaProva(estruturaExec.data, ctx);
 
   const totalOcorrencias = resolverTotalOcorrencias(estrutura);
   const mapaNumero = montarMapaOrdemNumero(estrutura, totalOcorrencias);
@@ -347,6 +350,21 @@ Preencha o schema estrutural:
   etapas.push(
     `Estrutura (${estruturaExec.model}): ${totalOcorrencias} ocorrência(s) física(s) · ${totalLogicas} lógica(s) · ${estrutura.blocos?.length ?? 0} bloco(s) · layout ${estrutura.formato_layout ?? "?"}`
   );
+
+  if (
+    ctx.politicaIdiomas === "DUPLICATA_EN_ES" &&
+    ctx.idiomaQuestaoInicio != null &&
+    ctx.idiomaQuestaoFim != null
+  ) {
+    etapas.push(
+      `Mapa físico derivado do cadastro (DUPLICATA EN/ES Q${ctx.idiomaQuestaoInicio}–${ctx.idiomaQuestaoFim}) — ordens 1..${totalOcorrencias}.`
+    );
+  } else if (
+    estrutura.blocos?.some((b) => /ingl[eê]s|english/i.test(b.titulo)) &&
+    estrutura.blocos?.some((b) => /espanhol|spanish/i.test(b.titulo))
+  ) {
+    etapas.push("Blocos Inglês + Espanhol presentes na estrutura normalizada.");
+  }
 
   if (estrutura.idiomas_estrangeiros === "duplicata_ingles_espanhol") {
     avisos.push(
@@ -416,6 +434,7 @@ NÃO resuma. NÃO classifique matéria, área ou idioma.`;
   }
 
   validarRowsExtracao(rows, ctx.totalEsperado, totalOcorrencias, numerosLogicos, avisos);
+  exigirCoberturaOrdens(rows, totalOcorrencias);
 
   if (estrutura.observacoes?.trim()) {
     avisos.push(`Leitura do PDF: ${estrutura.observacoes.trim().slice(0, 300)}`);

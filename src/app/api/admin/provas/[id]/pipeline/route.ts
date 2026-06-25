@@ -137,6 +137,7 @@ export async function POST(
         politicaIdiomas: prova.politicaIdiomas,
         idiomaQuestaoInicio: prova.idiomaQuestaoInicio,
         idiomaQuestaoFim: prova.idiomaQuestaoFim,
+        ordemIdiomasFaixa: prova.ordemIdiomasFaixa,
       },
       {
         gabaritoTexto,

@@ -4,6 +4,9 @@ import {
   type ProvaPipelineContext,
 } from "@/lib/prova-pipeline-contexto";
 import {
+  blocoTituloEhEspanhol,
+  blocoTituloEhIngles,
+  normalizarEstruturaProva,
   ocorrenciasMinimasCadastro,
   somaOrdensBlocos,
   type BlocoOrdemNumero,
@@ -33,9 +36,22 @@ export function validarEstruturaProva(
   totalEsperado: number,
   ctx?: Pick<
     ProvaPipelineContext,
-    "politicaIdiomas" | "idiomaQuestaoInicio" | "idiomaQuestaoFim"
+    | "politicaIdiomas"
+    | "idiomaQuestaoInicio"
+    | "idiomaQuestaoFim"
+    | "ordemIdiomasFaixa"
   >
 ): void {
+  const normalizada = normalizarEstruturaProva(data, {
+    totalEsperado,
+    politicaIdiomas: ctx?.politicaIdiomas,
+    idiomaQuestaoInicio: ctx?.idiomaQuestaoInicio,
+    idiomaQuestaoFim: ctx?.idiomaQuestaoFim,
+    ordemIdiomasFaixa: ctx?.ordemIdiomasFaixa,
+  });
+  Object.assign(data, normalizada);
+  if (normalizada.blocos) data.blocos = normalizada.blocos;
+
   const ocorrencias = data.total_ocorrencias_detectado;
   const logicas =
     data.total_questoes_logicas ??
@@ -94,6 +110,16 @@ export function validarEstruturaProva(
     throw new Error(
       `Duplicata EN/ES detectada, mas ocorrências físicas (${ocorrencias}) ≤ lógicas (${logicas}) — falta bloco EN ou ES.`
     );
+  }
+
+  if (data.idiomas_estrangeiros === "duplicata_ingles_espanhol" && blocos.length > 0) {
+    const temEn = blocos.some((b) => blocoTituloEhIngles(b.titulo));
+    const temEs = blocos.some((b) => blocoTituloEhEspanhol(b.titulo));
+    if (!temEn || !temEs) {
+      throw new Error(
+        `Duplicata EN/ES exige blocos de Inglês e Espanhol com ordem_inicio/fim — faltando ${!temEn ? "Inglês" : "Espanhol"}.`
+      );
+    }
   }
 
   if (ctx) {

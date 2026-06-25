@@ -15,6 +15,7 @@ export interface ProvaPipelineContext {
   politicaIdiomas?: string | null;
   idiomaQuestaoInicio?: number | null;
   idiomaQuestaoFim?: number | null;
+  ordemIdiomasFaixa?: string | null;
 }
 
 export type FormatoLayoutProva =
