@@ -134,6 +134,9 @@ export async function POST(
         caderno: prova.caderno,
         descricao: prova.descricao,
         totalEsperado: prova.totalQuestoes,
+        politicaIdiomas: prova.politicaIdiomas,
+        idiomaQuestaoInicio: prova.idiomaQuestaoInicio,
+        idiomaQuestaoFim: prova.idiomaQuestaoFim,
       },
       {
         gabaritoTexto,
@@ -187,9 +190,6 @@ export async function POST(
           cadernoStoragePath: caderno.storagePath,
           cadernoFileName: caderno.fileName,
           cadernoMimeType: caderno.mimeType,
-          politicaIdiomas: "NENHUMA",
-          idiomaQuestaoInicio: null,
-          idiomaQuestaoFim: null,
         },
       });
 

@@ -13,6 +13,12 @@ import { gerarCsvProvaQuestoes } from "@/lib/prova-csv-export";
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
 import { chaveOrdemExtracao, compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
 import {
+  detectarEnunciadosDuplicados,
+  instrucaoMapaOrdemLote,
+  montarMapaOrdemNumero,
+  resolverTotalOcorrencias,
+} from "@/lib/prova-pipeline-ordem-numero";
+import {
   montarContextoProvaTxt,
   resumoEstruturaParaClassificacao,
   type EstruturaProvaDetectada,
@@ -79,10 +85,30 @@ const SCHEMA_ESTRUTURA = {
           type: "object",
           properties: {
             titulo: { type: "string" },
-            questao_inicio: { type: "integer" },
-            questao_fim: { type: "integer" },
+            ordem_inicio: {
+              type: "integer",
+              description: "Primeira posição física deste bloco no PDF (1-based).",
+            },
+            ordem_fim: {
+              type: "integer",
+              description: "Última posição física deste bloco no PDF.",
+            },
+            questao_inicio: {
+              type: "integer",
+              description: "Número impresso da primeira questão do bloco.",
+            },
+            questao_fim: {
+              type: "integer",
+              description: "Número impresso da última questão do bloco.",
+            },
           },
-          required: ["titulo", "questao_inicio", "questao_fim"],
+          required: [
+            "titulo",
+            "ordem_inicio",
+            "ordem_fim",
+            "questao_inicio",
+            "questao_fim",
+          ],
           additionalProperties: false,
         },
       },
@@ -118,10 +144,6 @@ function schemaExtracaoLiteralLote() {
                 type: "integer",
                 description: "Posição física no caderno (1 = primeira questão do PDF).",
               },
-              numero: {
-                type: "integer",
-                description: "Número impresso na prova (pode repetir entre blocos EN/ES).",
-              },
               enunciado: {
                 type: "string",
                 description: "Texto literal completo. Proibido resumir.",
@@ -131,7 +153,7 @@ function schemaExtracaoLiteralLote() {
                 description: "Alternativas A–E literais, ou vazio.",
               },
             },
-            required: ["ordem", "numero", "enunciado", "alternativas"],
+            required: ["ordem", "enunciado", "alternativas"],
             additionalProperties: false,
           },
         },
@@ -149,13 +171,18 @@ type EstruturaRes = EstruturaProvaDetectada & {
   total_ocorrencias_detectado: number;
   total_questoes_logicas: number;
   numeros_logicos: number[];
-  blocos: Array<{ titulo: string; questao_inicio: number; questao_fim: number }>;
+  blocos: Array<{
+    titulo: string;
+    ordem_inicio: number;
+    ordem_fim: number;
+    questao_inicio: number;
+    questao_fim: number;
+  }>;
   observacoes: string;
 };
 
 type QuestaoExtraidaPdf = {
   ordem: number;
-  numero: number;
   enunciado: string;
   alternativas: string;
 };
@@ -179,12 +206,16 @@ function tamanhoLote(total: number): number {
   return base;
 }
 
-function questaoParaRow(q: QuestaoExtraidaPdf): ProvaQuestaoRow {
+function questaoParaRow(
+  q: QuestaoExtraidaPdf,
+  mapaNumero: Map<number, number>
+): ProvaQuestaoRow {
   const enunciado = truncarTextoProva(sanitizarTextoProva(q.enunciado));
   const alternativas = truncarTextoProva(sanitizarTextoProva(q.alternativas), 8000);
+  const numero = mapaNumero.get(q.ordem) ?? q.ordem;
   return {
     ordemExtracao: q.ordem,
-    numero: q.numero,
+    numero,
     idiomaVariante: "COMUM",
     materia: "A classificar",
     assunto: "A classificar",
@@ -196,12 +227,13 @@ function questaoParaRow(q: QuestaoExtraidaPdf): ProvaQuestaoRow {
 function aplicarQuestoesExtraidas(
   questoes: QuestaoExtraidaPdf[],
   loteOrdens: number[],
-  rowsMap: Map<string, ProvaQuestaoRow>
+  rowsMap: Map<string, ProvaQuestaoRow>,
+  mapaNumero: Map<number, number>
 ): void {
   const esperadas = new Set(loteOrdens);
   for (const q of questoes) {
     if (!esperadas.has(q.ordem)) continue;
-    rowsMap.set(chaveOrdemExtracao(q.ordem), questaoParaRow(q));
+    rowsMap.set(chaveOrdemExtracao(q.ordem), questaoParaRow(q, mapaNumero));
   }
 }
 
@@ -238,11 +270,18 @@ function validarRowsExtracao(
     );
   }
 
-  const duplicados = rows.filter(
+  const duplicados = detectarEnunciadosDuplicados(rows);
+  for (const { ordemA, ordemB } of duplicados.slice(0, 8)) {
+    avisos.push(
+      `Enunciado idêntico nas ordens ${ordemA} e ${ordemB} — possível erro de extração (conteúdo copiado de outra questão).`
+    );
+  }
+
+  const numsDuplicadosImpressos = rows.filter(
     (r, i, arr) => arr.findIndex((x) => x.numero === r.numero) !== i
   );
-  if (duplicados.length > 0) {
-    const nums = [...new Set(duplicados.map((r) => r.numero))].sort((a, b) => a - b);
+  if (numsDuplicadosImpressos.length > 0) {
+    const nums = [...new Set(numsDuplicadosImpressos.map((r) => r.numero))].sort((a, b) => a - b);
     avisos.push(
       `${nums.length} número(s) com mais de uma linha (EN/ES): ${nums.slice(0, 10).join(", ")}${nums.length > 10 ? "…" : ""} — esperado em vestibulares bilíngues.`
     );
@@ -276,16 +315,27 @@ export async function executarExtracaoProvaV2(
     instrucao: `${ctxTxt}
 
 Preencha o schema estrutural:
-- total_ocorrencias_detectado: TODAS as questões objetivas na ordem do PDF (inclua EN e ES separados)
+- total_ocorrencias_detectado: TODAS as questões objetivas na ordem do PDF (inclua EN e ES como blocos separados)
 - total_questoes_logicas: números únicos que o aluno responde
 - numeros_logicos: lista dos números únicos impressos
-- blocos: seções com título (vazio se não houver)`,
+- blocos: cada seção com ordem_inicio/fim (posição física) e questao_inicio/fim (número impresso); soma das ordens = total_ocorrencias`,
     schema: SCHEMA_ESTRUTURA,
-    validate: (data) => validarEstruturaProva(data, ctx.totalEsperado),
+    validate: (data) =>
+      validarEstruturaProva(data, ctx.totalEsperado, {
+        politicaIdiomas: ctx.politicaIdiomas,
+        idiomaQuestaoInicio: ctx.idiomaQuestaoInicio,
+        idiomaQuestaoFim: ctx.idiomaQuestaoFim,
+      }),
   });
   const estrutura = estruturaExec.data;
 
-  const totalOcorrencias = Math.max(1, estrutura.total_ocorrencias_detectado);
+  const totalOcorrencias = resolverTotalOcorrencias(estrutura);
+  const mapaNumero = montarMapaOrdemNumero(estrutura, totalOcorrencias);
+  if (mapaNumero.size < totalOcorrencias) {
+    avisos.push(
+      `Mapa ordem→número incompleto (${mapaNumero.size}/${totalOcorrencias}) — confira blocos na estrutura.`
+    );
+  }
   const numerosLogicos = [...new Set(estrutura.numeros_logicos ?? [])]
     .filter((n) => n > 0 && n <= 500)
     .sort((a, b) => a - b);
@@ -295,7 +345,7 @@ Preencha o schema estrutural:
       : numerosLogicos.length;
 
   etapas.push(
-    `Estrutura (${estruturaExec.model}): ${totalOcorrencias} ocorrência(s) física(s) · ${totalLogicas} lógica(s) · layout ${estrutura.formato_layout ?? "?"}`
+    `Estrutura (${estruturaExec.model}): ${totalOcorrencias} ocorrência(s) física(s) · ${totalLogicas} lógica(s) · ${estrutura.blocos?.length ?? 0} bloco(s) · layout ${estrutura.formato_layout ?? "?"}`
   );
 
   if (estrutura.idiomas_estrangeiros === "duplicata_ingles_espanhol") {
@@ -309,31 +359,35 @@ Preencha o schema estrutural:
   const rowsMap = new Map<string, ProvaQuestaoRow>();
   let modelExtracao = modeloPipelinePrincipal();
 
-  const montarInstrucaoExtracao = (faixa: string) => `${ctxTxt}
+  const montarInstrucaoExtracao = (lote: number[]) => {
+    const faixa =
+      lote.length === 1 ? String(lote[0]) : `${lote[0]} a ${lote[lote.length - 1]}`;
+    const mapaTxt = instrucaoMapaOrdemLote(mapaNumero, lote);
+    return `${ctxTxt}
 
 ${resumoEstrutura ? `Contexto estrutural:\n${resumoEstrutura}\n` : ""}
-Extraia texto LITERAL (ipsis litteris) das OCORRÊNCIAS FÍSICAS de ordem ${faixa} (ordem = posição no PDF, numero = número impresso).
-Uma entrada por ordem — blocos EN e ES com o mesmo numero geram ordens diferentes.
+${mapaTxt}
+
+Extraia texto LITERAL (ipsis litteris) das ordens físicas ${faixa}.
+Use a ORDEM para localizar cada questão no PDF — não confunda com número impresso repetido em outro bloco.
+Uma entrada por ordem listada acima. NÃO copie enunciado de outra ordem.
 NÃO resuma. NÃO classifique matéria, área ou idioma.`;
+  };
 
   const loteSize = tamanhoLote(totalOcorrencias);
   const lotesOrdens = chunks(ordens, loteSize);
   for (let i = 0; i < lotesOrdens.length; i++) {
-    const lote = lotesOrdens[i];
-    const faixa =
-      lote.length === 1
-        ? String(lote[0])
-        : `${lote[0]} a ${lote[lote.length - 1]}`;
+    const lote = lotesOrdens[i]!;
     const extracaoExec = await responsesComPdfSchemaComValidacao<ExtracaoRes>({
       fileId,
       taskName: `extracao-lote-${i + 1}`,
       systemPrompt: PROMPT_SISTEMA_EXTRACAO_LITERAL,
-      instrucao: montarInstrucaoExtracao(faixa),
+      instrucao: montarInstrucaoExtracao(lote),
       schema: schemaExtracaoLiteralLote(),
       validate: (data) => validarExtracaoLiteralLote(data, lote),
     });
     modelExtracao = extracaoExec.model;
-    aplicarQuestoesExtraidas(extracaoExec.data.questoes ?? [], lote, rowsMap);
+    aplicarQuestoesExtraidas(extracaoExec.data.questoes ?? [], lote, rowsMap, mapaNumero);
     etapas.push(
       `Extração lote ${i + 1}/${lotesOrdens.length} (${extracaoExec.model}): ${extracaoExec.data.questoes?.length ?? 0} ocorrência(s)`
     );

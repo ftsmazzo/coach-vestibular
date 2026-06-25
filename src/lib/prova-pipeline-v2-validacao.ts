@@ -1,7 +1,13 @@
 import {
   minimoQuestoesEstrutura,
   type EstruturaProvaDetectada,
+  type ProvaPipelineContext,
 } from "@/lib/prova-pipeline-contexto";
+import {
+  ocorrenciasMinimasCadastro,
+  somaOrdensBlocos,
+  type BlocoOrdemNumero,
+} from "@/lib/prova-pipeline-ordem-numero";
 
 export type { EstruturaProvaDetectada };
 
@@ -25,7 +31,11 @@ function ratioMinimo(): number {
 
 export function validarEstruturaProva(
   data: EstruturaProvaDetectada,
-  totalEsperado: number
+  totalEsperado: number,
+  ctx?: Pick<
+    ProvaPipelineContext,
+    "politicaIdiomas" | "idiomaQuestaoInicio" | "idiomaQuestaoFim"
+  >
 ): void {
   const ocorrencias = data.total_ocorrencias_detectado;
   const logicas =
@@ -51,6 +61,54 @@ export function validarEstruturaProva(
     throw new Error(
       `Poucos números lógicos no PDF (${logicas}; cadastro ${totalEsperado})`
     );
+  }
+
+  const blocos = (data.blocos ?? []) as BlocoOrdemNumero[];
+
+  if (ocorrencias >= 4 && blocos.length === 0) {
+    throw new Error(
+      "Informe blocos com ordem_inicio/fim e questao_inicio/fim — necessário para mapear ordem física → número impresso."
+    );
+  }
+
+  const somaOrdens = somaOrdensBlocos(blocos);
+  if (blocos.length > 0 && somaOrdens > 0 && somaOrdens !== ocorrencias) {
+    throw new Error(
+      `Blocos somam ${somaOrdens} ordem(ns) física(s), mas total_ocorrencias_detectado=${ocorrencias} — revise blocos ou total.`
+    );
+  }
+
+  for (const b of blocos) {
+    if (!b.ordem_inicio || !b.ordem_fim || !b.questao_inicio || !b.questao_fim) {
+      throw new Error(`Bloco «${b.titulo}» sem ordem_inicio/fim ou questao_inicio/fim.`);
+    }
+    const nOrd = b.ordem_fim - b.ordem_inicio + 1;
+    const nNum = b.questao_fim - b.questao_inicio + 1;
+    if (nOrd !== nNum) {
+      throw new Error(
+        `Bloco «${b.titulo}»: intervalo de ordens (${nOrd}) difere do de números (${nNum}).`
+      );
+    }
+  }
+
+  if (data.idiomas_estrangeiros === "duplicata_ingles_espanhol" && ocorrencias <= logicas) {
+    throw new Error(
+      `Duplicata EN/ES detectada, mas ocorrências físicas (${ocorrencias}) ≤ lógicas (${logicas}) — falta bloco EN ou ES.`
+    );
+  }
+
+  if (ctx) {
+    const minCadastro = ocorrenciasMinimasCadastro({
+      totalEsperado,
+      politicaIdiomas: ctx.politicaIdiomas,
+      idiomaQuestaoInicio: ctx.idiomaQuestaoInicio,
+      idiomaQuestaoFim: ctx.idiomaQuestaoFim,
+    });
+    if (minCadastro != null && ocorrencias < minCadastro) {
+      throw new Error(
+        `Cadastro indica ${minCadastro} ocorrência(s) física(s) mínima(s); PDF reportou ${ocorrencias}.`
+      );
+    }
   }
 }
 
@@ -86,9 +144,6 @@ export function validarExtracaoLiteralLote(
     if (!Number.isInteger(q.ordem) || q.ordem < 1) {
       throw new Error(`Ordem inválida na extração: ${q.ordem}`);
     }
-    if (!Number.isInteger(q.numero) || q.numero < 1) {
-      throw new Error(`Número impresso inválido na ordem ${q.ordem}`);
-    }
     const en = textoEnunciadoQuestao(q);
     if (!en) semEnunciado++;
     else if (en.length < ENUNCIADO_LITERAL_MIN_CHARS) enunciadoCurto++;
@@ -106,6 +161,20 @@ export function validarExtracaoLiteralLote(
     throw new Error(
       `Muitas ocorrências com enunciado muito curto (${enunciadoCurto}/${noLote.length})`
     );
+  }
+
+  const sigs = new Map<string, number>();
+  for (const q of noLote) {
+    const en = textoEnunciadoQuestao(q);
+    if (en.length < 80) continue;
+    const sig = en.toLowerCase().replace(/\s+/g, " ").slice(0, 200);
+    const prev = sigs.get(sig);
+    if (prev != null && prev !== q.ordem) {
+      throw new Error(
+        `Ordens ${prev} e ${q.ordem} com enunciado idêntico no lote — localize cada ordem pelo mapa físico.`
+      );
+    }
+    sigs.set(sig, q.ordem);
   }
 }
 

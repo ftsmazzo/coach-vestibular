@@ -11,6 +11,10 @@ export interface ProvaPipelineContext {
   caderno?: string | null;
   descricao?: string | null;
   totalEsperado: number;
+  /** Referência genérica — ajuda a validar contagem física (EN/ES duplicados). */
+  politicaIdiomas?: string | null;
+  idiomaQuestaoInicio?: number | null;
+  idiomaQuestaoFim?: number | null;
 }
 
 export type FormatoLayoutProva =
@@ -42,7 +46,15 @@ export type EstruturaProvaDetectada = {
   numeros_logicos?: number[];
   /** @deprecated use numeros_logicos */
   numeros?: number[];
-  blocos?: Array<{ titulo: string; questao_inicio: number; questao_fim: number }>;
+  blocos?: Array<{
+    titulo: string;
+    /** Posição física no PDF (1ª questão do bloco = ordem_inicio). */
+    ordem_inicio: number;
+    ordem_fim: number;
+    /** Número impresso no caderno. */
+    questao_inicio: number;
+    questao_fim: number;
+  }>;
   observacoes?: string;
 };
 
@@ -55,7 +67,12 @@ export function montarContextoProvaTxt(ctx: ProvaPipelineContext): string {
     ctx.dia != null ? `Dia/etapa (se ENEM): ${ctx.dia}` : "",
     ctx.caderno ? `Caderno/tipo no cadastro: ${ctx.caderno}` : "",
     ctx.descricao?.trim() ? `Notas do admin: ${ctx.descricao.trim().slice(0, 400)}` : "",
-    `Total de questões cadastrado (referência, pode diferir do PDF): ${ctx.totalEsperado}`,
+    `Total de questões cadastrado (referência lógica, pode diferir do PDF): ${ctx.totalEsperado}`,
+    ctx.politicaIdiomas === "DUPLICATA_EN_ES" &&
+    ctx.idiomaQuestaoInicio != null &&
+    ctx.idiomaQuestaoFim != null
+      ? `Cadastro: faixa de idioma duplicada (inglês+espanhol) nos números ${ctx.idiomaQuestaoInicio}–${ctx.idiomaQuestaoFim} — espere ocorrências físicas a mais no PDF.`
+      : "",
     "",
     "Instrução: adapte-se ao layout REAL do PDF (ENEM, vestibular estadual, simulado de cursinho, lista, etc.).",
     "Não assuma formato de uma banca específica — leia cabeçalhos, blocos e numeração como aparecem.",
@@ -74,7 +91,10 @@ export function resumoEstruturaParaClassificacao(estrutura: EstruturaProvaDetect
   if (estrutura.blocos?.length) {
     const bl = estrutura.blocos
       .slice(0, 12)
-      .map((b) => `«${b.titulo}» Q${b.questao_inicio}–${b.questao_fim}`)
+      .map(
+        (b) =>
+          `«${b.titulo}» ordem ${b.ordem_inicio}–${b.ordem_fim} · Q${b.questao_inicio}–${b.questao_fim}`
+      )
       .join("; ");
     partes.push(`Blocos/seções: ${bl}`);
   }
