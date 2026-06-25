@@ -1,4 +1,3 @@
-import type { IdiomaVarianteQuestao } from "@/lib/prova-idioma";
 import {
   ENUNCIADO_VALIDACAO_MIN_CHARS,
   extracaoAceitaPorObservacao,
