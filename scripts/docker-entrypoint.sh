@@ -30,15 +30,22 @@ else
 fi
 
 if [ "$CONFIRMAR_RESET" = "true" ]; then
-  echo "==> Reset motor v1 (CONFIRMAR_RESET=true) — preserva logins, apaga jornada + catálogo + corpus…"
-  set +e
-  CONFIRMAR_RESET=true npx tsx scripts/reset-ambiente-fresco.ts
-  RESET_EXIT=$?
-  set -e
-  if [ "$RESET_EXIT" -eq 0 ]; then
-    echo "==> Reset concluído."
+  PROVA_COUNT=$(npx tsx scripts/contar-provas.ts 2>/dev/null || echo "0")
+  if [ "$PROVA_COUNT" -gt 0 ] && [ "$CONFIRMAR_RESET_FORCE" != "true" ]; then
+    echo "==> RESET BLOQUEADO: existem ${PROVA_COUNT} prova(s) no banco."
+    echo "==> CONFIRMAR_RESET=true apaga tudo a cada deploy — REMOVA essa variável no EasyPanel."
+    echo "==> Reset intencional com provas: CONFIRMAR_RESET_FORCE=true (uma vez) + redeploy."
   else
-    echo "==> AVISO: reset retornou código $RESET_EXIT — app será iniciado mesmo assim."
+    echo "==> Reset motor v1 (CONFIRMAR_RESET=true) — preserva logins, apaga jornada + catálogo + corpus…"
+    set +e
+    CONFIRMAR_RESET=true npx tsx scripts/reset-ambiente-fresco.ts
+    RESET_EXIT=$?
+    set -e
+    if [ "$RESET_EXIT" -eq 0 ]; then
+      echo "==> Reset concluído. REMOVA CONFIRMAR_RESET do ambiente após este deploy."
+    else
+      echo "==> AVISO: reset retornou código $RESET_EXIT — app será iniciado mesmo assim."
+    fi
   fi
 fi
 

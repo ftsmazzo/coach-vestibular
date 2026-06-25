@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.0.3",
+  "catalogVersion": "1.0.4",
   "materiaId": "geografia",
   "materiaLabel": "Geografia",
   "areaEnem": "Ciências Humanas e suas Tecnologias",
@@ -492,32 +492,47 @@
           "escopos": [
             {
               "id": "geo.cartografia.representacao.coordenadas_orientacao",
-              "label": "Coordenadas geográficas e orientação",
-              "descricao": "Cobre latitude, longitude, hemisférios, orientação, fusos e localização absoluta/relativa. NÃO cobre movimento da Terra como Astronomia/Física se o foco for cálculo físico.",
+              "label": "Coordenadas geográficas, latitude e localização",
+              "descricao": "Cobre latitude, longitude, hemisférios, orientação, fusos, localização absoluta/relativa e vantagem locacional por posição geográfica (ex.: baixa latitude). Inclui Base de Alcântara, economia de combustível em lançamentos e vantagem de localização para foguetes quando o foco for geografia, não cálculo físico de órbita.",
               "keywords": [
                 "latitude",
                 "longitude",
                 "coordenadas geográficas",
                 "paralelos",
                 "meridianos",
-                "orientação"
+                "orientação",
+                "baixa latitude",
+                "vantagem locacional",
+                "Base de Alcântara",
+                "Alcântara",
+                "lançamento de foguetes",
+                "economia de combustível",
+                "velocidade linear",
+                "localização geográfica"
               ],
               "keywordsContexto": [
                 "hemisfério",
                 "GPS",
-                "localização"
+                "localização",
+                "equador",
+                "Maranhão",
+                "centro espacial"
               ],
               "exemplosEnunciado": [
-                "Uma questão exige aplicar coordenadas geográficas e orientação para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+                "Uma questão sobre vantagem locacional da Base de Alcântara por baixa latitude para lançamento de foguetes e economia de combustível."
               ],
               "negativeHints": [
-                "velocidade angular",
-                "gravitação"
+                "velocidade angular orbital",
+                "gravitação universal",
+                "lei de Newton",
+                "cinemática de projétil"
               ],
               "naoConfundirCom": [
-                "fis.mecanica.gravitacao.movimentos_orbitais"
+                "fis.mecanica.gravitacao.movimentos_orbitais",
+                "fis.mecanica.cinematica.mruv",
+                "fis.mecanica.gravitacao.lei_gravitacao"
               ],
-              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+              "regraDesempate": "Se a questão pergunta vantagem locacional da Base de Alcântara por baixa latitude, velocidade linear ou economia de combustível no lançamento, classifique em Geografia/cartografia/localização — não Física."
             },
             {
               "id": "geo.cartografia.representacao.escala_cartografica",
@@ -1805,6 +1820,7 @@
     }
   ],
   "changelog": [
+    "1.0.4: Refino coordenadas_orientacao — Base de Alcântara, baixa latitude, vantagem locacional; regra Geo vs Física.",
     "1.0.2: Novo escopo geo.urbana.urbanizacao.areas_risco_encostas (FAMERP — São Sebastião/Vila Sahy, deslizamentos e contenção de encostas); desempate vs relevo, problemas urbanos e cartografia."
   ]
 }

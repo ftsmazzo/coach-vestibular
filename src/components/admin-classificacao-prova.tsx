@@ -54,6 +54,7 @@ export function AdminClassificacaoProva({
 }: Props) {
   const [rodando, setRodando] = useState<Fase | null>(null);
   const [ultimo, setUltimo] = useState<ResultadoFase | null>(null);
+  const [n2QuestoesInput, setN2QuestoesInput] = useState("");
 
   const n1CompletoTodas = totalQuestoes > 0 && comN1 === totalQuestoes;
   const n2CompletoTodas =
@@ -61,9 +62,26 @@ export function AdminClassificacaoProva({
   const faltamN1 = totalQuestoes - comN1;
   const faltamN2Real = totalQuestoes - comN2Real;
 
+  function parseNumerosQuestao(texto: string): number[] {
+    const nums = texto
+      .split(/[,;\s]+/)
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    return [...new Set(nums)].sort((a, b) => a - b);
+  }
+
+  function rodarN2Selecionadas() {
+    const numeros = parseNumerosQuestao(n2QuestoesInput);
+    if (numeros.length === 0) {
+      onMensagem("Informe ao menos um número de questão (ex.: 37, 47, 49).");
+      return;
+    }
+    void rodarFase("N2", { numerosQuestao: numeros });
+  }
+
   async function rodarFase(
     fase: Fase,
-    opts?: { apenasFaltantes?: boolean; modoN1?: ModoN1 }
+    opts?: { apenasFaltantes?: boolean; modoN1?: ModoN1; numerosQuestao?: number[] }
   ) {
     if (fase === "N1" && opts?.modoN1 === "forcarTudo") {
       const ok = window.confirm(
@@ -86,9 +104,11 @@ export function AdminClassificacaoProva({
     const body =
       fase === "N1" && opts?.modoN1
         ? bodyModoN1(opts.modoN1)
-        : opts?.apenasFaltantes
-          ? { apenasFaltantes: true }
-          : {};
+        : fase === "N2" && opts?.numerosQuestao?.length
+          ? { numerosQuestao: opts.numerosQuestao }
+          : opts?.apenasFaltantes
+            ? { apenasFaltantes: true }
+            : {};
 
     try {
       const res = await fetch(`/api/admin/provas/${provaId}/${path}`, {
@@ -186,33 +206,66 @@ export function AdminClassificacaoProva({
         </p>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada || !n1CompletoTodas}
-          onClick={() => rodarFase("N2")}
-        >
-          {rodando === "N2" ? "N2 rodando…" : "2 · Rodar N2 (todas)"}
-        </Button>
-        {faltamN2Real > 0 && n1CompletoTodas && (
+      <div className="mt-3 space-y-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             variant="secondary"
-            disabled={rodando !== null || !extracaoValidada}
-            onClick={() => rodarFase("N2", { apenasFaltantes: true })}
+            disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada || !n1CompletoTodas}
+            onClick={() => rodarFase("N2")}
           >
-            {rodando === "N2" ? "N2 rodando…" : `2b · N2 só faltantes (${faltamN2Real})`}
+            {rodando === "N2" ? "N2 rodando…" : "2 · Rodar N2 (todas)"}
           </Button>
-        )}
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada || !n2CompletoTodas}
-          onClick={() => rodarFase("N3")}
-        >
-          {rodando === "N3" ? "N3 rodando…" : "3 · Rodar N3 (conhecimento)"}
-        </Button>
+          {faltamN2Real > 0 && n1CompletoTodas && (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={rodando !== null || !extracaoValidada}
+              onClick={() => rodarFase("N2", { apenasFaltantes: true })}
+            >
+              {rodando === "N2" ? "N2 rodando…" : `2b · N2 só faltantes (${faltamN2Real})`}
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada || !n2CompletoTodas}
+            onClick={() => rodarFase("N3")}
+          >
+            {rodando === "N3" ? "N3 rodando…" : "3 · Rodar N3 (conhecimento)"}
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs text-slate-600">
+            <span className="font-medium text-violet-900">2c · N2 em questões específicas</span>
+            <input
+              type="text"
+              value={n2QuestoesInput}
+              onChange={(e) => setN2QuestoesInput(e.target.value)}
+              placeholder="Ex.: 37, 47, 49, 58, 70"
+              disabled={rodando !== null || !extracaoValidada || !n1CompletoTodas}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 disabled:opacity-60"
+            />
+          </label>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={
+              rodando !== null ||
+              totalQuestoes === 0 ||
+              !extracaoValidada ||
+              !n1CompletoTodas ||
+              !n2QuestoesInput.trim()
+            }
+            onClick={rodarN2Selecionadas}
+          >
+            {rodando === "N2" ? "N2 rodando…" : "Rodar N2 selecionadas"}
+          </Button>
+        </div>
+        <p className="text-xs text-slate-600">
+          <strong>2c</strong> — reprocessa só os números informados, mesmo que já tenham escopo
+          (útil após corrigir N1 ou atualizar catálogo). Separe por vírgula ou espaço.
+        </p>
       </div>
 
       {faltamN1 > 0 && (

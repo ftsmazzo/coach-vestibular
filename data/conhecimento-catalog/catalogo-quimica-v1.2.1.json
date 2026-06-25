@@ -1,11 +1,12 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.3",
+  "catalogVersion": "1.2.4",
   "materiaId": "quimica",
   "materiaLabel": "Química",
   "areaEnem": "Ciências da Natureza",
   "notas": "N0=área ENEM. Assunto=taxonomia Coach. N1=domínio. N2=escopo. N3=conhecimentoExigido livre por questão. Campos por escopo: descricao (cobre / NÃO cobre), keywords (fortes, peso 1.0), keywordsContexto (fracas, peso 0.4), exemplosEnunciado (referência semântica), negativeHints (termos que NÃO devem puxar a questão para cá), naoConfundirCom (IDs irmãos), regraDesempate, conceitoCanonic.",
   "changelog": [
+    "1.2.4: quim.solucoes.concentracao.massa_volume (Q70); negativeHints em massa_molar para concentração mg/L.",
     "1.2.3: Refino Bio×Quím×Geo — esgoto/eutrofização/saneamento → Geografia; separação de misturas (decantação/destilação); negativeHints ambientais; plantas como contexto não puxam Biologia se pergunta método de separação.",
     "1.2.1: Correção textual no changelog do fallback; sem mudança estrutural de IDs.",
     "1.2.0: Padrão de schema unificado com Biologia v1.1+ — adicionados descricao, exemplosEnunciado, keywordsContexto, naoConfundirCom e regraDesempate a todos os escopos.",
@@ -595,7 +596,7 @@
             {
               "id": "quim.estequiometria.mol.massa_molar",
               "label": "Massa molar e conversões",
-              "descricao": "Massa molar e conversões massa↔mol↔partículas.",
+              "descricao": "Massa molar e conversões massa↔mol↔partículas sem concentração em solução por volume.",
               "keywords": [
                 "massa molar",
                 "g/mol",
@@ -608,8 +609,20 @@
               "exemplosEnunciado": [
                 "Qual a massa, em gramas, de 0,5 mol de CO2 (massa molar 44 g/mol)?"
               ],
-              "negativeHints": [],
-              "naoConfundirCom": []
+              "negativeHints": [
+                "mg/L",
+                "g/L",
+                "concentração em massa",
+                "cátions em solução",
+                "alcalino-terrosos",
+                "volume da solução",
+                "500 mL"
+              ],
+              "naoConfundirCom": [
+                "quim.solucoes.concentracao.massa_volume",
+                "quim.solucoes.concentracao.molaridade"
+              ],
+              "regraDesempate": "Conversão mol↔gramas com massa molar — não concentração mg/L em volume de solução."
             }
           ]
         },
@@ -770,7 +783,48 @@
                 "Qual a molaridade de uma solução com 4 g de NaOH dissolvidos em 500 mL?"
               ],
               "negativeHints": [],
-              "naoConfundirCom": []
+              "naoConfundirCom": [
+                "quim.solucoes.concentracao.massa_volume"
+              ]
+            },
+            {
+              "id": "quim.solucoes.concentracao.massa_volume",
+              "label": "Concentração em massa/volume (mg/L, g/L) e cálculo em volume dado",
+              "descricao": "Cobre concentração em massa por volume (mg/L, g/L, ppm), identificação de íons/cátions a partir da tabela periódica e cálculo da massa total de soluto em um volume de solução (ex.: 500 mL). NÃO cobre conversão mol↔massa isolada (massa molar) sem concentração em solução.",
+              "keywords": [
+                "mg/L",
+                "g/L",
+                "concentração em massa",
+                "massa por volume",
+                "cátions",
+                "íons",
+                "alcalino-terrosos",
+                "metais alcalino-terrosos",
+                "tabela periódica",
+                "massa total",
+                "volume da solução",
+                "500 mL",
+                "ppm"
+              ],
+              "keywordsContexto": [
+                "água",
+                "solução aquosa",
+                "concentração iônica",
+                "sais dissolvidos"
+              ],
+              "exemplosEnunciado": [
+                "Identificar os metais alcalino-terrosos na tabela periódica e calcular a massa total de cátions em 500 mL a partir das concentrações em mg/L."
+              ],
+              "negativeHints": [
+                "massa molar isolada",
+                "conversão mol-massa",
+                "g/mol sem solução"
+              ],
+              "naoConfundirCom": [
+                "quim.estequiometria.mol.massa_molar",
+                "quim.solucoes.concentracao.molaridade"
+              ],
+              "regraDesempate": "Se a questão dá concentração em mg/L ou g/L e pede massa total em um volume de solução com íons da tabela periódica, classifique aqui — não em massa_molar."
             },
             {
               "id": "quim.solucoes.concentracao.titulacao",

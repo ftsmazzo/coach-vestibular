@@ -274,6 +274,8 @@ export async function executarFaseN1Prova(
 export type OpcoesFaseN2Prova = {
   /** Pula questões que já têm escopo N2 real (não fallback). */
   apenasSemEscopoReal?: boolean;
+  /** Reprocessa só estas numerações (ex.: [37, 47, 49, 58, 70]). */
+  numerosQuestao?: number[];
 };
 
 /** FASE 2 — N2: escopo no catálogo. Exige N1 gravado. NÃO gera N3. */
@@ -284,9 +286,11 @@ export async function executarFaseN2Prova(
   const { prova, questoes, trechos } = await carregarContextoProva(provaId);
   const avisos: string[] = [];
   const etapas: string[] = [
-    opts?.apenasSemEscopoReal
-      ? "═══ FASE N2 — só questões sem escopo real ═══"
-      : "═══ FASE N2 — escopo no catálogo (sem N3) ═══",
+    opts?.numerosQuestao?.length
+      ? `═══ FASE N2 — questões ${opts.numerosQuestao.join(", ")} ═══`
+      : opts?.apenasSemEscopoReal
+        ? "═══ FASE N2 — só questões sem escopo real ═══"
+        : "═══ FASE N2 — escopo no catálogo (sem N3) ═══",
   ];
   let ok = 0;
   let processadas = 0;
@@ -299,9 +303,16 @@ export async function executarFaseN2Prova(
     );
   }
 
+  const filtroNumeros =
+    opts?.numerosQuestao?.length && opts.numerosQuestao.length > 0
+      ? new Set(opts.numerosQuestao)
+      : null;
+
   for (const q of questoes) {
     const n1 = parseClassificacaoN1(q.classificacaoN1Json);
     if (!n1Completo(n1) || !n1) continue;
+
+    if (filtroNumeros && !filtroNumeros.has(q.numero)) continue;
 
     const escAtual = q.conhecimentoEscopoId?.trim();
     if (

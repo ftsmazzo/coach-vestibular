@@ -21,6 +21,13 @@ interface Prova {
 
 export default function AdminProvasPage() {
   const [provas, setProvas] = useState<Prova[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const [diag, setDiag] = useState<{
+    contagens?: { provas: number };
+    envPerigoso?: { confirmarReset?: boolean };
+    banco?: { tipo?: string; host?: string | null };
+  } | null>(null);
   const [form, setForm] = useState({
     banca: "ENEM",
     tipo: "SIMULADO",
@@ -31,8 +38,41 @@ export default function AdminProvasPage() {
   });
 
   async function load() {
-    const res = await fetch("/api/admin/provas");
-    if (res.ok) setProvas(await res.json());
+    setCarregando(true);
+    setErro(null);
+    try {
+      const [resProvas, resDiag] = await Promise.all([
+        fetch("/api/admin/provas"),
+        fetch("/api/admin/diagnostico"),
+      ]);
+
+      if (resProvas.status === 401) {
+        setErro("Sessão expirada. Faça login novamente.");
+        setProvas([]);
+        return;
+      }
+      if (resProvas.status === 403) {
+        setErro("Acesso negado — entre com uma conta de administrador.");
+        setProvas([]);
+        return;
+      }
+      if (!resProvas.ok) {
+        setErro(`Erro ao carregar provas (HTTP ${resProvas.status}).`);
+        setProvas([]);
+        return;
+      }
+
+      setProvas(await resProvas.json());
+
+      if (resDiag.ok) {
+        setDiag(await resDiag.json());
+      }
+    } catch {
+      setErro("Falha de rede ao carregar o banco de provas.");
+      setProvas([]);
+    } finally {
+      setCarregando(false);
+    }
   }
 
   useEffect(() => {
@@ -144,6 +184,59 @@ export default function AdminProvasPage() {
           </div>
         </form>
       </Card>
+
+      {erro && (
+        <Card className="border-rose-200 bg-rose-50">
+          <p className="text-sm font-medium text-rose-900">{erro}</p>
+        </Card>
+      )}
+
+      {diag?.envPerigoso?.confirmarReset && (
+        <Card className="border-rose-300 bg-rose-50">
+          <p className="text-sm font-medium text-rose-900">
+            CONFIRMAR_RESET=true está ativo no servidor — cada deploy apaga todas as provas.
+            Remova essa variável no EasyPanel e faça redeploy.
+          </p>
+        </Card>
+      )}
+
+      {carregando && (
+        <p className="text-sm text-slate-500">Carregando banco de provas…</p>
+      )}
+
+      {!carregando && !erro && provas.length === 0 && (
+        <Card className="border-amber-200 bg-amber-50">
+          <h2 className="font-semibold text-amber-950">Nenhuma prova no banco</h2>
+          <p className="mt-2 text-sm text-amber-900">
+            O painel está funcionando, mas o PostgreSQL não tem provas gravadas.
+            {diag?.banco?.host ? (
+              <>
+                {" "}
+                Banco conectado: <strong>{diag.banco.tipo}</strong> em{" "}
+                <strong>{diag.banco.host}</strong>.
+              </>
+            ) : null}
+          </p>
+          <ul className="mt-3 list-inside list-disc text-sm text-amber-900">
+            <li>
+              Se você cadastrou antes: o Postgres no EasyPanel provavelmente{" "}
+              <strong>não tem volume persistente</strong> — dados somem ao reiniciar o serviço.
+            </li>
+            <li>
+              Confira se <code className="text-xs">CONFIRMAR_RESET</code> não está{" "}
+              <code className="text-xs">true</code> nas variáveis de ambiente.
+            </li>
+            <li>
+              PDFs da prova ficam em <code className="text-xs">data/uploads</code> — monte volume
+              persistente no app também.
+            </li>
+          </ul>
+          <p className="mt-3 text-sm text-amber-800">
+            Crie a prova de novo abaixo. Depois configure volume no Postgres antes de perder dados
+            outra vez.
+          </p>
+        </Card>
+      )}
 
       <ul className="space-y-3">
         {provas.map((p) => (

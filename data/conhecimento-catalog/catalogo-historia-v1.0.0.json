@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.0.1",
   "materiaId": "historia",
   "materiaLabel": "História",
   "areaEnem": "Ciências Humanas e suas Tecnologias",
@@ -481,10 +481,58 @@
                 "ditadura militar"
               ],
               "naoConfundirCom": [
-                "hist.brasil_republica.primeira_republica.republica_espada_1891"
+                "hist.brasil_republica.primeira_republica.republica_espada_1891",
+                "hist.brasil_imperio.crise_escravidao.abolicao_pos_abolicao"
               ],
-              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada.",
+              "regraDesempate": "Movimento abolicionista, crise imperial e Guerra do Paraguai — não consequências pós-1888 de exclusão dos libertos (use aboliciao_pos_abolicao).",
               "conceitoCanonic": "abolicao"
+            }
+          ]
+        },
+        {
+          "id": "hist.brasil_imperio.crise_escravidao",
+          "label": "Crise da escravidão e pós-abolição",
+          "escopos": [
+            {
+              "id": "hist.brasil_imperio.crise_escravidao.abolicao_pos_abolicao",
+              "label": "Abolição, pós-abolição e exclusão dos libertos",
+              "descricao": "Cobre a abolição da escravidão em 1888 (Lei Áurea), consequências imediatas para os recém-libertos e a ausência de políticas efetivas de integração social, liberdade formal sem inclusão econômica e social. NÃO cobre industrialização varguista, trabalhismo da Era Vargas nem abolicionismo como movimento pré-1888 sem foco nas consequências pós-abolição.",
+              "keywords": [
+                "Lei Áurea",
+                "abolição da escravidão",
+                "1888",
+                "libertos",
+                "recém-libertos",
+                "pós-abolição",
+                "integração social",
+                "exclusão dos libertos",
+                "liberdade formal",
+                "Princesa Isabel"
+              ],
+              "keywordsContexto": [
+                "escravidão",
+                "trabalho assalariado",
+                "marginalização",
+                "crise imperial",
+                "fim da escravidão"
+              ],
+              "exemplosEnunciado": [
+                "Compreender que a abolição da escravidão não foi acompanhada por políticas efetivas de integração social dos recém-libertos."
+              ],
+              "negativeHints": [
+                "industrialização",
+                "Vargas",
+                "CSN",
+                "substituição de importações",
+                "Guerra do Paraguai",
+                "movimento abolicionista sem consequências"
+              ],
+              "naoConfundirCom": [
+                "hist.brasil_republica.vargas.industrializacao_nacional",
+                "hist.brasil_imperio.segundo_reinado.abolicionismo_crise"
+              ],
+              "regraDesempate": "Se a pergunta cobra consequências da abolição de 1888 e exclusão/integração dos libertos, classifique aqui — não em industrialização varguista nem em abolicionismo pré-Lei Áurea sem foco pós-abolição.",
+              "conceitoCanonic": "abolicao_pos_abolicao"
             }
           ]
         }
@@ -762,13 +810,20 @@
               ],
               "negativeHints": [
                 "Revolução Industrial",
-                "industrialização geográfica"
+                "industrialização geográfica",
+                "Lei Áurea",
+                "1888",
+                "abolição da escravidão",
+                "libertos",
+                "integração social dos libertos",
+                "pós-abolição"
               ],
               "naoConfundirCom": [
                 "hist.moderna.revolucoes.revolucao_industrial",
-                "geo.economica.industrializacao.brasil"
+                "geo.economica.industrializacao.brasil",
+                "hist.brasil_imperio.crise_escravidao.abolicao_pos_abolicao"
               ],
-              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+              "regraDesempate": "Industrialização e Estado desenvolvimentista varguista — não abolição de 1888 nem exclusão dos libertos após a Lei Áurea."
             }
           ]
         },
@@ -2045,6 +2100,7 @@
     }
   ],
   "changelog": [
+    "v1.0.1: hist.brasil_imperio.crise_escravidao.abolicao_pos_abolicao (Q37); negativeHints em vargas.industrializacao_nacional.",
     "v1.0.0: desmembrado de humanas agregado para catálogo próprio de História com prefixo hist.*.",
     "v1.0.0: versão operacional enxuta com 62 escopos reais + hist.__nao_classificado, evitando teto de 80.",
     "v1.0.0: inclui negativeHints, naoConfundirCom e regraDesempate em todos os escopos."

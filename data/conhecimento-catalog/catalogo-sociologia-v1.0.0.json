@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.0.1",
+  "catalogVersion": "1.0.2",
   "materiaId": "sociologia",
   "materiaLabel": "Sociologia",
   "areaEnem": "Ciências Humanas e suas Tecnologias",
@@ -291,9 +291,10 @@
                 "ecologia"
               ],
               "naoConfundirCom": [
-                "bio.evolucao.teorias.selecao_natural"
+                "bio.evolucao.teorias.selecao_natural",
+                "soc.cultura.identidade.sotaques_matrizes_culturais"
               ],
-              "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
+              "regraDesempate": "Cultura/natureza genérico — se o foco for sotaques, diversidade regional ou matrizes culturais brasileiras, use sotaques_matrizes_culturais.",
               "conceitoCanonic": "cultura"
             },
             {
@@ -389,6 +390,54 @@
               ],
               "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
               "conceitoCanonic": "socializacao"
+            }
+          ]
+        },
+        {
+          "id": "soc.cultura.identidade",
+          "label": "Identidade cultural e diversidade brasileira",
+          "escopos": [
+            {
+              "id": "soc.cultura.identidade.sotaques_matrizes_culturais",
+              "label": "Sotaques, matrizes culturais e diversidade regional",
+              "descricao": "Cobre sotaques, diversidade cultural brasileira, matrizes étnicas, formação sociocultural regional, pertencimento e variação linguística como fenômeno social. NÃO cobre gramática normativa, fonética como regra de Português nem distinção genérica cultura/natureza.",
+              "keywords": [
+                "sotaque",
+                "sotaques",
+                "diversidade cultural",
+                "matrizes culturais",
+                "matrizes étnicas",
+                "formação sociocultural",
+                "regionalismo cultural",
+                "variação linguística",
+                "identidade regional",
+                "Brasil plural"
+              ],
+              "keywordsContexto": [
+                "Nordeste",
+                "Sul",
+                "migração",
+                "mestiçagem",
+                "cultura popular",
+                "tradições regionais"
+              ],
+              "exemplosEnunciado": [
+                "Uma questão sobre sotaques e matrizes culturais como expressão da diversidade sociocultural brasileira."
+              ],
+              "negativeHints": [
+                "cultura e natureza",
+                "etnocentrismo",
+                "concordância verbal",
+                "fonema",
+                "ortografia"
+              ],
+              "naoConfundirCom": [
+                "soc.cultura.conceitos.cultura_natureza",
+                "soc.cultura.conceitos.identidade_pertencimento",
+                "pt.variacao.linguistica.regionalismo"
+              ],
+              "regraDesempate": "Se o comando cobra sotaques, diversidade regional ou matrizes étnicas/culturais do Brasil, classifique aqui — não em cultura_natureza genérico.",
+              "conceitoCanonic": "diversidade_cultural_brasileira"
             }
           ]
         },
@@ -1045,23 +1094,30 @@
           "escopos": [
             {
               "id": "soc.desigualdades.exclusao_social.envelhecimento_produtivismo",
-              "label": "Envelhecimento, produtivismo e exclusão social",
-              "descricao": "Cobre envelhecimento como forma de exclusão social em sociedades que reduzem o valor do indivíduo à capacidade produtiva; marginalização de idosos e produtivismo. NÃO cobre interpretação textual, gramática ou análise estética literária.",
+              "label": "Envelhecimento, exclusão social e produtivismo",
+              "descricao": "Cobre envelhecimento como fenômeno social, etarismo, exclusão de idosos, marginalização pela lógica produtiva, redução do valor social do indivíduo à capacidade econômica e crítica à sociedade capitalista produtivista. NÃO cobre interpretação literária de ensaio, biografia de autores ou envelhecimento como processo biológico.",
               "keywords": [
                 "envelhecimento",
                 "velhice",
-                "produtivismo",
+                "idosos",
                 "exclusão social",
-                "marginalização",
-                "capacidade produtiva",
+                "etarismo",
+                "produtivismo",
                 "valor econômico",
+                "capacidade produtiva",
+                "marginalização social",
+                "sociedade capitalista",
                 "Simone de Beauvoir",
                 "A velhice"
               ],
               "keywordsContexto": [
-                "idosos",
+                "a sociedade só se preocupa com o indivíduo na medida em que este rende",
+                "jovens",
+                "velhos",
+                "excluídos da vida social",
+                "máquina social",
+                "esmagando homens",
                 "trabalho",
-                "sociedade contemporânea",
                 "desigualdade"
               ],
               "exemplosEnunciado": [
@@ -1072,13 +1128,16 @@
                 "gênero ensaio",
                 "recurso expressivo",
                 "escola literária",
-                "interpretação textual local"
+                "interpretação textual local",
+                "geriatria",
+                "biologia do envelhecimento"
               ],
               "naoConfundirCom": [
                 "pt.interpretacao.leitura.compreensao",
-                "fil.etica.existencia.envelhecimento"
+                "fil.etica.existencia.envelhecimento",
+                "bio.corpo_humano.envelhecimento"
               ],
-              "regraDesempate": "Se o comando cobra fenômeno social de exclusão/produtivismo/envelhecimento, classifique aqui, mesmo com ensaio ou trecho literário como texto-base. Só escolha Português se a cobrança for sentido textual, gramática ou recurso expressivo.",
+              "regraDesempate": "Se a questão usa Simone de Beauvoir ou texto ensaístico para discutir exclusão de idosos, produtivismo, valor econômico e marginalização social, classifique aqui — mesmo com ensaio como texto-base.",
               "conceitoCanonic": "envelhecimento_produtivismo"
             }
           ]

@@ -13,7 +13,10 @@ export async function POST(
   if (auth.error) return auth.error;
 
   const { id: provaId } = await params;
-  const body = (await request.json().catch(() => ({}))) as { apenasFaltantes?: boolean };
+  const body = (await request.json().catch(() => ({}))) as {
+    apenasFaltantes?: boolean;
+    numerosQuestao?: number[];
+  };
 
   if (!process.env.OPENAI_API_KEY?.trim()) {
     return NextResponse.json(
@@ -23,11 +26,21 @@ export async function POST(
   }
 
   try {
+    const numeros =
+      Array.isArray(body.numerosQuestao) && body.numerosQuestao.length > 0
+        ? body.numerosQuestao.filter((n) => Number.isFinite(n) && n > 0).map(Math.trunc)
+        : undefined;
+
     const resultado = await executarFaseN2Prova(provaId, {
-      apenasSemEscopoReal: body.apenasFaltantes === true,
+      apenasSemEscopoReal: !numeros?.length && body.apenasFaltantes === true,
+      numerosQuestao: numeros,
     });
     await refreshProvaGabaritoFlag(provaId);
-    const prefixo = body.apenasFaltantes ? "N2 (só faltantes)" : "Fase N2";
+    const prefixo = numeros?.length
+      ? `N2 (Q${numeros.join(", Q")})`
+      : body.apenasFaltantes
+        ? "N2 (só faltantes)"
+        : "Fase N2";
     return NextResponse.json({
       ...resultado,
       fase: "N2",

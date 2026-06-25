@@ -16,6 +16,7 @@
    - User: `coach`
    - Password: *(senha forte)*
 3. Anote a **URL de conexão interna** (hostname costuma ser o nome do serviço, ex.: `coach-db` ou `postgres-coach`).
+4. **Volume persistente (obrigatório):** em Storage/Volumes do serviço Postgres, monte um volume em `/var/lib/postgresql/data`. Sem isso, **todas as provas somem** ao reiniciar ou redeployar o Postgres.
 
 Exemplo de URL:
 
@@ -54,6 +55,18 @@ RUN_SEED=true
 | `RUN_SEED` | `true` só no **primeiro** deploy; depois mude para `false` |
 | `RUN_ENEM_IMPORT` | Opcional: `true` força re-sync do corpus ENEM no próximo deploy |
 | `OPENAI_API_KEY` | Necessária para classificação IA do corpus no deploy (Linguagens em background) |
+| `UPLOAD_STORAGE_DIR` | `/app/data/uploads` — monte **volume persistente** no app em `/app/data/uploads` (PDFs de prova) |
+| `CONFIRMAR_RESET` | **Nunca** deixe `true` em produção contínua — apaga **todas** as provas a cada deploy |
+
+### Volume persistente no app (PDFs)
+
+No serviço do app, monte volume em `/app/data/uploads` e defina:
+
+```env
+UPLOAD_STORAGE_DIR=/app/data/uploads
+```
+
+Sem volume, o texto extraído no banco pode existir, mas o **arquivo PDF** some no redeploy.
 
 ### Após o primeiro deploy com sucesso
 
@@ -95,6 +108,7 @@ Acesse http://localhost:3000
 | Migrations falham | Verifique se o banco `coach_vestibular` existe |
 | Seed não roda | Defina `RUN_SEED=true` e redeploy |
 | Build falha no Prisma | Rebuild após push; `prisma generate` roda no Dockerfile |
+| **Banco de provas vazio após login** | Postgres sem volume persistente; ou `CONFIRMAR_RESET=true`; confira Admin → Banco de provas (aviso amarelo) e `/api/admin/diagnostico` logado como admin |
 
 ## 7. Atualizações futuras
 
