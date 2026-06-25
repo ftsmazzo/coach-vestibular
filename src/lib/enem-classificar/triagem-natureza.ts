@@ -2,8 +2,10 @@
 
 export type MateriaNatureza = "Biologia" | "Química" | "Física";
 
+export type TriagemMateria = MateriaNatureza | "Transversal";
+
 export type TriagemNatureza = {
-  materia: MateriaNatureza | null;
+  materia: TriagemMateria | null;
   confianca: number;
   motivo: string;
 };

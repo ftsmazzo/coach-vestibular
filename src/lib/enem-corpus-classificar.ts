@@ -19,24 +19,18 @@ import {
 } from "@/lib/enem-classificar/classificar-ia";
 import {
   agregarBenchmark,
-  classificarPorKeywords,
 } from "@/lib/enem-classificar/heuristica";
 import {
-  mesclarTriagem,
-  precisaTriagemIA,
   triarLoteIA,
 } from "@/lib/enem-classificar/triagem-ia";
 import {
-  triarMateriaNatureza,
   type TriagemNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
 import {
   classificarLoteLinguagensV12,
   versaoClassificacaoLingV12,
-  CLASSIFICADOR_LING_V12,
 } from "@/lib/enem-classificar/classificar-linguagens-v12";
 import { CORPUS_MATERIA_CONFIG } from "@/lib/enem-corpus-materia";
-import { idFallbackNaoClassificado } from "@/lib/conhecimento-catalog/load";
 import { CLASSIFICACAO_CONFIANCA_MIN } from "@/lib/enem-corpus-stats";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
 import { sanitizarTextoPostgres } from "@/lib/sanitize-postgres-text";
@@ -50,7 +44,8 @@ export type ClassificarCorpusOpts = {
   soTriagem?: boolean;
   /** Reexecuta triagem Bio/Quím/Fís (só Natureza) */
   retriagem?: boolean;
-  modo?: "heuristica" | "ia";
+  /** @deprecated ignorado — classificação é sempre por IA */
+  modo?: "ia";
 };
 
 export type ClassificarCorpusResultado = {
@@ -64,7 +59,7 @@ export type ClassificarCorpusResultado = {
   triagemIa: number;
   materiaProcessadas: number;
   materiaId: MateriaCorpusId;
-  modo: "heuristica" | "ia";
+  modo: "ia";
 };
 
 const LIMITE_MAX = 900;
@@ -158,7 +153,6 @@ async function classificarLoteQuestoes(
   prisma: PrismaClient,
   materiaParaClassificar: QuestaoParaClassificar[],
   opts: {
-    modo: "heuristica" | "ia";
     escopos: ReturnType<typeof indexarEscopos>;
     confiancaMinima: number;
     assuntoId?: string;
@@ -176,63 +170,36 @@ async function classificarLoteQuestoes(
   const usaV11 = Boolean(opts.catalog && catalogoUsaClassificadorV11(opts.catalog));
   const loteSize = usaV11 ? LOTE_IA_V11 : LOTE_IA;
 
-  if (opts.modo === "ia") {
-    for (let i = 0; i < materiaParaClassificar.length; i += loteSize) {
-      const lote = materiaParaClassificar.slice(i, i + loteSize);
+  for (let i = 0; i < materiaParaClassificar.length; i += loteSize) {
+    const lote = materiaParaClassificar.slice(i, i + loteSize);
 
-      const mapa =
-        usaV11 && opts.catalog
-          ? await classificarLoteCatalogoV11(
-              lote.map((q) => ({
-                fonteId: q.fonteId,
-                enunciado: q.enunciado ?? q.texto,
-                alternativas: q.alternativas ?? "",
-                gabarito: q.gabarito,
-                numero: q.numero,
-                idioma: q.idioma,
-              })),
-              opts.catalog,
-              opts.escopos,
-              opts.v11Opts
-            )
-          : await classificarLoteIA(
-              lote.map((q) => ({ fonteId: q.fonteId, texto: q.texto })),
-              opts.escopos,
-              {
-                materiaId: opts.materiaId,
-                materiaLabel: opts.catalogLabel,
-                instrucaoExtra: opts.instrucaoExtra,
-              }
-            );
-      for (const q of lote) {
-        let resultado = mapa.get(q.fonteId)!;
-        resultado.motivo = `${usaV11 ? "IA v11" : "IA"}: ${resultado.motivo}`;
-
-        if (resultado.status === "unclassified" && opts.materiaId !== "linguagens") {
-          const fallback = classificarPorKeywords(q.texto, opts.escopos, {
-            confiancaMinima: opts.confiancaMinima,
-            assuntoId: opts.assuntoId,
-          });
-          if (fallback.status !== "unclassified" && fallback.escopoId) {
-            resultado = {
-              ...fallback,
-              motivo: `fallback keywords: ${fallback.motivo}`,
-            };
-          }
-        }
-
-        resultados.push({ fonteId: q.fonteId, resultado });
-        if (opts.persistir) {
-          await persistirResultado(prisma, q.id, resultado, opts.versaoClass, opts.materiaLabel);
-        }
-      }
-    }
-  } else {
-    for (const q of materiaParaClassificar) {
-      const resultado = classificarPorKeywords(q.texto, opts.escopos, {
-        confiancaMinima: opts.confiancaMinima,
-        assuntoId: opts.assuntoId,
-      });
+    const mapa =
+      usaV11 && opts.catalog
+        ? await classificarLoteCatalogoV11(
+            lote.map((q) => ({
+              fonteId: q.fonteId,
+              enunciado: q.enunciado ?? q.texto,
+              alternativas: q.alternativas ?? "",
+              gabarito: q.gabarito,
+              numero: q.numero,
+              idioma: q.idioma,
+            })),
+            opts.catalog,
+            opts.escopos,
+            opts.v11Opts
+          )
+        : await classificarLoteIA(
+            lote.map((q) => ({ fonteId: q.fonteId, texto: q.texto })),
+            opts.escopos,
+            {
+              materiaId: opts.materiaId,
+              materiaLabel: opts.catalogLabel,
+              instrucaoExtra: opts.instrucaoExtra,
+            }
+          );
+    for (const q of lote) {
+      const resultado = mapa.get(q.fonteId)!;
+      resultado.motivo = `${usaV11 ? "IA v11" : "IA"}: ${resultado.motivo}`;
       resultados.push({ fonteId: q.fonteId, resultado });
       if (opts.persistir) {
         await persistirResultado(prisma, q.id, resultado, opts.versaoClass, opts.materiaLabel);
@@ -260,14 +227,9 @@ async function classificarDisciplinaUnica(
   const confiancaMinima = catalog.regras?.confiancaMinima ?? CLASSIFICACAO_CONFIANCA_MIN;
   const limit = Math.min(opts.limit ?? LIMITE_MAX, LIMITE_MAX);
   const persistir = opts.persistir ?? true;
-  const modo =
-    opts.modo === "ia" && iaClassificacaoDisponivel() ? "ia" : "heuristica";
+  const modo = "ia" as const;
   const usaV11 = catalogoUsaClassificadorV11(catalog);
-  const versaoClass =
-    modo === "ia" ?
-      usaV11 ? CLASSIFICADOR_CATALOGO_V11
-      : "ia-v1"
-    : "heuristica-v1";
+  const versaoClass = usaV11 ? CLASSIFICADOR_CATALOGO_V11 : "ia-v1";
 
   const questoes = await prisma.enemQuestaoCorpus.findMany({
     where: {
@@ -313,7 +275,6 @@ async function classificarDisciplinaUnica(
   const resultados =
     materiaParaClassificar.length > 0
       ? await classificarLoteQuestoes(prisma, materiaParaClassificar, {
-          modo,
           escopos,
           confiancaMinima,
           assuntoId: opts.assuntoId,
@@ -381,12 +342,9 @@ async function classificarLinguagensTrilhas(
   const catalog = carregarCatalogoMateria(materiaId);
   const escopos = indexarEscopos(catalog);
   const confiancaMinima = catalog.regras?.confiancaMinima ?? CLASSIFICACAO_CONFIANCA_MIN;
-  const fallbackId = idFallbackNaoClassificado(materiaId);
   const limit = Math.min(opts.limit ?? LIMITE_MAX, LIMITE_MAX);
   const persistir = opts.persistir ?? true;
-  const modo =
-    opts.modo === "ia" && iaClassificacaoDisponivel() ? "ia" : "heuristica";
-  const versaoBase = modo === "ia" ? CLASSIFICADOR_LING_V12 : "heuristica-ling-v1";
+  const modo = "ia" as const;
 
   const questoes = await prisma.enemQuestaoCorpus.findMany({
     where: {
@@ -462,56 +420,35 @@ async function classificarLinguagensTrilhas(
     }
   }
 
-  if (modo === "ia") {
-    for (let i = 0; i < paraClassificar.length; i += LOTE_LING_V12) {
-      const lote = paraClassificar.slice(i, i + LOTE_LING_V12);
-      const mapa = await classificarLoteLinguagensV12(
-        lote.map((q) => ({
-          fonteId: q.fonteId,
-          enunciado: q.enunciado,
-          alternativas: q.alternativas,
-          gabarito: q.gabarito,
-          numero: q.numero,
-          idioma: q.idioma,
-          origem: "enem_api",
-        })),
-        catalog,
-        escopos
-      );
+  for (let i = 0; i < paraClassificar.length; i += LOTE_LING_V12) {
+    const lote = paraClassificar.slice(i, i + LOTE_LING_V12);
+    const mapa = await classificarLoteLinguagensV12(
+      lote.map((q) => ({
+        fonteId: q.fonteId,
+        enunciado: q.enunciado,
+        alternativas: q.alternativas,
+        gabarito: q.gabarito,
+        numero: q.numero,
+        idioma: q.idioma,
+        origem: "enem_api",
+      })),
+      catalog,
+      escopos
+    );
 
-      for (const q of lote) {
-        const resultado = mapa.get(q.fonteId)!;
-        const trilha = contarTrilhaLinguagens(resultado.disciplinaOriginalId);
-        contagemTrilha[trilha]++;
-        resultados.push({ fonteId: q.fonteId, resultado });
-        if (persistir) {
-          await persistirResultado(
-            prisma,
-            q.id,
-            resultado,
-            versaoClassificacaoLingV12(resultado),
-            materiaLabel
-          );
-        }
-      }
-    }
-  } else {
-    for (const q of paraClassificar) {
-      const resultado = classificarPorKeywords(q.texto, escopos, {
-        confiancaMinima,
-        assuntoId: opts.assuntoId,
-      });
-      const trilha = resultado.assuntoId?.startsWith("l2_en")
-        ? "ingles"
-        : resultado.assuntoId?.startsWith("l2_es")
-          ? "espanhol"
-          : resultado.escopoId
-            ? "portugues"
-            : "indefinido";
+    for (const q of lote) {
+      const resultado = mapa.get(q.fonteId)!;
+      const trilha = contarTrilhaLinguagens(resultado.disciplinaOriginalId);
       contagemTrilha[trilha]++;
       resultados.push({ fonteId: q.fonteId, resultado });
       if (persistir) {
-        await persistirResultado(prisma, q.id, resultado, versaoBase, materiaLabel);
+        await persistirResultado(
+          prisma,
+          q.id,
+          resultado,
+          versaoClassificacaoLingV12(resultado),
+          materiaLabel
+        );
       }
     }
   }
@@ -557,14 +494,9 @@ async function classificarNaturezaSub(
   const limit = Math.min(opts.limit ?? LIMITE_MAX, LIMITE_MAX);
   const persistir = opts.persistir ?? true;
   const retriagem = opts.retriagem ?? false;
-  const modo =
-    opts.modo === "ia" && iaClassificacaoDisponivel() ? "ia" : "heuristica";
+  const modo = "ia" as const;
   const usaV11 = catalogoUsaClassificadorV11(catalog);
-  const versaoClass =
-    modo === "ia" ?
-      usaV11 ? CLASSIFICADOR_CATALOGO_V11
-      : "ia-v1"
-    : "heuristica-v1";
+  const versaoClass = usaV11 ? CLASSIFICADOR_CATALOGO_V11 : "ia-v1";
 
   const questoes = await prisma.enemQuestaoCorpus.findMany({
     where: {
@@ -594,7 +526,6 @@ async function classificarNaturezaSub(
     enunciado: string;
     alternativas: string;
     materiaDb: string | null;
-    triHeur: TriagemNatureza;
     triFinal: TriagemNatureza;
     conhecimentoEscopoId: string | null;
     classificacaoConfianca: number | null;
@@ -603,7 +534,6 @@ async function classificarNaturezaSub(
   const itens: Item[] = questoes.map((q) => {
     const partes = montarPartesQuestaoCorpus(q);
     const texto = montarTextoQuestaoCorpus(q);
-    const triHeur = triarMateriaNatureza(texto);
     return {
       id: q.id,
       fonteId: q.fonteId,
@@ -612,8 +542,7 @@ async function classificarNaturezaSub(
       enunciado: partes.enunciado,
       alternativas: partes.alternativas,
       materiaDb: q.materia,
-      triHeur,
-      triFinal: triHeur,
+      triFinal: { materia: null, confianca: 0, motivo: "pendente" },
       conhecimentoEscopoId: q.conhecimentoEscopoId,
       classificacaoConfianca: q.classificacaoConfianca,
     };
@@ -622,30 +551,31 @@ async function classificarNaturezaSub(
   let triagemIa = 0;
 
   if (retriagem) {
-    if (modo === "ia") {
-      const filaIa = itens.filter((q) => precisaTriagemIA(q.triHeur));
+    for (let i = 0; i < itens.length; i += LOTE_TRIAGEM_IA) {
+      const lote = itens.slice(i, i + LOTE_TRIAGEM_IA);
+      const mapa = await triarLoteIA(lote.map((q) => ({ fonteId: q.fonteId, texto: q.texto })));
 
-      for (let i = 0; i < filaIa.length; i += LOTE_TRIAGEM_IA) {
-        const lote = filaIa.slice(i, i + LOTE_TRIAGEM_IA);
-        const mapa = await triarLoteIA(
-          lote.map((q) => ({ fonteId: q.fonteId, texto: q.texto }))
-        );
-
-        for (const q of lote) {
-          const ia = mapa.get(q.fonteId);
-          const antes = q.triHeur.materia;
-          q.triFinal = mesclarTriagem(q.triHeur, ia);
-          if (!antes && q.triFinal.materia) triagemIa++;
-          else if (q.triHeur.motivo.startsWith("empate") && q.triFinal.materia) triagemIa++;
-        }
+      for (const q of lote) {
+        q.triFinal = mapa.get(q.fonteId) ?? {
+          materia: null,
+          confianca: 0,
+          motivo: "IA não retornou triagem",
+        };
+        if (q.triFinal.materia) triagemIa++;
       }
     }
 
     if (persistir) {
       for (const q of itens) {
+        const materiaDb =
+          q.triFinal.materia === "Biologia" ||
+          q.triFinal.materia === "Química" ||
+          q.triFinal.materia === "Física"
+            ? q.triFinal.materia
+            : null;
         await prisma.enemQuestaoCorpus.update({
           where: { id: q.id },
-          data: { materia: q.triFinal.materia },
+          data: { materia: materiaDb },
         });
       }
     }
@@ -700,7 +630,6 @@ async function classificarNaturezaSub(
   const resultados =
     !opts.soTriagem && materiaParaClassificar.length > 0
       ? await classificarLoteQuestoes(prisma, materiaParaClassificar, {
-          modo,
           escopos,
           confiancaMinima,
           assuntoId: opts.assuntoId,
@@ -741,6 +670,10 @@ export async function classificarCorpusEnem(
   prisma: PrismaClient,
   opts: ClassificarCorpusOpts = {}
 ): Promise<ClassificarCorpusResultado> {
+  if (!iaClassificacaoDisponivel()) {
+    throw new Error("Classificação por IA indisponível (configure OPENAI_API_KEY).");
+  }
+
   const materiaId = opts.materiaId ?? "biologia";
   const cfg = CORPUS_MATERIA_CONFIG[materiaId];
 

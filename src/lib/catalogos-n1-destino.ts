@@ -110,7 +110,7 @@ export function montarClassificacaoN1Manual(catalogoId: string): ClassificacaoN1
   ) {
     n1.triagemNatureza = {
       materia: labelCatalogoN1(catalogoId),
-      via: "heuristica",
+      via: "manual",
       motivo: "manual",
     };
   }

@@ -86,7 +86,7 @@ const classificarSchema = z.object({
   limit: z.number().int().min(1).max(900).optional(),
   soTriagem: z.boolean().optional(),
   retriagem: z.boolean().optional(),
-  modo: z.enum(["heuristica", "ia"]).optional(),
+  modo: z.enum(["ia"]).optional(),
   repairLinguagensIdioma: z.boolean().optional(),
   /** Só corrige idioma/rota em Linguagens, sem classificar. */
   soRepararIdioma: z.boolean().optional(),

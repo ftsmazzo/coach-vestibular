@@ -204,7 +204,7 @@ export function AdminEnemCorpusPanel() {
     opts: {
       triagemOnly?: boolean;
       retriagem?: boolean;
-      modo?: "ia" | "heuristica";
+      modo?: "ia";
       repairLinguagensIdioma?: boolean;
       soRepararIdioma?: boolean;
       importarLinguagensIngles?: boolean;
@@ -222,7 +222,7 @@ export function AdminEnemCorpusPanel() {
           limit: 900,
           soTriagem: opts.triagemOnly ?? false,
           retriagem: opts.retriagem ?? false,
-          modo: iaDisponivel && (opts.modo ?? "ia") === "ia" ? "ia" : "heuristica",
+          modo: "ia",
           repairLinguagensIdioma: opts.repairLinguagensIdioma ?? false,
           soRepararIdioma: opts.soRepararIdioma ?? false,
           importarLinguagensIngles: opts.importarLinguagensIngles ?? false,
@@ -608,16 +608,6 @@ export function AdminEnemCorpusPanel() {
               Importar EN + classificar
             </Button>
           </>
-        )}
-        {iaDisponivel && (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => rodarClassificacao({ modo: "heuristica" })}
-            disabled={!podeClassificar}
-          >
-            Só heurística (rápido)
-          </Button>
         )}
         {ehNatureza && (
           <Button

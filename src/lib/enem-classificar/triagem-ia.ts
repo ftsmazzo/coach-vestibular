@@ -1,5 +1,9 @@
 import { responsesComSchema } from "@/lib/openai-responses-client";
-import type { MateriaNatureza, TriagemNatureza } from "@/lib/enem-classificar/triagem-natureza";
+import type {
+  MateriaNatureza,
+  TriagemMateria,
+  TriagemNatureza,
+} from "@/lib/enem-classificar/triagem-natureza";
 import { iaClassificacaoDisponivel } from "@/lib/enem-classificar/classificar-ia";
 
 export { iaClassificacaoDisponivel };
@@ -13,7 +17,7 @@ type IaTriagemRes = {
   }>;
 };
 
-const MATERIAS = ["Biologia", "Química", "Física"] as const;
+const MATERIAS = ["Biologia", "Química", "Física", "Transversal"] as const;
 
 const SCHEMA = {
   name: "enem_triagem_natureza",
@@ -64,13 +68,7 @@ function resultadoDeIa(row: IaTriagemRes["triagens"][number]): TriagemNatureza {
   };
 }
 
-/** Heurística inconclusiva → candidata a triagem IA. */
-export function precisaTriagemIA(tri: TriagemNatureza): boolean {
-  if (tri.materia === null) return true;
-  return tri.motivo.startsWith("empate");
-}
-
-/** Resolve lote indefinido via OpenAI — Bio / Química / Física / null. */
+/** Resolve lote via OpenAI — Bio / Química / Física / Transversal / null. */
 export async function triarLoteIA(
   items: Array<{ fonteId: string; texto: string }>
 ): Promise<Map<string, TriagemNatureza>> {
@@ -86,19 +84,20 @@ export async function triarLoteIA(
 
   const data = await responsesComSchema<IaTriagemRes>({
     systemPrompt:
-      "Você tria UMA questão de Ciências da Natureza em Biologia, Química ou Física. " +
+      "Você tria UMA questão de Ciências da Natureza em Biologia, Química, Física ou Transversal. " +
       "Classifique pelo conhecimento exigido no comando, não pelo tema superficial do texto-base. " +
       "Biologia: processos ecológicos, fisiológicos, celulares, genéticos, evolutivos — mesmo que apareçam termos químicos no texto. " +
       "Química: reações, fórmulas, concentração/cálculo químico, pH, estequiometria, separação de misturas (decantação, destilação) — mesmo com plantas ou produtos naturais no contexto. " +
       "Física: grandezas físicas, leis, fenômenos (movimento, força, energia, colisões, quantidade de movimento, óptica, eletricidade). " +
-      "REGRA (fisica_prevalece_quando_ha_grandezas_e_fenomeno): números, gráficos ou álgebra para modelar fenômeno físico → Física, não null. " +
+      "Transversal: metodologia científica, natureza da ciência, hipótese, experimentação, etapas do método — quando o comando cobra isso e não conteúdo disciplinar específico. " +
+      "Números, gráficos ou álgebra para modelar fenômeno físico → Física, não null. " +
       "Não escolha Química só por nicotina, concentração ou metais se o comando cobra fisiologia. " +
       "Não escolha Biologia se o comando cobra método de separação de misturas. " +
       "Use null só se realmente não distinguir.",
     instrucao:
       items.length === 1
-        ? `Classifique esta única questão (materia: Biologia | Química | Física | null):\n\n${blocos}`
-        : `Classifique cada questão (materia: Biologia | Química | Física | null):\n\n${blocos}`,
+        ? `Classifique esta única questão (materia: Biologia | Química | Física | Transversal | null):\n\n${blocos}`
+        : `Classifique cada questão (materia: Biologia | Química | Física | Transversal | null):\n\n${blocos}`,
     schema: SCHEMA,
     content: [],
   });
@@ -135,11 +134,3 @@ export async function triarQuestaoIA(
   );
 }
 
-export function mesclarTriagem(
-  heuristica: TriagemNatureza,
-  ia: TriagemNatureza | undefined
-): TriagemNatureza {
-  if (!precisaTriagemIA(heuristica)) return heuristica;
-  if (ia?.materia) return ia;
-  return heuristica.materia ? heuristica : { materia: null, confianca: 0, motivo: heuristica.motivo };
-}

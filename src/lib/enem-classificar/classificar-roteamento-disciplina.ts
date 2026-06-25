@@ -14,6 +14,7 @@ import {
 import type {
   CatalogDisciplinaId,
   DisciplinaHumanasId,
+  DisciplinaLinguagensId,
   RotaHumanasId,
   RotaLinguagensId,
 } from "@/lib/conhecimento-catalog/disciplinas-split";

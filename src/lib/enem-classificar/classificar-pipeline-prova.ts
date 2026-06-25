@@ -31,19 +31,9 @@ import {
 } from "@/lib/enem-classificar/classificar-catalogo-v11";
 import { resolverChaveFonteId } from "@/lib/enem-classificar/fonte-id-utils";
 import {
-  triarMateriaNatureza,
   type MateriaNatureza,
-  type TriagemNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
 import { triarQuestaoIA, iaClassificacaoDisponivel } from "@/lib/enem-classificar/triagem-ia";
-import {
-  triarNaturezaTransversal,
-  REGRA_NATUREZA_TRANSVERSAL_ID,
-} from "@/lib/enem-classificar/triagem-natureza-transversal";
-import {
-  fisicaPrevaleceSobreMatematica,
-  REGRA_FISICA_PREVALECE_ID,
-} from "@/lib/enem-classificar/fisica-vs-matematica";
 import { aplicarMetadadoVarianteLinguagens } from "@/lib/enem-classificar/roteamento-metadado-linguagens";
 import type { ClassificacaoN1 } from "@/lib/classificacao-n1-types";
 import { CLASSIFICACAO_N1_VERSAO } from "@/lib/classificacao-n1-types";
@@ -68,7 +58,7 @@ export type MetaPipelineProva = {
     materia: MateriaNatureza | "Transversal" | null;
     confianca: number;
     motivo: string;
-    via: "heuristica" | "ia";
+    via: "ia";
   };
   rota?: {
     disciplinaId: string;
@@ -217,44 +207,43 @@ function rotaMetadadoLinguagens(q: PayloadQuestaoCompleto, rota: RotaIa): RotaIa
   return aplicarMetadadoVarianteLinguagens(q.idiomaVariante, null, rota);
 }
 
-/** Passo 2a — triagem Bio/Quím/Fís (1 questão, IA com texto integral). */
+/** Passo 2a — triagem Bio/Quím/Fís/Transversal (1 questão, só IA). */
 export async function passoTriagemNatureza(
   q: PayloadQuestaoCompleto,
   meta: MetaPipelineProva
 ): Promise<{ meta: MetaPipelineProva; etapa: EtapaPipeline; materiaId: MateriaCorpusId | null }> {
   const texto = textoCompleto(q);
 
-  const trans = triarNaturezaTransversal(texto);
-  if (trans.catalogoId) {
+  if (!iaClassificacaoDisponivel()) {
     const metaOut: MetaPipelineProva = {
       ...meta,
       triagemNatureza: {
-        materia: "Transversal",
-        confianca: trans.confianca,
-        motivo: trans.motivo,
-        via: "heuristica",
+        materia: null,
+        confianca: 0,
+        motivo: "API de classificação indisponível",
+        via: "ia",
       },
     };
     return {
       meta: metaOut,
-      materiaId: trans.catalogoId,
+      materiaId: null,
       etapa: {
         passo: "triagem-natureza",
-        detalhe: `Q${q.numero} → natureza_transversal (${REGRA_NATUREZA_TRANSVERSAL_ID}, conf=${trans.confianca.toFixed(2)})`,
+        detalhe: `Q${q.numero} → triagem bloqueada (sem API)`,
       },
     };
   }
 
-  const heur = iaClassificacaoDisponivel()
-    ? await triarQuestaoIA(q.fonteId, texto)
-    : triarMateriaNatureza(texto);
-  const tri: TriagemNatureza = heur;
-  const via: "heuristica" | "ia" = iaClassificacaoDisponivel() ? "ia" : "heuristica";
-
-  const materiaId = tri.materia ? MAP_NATUREZA_CORPUS[tri.materia] : null;
+  const tri = await triarQuestaoIA(q.fonteId, texto);
+  const materiaId =
+    tri.materia === "Transversal"
+      ? "natureza_transversal"
+      : tri.materia
+        ? MAP_NATUREZA_CORPUS[tri.materia]
+        : null;
   const metaOut: MetaPipelineProva = {
     ...meta,
-    triagemNatureza: { ...tri, via },
+    triagemNatureza: { ...tri, via: "ia" },
   };
 
   return {
@@ -263,8 +252,8 @@ export async function passoTriagemNatureza(
     etapa: {
       passo: "triagem-natureza",
       detalhe: materiaId
-        ? `Q${q.numero} → ${tri.materia} (${via}, conf=${tri.confianca.toFixed(2)})`
-        : `Q${q.numero} → triagem inconclusiva (${via})`,
+        ? `Q${q.numero} → ${tri.materia} (ia, conf=${tri.confianca.toFixed(2)})`
+        : `Q${q.numero} → triagem inconclusiva (ia)`,
     },
   };
 }
@@ -592,31 +581,6 @@ export async function executarN1Questao(
   let meta: MetaPipelineProva = { area };
 
   if (area === "exatas") {
-    const prev = fisicaPrevaleceSobreMatematica(textoCompleto(q));
-    if (prev.prevalece) {
-      const n1: ClassificacaoN1 = {
-        versao: CLASSIFICACAO_N1_VERSAO,
-        area: "natureza",
-        catalogoId: "fisica",
-        confianca: prev.confianca,
-        criterio: REGRA_FISICA_PREVALECE_ID,
-        justificativa:
-          `Área Exatas no bloco, mas fenômeno físico prevalece: ${prev.motivo}. ` +
-          "Não rotear para Matemática só por cálculo/gráfico/proporção.",
-        triagemNatureza: {
-          materia: "Física",
-          via: "heuristica",
-          motivo: prev.motivo,
-        },
-        classificadoEm,
-      };
-      etapas.push({
-        passo: "n1-cat",
-        detalhe: `Q${q.numero} → fisica (${REGRA_FISICA_PREVALECE_ID}, conf=${prev.confianca.toFixed(2)})`,
-      });
-      return { n1, etapas, avisos };
-    }
-
     const n1: ClassificacaoN1 = {
       versao: CLASSIFICACAO_N1_VERSAO,
       area,
@@ -644,9 +608,7 @@ export async function executarN1Questao(
       catalogoId: tri.materiaId,
       confianca: tri.meta.triagemNatureza?.confianca ?? 0.5,
       criterio:
-        tri.materiaId === "natureza_transversal"
-          ? REGRA_NATUREZA_TRANSVERSAL_ID
-          : tri.meta.triagemNatureza?.via ?? "heuristica",
+        tri.materiaId === "natureza_transversal" ? "triagem_ia_transversal" : "triagem_ia",
       justificativa: tri.meta.triagemNatureza?.motivo ?? "Triagem natureza",
       triagemNatureza: tri.meta.triagemNatureza
         ? {
