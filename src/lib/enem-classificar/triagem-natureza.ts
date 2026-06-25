@@ -12,6 +12,22 @@ export type TriagemNatureza = {
   motivo: string;
 };
 
+const MAP_MATERIA_CORPUS: Record<MateriaNatureza, "biologia" | "quimica" | "fisica"> = {
+  Biologia: "biologia",
+  Química: "quimica",
+  Física: "fisica",
+};
+
+export function ehMateriaNatureza(m: TriagemMateria | null | undefined): m is MateriaNatureza {
+  return m === "Biologia" || m === "Química" || m === "Física";
+}
+
+export function corpusIdDeMateriaNatureza(
+  m: TriagemMateria | null | undefined
+): "biologia" | "quimica" | "fisica" | null {
+  return ehMateriaNatureza(m) ? MAP_MATERIA_CORPUS[m] : null;
+}
+
 function norm(s: string): string {
   return s
     .toLowerCase()

@@ -32,6 +32,7 @@ import {
 import { resolverChaveFonteId } from "@/lib/enem-classificar/fonte-id-utils";
 import {
   triarMateriaNatureza,
+  corpusIdDeMateriaNatureza,
   type MateriaNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
 import { triarQuestaoIA, iaClassificacaoDisponivel } from "@/lib/enem-classificar/triagem-ia";
@@ -91,12 +92,6 @@ export type MetaPipelineProva = {
 export type EtapaPipeline = {
   passo: string;
   detalhe: string;
-};
-
-const MAP_NATUREZA_CORPUS: Record<MateriaNatureza, MateriaCorpusId> = {
-  Biologia: "biologia",
-  Química: "quimica",
-  Física: "fisica",
 };
 
 function montarMetadadosAcumulados(meta: MetaPipelineProva): string {
@@ -266,7 +261,7 @@ export async function passoTriagemNatureza(
 
   const heur = triarMateriaNatureza(texto);
   if (heur.materia && heur.confianca >= CONFIANCA_HEURISTICA_NATUREZA_MIN) {
-    const materiaId = MAP_NATUREZA_CORPUS[heur.materia];
+    const materiaId = corpusIdDeMateriaNatureza(heur.materia);
     const metaOut: MetaPipelineProva = {
       ...meta,
       triagemNatureza: { ...heur, via: "heuristica" },
@@ -293,7 +288,7 @@ export async function passoTriagemNatureza(
         via: "heuristica",
       },
     };
-    const materiaId = heur.materia ? MAP_NATUREZA_CORPUS[heur.materia] : null;
+    const materiaId = corpusIdDeMateriaNatureza(heur.materia);
     return {
       meta: metaOut,
       materiaId,

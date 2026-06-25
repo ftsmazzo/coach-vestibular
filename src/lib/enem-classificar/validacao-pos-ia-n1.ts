@@ -8,7 +8,12 @@ import {
   REGRA_FISICA_PREVALECE_ID,
 } from "@/lib/enem-classificar/fisica-vs-matematica";
 import { desempateTriagemNatureza } from "@/lib/enem-classificar/triagem-natureza-desempate";
-import type { MateriaNatureza, TriagemNatureza } from "@/lib/enem-classificar/triagem-natureza";
+import {
+  corpusIdDeMateriaNatureza,
+  ehMateriaNatureza,
+  type MateriaNatureza,
+  type TriagemNatureza,
+} from "@/lib/enem-classificar/triagem-natureza";
 import {
   triarNaturezaTransversal,
   REGRA_NATUREZA_TRANSVERSAL_ID,
@@ -16,12 +21,6 @@ import {
 import type { MateriaCorpusId } from "@/lib/enem-corpus-materia";
 
 export const CONFIANCA_HEURISTICA_NATUREZA_MIN = 0.78;
-
-const MAP_NATUREZA: Record<MateriaNatureza, MateriaCorpusId> = {
-  Biologia: "biologia",
-  Química: "quimica",
-  Física: "fisica",
-};
 
 export type TriagemNaturezaValidada = {
   catalogoId: MateriaCorpusId | "natureza_transversal" | null;
@@ -53,9 +52,9 @@ export function validarTriagemNaturezaPosIA(
   }
 
   const desempate = desempateTriagemNatureza(texto);
-  if (desempate?.materia) {
+  if (desempate?.materia && ehMateriaNatureza(desempate.materia)) {
     return {
-      catalogoId: MAP_NATUREZA[desempate.materia],
+      catalogoId: corpusIdDeMateriaNatureza(desempate.materia),
       triagem: {
         materia: desempate.materia,
         confianca: desempate.confianca,
@@ -65,9 +64,9 @@ export function validarTriagemNaturezaPosIA(
     };
   }
 
-  if (heur.materia && heur.confianca >= CONFIANCA_HEURISTICA_NATUREZA_MIN) {
+  if (heur.materia && heur.confianca >= CONFIANCA_HEURISTICA_NATUREZA_MIN && ehMateriaNatureza(heur.materia)) {
     return {
-      catalogoId: MAP_NATUREZA[heur.materia],
+      catalogoId: corpusIdDeMateriaNatureza(heur.materia),
       triagem: {
         materia: heur.materia,
         confianca: heur.confianca,
@@ -78,9 +77,9 @@ export function validarTriagemNaturezaPosIA(
   }
 
   return {
-    catalogoId: ia.materia ? MAP_NATUREZA[ia.materia] : null,
+    catalogoId: corpusIdDeMateriaNatureza(ia.materia),
     triagem: {
-      materia: ia.materia,
+      materia: ehMateriaNatureza(ia.materia) ? ia.materia : null,
       confianca: ia.confianca,
       motivo: ia.motivo,
     },
