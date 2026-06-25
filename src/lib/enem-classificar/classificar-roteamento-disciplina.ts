@@ -31,6 +31,8 @@ import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
 import {
   aplicarRoteamentoDeterministicoHumanas,
   aplicarRoteamentoDeterministicoLinguagens,
+  roteamentoHumanasPorHeuristica,
+  roteamentoLinguagensPorHeuristica,
 } from "@/lib/enem-classificar/heuristica-roteamento-disciplina";
 
 export const CLASSIFICADOR_DISCIPLINA_V10 = "ia-disciplina-v10";
@@ -136,6 +138,24 @@ async function rotearLote(
 ): Promise<Map<string, RotaItem["rota"]>> {
   if (items.length === 0) return new Map();
 
+  const map = new Map<string, RotaItem["rota"]>();
+  const pendentes: QuestaoRoteamento[] = [];
+
+  for (const item of items) {
+    const texto = textoQuestaoRoteamento(item);
+    const rotaHeur =
+      area === "linguagens"
+        ? roteamentoLinguagensPorHeuristica(texto, item.idioma)
+        : roteamentoHumanasPorHeuristica(texto);
+    if (rotaHeur) {
+      map.set(item.fonteId, rotaHeur);
+    } else {
+      pendentes.push(item);
+    }
+  }
+
+  if (pendentes.length === 0) return map;
+
   const enumDisciplinas =
     area === "humanas"
       ? [...DISCIPLINAS_HUMANAS, "indefinido"]
@@ -149,7 +169,7 @@ async function rotearLote(
       ? "Roteie questões de Ciências Humanas para historia, geografia, filosofia, sociologia ou indefinido."
       : "Roteie questões de Linguagens para portugues, ingles, espanhol ou indefinido. O comando em PT não define portugues.");
 
-  const blocos = items.map(montarBlocoQuestaoRoteamento).join("\n\n");
+  const blocos = pendentes.map(montarBlocoQuestaoRoteamento).join("\n\n");
 
   const data = await responsesComSchema<RotaLote>({
     systemPrompt,
@@ -158,12 +178,14 @@ async function rotearLote(
     content: [],
   });
 
-  const esperados = items.map((q) => q.fonteId);
+  const esperados = pendentes.map((q) => q.fonteId);
   const bruto = new Map<string, RotaItem["rota"]>();
   for (const row of data.classificacoes) {
     bruto.set(row.fonteId, row.rota);
   }
-  return aplicarMapaComChavesFonteId(bruto, esperados);
+  const iaMap = aplicarMapaComChavesFonteId(bruto, esperados);
+  for (const [k, v] of iaMap) map.set(k, v);
+  return map;
 }
 
 function textoQuestaoRoteamento(q: QuestaoRoteamento): string {

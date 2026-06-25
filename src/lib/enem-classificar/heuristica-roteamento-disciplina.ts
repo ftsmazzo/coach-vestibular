@@ -1,4 +1,4 @@
-/** Heurísticas determinísticas de roteamento N1 (antes/depois da IA). */
+/** Heurísticas determinísticas de roteamento N1 — aplicadas antes e depois da IA. */
 
 export type DisciplinaLinguagensHeuristica = "portugues" | "ingles" | "espanhol";
 export type DisciplinaHumanasHeuristica = "historia" | "geografia" | "filosofia" | "sociologia";
@@ -17,32 +17,45 @@ function norm(s: string): string {
     .replace(/\s+/g, " ");
 }
 
-const PADROES_INGLES: RegExp[] = [
+/** Sinais inequívocos de competência em inglês (bastam sozinhos). */
+const PADROES_INGLES_FORTES: RegExp[] = [
   /\bequivale,?\s+em\s+portugues\b/,
-  /\bequivale\s+em\s+portugues\b/,
-  /\bno\s+contexto\s+da\s+tira\b/,
-  /\bno\s+contexto\s+da\s+tirinha\b/,
-  /\b(a\s+)?fala\b.*\b(em\s+)?ingles\b/,
-  /\bexpressao\s+em\s+ingles\b/,
-  /\bexpressão\s+em\s+inglês\b/,
   /\bthat'?ll\s+be\s+the\s+day\b/,
+  /\baccording\s+to\s+the\s+text\b/,
+  /\bmain\s+idea\b/,
+  /\bmeaning\s+of\s+the\s+(word|expression)\b/,
   /\bdon'?t\s+try\b/,
   /\bwho\s+needs\s+your\s+answers\b/,
   /\bi'?ll\s+bet\b/,
   /\bmaybe\s+you'?d\s+like\b/,
   /\bwager\b/,
   /\bmr\.?\s+bigmouth\b/,
-  /\bargumento\s+invalidado\b/,
-  /\btrecho\s+da\s+tira\b/,
-  /\baccording\s+to\s+the\s+text\b/,
-  /\bmain\s+idea\b/,
-  /\bmeaning\s+of\s+the\s+(word|expression)\b/,
+  /\bexpressao\s+em\s+ingles\b/,
+  /\bfala\b[^.]{0,80}\b(that|don't|who|i'll|maybe|wager)\b/,
 ];
 
-const PADROES_ESPANHOL: RegExp[] = [
+/** Só contam junto com trecho claramente em inglês no texto-base/enunciado. */
+const PADROES_INGLES_COM_CONTEXTO: RegExp[] = [
+  /\bno\s+contexto\s+da\s+tira\b/,
+  /\bno\s+contexto\s+da\s+tirinha\b/,
+  /\bo\s+trecho\s+da\s+tira\b/,
+  /\ba\s+fala\b/,
+  /\bargumento\s+invalidado\b/,
+  /\bequivalen(te|cia)\b/,
+  /\bsentido\s+(da\s+)?express/,
+];
+
+const PADROES_TEXTO_EM_INGLES: RegExp[] = [
+  /\b(that'll|thatll|don't|dont|i'll|ill|who needs|your answers|maybe you'd)\b/,
+  /\b(the day|bigmouth|wager)\b/,
+  /['’][a-z]{1,4}\b/,
+  /\b(the|and|you|your|who|needs|answers|bet|maybe|day)\b(?:\s+\w+){0,3}\b/,
+];
+
+const PADROES_ESPANHOL_FORTES: RegExp[] = [
   /\bsegun\s+el\s+texto\b/,
   /\bidea\s+principal\b/,
-  /\bpretérito\s+perfecto\b/,
+  /\bpreterito\s+perfecto\b/,
   /\bsubjuntivo\b/,
   /\bexpresion\s+en\s+espanol\b/,
 ];
@@ -53,6 +66,7 @@ const PADROES_SOCIOLOGIA: RegExp[] = [
   /\bprodutivismo\b/,
   /\benvelhecimento\b/,
   /\bvelhice\b/,
+  /\ba\s+velhice\b/,
   /\bcapacidade\s+produtiva\b/,
   /\bvalor\s+economico\b/,
   /\baceleracao\s+do\s+cotidiano\b/,
@@ -61,6 +75,11 @@ const PADROES_SOCIOLOGIA: RegExp[] = [
   /\bresistencia\s+a\s+logica\s+social\b/,
   /\bdesaceleracao\b/,
   /\bsimone\s+de\s+beauvoir\b/,
+  /\bvida\s+social\b/,
+  /\bidosos?\b/,
+  /\bpaciencia\b/,
+  /\blenine\b/,
+  /\btrabalho\b.*\b(produtiv|economico|valor)\b/,
 ];
 
 const PADROES_GEOGRAFIA_AMBIENTAL: RegExp[] = [
@@ -72,6 +91,8 @@ const PADROES_GEOGRAFIA_AMBIENTAL: RegExp[] = [
   /\brecursos\s+hidricos\b/,
   /\bpoluicao\s+hidrica\b/,
   /\bproliferacao\s+de\s+algas\b/,
+  /\bexcesso\s+de\s+nutrientes\b/,
+  /\blancamento\s+de\s+materia\s+organica\b/,
 ];
 
 function pontuarPadroes(texto: string, padroes: RegExp[]): number {
@@ -82,6 +103,10 @@ function pontuarPadroes(texto: string, padroes: RegExp[]): number {
   return score;
 }
 
+function temTrechoEmIngles(texto: string): boolean {
+  return pontuarPadroes(texto, PADROES_TEXTO_EM_INGLES) >= 1;
+}
+
 /** Comando em PT cobrando trecho/fala/expressão em inglês → Inglês. */
 export function heuristicaLinguagensDisciplina(
   texto: string
@@ -89,23 +114,35 @@ export function heuristicaLinguagensDisciplina(
   const t = norm(texto);
   if (t.length < 20) return null;
 
-  const en = pontuarPadroes(t, PADROES_INGLES);
-  const es = pontuarPadroes(t, PADROES_ESPANHOL);
+  const fortes = pontuarPadroes(t, PADROES_INGLES_FORTES);
+  const contexto = pontuarPadroes(t, PADROES_INGLES_COM_CONTEXTO);
+  const es = pontuarPadroes(t, PADROES_ESPANHOL_FORTES);
+  const inglesNoTexto = temTrechoEmIngles(t);
 
-  if (en >= 1 && en > es) {
+  if (fortes >= 1 && fortes >= es) {
     return {
       disciplinaId: "ingles",
-      confianca: Math.min(0.95, 0.7 + en * 0.08),
-      motivo: `sinais de competência em inglês (score=${en})`,
+      confianca: Math.min(0.96, 0.82 + fortes * 0.05),
+      motivo: `competência em inglês — sinais fortes (${fortes})`,
     };
   }
-  if (es >= 2 && es > en) {
+
+  if (contexto >= 1 && inglesNoTexto && es === 0) {
+    return {
+      disciplinaId: "ingles",
+      confianca: Math.min(0.9, 0.75 + contexto * 0.06),
+      motivo: "comando em PT sobre fala/trecho em inglês na tira/texto",
+    };
+  }
+
+  if (es >= 2 && es > fortes) {
     return {
       disciplinaId: "espanhol",
-      confianca: Math.min(0.9, 0.65 + es * 0.08),
-      motivo: `sinais de competência em espanhol (score=${es})`,
+      confianca: Math.min(0.9, 0.68 + es * 0.08),
+      motivo: `competência em espanhol (score=${es})`,
     };
   }
+
   return null;
 }
 
@@ -122,14 +159,14 @@ export function heuristicaHumanasDisciplina(
   if (soc >= 1 && soc >= geo) {
     return {
       disciplinaId: "sociologia",
-      confianca: Math.min(0.92, 0.68 + soc * 0.1),
+      confianca: Math.min(0.93, 0.72 + soc * 0.08),
       motivo: `fenômeno social cobrado (score=${soc})`,
     };
   }
   if (geo >= 1) {
     return {
       disciplinaId: "geografia",
-      confianca: Math.min(0.92, 0.68 + geo * 0.1),
+      confianca: Math.min(0.93, 0.72 + geo * 0.08),
       motivo: `impacto ambiental/territorial hídrico (score=${geo})`,
     };
   }
@@ -143,6 +180,59 @@ type RotaMinima = {
   justificativa: string;
   sinalizadorRevisao: boolean;
 };
+
+function rotaDeHeuristica<T extends string>(
+  heur: ResultadoHeuristicaRoteamento<T>,
+  ia?: RotaMinima
+): RotaMinima {
+  return {
+    disciplinaId: heur.disciplinaId,
+    criterio: "heuristica",
+    confianca: heur.confianca,
+    justificativa: ia
+      ? `${heur.motivo}; IA sugeriu ${ia.disciplinaId}.`
+      : heur.motivo,
+    sinalizadorRevisao: Boolean(ia && ia.disciplinaId !== heur.disciplinaId && ia.disciplinaId !== "indefinido"),
+  };
+}
+
+/** Tenta roteamento só por heurística (pula IA quando confiança alta). */
+export function roteamentoLinguagensPorHeuristica(
+  texto: string,
+  idiomaVariante: string | null | undefined
+): RotaMinima | null {
+  if (idiomaVariante === "INGLES" || idiomaVariante === "ingles") {
+    return {
+      disciplinaId: "ingles",
+      criterio: "metadata",
+      confianca: 0.97,
+      justificativa: "Variante INGLES no metadado da questão.",
+      sinalizadorRevisao: false,
+    };
+  }
+  if (idiomaVariante === "ESPANHOL" || idiomaVariante === "espanhol") {
+    return {
+      disciplinaId: "espanhol",
+      criterio: "metadata",
+      confianca: 0.97,
+      justificativa: "Variante ESPANHOL no metadado da questão.",
+      sinalizadorRevisao: false,
+    };
+  }
+  const heur = heuristicaLinguagensDisciplina(texto);
+  if (heur && heur.confianca >= 0.78) {
+    return rotaDeHeuristica(heur);
+  }
+  return null;
+}
+
+export function roteamentoHumanasPorHeuristica(texto: string): RotaMinima | null {
+  const heur = heuristicaHumanasDisciplina(texto);
+  if (heur && heur.confianca >= 0.75) {
+    return rotaDeHeuristica(heur);
+  }
+  return null;
+}
 
 /** Metadado de variante + heurística de conteúdo. Nunca força português em rota indefinida. */
 export function aplicarRoteamentoDeterministicoLinguagens(
@@ -174,14 +264,7 @@ export function aplicarRoteamentoDeterministicoLinguagens(
   const heur = heuristicaLinguagensDisciplina(texto);
   if (heur) {
     if (rota.disciplinaId === heur.disciplinaId) return rota;
-    return {
-      disciplinaId: heur.disciplinaId,
-      criterio: "heuristica",
-      confianca: Math.max(rota.confianca, heur.confianca),
-      justificativa: `${heur.motivo}; IA sugeriu ${rota.disciplinaId}.`,
-      sinalizadorRevisao:
-        rota.disciplinaId !== "indefinido" && rota.disciplinaId !== heur.disciplinaId,
-    };
+    return rotaDeHeuristica(heur, rota);
   }
 
   return rota;
@@ -194,12 +277,5 @@ export function aplicarRoteamentoDeterministicoHumanas(
   const heur = heuristicaHumanasDisciplina(texto);
   if (!heur) return rota;
   if (rota.disciplinaId === heur.disciplinaId) return rota;
-  return {
-    disciplinaId: heur.disciplinaId,
-    criterio: "heuristica",
-    confianca: Math.max(rota.confianca, heur.confianca),
-    justificativa: `${heur.motivo}; IA sugeriu ${rota.disciplinaId}.`,
-    sinalizadorRevisao:
-      rota.disciplinaId !== "indefinido" && rota.disciplinaId !== heur.disciplinaId,
-  };
+  return rotaDeHeuristica(heur, rota);
 }

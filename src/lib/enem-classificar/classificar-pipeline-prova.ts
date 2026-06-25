@@ -47,6 +47,8 @@ import {
 import {
   aplicarRoteamentoDeterministicoHumanas,
   aplicarRoteamentoDeterministicoLinguagens,
+  roteamentoHumanasPorHeuristica,
+  roteamentoLinguagensPorHeuristica,
 } from "@/lib/enem-classificar/heuristica-roteamento-disciplina";
 import type { ClassificacaoN1 } from "@/lib/classificacao-n1-types";
 import { CLASSIFICACAO_N1_VERSAO } from "@/lib/classificacao-n1-types";
@@ -292,6 +294,34 @@ export async function passoRoteamentoDisciplina(
   meta: MetaPipelineProva,
   area: "humanas" | "linguagens"
 ): Promise<{ meta: MetaPipelineProva; etapa: EtapaPipeline; rota: RotaIa | null }> {
+  const texto = textoCompleto(q);
+
+  const rotaHeuristica =
+    area === "linguagens"
+      ? roteamentoLinguagensPorHeuristica(texto, q.idiomaVariante)
+      : roteamentoHumanasPorHeuristica(texto);
+
+  if (rotaHeuristica) {
+    const metaOut: MetaPipelineProva = {
+      ...meta,
+      rota: {
+        disciplinaId: rotaHeuristica.disciplinaId,
+        criterio: rotaHeuristica.criterio,
+        confianca: rotaHeuristica.confianca,
+        justificativa: rotaHeuristica.justificativa,
+        area,
+      },
+    };
+    return {
+      meta: metaOut,
+      rota: rotaHeuristica,
+      etapa: {
+        passo: `roteamento-${area}`,
+        detalhe: `Q${q.numero} → ${rotaHeuristica.disciplinaId} (heurística, conf=${rotaHeuristica.confianca.toFixed(2)})`,
+      },
+    };
+  }
+
   const enumDisciplinas =
     area === "humanas"
       ? [...DISCIPLINAS_HUMANAS, "indefinido"]

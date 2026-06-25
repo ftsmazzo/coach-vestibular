@@ -1,5 +1,7 @@
 /** Triagem Biologia / Química / Física — v2: vence o maior score (≥1). */
 
+import { desempateTriagemNatureza } from "@/lib/enem-classificar/triagem-natureza-desempate";
+
 export type MateriaNatureza = "Biologia" | "Química" | "Física";
 
 export type TriagemNatureza = {
@@ -105,6 +107,11 @@ export function triarMateriaNatureza(enunciado: string): TriagemNatureza {
   const texto = norm(enunciado);
   if (texto.length < 15) {
     return { materia: null, confianca: 0, motivo: "texto curto" };
+  }
+
+  const desempate = desempateTriagemNatureza(texto);
+  if (desempate?.materia) {
+    return desempate;
   }
 
   const scores = pontuar(texto);
