@@ -16,6 +16,7 @@ import {
   resolverOpcoesFaseN1,
 } from "@/lib/classificacao-n1-types";
 import { validarExatasPosIA, validarTriagemNaturezaPosIA } from "@/lib/enem-classificar/validacao-pos-ia-n1";
+import { montarBlocoLinhaClassificacao } from "@/lib/enem-classificar/linha-classificacao";
 
 describe("regressão N1 produção", () => {
   it("Q29 tira inglês expressão idiomática → Inglês", () => {
@@ -169,5 +170,40 @@ describe("pós-validação Natureza corrige IA errada", () => {
       }
     );
     assert.equal(rota.disciplinaId, "indefinido");
+  });
+});
+
+describe("linha de classificação recursiva", () => {
+  it("N2 inclui N1 e instrução de fase", () => {
+    const n1 = {
+      versao: "n1-v1" as const,
+      area: "humanas" as const,
+      catalogoId: "historia",
+      confianca: 0.91,
+      criterio: "guardrail",
+      justificativa: "teste",
+      classificadoEm: "2026-01-01T00:00:00.000Z",
+    };
+    const bloco = montarBlocoLinhaClassificacao({ n1 }, "N2");
+    assert.match(bloco, /N1: humanas → historia/);
+    assert.match(bloco, /escolha o escopo N2/);
+    assert.doesNotMatch(bloco, /N2: hist\./);
+  });
+
+  it("N3 inclui N1 e N2 com âncora", () => {
+    const n1 = {
+      versao: "n1-v1" as const,
+      area: "humanas" as const,
+      catalogoId: "historia",
+      confianca: 0.91,
+      criterio: "guardrail",
+      justificativa: "teste",
+      classificadoEm: "2026-01-01T00:00:00.000Z",
+    };
+    const escopo = "hist.brasil_republica.primeira_republica.modernismo_cultura";
+    const bloco = montarBlocoLinhaClassificacao({ n1, escopoN2Id: escopo }, "N3");
+    assert.match(bloco, /N1: humanas → historia/);
+    assert.match(bloco, new RegExp(`N2: ${escopo.replace(/\./g, "\\.")}`));
+    assert.match(bloco, /conhecimento exigido \(N3\)/);
   });
 });

@@ -55,6 +55,11 @@ import {
   validarTriagemNaturezaPosIA,
 } from "@/lib/enem-classificar/validacao-pos-ia-n1";
 import { systemPromptComFaseN1 } from "@/lib/enem-classificar/instrucao-fase-n1";
+import { REGRAS_FORMATO_N3, SYSTEM_FASE_N3 } from "@/lib/enem-classificar/instrucao-fase-n3";
+import {
+  montarBlocoLinhaClassificacao,
+  type LinhaClassificacaoInput,
+} from "@/lib/enem-classificar/linha-classificacao";
 import type { ClassificacaoN1 } from "@/lib/classificacao-n1-types";
 import { CLASSIFICACAO_N1_VERSAO } from "@/lib/classificacao-n1-types";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
@@ -88,6 +93,8 @@ export type MetaPipelineProva = {
     area: "humanas" | "linguagens";
   };
   catalogoDestino?: string;
+  /** N1 (e opcionalmente N2) já gravados — exibidos como linha recursiva no prompt. */
+  linhaClassificacao?: LinhaClassificacaoInput;
 };
 
 export type EtapaPipeline = {
@@ -114,11 +121,19 @@ function montarMetadadosAcumulados(meta: MetaPipelineProva): string {
   return `${linhas.join("\n")}\n\n`;
 }
 
+function prefixoClassificacaoAcumulada(meta: MetaPipelineProva): string {
+  if (meta.linhaClassificacao?.n1 || meta.linhaClassificacao?.escopoN2Id) {
+    const fase: "N2" | "N3" = meta.linhaClassificacao.escopoN2Id?.trim() ? "N3" : "N2";
+    return montarBlocoLinhaClassificacao(meta.linhaClassificacao, fase);
+  }
+  return montarMetadadosAcumulados(meta);
+}
+
 function blocoQuestaoCompleto(
   q: PayloadQuestaoCompleto,
   meta?: MetaPipelineProva
 ): string {
-  const metaAcum = meta ? montarMetadadosAcumulados(meta) : "";
+  const metaAcum = meta ? prefixoClassificacaoAcumulada(meta) : "";
   const hints = [
     `numero=${q.numero}`,
     q.idiomaVariante ? `idiomaVariante=${q.idiomaVariante}` : null,
@@ -443,7 +458,8 @@ export async function passoClassificacaoN2Somente(
   const promptMd = promptClassificacaoDisciplina(catalogoId);
   const systemPrompt =
     (promptMd?.trim() || montarSystemClassificacaoV11(catalog)) +
-    "\n\nIMPORTANTE: Esta é a FASE N2 apenas. NÃO preencha conhecimento exigido (N3) — será uma fase separada.";
+    "\n\nIMPORTANTE: Esta é a FASE N2 apenas. A LINHA DE CLASSIFICAÇÃO no bloco da questão traz o N1 já gravado — respeite-o. " +
+    "NÃO preencha conhecimento exigido (N3) — será uma fase separada.";
 
   const catalogoJson = JSON.stringify(montarCatalogoReduzido(escopos), null, 0);
   const bloco = blocoQuestaoCompleto(q, { ...meta, catalogoDestino: catalogoId });
@@ -591,7 +607,14 @@ export async function passoClassificacaoN3(
 ): Promise<{ conhecimentoExigido: string | null; etapa: EtapaPipeline }> {
   const entry = indexGlobalEscopos().get(escopoId);
   const escopoLabel = entry?.escopoLabel ?? escopoId;
-  const bloco = blocoQuestaoCompleto(q, meta);
+  const escopoDescricao = entry?.descricao?.trim() ?? "";
+  const bloco = blocoQuestaoCompleto(q, {
+    ...meta,
+    linhaClassificacao: {
+      ...meta.linhaClassificacao,
+      escopoN2Id: escopoId,
+    },
+  });
 
   const SCHEMA_N3 = {
     name: "classificacao_n3_conhecimento",
@@ -600,7 +623,7 @@ export async function passoClassificacaoN3(
       type: "object",
       properties: {
         fonteId: { type: "string" },
-        conhecimentoExigidoN3: { type: "array", items: { type: "string" } },
+        conhecimentoExigidoN3: { type: "array", items: { type: "string" }, maxItems: 2 },
         justificativa: { type: "string" },
       },
       required: ["fonteId", "conhecimentoExigidoN3", "justificativa"],
@@ -613,13 +636,14 @@ export async function passoClassificacaoN3(
     conhecimentoExigidoN3: string[];
     justificativa: string;
   }>({
-    systemPrompt:
-      "Você descreve o CONHECIMENTO EXIGIDO (N3) para resolver uma questão de vestibular. " +
-      "Texto livre, objetivo, em português. Use o escopo N2 já definido como guia — não reclassifique o escopo.",
+    systemPrompt: SYSTEM_FASE_N3,
     instrucao:
-      `FASE N3 — somente conhecimento exigido.\n` +
-      `Escopo N2: ${escopoId} (${escopoLabel})\n` +
-      `Catálogo destino (N1): ${meta.catalogoDestino ?? "?"}\n\n` +
+      `FASE N3 — somente conhecimento exigido (texto livre).\n\n` +
+      `Escopo N2 fixo: ${escopoId} (${escopoLabel})\n` +
+      (escopoDescricao ? `Descrição do escopo: ${escopoDescricao}\n` : "") +
+      `Catálogo N1: ${meta.catalogoDestino ?? meta.linhaClassificacao?.n1?.catalogoId ?? "?"}\n\n` +
+      `Formato do N3:\n- ${REGRAS_FORMATO_N3}\n\n` +
+      `Retorne 1 item em conhecimentoExigidoN3 (ou 2 no máximo se precisar de duas frases curtas).\n` +
       `fonteId="${q.fonteId}".\n\n${bloco}`,
     schema: SCHEMA_N3,
     content: [],
@@ -628,8 +652,8 @@ export async function passoClassificacaoN3(
   const n3 = (data.conhecimentoExigidoN3 ?? [])
     .map((s) => s.trim())
     .filter(Boolean)
-    .slice(0, 3)
-    .join(" | ");
+    .slice(0, 2)
+    .join(" ");
 
   return {
     conhecimentoExigido: n3 || null,
@@ -644,6 +668,7 @@ export function metaFromClassificacaoN1(n1: ClassificacaoN1): MetaPipelineProva 
   return {
     area: n1.area,
     catalogoDestino: n1.catalogoId,
+    linhaClassificacao: { n1 },
     triagemNatureza: n1.triagemNatureza
       ? {
           materia:
