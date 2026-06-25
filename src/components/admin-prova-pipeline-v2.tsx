@@ -20,12 +20,8 @@ interface Props {
 
 interface PreviewRow {
   numero: number;
-  idiomaVariante?: string;
-  areaBloco?: string;
   enunciado?: string;
   alternativas?: string;
-  materia?: string;
-  assunto?: string;
   gabarito?: string;
 }
 
@@ -44,7 +40,6 @@ export function AdminProvaPipelineV2({
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [carregando, setCarregando] = useState(false);
   const [importandoCsv, setImportandoCsv] = useState(false);
-  const [somenteIngles, setSomenteIngles] = useState(false);
   const [preview, setPreview] = useState<{
     rows: PreviewRow[];
     avisos: string[];
@@ -65,13 +60,12 @@ export function AdminProvaPipelineV2({
       fd.append("substituir", "true");
       const temGabarito = gabaritoLote.trim().length > 0;
       fd.append("incluirGabarito", String(temGabarito || incluirGabarito));
-      fd.append("excluirBlocoEspanhol", String(somenteIngles));
       if (temGabarito) {
         fd.append("gabarito", gabaritoLote.trim());
       }
       return fd;
     },
-    [pdfFile, incluirGabarito, somenteIngles, gabaritoLote]
+    [pdfFile, incluirGabarito, gabaritoLote]
   );
 
   const podeExtrair = Boolean(pdfFile) || temCadernoSalvo;
@@ -191,10 +185,10 @@ export function AdminProvaPipelineV2({
     <Card className="border-indigo-200 bg-indigo-50/50">
       <h2 className="mb-2 font-semibold text-indigo-900">Passo 2 — Extrair prova (PDF → banco)</h2>
       <p className="mb-3 text-sm text-indigo-800">
-        Envie o PDF da prova ou simulado. A IA extrai <strong>enunciado literal</strong>,{" "}
-        <strong>alternativas</strong> e área/bloco — sem classificar matéria ou assunto. Depois de
-        gravar, valide na seção abaixo antes de qualquer roteamento. O PDF e o texto-fonte ficam
-        salvos no servidor — não precisa reenviar após atualizar a página.
+        Envie o PDF da prova ou simulado. A IA extrai <strong>enunciado literal</strong> e{" "}
+        <strong>alternativas</strong> — uma linha por número, sem classificar matéria, área ou idioma.
+        Depois de gravar, valide na seção abaixo antes do N1. O PDF e o texto-fonte ficam salvos no
+        servidor — não precisa reenviar após atualizar a página.
       </p>
 
       {temCadernoSalvo && (
@@ -205,20 +199,6 @@ export function AdminProvaPipelineV2({
             : " · ainda sem questões no banco"}
         </p>
       )}
-
-      <label className="mb-3 flex cursor-pointer items-start gap-2 text-sm text-indigo-900">
-        <input
-          type="checkbox"
-          className="mt-0.5"
-          checked={somenteIngles}
-          onChange={(e) => setSomenteIngles(e.target.checked)}
-        />
-        <span>
-          <strong>Somente inglês (legado)</strong> — ignora o bloco em espanhol. O padrão é gravar
-          <strong> inglês e espanhol</strong> na faixa opcional (questões 1–5 etc.) quando o PDF
-          tiver duplicata.
-        </span>
-      </label>
 
       <div className="flex flex-wrap gap-2">
         <Button
@@ -263,17 +243,15 @@ export function AdminProvaPipelineV2({
               <thead>
                 <tr className="text-slate-500">
                   <th className="p-1 text-left">#</th>
-                  <th className="p-1 text-left">Área</th>
                   <th className="p-1 text-left">Enunciado (início)</th>
                   <th className="p-1 text-left">Alt.</th>
                 </tr>
               </thead>
               <tbody>
                 {preview.rows.slice(0, 30).map((r, i) => (
-                  <tr key={`${r.numero}-${r.idiomaVariante ?? "c"}-${i}`} className="border-t">
+                  <tr key={`${r.numero}-${i}`} className="border-t">
                     <td className="p-1">{r.numero}</td>
-                    <td className="p-1 max-w-[90px] truncate">{r.areaBloco ?? "—"}</td>
-                    <td className="p-1 max-w-[320px] truncate">{r.enunciado?.slice(0, 100) ?? "—"}</td>
+                    <td className="p-1 max-w-[360px] truncate">{r.enunciado?.slice(0, 100) ?? "—"}</td>
                     <td className="p-1 max-w-[80px] truncate">
                       {r.alternativas ? `${r.alternativas.length} chars` : "—"}
                     </td>

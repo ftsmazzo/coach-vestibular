@@ -136,8 +136,6 @@ function blocoQuestaoCompleto(
   const metaAcum = meta ? prefixoClassificacaoAcumulada(meta) : "";
   const hints = [
     `numero=${q.numero}`,
-    q.idiomaVariante ? `idiomaVariante=${q.idiomaVariante}` : null,
-    q.areaBloco ? `areaBloco=${q.areaBloco}` : null,
     q.banca ? `banca=${q.banca}` : null,
   ]
     .filter(Boolean)
@@ -161,7 +159,7 @@ function blocoQuestaoCompleto(
       alternativas: q.alternativas.trim(),
       gabarito: q.gabarito,
       numero: q.numero,
-      idioma: q.idiomaVariante === "INGLES" ? "ingles" : q.idiomaVariante === "ESPANHOL" ? "espanhol" : null,
+      idioma: null,
     })
   );
 }
@@ -236,11 +234,7 @@ function rotaDeterministicaLinguagens(
   q: PayloadQuestaoCompleto,
   rota: RotaIa
 ): RotaIa {
-  return aplicarRoteamentoDeterministicoLinguagens(
-    textoCompleto(q),
-    q.idiomaVariante,
-    rota
-  );
+  return aplicarRoteamentoDeterministicoLinguagens(textoCompleto(q), null, rota);
 }
 
 function rotaDeterministicaHumanas(q: PayloadQuestaoCompleto, rota: RotaIa): RotaIa {
@@ -353,7 +347,7 @@ export async function passoRoteamentoDisciplina(
 
   const rotaHeuristica =
     area === "linguagens"
-      ? roteamentoLinguagensPorHeuristica(texto, q.idiomaVariante)
+      ? roteamentoLinguagensPorHeuristica(texto)
       : roteamentoHumanasPorHeuristica(texto);
 
   if (rotaHeuristica) {

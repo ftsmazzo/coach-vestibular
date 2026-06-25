@@ -138,18 +138,7 @@ export async function POST(
       {
         gabaritoTexto,
         incluirGabarito,
-        incluirBlocoEspanhol,
-        excluirBlocoEspanhol,
         gerarCsv: !aplicar,
-        faixaIdiomaCadastro:
-          prova.idiomaQuestaoInicio != null &&
-          prova.idiomaQuestaoFim != null &&
-          prova.idiomaQuestaoFim >= prova.idiomaQuestaoInicio
-            ? {
-                inicio: prova.idiomaQuestaoInicio,
-                fim: prova.idiomaQuestaoFim,
-              }
-            : null,
       }
     );
 
@@ -198,36 +187,11 @@ export async function POST(
           cadernoStoragePath: caderno.storagePath,
           cadernoFileName: caderno.fileName,
           cadernoMimeType: caderno.mimeType,
+          politicaIdiomas: "NENHUMA",
+          idiomaQuestaoInicio: null,
+          idiomaQuestaoFim: null,
         },
       });
-
-      if (resultado.politicaIdiomas === "DUPLICATA_EN_ES") {
-        await prisma.prova.update({
-          where: { id: provaId },
-          data: {
-            politicaIdiomas: "DUPLICATA_EN_ES",
-            ...(resultado.faixaIdiomaConfirmada && resultado.faixaIdioma
-              ? {
-                  idiomaQuestaoInicio: resultado.faixaIdioma.inicio,
-                  idiomaQuestaoFim: resultado.faixaIdioma.fim,
-                  ordemIdiomasFaixa: resultado.ordemIdiomasFaixa ?? "INGLES_PRIMEIRO",
-                }
-              : {
-                  idiomaQuestaoInicio: null,
-                  idiomaQuestaoFim: null,
-                }),
-          },
-        });
-      } else if (resultado.politicaIdiomas === "NENHUMA") {
-        await prisma.prova.update({
-          where: { id: provaId },
-          data: {
-            politicaIdiomas: "NENHUMA",
-            idiomaQuestaoInicio: null,
-            idiomaQuestaoFim: null,
-          },
-        });
-      }
 
       await refreshProvaGabaritoFlag(provaId);
 

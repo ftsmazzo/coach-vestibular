@@ -112,7 +112,7 @@ export function AdminValidacaoExtracao({
           idiomaVariante: linha.idiomaVariante,
           enunciado: formEnunciado.trim(),
           alternativas: formAlternativas.trim() || null,
-          areaBloco: linha.areaBloco,
+          areaBloco: null,
         }),
       });
       const data = await res.json();
@@ -231,9 +231,8 @@ export function AdminValidacaoExtracao({
             linha. Depois clique <strong>Confirmar extração completa</strong>.
             {relatorio.linhasNoBanco > relatorio.linhasEsperadas && (
               <span className="block text-xs text-teal-700 mt-1">
-                {relatorio.linhasNoBanco} linhas no banco ({relatorio.linhasEsperadas} esperadas
-                {relatorio.linhasEsperadas < relatorio.totalEsperado + 5 ? " com EN+ES na faixa" : ""}
-                ).
+                {relatorio.linhasNoBanco} linhas no banco ({relatorio.linhasEsperadas} esperadas no
+                cadastro). Reextraia se houver linhas EN/ES de uma versão anterior.
               </span>
             )}
           </p>
@@ -294,8 +293,6 @@ export function AdminValidacaoExtracao({
           <thead className="sticky top-0 bg-slate-50 text-left text-xs text-slate-500">
             <tr>
               <th className="p-2">#</th>
-              <th className="p-2">Idioma</th>
-              <th className="p-2">Área</th>
               <th className="p-2">Chars</th>
               <th className="p-2">Status</th>
               <th className="p-2">Prévia</th>
@@ -307,8 +304,6 @@ export function AdminValidacaoExtracao({
               <Fragment key={linha.chave}>
                 <tr className="border-t align-top">
                   <td className="p-2 font-medium">{linha.numero}</td>
-                  <td className="p-2">{labelVariante(linha.idiomaVariante) || "—"}</td>
-                  <td className="p-2 max-w-[100px] truncate text-xs">{linha.areaBloco ?? "—"}</td>
                   <td className="p-2">{linha.tamanhoEnunciado}</td>
                   <td className="p-2">
                     <span
@@ -351,7 +346,7 @@ export function AdminValidacaoExtracao({
                           title="Copia rótulo para colar no PDF ou reportar erro"
                           onClick={() => {
                             void copiarTexto(
-                              `${rotuloQuestao(linha)} — área: ${linha.areaBloco ?? "?"} — status: ${labelStatus(linha.status)}\n\n[COLE AQUI o enunciado literal do PDF]\n\nAlternativas:\nA) \nB) \nC) \nD) \nE) `,
+                              `${rotuloQuestao(linha)} — status: ${labelStatus(linha.status)}\n\n[COLE AQUI o enunciado literal do PDF]\n\nAlternativas:\nA) \nB) \nC) \nD) \nE) `,
                               () => {
                                 setCopiado(linha.chave);
                                 setTimeout(() => setCopiado(null), 2000);
@@ -382,7 +377,7 @@ export function AdminValidacaoExtracao({
                 </tr>
                 {editando === linha.chave && (
                   <tr className="border-t bg-slate-50">
-                    <td colSpan={7} className="p-3">
+                    <td colSpan={5} className="p-3">
                       <p className="mb-2 text-xs font-medium text-slate-700">
                         Questão {linha.numero}
                         {labelVariante(linha.idiomaVariante)

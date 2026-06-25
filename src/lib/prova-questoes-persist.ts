@@ -176,7 +176,7 @@ export async function persistirQuestoesClassificadas(
   return n;
 }
 
-/** Grava só extração (enunciado/alternativas/área) — limpa classificação anterior. */
+/** Grava só extração (enunciado/alternativas) — limpa classificação e área anteriores. */
 export async function persistirQuestoesExtracaoProva(
   provaId: string,
   rows: ProvaQuestaoRow[],
@@ -184,6 +184,7 @@ export async function persistirQuestoesExtracaoProva(
 ): Promise<number> {
   const limpas = rows.map((r) => ({
     ...r,
+    areaBloco: undefined,
     materia: "A classificar",
     assunto: "A classificar",
     conhecimentoExigido: undefined,

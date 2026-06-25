@@ -1,44 +1,36 @@
-import { listaAreasBlocoParaPrompt } from "@/lib/areas-bloco";
-
 /**
- * Prompts do pipeline V2 — extração literal do PDF + classificação N2 via catálogo Coach.
+ * Prompts do pipeline V2 — extração literal do PDF (somente texto).
+ * Classificação (N1+) é feita depois da validação da extração.
  */
 
 export const PROMPT_SISTEMA_ESTRUTURA = `Você é um analisador estrutural de provas objetivas brasileiras (qualquer banca ou simulado).
 
-Objetivo: mapear a estrutura REAL do documento antes de qualquer classificação pedagógica.
+Objetivo: mapear numeração e seções do documento — NÃO classificar conteúdo pedagógico.
 
 Prioridades:
 1. Precisão estrutural e fidelidade ao PDF.
-2. Não inventar questões, números, blocos ou tipo de prova.
-3. Adaptar-se ao layout (ENEM por área, vestibular por seções, simulado linear, listas).
+2. Não inventar questões, números ou blocos.
+3. Adaptar-se ao layout (ENEM por área, vestibular por seções, simulado linear).
 
 Regras:
 - Responda somente no schema solicitado.
-- Questões objetivas válidas: uma entrada por número distinto.
+- Questões objetivas válidas: uma entrada por número distinto que o aluno responde (ex.: 1–60).
 - Preserve o número impresso na prova.
-- blocos: seções com título visível e intervalo de questões (array vazio se não houver).
-- formato_layout e idiomas_estrangeiros: inferir do documento.
-- Duplicata EN/ES: em ENEM as questões 1–5 têm versão Inglês e Espanhol; em UFU e similares o bloco de Português vem ANTES (ex.: Q1–15 PT, Q16–20 IN/ES com mesma numeração). Registre blocos separados com intervalos corretos — não estenda Inglês/Espanhol sobre o bloco de Português.
-- NÃO classifique matéria, assunto, dificuldade ou gabarito nesta etapa.`.trim();
+- blocos: seções com título visível e intervalo (array vazio se não houver).
+- idiomas_estrangeiros: apenas observação estrutural (não gera linhas duplicadas no sistema).
+- NÃO classifique matéria, assunto, área ENEM, dificuldade ou gabarito.`.trim();
 
 export const PROMPT_SISTEMA_EXTRACAO_LITERAL = `Você é um extrator literal de questões de provas de vestibular brasileiro (qualquer banca).
 
-Tarefa por questão:
-- area_bloco: EXATAMENTE um destes 4 rótulos internos (ignore títulos longos do PDF):
-${listaAreasBlocoParaPrompt()}
+Tarefa por questão — SOMENTE:
 - enunciado: cópia literal ("ipsis litteris") de TODO o texto de apoio, poemas, charges (descreva entre colchetes se for imagem), referências e o comando/pergunta. PROIBIDO resumir ou parafrasear.
-- alternativas: texto literal das alternativas A, B, C, D, E (e E/F se houver). Se não houver alternativas visíveis, string vazia.
-- dificuldade: OPCIONAL — use facil, media ou dificil só se o PDF indicar explicitamente; na dúvida, string vazia "".
+- alternativas: texto literal das alternativas A, B, C, D, E (e F se houver). Se não houver alternativas visíveis, string vazia.
 
 Regras:
-- NÃO classifique matéria, assunto nem taxonomia — só área/bloco + texto literal + dificuldade.
-- area_bloco tem prioridade sobre palavras soltas do texto.
-- Línguas e códigos ≠ Geografia/Biologia/Física/Química salvo conteúdo explícito da disciplina.
-- Ciências Humanas ≠ Biologia/Física/Química.
-- Para bloco em INGLÊS: extraia só o texto em inglês. Para ESPANHOL: só o texto em espanhol.
-- Duplicata EN/ES: em muitos vestibulares vêm 5 questões de Espanhol seguidas e depois 5 de Inglês (mesmos números 1–5). Em UFU e similares, Inglês/Espanhol ficam no FINAL do caderno de Linguagens (ex.: Q16–20 após Q1–15 de Português). Extraia o bloco correto conforme a instrução da passagem — não copie texto do outro idioma.
-- Texto compartilhado ("Leia o texto… responda às questões X a Y"): em CADA questão do intervalo inclua o texto de apoio compartilhado E o comando/pergunta específico daquele número (não repita só o texto sem a pergunta da questão).
+- EXATAMENTE uma questão por número — não crie entradas separadas para inglês/espanhol do mesmo número.
+- Se o PDF repetir o mesmo número em blocos EN e ES, extraia o texto da primeira ocorrência completa desse número no fluxo principal do caderno.
+- NÃO classifique matéria, assunto, área, idioma, dificuldade nem gabarito.
+- Texto compartilhado ("Leia o texto… responda às questões X a Y"): em CADA questão do intervalo inclua o texto de apoio compartilhado E o comando específico daquele número.
 - Responda somente no formato solicitado.`.trim();
 
 /** @deprecated use PROMPT_SISTEMA_EXTRACAO_LITERAL */

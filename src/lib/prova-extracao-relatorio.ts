@@ -10,7 +10,6 @@ import {
   chaveQuestaoVariante,
   compararQuestoesPorNumeroEOrdem,
   temDuplicataEnEs,
-  variantesExigidasPorNumero,
   type MetaPoliticaIdiomas,
 } from "@/lib/prova-idioma";
 import { resolverNumerosGradeProva } from "@/lib/prova-numeracao";
@@ -79,8 +78,6 @@ export function montarRelatorioExtracao(
   totalEsperado: number,
   meta: MetaPoliticaIdiomas & { dia?: number | null; banca?: string; ordemIdiomasFaixa?: string | null }
 ): RelatorioExtracaoProva {
-  const metaEfetiva = inferirMetaPoliticaIdiomas(questoes, meta);
-
   const porChave = new Map<string, QuestaoDb>();
   for (const q of questoes) {
     porChave.set(
@@ -93,15 +90,15 @@ export function montarRelatorioExtracao(
     totalQuestoes: totalEsperado,
     dia: meta.dia,
     banca: meta.banca,
-    numerosCadastrados: questoes.map((q) => q.numero),
+    numerosCadastrados: questoes
+      .filter((q) => (q.idiomaVariante ?? "COMUM") === "COMUM")
+      .map((q) => q.numero),
   });
 
-  const slots: Array<{ numero: number; idiomaVariante: IdiomaVarianteQuestao }> = [];
-  for (const n of numeros) {
-    for (const v of variantesExigidasPorNumero(n, metaEfetiva)) {
-      slots.push({ numero: n, idiomaVariante: v });
-    }
-  }
+  /** Extração pura: 1 slot COMUM por número lógico (trilhas EN/ES vêm após N1). */
+  const slots: Array<{ numero: number; idiomaVariante: IdiomaVarianteQuestao }> = numeros.map(
+    (n) => ({ numero: n, idiomaVariante: "COMUM" as const })
+  );
 
   const linhas: LinhaExtracaoRelatorio[] = slots.map(({ numero, idiomaVariante }) => {
     const chave = chaveQuestaoVariante(numero, idiomaVariante);
@@ -130,8 +127,7 @@ export function montarRelatorioExtracao(
   linhas.sort((a, b) =>
     compararQuestoesPorNumeroEOrdem(
       { numero: a.numero, idiomaVariante: a.idiomaVariante },
-      { numero: b.numero, idiomaVariante: b.idiomaVariante },
-      metaEfetiva.ordemIdiomasFaixa ?? "INGLES_PRIMEIRO"
+      { numero: b.numero, idiomaVariante: b.idiomaVariante }
     )
   );
 

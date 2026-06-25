@@ -207,29 +207,11 @@ function rotaDeHeuristica<T extends string>(
   };
 }
 
-/** Tenta roteamento só por heurística (pula IA quando confiança alta). */
+/** Tenta roteamento só por heurística de conteúdo (pula IA quando confiança alta). */
 export function roteamentoLinguagensPorHeuristica(
   texto: string,
-  idiomaVariante: string | null | undefined
+  _idiomaVariante?: string | null
 ): RotaMinima | null {
-  if (idiomaVariante === "INGLES" || idiomaVariante === "ingles") {
-    return {
-      disciplinaId: "ingles",
-      criterio: "metadata",
-      confianca: 0.97,
-      justificativa: "Variante INGLES no metadado da questão.",
-      sinalizadorRevisao: false,
-    };
-  }
-  if (idiomaVariante === "ESPANHOL" || idiomaVariante === "espanhol") {
-    return {
-      disciplinaId: "espanhol",
-      criterio: "metadata",
-      confianca: 0.97,
-      justificativa: "Variante ESPANHOL no metadado da questão.",
-      sinalizadorRevisao: false,
-    };
-  }
   const heur = heuristicaLinguagensDisciplina(texto);
   if (heur && heur.confianca >= 0.78) {
     return rotaDeHeuristica(heur);
@@ -245,33 +227,12 @@ export function roteamentoHumanasPorHeuristica(texto: string): RotaMinima | null
   return null;
 }
 
-/** Metadado de variante + heurística de conteúdo. Nunca força português em rota indefinida. */
+/** Heurística de conteúdo sobre rota da IA. Variante EN/ES não força rota (trilhas vêm após N1). */
 export function aplicarRoteamentoDeterministicoLinguagens(
   texto: string,
-  idiomaVariante: string | null | undefined,
+  _idiomaVariante: string | null | undefined,
   rota: RotaMinima
 ): RotaMinima {
-  if (idiomaVariante === "INGLES" || idiomaVariante === "ingles") {
-    if (rota.disciplinaId === "ingles") return rota;
-    return {
-      disciplinaId: "ingles",
-      criterio: "metadata",
-      confianca: Math.max(rota.confianca, 0.95),
-      justificativa: `Variante INGLES; IA sugeriu ${rota.disciplinaId}.`,
-      sinalizadorRevisao: true,
-    };
-  }
-  if (idiomaVariante === "ESPANHOL" || idiomaVariante === "espanhol") {
-    if (rota.disciplinaId === "espanhol") return rota;
-    return {
-      disciplinaId: "espanhol",
-      criterio: "metadata",
-      confianca: Math.max(rota.confianca, 0.95),
-      justificativa: `Variante ESPANHOL; IA sugeriu ${rota.disciplinaId}.`,
-      sinalizadorRevisao: true,
-    };
-  }
-
   const heur = heuristicaLinguagensDisciplina(texto);
   if (heur) {
     if (rota.disciplinaId === heur.disciplinaId) return rota;

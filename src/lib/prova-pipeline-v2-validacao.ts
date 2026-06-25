@@ -109,10 +109,6 @@ export function validarExtracaoLiteralLote(
   let semEnunciado = 0;
   let enunciadoCurto = 0;
   for (const q of noLote) {
-    const d = (q.dificuldade ?? "").trim().toLowerCase();
-    if (d && !["facil", "media", "dificil", "fácil", "média", "difícil"].includes(d)) {
-      throw new Error(`Dificuldade inválida na questão ${q.numero}`);
-    }
     const en = textoEnunciadoQuestao(q);
     if (!en) semEnunciado++;
     else if (en.length < ENUNCIADO_LITERAL_MIN_CHARS) enunciadoCurto++;
