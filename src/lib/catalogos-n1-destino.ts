@@ -89,6 +89,7 @@ export function montarClassificacaoN1Manual(catalogoId: string): ClassificacaoN1
     confianca: 1,
     criterio: "manual",
     justificativa: "Definido manualmente pelo revisor.",
+    origem: "manual",
     classificadoEm: new Date().toISOString(),
   };
 

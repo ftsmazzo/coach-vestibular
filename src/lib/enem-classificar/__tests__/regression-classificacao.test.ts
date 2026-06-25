@@ -9,6 +9,12 @@ import {
 import { fisicaPrevaleceSobreMatematica } from "@/lib/enem-classificar/fisica-vs-matematica";
 import { triarMateriaNatureza } from "@/lib/enem-classificar/triagem-natureza";
 import { triarNaturezaTransversal } from "@/lib/enem-classificar/triagem-natureza-transversal";
+import {
+  deveProcessarQuestaoN1,
+  n1EhManual,
+  parseClassificacaoN1,
+  resolverOpcoesFaseN1,
+} from "@/lib/classificacao-n1-types";
 import { validarExatasPosIA, validarTriagemNaturezaPosIA } from "@/lib/enem-classificar/validacao-pos-ia-n1";
 
 describe("regressão N1 produção", () => {
@@ -91,6 +97,51 @@ describe("regressão N1 produção", () => {
       "Na figura plana formada por segmentos de reta, determine a soma das medidas dos ângulos indicados nos vértices do polígono.";
     assert.equal(fisicaPrevaleceSobreMatematica(texto).prevalece, false);
     assert.equal(validarExatasPosIA(texto, "matematica").catalogoId, "matematica");
+  });
+});
+
+describe("modos N1 reprocessamento", () => {
+  const n1Auto = parseClassificacaoN1(
+    JSON.stringify({
+      versao: "n1-v1",
+      area: "natureza",
+      catalogoId: "biologia",
+      confianca: 0.9,
+      criterio: "heuristica",
+      justificativa: "teste",
+      origem: "auto",
+      classificadoEm: "2026-01-01T00:00:00.000Z",
+    })
+  )!;
+  const n1Manual = parseClassificacaoN1(
+    JSON.stringify({
+      versao: "n1-v1",
+      area: "humanas",
+      catalogoId: "sociologia",
+      confianca: 1,
+      criterio: "manual",
+      justificativa: "manual",
+      origem: "manual",
+      classificadoEm: "2026-01-01T00:00:00.000Z",
+    })
+  )!;
+
+  it("apenasFaltantes pula quem já tem N1", () => {
+    const opts = resolverOpcoesFaseN1({ apenasFaltantes: true });
+    assert.equal(deveProcessarQuestaoN1(n1Auto, opts).processar, false);
+    assert.equal(deveProcessarQuestaoN1(null, opts).processar, true);
+  });
+
+  it("reprocessarTodas preserva manuais por padrão", () => {
+    const opts = resolverOpcoesFaseN1({ reprocessarTodas: true, preservarManuais: true });
+    assert.equal(deveProcessarQuestaoN1(n1Auto, opts).processar, true);
+    assert.equal(deveProcessarQuestaoN1(n1Manual, opts).processar, false);
+    assert.equal(n1EhManual(n1Manual), true);
+  });
+
+  it("forcarTudo reprocessa manuais", () => {
+    const opts = resolverOpcoesFaseN1({ forcarTudo: true });
+    assert.equal(deveProcessarQuestaoN1(n1Manual, opts).processar, true);
   });
 });
 

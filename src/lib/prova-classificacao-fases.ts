@@ -10,10 +10,16 @@ import { chaveQuestaoVariante } from "@/lib/prova-idioma";
 import { areaBlocoIdDeLabel, inferirAreaBlocoPorMateria } from "@/lib/areas-bloco";
 import { MARCADOR_EXTRACAO_ACEITA } from "@/lib/prova-texto-prova";
 import {
+  camposLimpezaN2N3,
+  catalogoN1Mudou,
+  deveProcessarQuestaoN1,
+  montarN1AutomaticoComAuditoria,
   n1Completo,
   parseClassificacaoN1,
+  resolverOpcoesFaseN1,
   versaoLabelN1,
   type ClassificacaoN1,
+  type OpcoesFaseN1Prova,
 } from "@/lib/classificacao-n1-types";
 import {
   executarN1Questao,
@@ -34,6 +40,7 @@ import { LABEL_DISCIPLINA_SPLIT, ehCatalogDisciplinaSplit } from "@/lib/conhecim
 import { CORPUS_MATERIA_CONFIG } from "@/lib/enem-corpus-materia";
 import type { MateriaCorpusId } from "@/lib/enem-corpus-materia";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
+import { resolverTextoCompartilhado } from "@/lib/prova-texto-compartilhado";
 
 export type ResultadoFaseProva = {
   total: number;
@@ -42,6 +49,10 @@ export type ResultadoFaseProva = {
   falhas: number;
   avisos: string[];
   etapas: string[];
+  puladas?: number;
+  manuaisPreservadas?: number;
+  n1Alterados?: number;
+  n1Inalterados?: number;
 };
 
 type QuestaoDb = {
@@ -155,24 +166,52 @@ function versaoN2(resultado: ResultadoClassificacao, n1: ClassificacaoN1): strin
 }
 
 /** FASE 1 — N1: roteamento / triagem → catálogo destino. Grava classificacaoN1Json. */
-export async function executarFaseN1Prova(provaId: string): Promise<ResultadoFaseProva> {
+export async function executarFaseN1Prova(
+  provaId: string,
+  opts?: OpcoesFaseN1Prova
+): Promise<ResultadoFaseProva> {
+  const opcoes = resolverOpcoesFaseN1(opts);
   const { prova, questoes, trechos } = await carregarContextoProva(provaId);
   const avisos: string[] = [];
-  const etapas: string[] = ["═══ FASE N1 — roteamento / catálogo destino ═══"];
+  const etapas: string[] = [
+    "═══ FASE N1 — roteamento / catálogo destino ═══",
+    `Modo: ${opcoes.forcarTudo ? "forcarTudo" : opcoes.reprocessarTodas ? "reprocessarTodas" : "apenasFaltantes"}` +
+      (opcoes.preservarManuais ? " · preservarManuais" : ""),
+  ];
   let ok = 0;
   let processadas = 0;
+  let puladas = 0;
+  let manuaisPreservadas = 0;
+  let n1Alterados = 0;
+  let n1Inalterados = 0;
+  const reprocessadoEm = new Date().toISOString();
 
   for (const q of questoes) {
+    const n1Anterior = parseClassificacaoN1(q.classificacaoN1Json);
+    const decisao = deveProcessarQuestaoN1(n1Anterior, opcoes);
+    if (!decisao.processar) {
+      puladas++;
+      if (decisao.motivo === "manual_preservado") {
+        manuaisPreservadas++;
+        etapas.push(`Q${q.numero} → pulada (N1 manual preservado)`);
+      } else if (decisao.motivo === "ja_tem_n1") {
+        etapas.push(`Q${q.numero} → pulada (já tem N1)`);
+      }
+      continue;
+    }
+
     const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
     const texto = textoCompletoPayload(payload);
     if (texto.length < textoMinimo(q)) {
       avisos.push(`Q${q.numero}: texto insuficiente para N1.`);
+      puladas++;
       continue;
     }
 
     const area = areaFromRow(q);
     if (!area) {
       avisos.push(`Q${q.numero}: área indefinida.`);
+      puladas++;
       continue;
     }
 
@@ -180,22 +219,43 @@ export async function executarFaseN1Prova(provaId: string): Promise<ResultadoFas
     for (const e of eq) etapas.push(e.detalhe);
     avisos.push(...aq);
 
-    if (!n1 || !n1Completo(n1)) continue;
+    if (!n1 || !n1Completo(n1)) {
+      puladas++;
+      continue;
+    }
+
+    const n1Gravar = montarN1AutomaticoComAuditoria(n1, n1Anterior, reprocessadoEm);
+    const mudou = catalogoN1Mudou(n1Anterior, n1Gravar);
+    const limparN2N3 = mudou ? camposLimpezaN2N3() : {};
 
     await prisma.provaQuestao.update({
       where: { id: q.id },
       data: {
-        classificacaoN1Json: JSON.stringify(n1),
-        materia: labelMateriaFromN1(n1),
-        assunto: `N1: ${n1.catalogoId}`,
-        classificacaoVersao: versaoLabelN1(n1),
+        classificacaoN1Json: JSON.stringify(n1Gravar),
+        materia: labelMateriaFromN1(n1Gravar),
+        ...(mudou ? { assunto: `N1: ${n1Gravar.catalogoId}` } : {}),
+        classificacaoVersao: versaoLabelN1(n1Gravar),
+        ...limparN2N3,
       },
     });
+
+    if (mudou) {
+      n1Alterados++;
+      etapas.push(
+        `Q${q.numero} → N1 alterado ${n1Anterior?.catalogoId ?? "∅"} → ${n1Gravar.catalogoId} (N2/N3 limpos)`
+      );
+    } else {
+      n1Inalterados++;
+    }
     ok++;
     processadas++;
   }
 
-  etapas.push(`N1 concluído: ${ok}/${questoes.length} com catálogo destino`);
+  etapas.push(
+    `N1 concluído: ${ok}/${questoes.length} com catálogo destino · ` +
+      `alterados ${n1Alterados} · inalterados ${n1Inalterados} · ` +
+      `puladas ${puladas} (manuais ${manuaisPreservadas})`
+  );
 
   return {
     total: questoes.length,
@@ -204,10 +264,12 @@ export async function executarFaseN1Prova(provaId: string): Promise<ResultadoFas
     falhas: questoes.length - ok,
     avisos,
     etapas,
+    puladas,
+    manuaisPreservadas,
+    n1Alterados,
+    n1Inalterados,
   };
 }
-
-import { resolverTextoCompartilhado } from "@/lib/prova-texto-compartilhado";
 
 export type OpcoesFaseN2Prova = {
   /** Pula questões que já têm escopo N2 real (não fallback). */

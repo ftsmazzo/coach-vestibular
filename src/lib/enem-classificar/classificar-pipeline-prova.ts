@@ -54,6 +54,7 @@ import {
   validarExatasPosIA,
   validarTriagemNaturezaPosIA,
 } from "@/lib/enem-classificar/validacao-pos-ia-n1";
+import { systemPromptComFaseN1 } from "@/lib/enem-classificar/instrucao-fase-n1";
 import type { ClassificacaoN1 } from "@/lib/classificacao-n1-types";
 import { CLASSIFICACAO_N1_VERSAO } from "@/lib/classificacao-n1-types";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
@@ -368,11 +369,12 @@ export async function passoRoteamentoDisciplina(
 
   const promptMd =
     area === "humanas" ? promptRoteamentoHumanas() : promptRoteamentoLinguagens();
-  const systemPrompt =
+  const systemPrompt = systemPromptComFaseN1(
     promptMd?.trim() ||
-    (area === "humanas"
-      ? "Roteie UMA questão de Ciências Humanas para historia, geografia, filosofia, sociologia ou indefinido."
-      : "Roteie UMA questão de Linguagens para portugues, ingles, espanhol ou indefinido.");
+      (area === "humanas"
+        ? "Roteie UMA questão de Ciências Humanas para historia, geografia, filosofia, sociologia ou indefinido."
+        : "Roteie UMA questão de Linguagens para portugues, ingles, espanhol ou indefinido.")
+  );
 
   const bloco = blocoQuestaoCompleto(q, meta);
 

@@ -1,18 +1,35 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { executarFaseN1Prova } from "@/lib/prova-classificacao-fases";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 
 export const maxDuration = 600;
 
+const bodySchema = z
+  .object({
+    apenasFaltantes: z.boolean().optional(),
+    reprocessarTodas: z.boolean().optional(),
+    preservarManuais: z.boolean().optional(),
+    forcarTudo: z.boolean().optional(),
+  })
+  .refine(
+    (b) => {
+      const flags = [b.apenasFaltantes, b.reprocessarTodas, b.forcarTudo].filter(Boolean).length;
+      return flags <= 1;
+    },
+    { message: "Use apenas um modo: apenasFaltantes, reprocessarTodas ou forcarTudo." }
+  );
+
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
 
   const { id: provaId } = await params;
+  const body = bodySchema.parse(await request.json().catch(() => ({})));
 
   if (!process.env.OPENAI_API_KEY?.trim()) {
     return NextResponse.json(
@@ -22,12 +39,23 @@ export async function POST(
   }
 
   try {
-    const resultado = await executarFaseN1Prova(provaId);
+    const resultado = await executarFaseN1Prova(provaId, body);
     await refreshProvaGabaritoFlag(provaId);
+
+    const modo = body.forcarTudo
+      ? "forcarTudo"
+      : body.reprocessarTodas
+        ? "reprocessarTodas"
+        : "apenasFaltantes";
+
     return NextResponse.json({
       ...resultado,
       fase: "N1",
-      mensagem: `Fase N1: ${resultado.ok}/${resultado.total} questões com catálogo destino.`,
+      modo,
+      mensagem:
+        `Fase N1 (${modo}): ${resultado.ok}/${resultado.total} com catálogo destino. ` +
+        `Alterados ${resultado.n1Alterados ?? 0} · puladas ${resultado.puladas ?? 0} ` +
+        `(manuais preservadas ${resultado.manuaisPreservadas ?? 0}).`,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erro na fase N1";

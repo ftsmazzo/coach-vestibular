@@ -5,6 +5,8 @@ import { Button, Card } from "@/components/ui";
 
 type Fase = "N1" | "N2" | "N3";
 
+type ModoN1 = "faltantes" | "reprocessarAuto" | "forcarTudo";
+
 interface Props {
   provaId: string;
   totalQuestoes: number;
@@ -20,13 +22,24 @@ interface Props {
 type ResultadoFase = {
   ok?: boolean;
   fase?: string;
+  modo?: string;
   total?: number;
   processadas?: number;
+  puladas?: number;
+  manuaisPreservadas?: number;
+  n1Alterados?: number;
+  n1Inalterados?: number;
   avisos?: string[];
   etapas?: string[];
   mensagem?: string;
   error?: string;
 };
+
+function bodyModoN1(modo: ModoN1): Record<string, boolean> {
+  if (modo === "faltantes") return { apenasFaltantes: true };
+  if (modo === "reprocessarAuto") return { reprocessarTodas: true, preservarManuais: true };
+  return { forcarTudo: true };
+}
 
 export function AdminClassificacaoProva({
   provaId,
@@ -48,7 +61,18 @@ export function AdminClassificacaoProva({
   const faltamN1 = totalQuestoes - comN1;
   const faltamN2Real = totalQuestoes - comN2Real;
 
-  async function rodarFase(fase: Fase, opts?: { apenasFaltantes?: boolean }) {
+  async function rodarFase(
+    fase: Fase,
+    opts?: { apenasFaltantes?: boolean; modoN1?: ModoN1 }
+  ) {
+    if (fase === "N1" && opts?.modoN1 === "forcarTudo") {
+      const ok = window.confirm(
+        "Reprocessar N1 em TODAS as questões, inclusive as corrigidas manualmente?\n\n" +
+          "Correções manuais serão sobrescritas. N2/N3 serão limpos quando o catálogo mudar."
+      );
+      if (!ok) return;
+    }
+
     setRodando(fase);
     setUltimo(null);
     onMensagem("");
@@ -59,11 +83,18 @@ export function AdminClassificacaoProva({
           ? "classificar-n2"
           : "classificar-n3";
 
+    const body =
+      fase === "N1" && opts?.modoN1
+        ? bodyModoN1(opts.modoN1)
+        : opts?.apenasFaltantes
+          ? { apenasFaltantes: true }
+          : {};
+
     try {
       const res = await fetch(`/api/admin/provas/${provaId}/${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(opts?.apenasFaltantes ? { apenasFaltantes: true } : {}),
+        body: JSON.stringify(body),
       });
       const data = (await res.json()) as ResultadoFase;
       setUltimo(data);
@@ -84,10 +115,10 @@ export function AdminClassificacaoProva({
     <Card className="border-violet-200 bg-violet-50/40">
       <h2 className="mb-2 font-semibold text-violet-900">Passo 5 — Classificação em 3 fases</h2>
       <p className="text-sm text-violet-800">
-        Fluxo sequencial: <strong>N1</strong> define o catálogo destino (mat, bio, hist…) em{" "}
-        <em>todas</em> as questões → você valida → <strong>N2</strong> classifica o escopo dentro
-        desse catálogo → valida → <strong>N3</strong> conhecimento exigido. Uma fase por vez; 1
-        questão = 1 chamada IA por fase.
+        Fluxo sequencial: <strong>N1</strong> define o catálogo destino (mat, bio, hist…) → você
+        valida → <strong>N2</strong> classifica o escopo dentro desse catálogo → valida →{" "}
+        <strong>N3</strong> conhecimento exigido. Se o N1 mudar, N2 e N3 da questão são limpos
+        automaticamente.
       </p>
 
       {!extracaoValidada && (
@@ -118,14 +149,44 @@ export function AdminClassificacaoProva({
         </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button
-          type="button"
-          disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada}
-          onClick={() => rodarFase("N1")}
-        >
-          {rodando === "N1" ? "N1 rodando…" : "1 · Rodar N1 (roteamento)"}
-        </Button>
+      <div className="mt-4 space-y-2">
+        <p className="text-xs font-medium text-violet-900">N1 — escolha o modo antes de rodar</p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada || faltamN1 === 0}
+            onClick={() => rodarFase("N1", { modoN1: "faltantes" })}
+          >
+            {rodando === "N1" ? "N1 rodando…" : `1a · N1 faltantes (${faltamN1})`}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada}
+            onClick={() => rodarFase("N1", { modoN1: "reprocessarAuto" })}
+          >
+            {rodando === "N1"
+              ? "N1 rodando…"
+              : "1b · Reprocessar N1 automático"}
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada}
+            onClick={() => rodarFase("N1", { modoN1: "forcarTudo" })}
+          >
+            {rodando === "N1" ? "N1 rodando…" : "1c · N1 tudo (incl. manuais)"}
+          </Button>
+        </div>
+        <p className="text-xs text-slate-600">
+          <strong>Faltantes</strong> — só sem N1.{" "}
+          <strong>Reprocessar automático</strong> — recalcula N1 já gravado (preserva manuais); limpa
+          N2/N3 se o catálogo mudar.{" "}
+          <strong>Tudo</strong> — sobrescreve inclusive correções manuais.
+        </p>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
         <Button
           type="button"
           variant="secondary"
@@ -156,14 +217,13 @@ export function AdminClassificacaoProva({
 
       {faltamN1 > 0 && (
         <p className="mt-2 text-xs text-amber-800">
-          Fase atual: <strong>N1</strong>. Faltam {faltamN1} questão(ões) — use «Sem N1» na tabela
-          ou edite manualmente. Só libera N2 quando {comN1}/{totalQuestoes} tiverem catálogo destino.
+          Faltam {faltamN1} questão(ões) sem N1 — use «N1 faltantes» ou edite manualmente na tabela.
         </p>
       )}
       {n1CompletoTodas && !n2CompletoTodas && (
         <p className="mt-2 text-xs text-emerald-800">
-          N1 completo em todas. Revise a coluna «N1 catálogo» e rode N2 — a IA já sabe se é mat,
-          bio, hist… e classifica o escopo dentro desse catálogo.
+          N1 completo em todas. Após refinamentos no código, use «Reprocessar N1 automático» antes de
+          rodar N2 de novo.
         </p>
       )}
       {n2CompletoTodas && comN3 < totalQuestoes && (
@@ -176,6 +236,8 @@ export function AdminClassificacaoProva({
         <details className="mt-4 rounded-lg border border-slate-200 bg-white/80 p-3" open>
           <summary className="cursor-pointer text-sm font-medium text-slate-800">
             Log da fase {ultimo.fase ?? ""}
+            {ultimo.modo ? ` (${ultimo.modo})` : ""}
+            {ultimo.n1Alterados != null ? ` · ${ultimo.n1Alterados} alterados` : ""}
           </summary>
           <ul className="mt-2 max-h-64 overflow-y-auto list-inside list-disc text-xs text-slate-600">
             {ultimo.etapas.map((e) => (

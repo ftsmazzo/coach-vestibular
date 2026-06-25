@@ -5,6 +5,7 @@ import type {
   TriagemNatureza,
 } from "@/lib/enem-classificar/triagem-natureza";
 import { iaClassificacaoDisponivel } from "@/lib/enem-classificar/classificar-ia";
+import { INSTRUCAO_SISTEMA_FASE_N1 } from "@/lib/enem-classificar/instrucao-fase-n1";
 
 export { iaClassificacaoDisponivel };
 
@@ -84,6 +85,7 @@ export async function triarLoteIA(
 
   const data = await responsesComSchema<IaTriagemRes>({
     systemPrompt:
+      `${INSTRUCAO_SISTEMA_FASE_N1}\n\n` +
       "Você tria UMA questão de Ciências da Natureza em Biologia, Química, Física ou Transversal. " +
       "Classifique pelo conhecimento exigido no comando, não pelo tema superficial do texto-base. " +
       "Biologia: processos ecológicos, fisiológicos, celulares, genéticos, evolutivos — mesmo que apareçam termos químicos no texto. " +
