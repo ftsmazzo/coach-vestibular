@@ -8,6 +8,7 @@ type Fase = "N1" | "N2" | "N3";
 interface Props {
   provaId: string;
   totalQuestoes: number;
+  extracaoValidada: boolean;
   comN1: number;
   comN2Real: number;
   comN2Fallback: number;
@@ -30,6 +31,7 @@ type ResultadoFase = {
 export function AdminClassificacaoProva({
   provaId,
   totalQuestoes,
+  extracaoValidada,
   comN1,
   comN2Real,
   comN2Fallback,
@@ -88,6 +90,13 @@ export function AdminClassificacaoProva({
         questão = 1 chamada IA por fase.
       </p>
 
+      {!extracaoValidada && (
+        <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Confirme a extração no <strong>Passo 3</strong> antes de rodar N1/N2/N3. Você pode corrigir
+          enunciados a qualquer momento — a classificação já feita permanece visível na tabela abaixo.
+        </p>
+      )}
+
       <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2 lg:grid-cols-5">
         <span>
           Total: <strong>{totalQuestoes}</strong>
@@ -112,7 +121,7 @@ export function AdminClassificacaoProva({
       <div className="mt-4 flex flex-wrap gap-2">
         <Button
           type="button"
-          disabled={rodando !== null || totalQuestoes === 0}
+          disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada}
           onClick={() => rodarFase("N1")}
         >
           {rodando === "N1" ? "N1 rodando…" : "1 · Rodar N1 (roteamento)"}
@@ -120,7 +129,7 @@ export function AdminClassificacaoProva({
         <Button
           type="button"
           variant="secondary"
-          disabled={rodando !== null || totalQuestoes === 0 || !n1CompletoTodas}
+          disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada || !n1CompletoTodas}
           onClick={() => rodarFase("N2")}
         >
           {rodando === "N2" ? "N2 rodando…" : "2 · Rodar N2 (todas)"}
@@ -129,7 +138,7 @@ export function AdminClassificacaoProva({
           <Button
             type="button"
             variant="secondary"
-            disabled={rodando !== null}
+            disabled={rodando !== null || !extracaoValidada}
             onClick={() => rodarFase("N2", { apenasFaltantes: true })}
           >
             {rodando === "N2" ? "N2 rodando…" : `2b · N2 só faltantes (${faltamN2Real})`}
@@ -138,7 +147,7 @@ export function AdminClassificacaoProva({
         <Button
           type="button"
           variant="secondary"
-          disabled={rodando !== null || totalQuestoes === 0 || !n2CompletoTodas}
+          disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada || !n2CompletoTodas}
           onClick={() => rodarFase("N3")}
         >
           {rodando === "N3" ? "N3 rodando…" : "3 · Rodar N3 (conhecimento)"}

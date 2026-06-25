@@ -62,6 +62,7 @@ export function AdminValidacaoExtracao({
   const [formAlternativas, setFormAlternativas] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [aceitando, setAceitando] = useState<string | null>(null);
+  const [reabrindo, setReabrindo] = useState(false);
   const [copiado, setCopiado] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
@@ -159,6 +160,25 @@ export function AdminValidacaoExtracao({
     }
   }
 
+  async function reabrirExtracao() {
+    setReabrindo(true);
+    onMensagem("");
+    try {
+      const res = await fetch(`/api/admin/provas/${provaId}/extracao/reabrir`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        onMensagem(data.error ?? "Erro ao reabrir extração");
+        return;
+      }
+      onMensagem(data.mensagem ?? "Extração reaberta para correção.");
+      onAtualizado();
+    } catch {
+      onMensagem("Falha de rede.");
+    } finally {
+      setReabrindo(false);
+    }
+  }
+
   async function validarExtracao() {
     setValidando(true);
     onMensagem("");
@@ -223,9 +243,19 @@ export function AdminValidacaoExtracao({
           </p>
         </div>
         {extracaoValidada ? (
-          <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white">
-            Extração validada
-          </span>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white self-center">
+              Extração validada
+            </span>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={reabrindo}
+              onClick={() => void reabrirExtracao()}
+            >
+              {reabrindo ? "Reabrindo…" : "Reabrir correções"}
+            </Button>
+          </div>
         ) : (
           <Button
             type="button"

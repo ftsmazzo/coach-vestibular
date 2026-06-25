@@ -286,11 +286,6 @@ export async function aceitarEnunciadoExtracaoProva(
     },
   });
 
-  await prisma.prova.update({
-    where: { id: provaId },
-    data: { extracaoValidada: false },
-  });
-
   return { id: row.id };
 }
 

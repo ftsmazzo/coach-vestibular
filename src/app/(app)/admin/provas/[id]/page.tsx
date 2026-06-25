@@ -85,21 +85,28 @@ function PassosProvaAdmin({
   extracaoValidada,
   temQuestoes,
   gabaritoCompleto,
+  comN1,
+  totalQuestoes,
 }: {
   extracaoValidada: boolean;
   temQuestoes: boolean;
   gabaritoCompleto: boolean;
+  comN1: number;
+  totalQuestoes: number;
 }) {
+  const classificacaoIniciada = comN1 > 0;
   const itens = [
-    { n: 1, label: "Cadastro", estado: "done" as const },
+    { n: 1, label: "Cadastro", href: "#passo-cadastro", estado: "done" as const },
     {
       n: 2,
       label: "Extrair PDF",
+      href: "#passo-extracao",
       estado: temQuestoes ? ("done" as const) : ("active" as const),
     },
     {
       n: 3,
       label: "Validar extração",
+      href: "#passo-validacao",
       estado: extracaoValidada
         ? ("done" as const)
         : temQuestoes
@@ -109,12 +116,20 @@ function PassosProvaAdmin({
     {
       n: 4,
       label: "Gabarito",
+      href: "#passo-gabarito",
       estado: gabaritoCompleto ? ("done" as const) : temQuestoes ? ("active" as const) : ("pending" as const),
     },
     {
       n: 5,
       label: "Classificar",
-      estado: extracaoValidada ? ("pending" as const) : ("locked" as const),
+      href: "#passo-classificacao",
+      estado: !temQuestoes
+        ? ("pending" as const)
+        : classificacaoIniciada
+          ? ("active" as const)
+          : extracaoValidada
+            ? ("active" as const)
+            : ("pending" as const),
     },
   ];
 
@@ -126,16 +141,16 @@ function PassosProvaAdmin({
             ? "bg-emerald-100 text-emerald-900 border-emerald-200"
             : p.estado === "active"
               ? "bg-indigo-100 text-indigo-900 border-indigo-300 ring-1 ring-indigo-300"
-              : p.estado === "locked"
-                ? "bg-slate-100 text-slate-400 border-slate-200"
-                : "bg-white text-slate-500 border-slate-200";
+              : "bg-white text-slate-500 border-slate-200";
         return (
-          <li
-            key={p.n}
-            className={`rounded-full border px-3 py-1 text-xs font-medium ${cls}`}
-          >
-            {p.n}. {p.label}
-            {p.estado === "done" ? " ✓" : p.estado === "locked" ? " 🔒" : ""}
+          <li key={p.n}>
+            <a
+              href={p.href}
+              className={`inline-block rounded-full border px-3 py-1 text-xs font-medium hover:opacity-90 ${cls}`}
+            >
+              {p.n}. {p.label}
+              {p.estado === "done" ? " ✓" : ""}
+            </a>
           </li>
         );
       })}
@@ -617,9 +632,11 @@ export default function AdminProvaDetailPage() {
         extracaoValidada={prova.extracaoValidada ?? false}
         temQuestoes={prova.questoes.length > 0}
         gabaritoCompleto={prova.gabaritoCompleto}
+        comN1={statsClassificacao?.comN1 ?? 0}
+        totalQuestoes={prova.questoes.length}
       />
 
-      <Card>
+      <Card id="passo-cadastro">
         <h2 className="mb-2 font-semibold">Passo 1 — Registro da prova</h2>
         <p className="mb-3 text-sm text-slate-600">
           Vestibular, ano e caderno ficam aqui — o aluno escolhe esta prova ao registrar o simulado.
@@ -716,7 +733,7 @@ export default function AdminProvaDetailPage() {
         </Button>
       </Card>
 
-      <Card>
+      <Card id="passo-extracao">
         <h2 className="mb-2 font-semibold text-slate-800">Passo 2 — PDF da prova</h2>
         <p className="mb-3 text-sm text-slate-600">
           Selecione o PDF e use o bloco abaixo para extrair enunciados e alternativas (OpenAI
@@ -787,16 +804,18 @@ export default function AdminProvaDetailPage() {
       />
 
       {(prova.questoes.length > 0 || prova.totalQuestoes > 0) && (
-        <AdminValidacaoExtracao
-          provaId={prova.id}
-          extracaoValidada={prova.extracaoValidada ?? false}
-          refreshKey={extracaoRefreshKey}
-          onMensagem={setMsg}
-          onAtualizado={load}
-        />
+        <div id="passo-validacao">
+          <AdminValidacaoExtracao
+            provaId={prova.id}
+            extracaoValidada={prova.extracaoValidada ?? false}
+            refreshKey={extracaoRefreshKey}
+            onMensagem={setMsg}
+            onAtualizado={load}
+          />
+        </div>
       )}
 
-      <Card>
+      <Card id="passo-gabarito">
         <h2 className="mb-2 font-semibold">Passo 4 — Gabarito oficial (somente admin)</h2>
         <p className="mb-2 text-sm text-slate-600">
           A extração <strong>não inventa</strong> gabarito. Envie foto/PDF do oficial, revise no grid
@@ -893,20 +912,23 @@ export default function AdminProvaDetailPage() {
         </Button>
       </Card>
 
-      {prova.extracaoValidada ? (
+      {prova.questoes.length > 0 && (
         <>
-          <AdminClassificacaoProva
-            provaId={prova.id}
-            totalQuestoes={prova.questoes.length}
-            comN1={statsClassificacao?.comN1 ?? 0}
-            comN2Real={statsClassificacao?.comN2Real ?? 0}
-            comN2Fallback={statsClassificacao?.comN2Fallback ?? 0}
-            comN3={statsClassificacao?.comN3 ?? 0}
-            onMensagem={setMsg}
-            onAtualizado={aoAtualizarQuestoes}
-          />
+          <div id="passo-classificacao">
+            <AdminClassificacaoProva
+              provaId={prova.id}
+              totalQuestoes={prova.questoes.length}
+              extracaoValidada={prova.extracaoValidada ?? false}
+              comN1={statsClassificacao?.comN1 ?? 0}
+              comN2Real={statsClassificacao?.comN2Real ?? 0}
+              comN2Fallback={statsClassificacao?.comN2Fallback ?? 0}
+              comN3={statsClassificacao?.comN3 ?? 0}
+              onMensagem={setMsg}
+              onAtualizado={aoAtualizarQuestoes}
+            />
+          </div>
 
-          {prova.questoes.length > 0 && (
+          <div id="passo-tabela">
             <AdminTabelaQuestoes
               provaId={prova.id}
               questoes={prova.questoes}
@@ -916,28 +938,26 @@ export default function AdminProvaDetailPage() {
               onAtualizado={aoAtualizarQuestoes}
               onMensagem={setMsg}
             />
-          )}
+          </div>
 
-          {prova.questoes.length > 0 && (
-            <details className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-              <summary className="cursor-pointer text-sm font-medium text-slate-700">
-                Auditoria legada (opcional)
-              </summary>
-              <div className="mt-3">
-                <AdminAuditoriaProva
-                  provaId={prova.id}
-                  textoFonteColado={textoProva}
-                  orientacoesSalvas={orientacoesSalvas}
-                  onQuestoesAtualizadas={aoAtualizarQuestoes}
-                  onAlertasChange={setAlertaChaves}
-                  onEditarQuestao={(numero, idiomaVariante) =>
-                    setEditarQuestaoAlvo({ numero, idiomaVariante })
-                  }
-                  atualizarAuditoria={atualizarAuditoria}
-                />
-              </div>
-            </details>
-          )}
+          <details className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+            <summary className="cursor-pointer text-sm font-medium text-slate-700">
+              Auditoria legada (opcional)
+            </summary>
+            <div className="mt-3">
+              <AdminAuditoriaProva
+                provaId={prova.id}
+                textoFonteColado={textoProva}
+                orientacoesSalvas={orientacoesSalvas}
+                onQuestoesAtualizadas={aoAtualizarQuestoes}
+                onAlertasChange={setAlertaChaves}
+                onEditarQuestao={(numero, idiomaVariante) =>
+                  setEditarQuestaoAlvo({ numero, idiomaVariante })
+                }
+                atualizarAuditoria={atualizarAuditoria}
+              />
+            </div>
+          </details>
 
           <details className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
             <summary className="cursor-pointer text-sm font-medium text-slate-700">
@@ -1001,14 +1021,6 @@ export default function AdminProvaDetailPage() {
             </div>
           </details>
         </>
-      ) : (
-        <Card className="border-slate-200 bg-slate-50/80">
-          <h2 className="mb-2 font-semibold text-slate-700">Passo 5 — Classificação 🔒</h2>
-          <p className="text-sm text-slate-600">
-            Confirme a extração completa no passo 3 para liberar classificação, auditoria e import
-            CSV.
-          </p>
-        </Card>
       )}
 
       {/* Histórico de Tentativas dos Alunos */}
