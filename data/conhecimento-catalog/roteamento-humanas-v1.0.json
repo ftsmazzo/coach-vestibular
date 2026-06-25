@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "service": "routeHumanasDiscipline",
   "description": "Roteamento prova-agnostico de questoes de Ciencias Humanas para historia, geografia, filosofia ou sociologia antes da classificacao N2 no catalogo disciplinar correto.",
   "principios": [
@@ -127,7 +127,8 @@
       "quandoEscolher": [
         "A questao exige analisar espaco geografico, territorio, paisagem, lugar, regiao, escala, redes, fluxos, cartografia ou ambiente.",
         "A resolucao depende de mapas, graficos espaciais, dinamica populacional, urbana, agraria, economica ou geopolitica.",
-        "O foco e distribuicao espacial, impactos ambientais, uso do solo, mobilidade, urbanizacao, industrializacao espacial ou fronteiras."
+        "O foco e distribuicao espacial, impactos ambientais, uso do solo, mobilidade, urbanizacao, industrializacao espacial ou fronteiras.",
+        "O foco e esgoto, saneamento, poluicao hidrica, eutrofizacao, qualidade da agua ou impacto ambiental em recursos hidricos (nao reacao quimica central)."
       ],
       "sinaisFortes": [
         "mapa",
@@ -149,7 +150,15 @@
         "bioma como distribuicao espacial",
         "agropecuaria",
         "geopolitica",
-        "globalizacao como rede/fluxo"
+        "globalizacao como rede/fluxo",
+        "eutrofizacao",
+        "esgoto in natura",
+        "tratamento de esgoto",
+        "saneamento ambiental",
+        "qualidade da agua",
+        "recursos hidricos",
+        "poluicao hidrica",
+        "proliferacao de algas"
       ],
       "negativeHints": [
         "Revolucao Francesa",
@@ -169,7 +178,7 @@
         "sociologia: quando o foco for relacao social, classe, cultura, identidade ou instituicao sem espacialidade.",
         "filosofia: quando o foco for conceito normativo, epistemologico, etico ou politico abstrato."
       ],
-      "regraDesempate": "Se a pergunta pode ser respondida por distribuicao espacial, escala, territorio, ambiente ou mapa, escolher Geografia. Se o espaco e apenas cenario de processo historico/social/filosofico, escolher a disciplina correspondente."
+      "regraDesempate": "Se a pergunta pode ser respondida por distribuicao espacial, escala, territorio, ambiente ou mapa, escolher Geografia. Se trata de esgoto, saneamento, poluicao hidrica, eutrofizacao ou qualidade da agua em contexto ambiental/territorial, escolher Geografia — nao Quimica. Se o espaco e apenas cenario de processo historico/social/filosofico, escolher a disciplina correspondente."
     },
     "filosofia": {
       "disciplinaId": "filosofia",
@@ -232,7 +241,8 @@
       "quandoEscolher": [
         "A questao exige analisar sociedade, cultura, identidade, desigualdade, classe, trabalho, Estado, cidadania, instituicoes ou movimentos sociais como fenomenos sociais.",
         "A resolucao depende de conceitos sociologicos, autores sociologicos ou interpretacao de dados sociais.",
-        "O foco e relacao social, estrutura social, poder social, cultura, socializacao, globalizacao social ou tecnologia e sociedade."
+        "O foco e relacao social, estrutura social, poder social, cultura, socializacao, globalizacao social ou tecnologia e sociedade.",
+        "O comando cobra sociedade contemporanea, exclusao social, produtivismo, envelhecimento, aceleracao do cotidiano, valor economico ou capacidade produtiva — mesmo com texto literario, ensaio, cancao, meme ou charge em portugues."
       ],
       "sinaisFortes": [
         "sociedade",
@@ -255,7 +265,19 @@
         "Durkheim",
         "Weber",
         "Marx como teoria social",
-        "Bourdieu"
+        "Bourdieu",
+        "sociedade contemporanea",
+        "exclusao social",
+        "produtivismo",
+        "envelhecimento",
+        "velhice",
+        "capacidade produtiva",
+        "valor economico",
+        "aceleracao do cotidiano",
+        "vida social",
+        "desaceleracao",
+        "resistencia a logica social",
+        "compreensao critica sobre a sociedade"
       ],
       "negativeHints": [
         "processo cronologico",
@@ -269,14 +291,19 @@
         "relevo",
         "argumento etico normativo",
         "epistemologia",
-        "metafisica"
+        "metafisica",
+        "sentido textual local",
+        "figura de linguagem",
+        "genero textual como operacao linguistica",
+        "gramatica",
+        "coesao textual"
       ],
       "naoConfundirCom": [
         "historia: quando o foco for evento, periodo, processo historico ou fonte historica.",
         "geografia: quando o foco for espaco, territorio, rede, fluxo, cartografia ou ambiente.",
         "filosofia: quando o foco for problema normativo/abstrato ou argumento filosofico."
       ],
-      "regraDesempate": "Escolher Sociologia quando a questao pede interpretar uma relacao, instituicao ou estrutura social. Se a desigualdade aparece como resultado espacial, escolher Geografia; se aparece como processo historico, escolher Historia; se aparece como problema moral abstrato, escolher Filosofia."
+      "regraDesempate": "Escolher Sociologia quando a questao pede interpretar relacao, instituicao ou estrutura social. Texto em portugues, cancao, ensaio, meme, charge ou trecho literario nao definem Portugues — a rota e pelo conhecimento exigido. Se cobra exclusao social, produtivismo, envelhecimento ou aceleracao do cotidiano, escolher Sociologia. Se a desigualdade aparece como resultado espacial, escolher Geografia; se aparece como processo historico, escolher Historia; se aparece como problema moral abstrato, escolher Filosofia."
     }
   },
   "globalRules": [
@@ -285,6 +312,7 @@
     "NUNCA escolher Geografia apenas porque apareceu pais, cidade ou regiao se a pergunta cobra processo historico.",
     "NUNCA escolher Filosofia apenas porque o texto-base cita um filosofo; verificar se a pergunta cobra conceito/argumento filosofico.",
     "NUNCA escolher Sociologia apenas porque aparece sociedade ou cultura; verificar se a questao cobra fenomeno social e nao processo historico, espacial ou argumento filosofico.",
+    "NUNCA escolher Portugues (fora do escopo Humanas) por letra de cancao, ensaio, trecho literario, meme ou charge; se o comando cobra fenomeno social, rotear para Sociologia.",
     "Quando metadado da prova contradiz fortemente o conhecimento cobrado, marcar sinalizadorRevisao true.",
     "Se confianca da rota < 0.55, usar disciplinaId indefinido e sinalizadorRevisao true.",
     "Se duas disciplinas ficam empatadas e nao ha criterio claro, disciplinaId indefinido.",
@@ -381,6 +409,21 @@
       "caso": "Grafico de migracao interna pede interpretar rede urbana e atratividade regional.",
       "rotaEsperada": "geografia",
       "justificativa": "Conhecimento exigido e dinamica espacial populacional."
+    },
+    {
+      "caso": "Ensaio de Simone de Beauvoir sobre velhice, pergunta cobra exclusao social e produtivismo.",
+      "rotaEsperada": "sociologia",
+      "justificativa": "Conhecimento exigido e fenomeno social de envelhecimento e exclusao, nao interpretacao literaria."
+    },
+    {
+      "caso": "Letra de cancao de Lenine, pergunta pede compreensao critica sobre aceleracao do cotidiano na sociedade contemporanea.",
+      "rotaEsperada": "sociologia",
+      "justificativa": "Conhecimento exigido e aceleracao social e resistencia a logica da vida contemporanea, nao analise literaria."
+    },
+    {
+      "caso": "Texto sobre tratamento de esgoto e eutrofizacao, pergunta cobra impacto ambiental em recursos hidricos.",
+      "rotaEsperada": "geografia",
+      "justificativa": "Conhecimento exigido e poluicao hidrica e qualidade da agua em contexto ambiental/territorial, nao reacao quimica."
     }
   ]
 }

@@ -26,6 +26,8 @@ Use structured output/JSON mode. Esta etapa **só decide a disciplina** antes da
 | território como cenário de evento histórico | geografia | história |
 | gênero como construção social, família, identidade | biologia / filosofia | sociologia |
 | interpretação gramatical ou figura de linguagem isolada | qualquer humanas | **não rotear** (fora do escopo) |
+| Ensaio/canção/meme com comando sobre sociedade contemporânea, exclusão, produtivismo | portugues / história | sociologia |
+| Esgoto/eutrofização/qualidade da água sem cálculo químico central | química | geografia |
 
 ## Schema de saída (só roteamento)
 ```json

@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "service": "routeLinguagensDiscipline",
   "description": "Roteamento prova-agnostico de questoes de Linguagens para portugues, ingles ou espanhol antes da classificacao N2 no catalogo disciplinar correto.",
   "principios": [
@@ -93,7 +93,7 @@
         "variacao linguistica",
         "genero textual em portugues",
         "figura de linguagem em portugues",
-        "charge/tirinha em portugues",
+        "charge/tirinha em portugues (falas em portugues)",
         "artes",
         "tecnologias da linguagem"
       ],
@@ -103,6 +103,9 @@
         "questao marcada como EN",
         "questao marcada como ES",
         "expressao destacada em ingles",
+        "equivale em portugues de expressao inglesa",
+        "tirinha com falas em ingles",
+        "comando pede sentido de fala em ingles",
         "expressao destacada em espanhol",
         "present perfect",
         "main idea",
@@ -127,7 +130,8 @@
         "O texto-base principal esta em ingles.",
         "A expressao, palavra, trecho ou pronome cobrado esta em ingles.",
         "A questao exige compreensao leitora, vocabulario, coesao, genero, finalidade ou gramatica funcional em ingles.",
-        "Metadado confiavel indica variante EN ou lingua inglesa e nao ha contradicao no texto-base."
+        "Metadado confiavel indica variante EN ou lingua inglesa e nao ha contradicao no texto-base.",
+        "O comando em portugues pergunta sentido, funcao, equivalencia, inferencia ou efeito de expressao/trecho/fala em ingles (ex.: tirinha com dialogos em ingles)."
       ],
       "sinaisFortes": [
         "texto-base em ingles",
@@ -142,10 +146,26 @@
         "present perfect",
         "modal verbs",
         "advertisement em ingles",
-        "song/poem em ingles"
+        "song/poem em ingles",
+        "equivale, em portugues",
+        "equivale em portugues",
+        "no contexto da tira",
+        "no contexto da tirinha",
+        "a fala",
+        "o trecho",
+        "expressao em ingles",
+        "fala em ingles",
+        "That'll be the day",
+        "Don't try",
+        "Who needs your answers",
+        "I'll bet",
+        "Maybe you'd like",
+        "wager",
+        "Mr. Bigmouth",
+        "tirinha com falas em ingles"
       ],
       "negativeHints": [
-        "texto-base dominante em portugues",
+        "texto-base dominante em portugues sem trecho cobrado em ingles",
         "texto-base dominante em espanhol",
         "variante ES",
         "pretérito perfecto",
@@ -159,7 +179,7 @@
         "portugues: comando em portugues nao muda a rota se o texto-base e a competencia sao de ingles.",
         "espanhol: cuidado com cognatos; escolher Ingles apenas se a lingua dominante do texto-base/cobrança for inglesa."
       ],
-      "regraDesempate": "Se texto-base, expressao destacada ou competencia linguistica esta em ingles, escolher Ingles, mesmo que enunciado/comando esteja em portugues. Se apenas uma palavra inglesa aparece em texto portugues, nao escolher Ingles."
+      "regraDesempate": "Se texto-base, expressao destacada, fala ou trecho cobrado esta em ingles, escolher Ingles, mesmo que enunciado/comando esteja em portugues. Se o comando pede equivalencia em portugues, sentido contextual, inferencia ou efeito de fala/expressao em ingles numa tira ou texto multimodal, escolher Ingles. Nao rotear para Portugues -> Portugues quando as alternativas pedem equivalencia em portugues de expressao inglesa. Se apenas uma palavra inglesa isolada aparece em texto portugues sem ser o objeto da cobranca, nao escolher Ingles."
     },
     "espanhol": {
       "disciplinaId": "espanhol",
@@ -211,6 +231,8 @@
   "globalRules": [
     "NUNCA escolher Portugues apenas porque o comando da questao esta em portugues.",
     "NUNCA escolher Portugues se o texto-base principal esta em Ingles ou Espanhol e a pergunta cobra compreensao da lingua estrangeira.",
+    "NUNCA escolher Portugues quando o comando em portugues cobra sentido, equivalencia, inferencia ou efeito de expressao/trecho/fala em ingles — a rota e Ingles.",
+    "NUNCA rotear para Portugues apenas porque a tirinha/charge tem comando em portugues; verificar a lingua das falas cobradas.",
     "NUNCA escolher Ingles ou Espanhol por uma palavra solta isolada em texto portugues.",
     "NUNCA escolher uma disciplina por tema do texto-base. Exemplo: texto em espanhol sobre OMS continua sendo Espanhol se a operacao e leitura/vocabulario em espanhol.",
     "Se metadado da prova indica EN/ES e o texto-base confirma, a rota deve respeitar o metadado.",
@@ -297,6 +319,16 @@
       "caso": "Tirinha em portugues com imagem e fala, pergunta pede efeito de humor pela relacao texto-imagem.",
       "rotaEsperada": "portugues",
       "justificativa": "A competencia cobrada e leitura multimodal em Portugues/Linguagens."
+    },
+    {
+      "caso": "Comando em portugues, tirinha com falas em ingles, pergunta pede equivalencia em portugues de 'That'll be the day!'.",
+      "rotaEsperada": "ingles",
+      "justificativa": "A competencia cobrada e sentido idiomático/contextual de expressao inglesa, nao interpretacao em portugues."
+    },
+    {
+      "caso": "Comando em portugues, tirinha com dialogos em ingles, pergunta pede qual fala invalida o argumento do personagem.",
+      "rotaEsperada": "ingles",
+      "justificativa": "A competencia cobrada e inferencia sobre sequencia de falas em ingles num texto multimodal."
     },
     {
       "caso": "Texto-base ausente, OCR ilegivel, sem metadado EN/ES confiavel.",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.0.1",
   "materiaId": "sociologia",
   "materiaLabel": "Sociologia",
   "areaEnem": "Ciências Humanas e suas Tecnologias",
@@ -1040,6 +1040,50 @@
           ]
         },
         {
+          "id": "soc.desigualdades.exclusao_social",
+          "label": "Exclusão social e vulnerabilidades",
+          "escopos": [
+            {
+              "id": "soc.desigualdades.exclusao_social.envelhecimento_produtivismo",
+              "label": "Envelhecimento, produtivismo e exclusão social",
+              "descricao": "Cobre envelhecimento como forma de exclusão social em sociedades que reduzem o valor do indivíduo à capacidade produtiva; marginalização de idosos e produtivismo. NÃO cobre interpretação textual, gramática ou análise estética literária.",
+              "keywords": [
+                "envelhecimento",
+                "velhice",
+                "produtivismo",
+                "exclusão social",
+                "marginalização",
+                "capacidade produtiva",
+                "valor econômico",
+                "Simone de Beauvoir",
+                "A velhice"
+              ],
+              "keywordsContexto": [
+                "idosos",
+                "trabalho",
+                "sociedade contemporânea",
+                "desigualdade"
+              ],
+              "exemplosEnunciado": [
+                "Compreender o envelhecimento como forma de exclusão social em uma sociedade que reduz o valor do indivíduo à sua capacidade produtiva."
+              ],
+              "negativeHints": [
+                "figura de linguagem",
+                "gênero ensaio",
+                "recurso expressivo",
+                "escola literária",
+                "interpretação textual local"
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.compreensao",
+                "fil.etica.existencia.envelhecimento"
+              ],
+              "regraDesempate": "Se o comando cobra fenômeno social de exclusão/produtivismo/envelhecimento, classifique aqui, mesmo com ensaio ou trecho literário como texto-base. Só escolha Português se a cobrança for sentido textual, gramática ou recurso expressivo.",
+              "conceitoCanonic": "envelhecimento_produtivismo"
+            }
+          ]
+        },
+        {
           "id": "soc.desigualdades.genero_raca",
           "label": "Gênero, raça e diversidade",
           "escopos": [
@@ -1476,6 +1520,52 @@
               ],
               "regraDesempate": "Use descricao como regra mais forte. Se o texto citar evento historico, territorio ou autor filosofico apenas como contexto, nao classifique aqui. Escolha Sociologia quando o conhecimento exigido for sociedade, cultura, classe, instituicoes, poder social, desigualdade, identidade, trabalho ou movimentos sociais. Persistindo empate, use soc.__nao_classificado.",
               "conceitoCanonic": "xenofobia"
+            }
+          ]
+        },
+        {
+          "id": "soc.globalizacao_tecnologia.modernidade",
+          "label": "Modernidade e ritmo social",
+          "escopos": [
+            {
+              "id": "soc.globalizacao_tecnologia.modernidade.aceleracao_social",
+              "label": "Aceleração social e resistência ao ritmo contemporâneo",
+              "descricao": "Cobre aceleração do cotidiano, tempo social, pressa, desaceleração e resistência à lógica instável da vida social contemporânea. NÃO cobre análise literária de canção ou estética musical.",
+              "keywords": [
+                "aceleração do cotidiano",
+                "aceleracao social",
+                "tempo social",
+                "desaceleração",
+                "vida social",
+                "sociedade contemporânea",
+                "resistência à lógica social",
+                "pressa",
+                "Lenine",
+                "Paciência"
+              ],
+              "keywordsContexto": [
+                "cotidiano",
+                "modernidade",
+                "ritmo de vida",
+                "canção",
+                "letra"
+              ],
+              "exemplosEnunciado": [
+                "Interpretar a crítica à aceleração do cotidiano na sociedade contemporânea e a valorização da desaceleração como forma de resistência."
+              ],
+              "negativeHints": [
+                "figura de linguagem",
+                "recurso expressivo",
+                "escola literária",
+                "análise estética da canção",
+                "interpretação textual local"
+              ],
+              "naoConfundirCom": [
+                "pt.interpretacao.leitura.compreensao",
+                "soc.globalizacao.contemporanea.individualismo_modernidade"
+              ],
+              "regraDesempate": "Se o comando pede compreensão crítica sobre sociedade contemporânea, aceleração ou desaceleração do cotidiano, classifique aqui, mesmo com letra de canção como texto-base. Só escolha Português se a cobrança for análise literária ou recurso expressivo.",
+              "conceitoCanonic": "aceleracao_social"
             }
           ]
         },

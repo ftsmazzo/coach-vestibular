@@ -10,6 +10,12 @@ function norm(s: string): string {
     .replace(/\s+/g, " ");
 }
 
+/** Geometria plana pura — não rotear para Física só por segmentos/ângulos. */
+const PADROES_GEOMETRIA_PURA: RegExp[] = [
+  /\b(figura plana|segmentos de reta|soma das medidas dos angulos|soma dos angulos|angulos de vertices|poligono|geometria plana)\b/,
+  /\b(retas concorrentes|relacoes angulares)\b/,
+];
+
 /** Sinais fortes de fenômeno/grandeza física (não rotear para Matemática só por cálculo). */
 const PADROES_FISICA: RegExp[] = [
   /\b(velocidade|aceleracao|forca resultante|forca gravitacional|newton)\b/,
@@ -23,6 +29,7 @@ const PADROES_FISICA: RegExp[] = [
   /\b(circuito|corrente eletrica|resistencia|ohm|voltagem|tensao)\b/,
   /\b(mru|mruv|cinematica|dinamica|hidrostatica)\b/,
   /\b(proton|eletron|particula carregada|carga eletrica)\b/,
+  /\b(colisao|colisão|colisoes|colisões|quantidade de movimento|momento linear|impulso)\b/,
   /\b(km\/h|m\/s|\bn\b|\bj\b|\bw\b|\bhz\b|\bpa\b|\bt\b|\bo c\b|graus celsius)\b/,
   /\b(tesla|weber|volt|ampere|watt)\b/,
 ];
@@ -33,6 +40,7 @@ const PADROES_SO_MATEMATICA: RegExp[] = [
   /\b(grafico|tabela|funcao|equacao|expressao algebraica)\b/,
   /\b(notacao cientifica|potencia de 10)\b/,
   /\b(calcular|manipulacao algebraica)\b/,
+  /\b(figura plana|segmentos de reta|soma dos angulos|soma das medidas dos angulos|poligono|geometria plana)\b/,
 ];
 
 export type ResultadoFisicaVsMatematica = {
@@ -57,7 +65,12 @@ export function fisicaPrevaleceSobreMatematica(texto: string): ResultadoFisicaVs
 
   let scoreFisica = 0;
   let scoreMatematica = 0;
+  let scoreGeometriaPura = 0;
   const hitsFis: string[] = [];
+
+  for (const p of PADROES_GEOMETRIA_PURA) {
+    if (p.test(t)) scoreGeometriaPura += 1;
+  }
 
   for (const p of PADROES_FISICA) {
     if (p.test(t)) {
@@ -69,7 +82,18 @@ export function fisicaPrevaleceSobreMatematica(texto: string): ResultadoFisicaVs
     if (p.test(t)) scoreMatematica += 1;
   }
 
-  const prevalece = scoreFisica >= 1;
+  if (scoreGeometriaPura >= 1 && scoreFisica === 0) {
+    return {
+      prevalece: false,
+      confianca: 0,
+      motivo: "geometria plana sem núcleo físico claro",
+      scoreFisica,
+      scoreMatematica,
+    };
+  }
+
+  const prevalece =
+    scoreFisica >= 1 && !(scoreGeometriaPura >= 1 && scoreFisica <= 1 && !/\b(espelho|reflexao|raio de luz|forca|velocidade|colisao|colisão)\b/.test(t));
   const confianca = prevalece
     ? Math.min(1, 0.55 + scoreFisica * 0.12 - scoreMatematica * 0.05)
     : 0;
@@ -117,4 +141,13 @@ export const NEGATIVE_HINTS_FISICA_EM_MAT = [
   "Planck",
   "efeito fotoelétrico",
   "efeito fotoeletrico",
+  "figura plana",
+  "segmentos de reta",
+  "soma das medidas dos ângulos",
+  "soma dos ângulos",
+  "ângulos de vértices",
+  "polígono",
+  "geometria plana",
+  "sem fenômeno físico",
+  "sem unidade física",
 ] as const;

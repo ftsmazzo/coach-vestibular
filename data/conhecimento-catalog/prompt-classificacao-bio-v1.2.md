@@ -10,6 +10,11 @@ Use structured output/JSON mode. O catálogo entra como contexto reduzido; a IA 
 5. Se confiança < 0.45 ou houver empate irresolvível, use `bio.__nao_classificado` e marque revisão.
 6. N3/conhecimentoExigido é texto livre curto, não ID.
 
+## Bio × Química (triagem)
+- Processos ecológicos, fisiológicos, celulares ou genéticos → Biologia, mesmo com termos químicos no texto-base.
+- Só classifique como Química se o comando exigir fórmula, concentração/cálculo químico, reação, pH ou transformação molecular.
+- Plantas/óleos essenciais como contexto + pergunta sobre separação/destilação/decantação → Química, não Biologia.
+
 ## Schema de saída
 ```json
 {

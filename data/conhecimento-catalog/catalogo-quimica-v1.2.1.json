@@ -1,12 +1,12 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.2",
+  "catalogVersion": "1.2.3",
   "materiaId": "quimica",
   "materiaLabel": "Química",
   "areaEnem": "Ciências da Natureza",
   "notas": "N0=área ENEM. Assunto=taxonomia Coach. N1=domínio. N2=escopo. N3=conhecimentoExigido livre por questão. Campos por escopo: descricao (cobre / NÃO cobre), keywords (fortes, peso 1.0), keywordsContexto (fracas, peso 0.4), exemplosEnunciado (referência semântica), negativeHints (termos que NÃO devem puxar a questão para cá), naoConfundirCom (IDs irmãos), regraDesempate, conceitoCanonic.",
   "changelog": [
-    "1.2.2: Refino desempate CO₂/metano vs política climática — negativeHints em escopos ambientais e sais/óxidos; crédito/mercado de carbono → Geografia (geo.fisica_ambiental.impactos_ambientais.mudancas_climaticas).",
+    "1.2.3: Refino Bio×Quím×Geo — esgoto/eutrofização/saneamento → Geografia; separação de misturas (decantação/destilação); negativeHints ambientais; plantas como contexto não puxam Biologia se pergunta método de separação.",
     "1.2.1: Correção textual no changelog do fallback; sem mudança estrutural de IDs.",
     "1.2.0: Padrão de schema unificado com Biologia v1.1+ — adicionados descricao, exemplosEnunciado, keywordsContexto, naoConfundirCom e regraDesempate a todos os escopos.",
     "1.2.0: Adicionado negativeHints (exclusão por termo) nos escopos de maior confusão (catálise, pilha x eletrólise, combustão x combustíveis, isomeria, Arrhenius x funções inorgânicas).",
@@ -1745,6 +1745,95 @@
       ]
     },
     {
+      "assuntoId": "materia_misturas",
+      "assuntoLabel": "Matéria e separação de misturas",
+      "dominios": [
+        {
+          "id": "quim.materia_misturas.separacao",
+          "label": "Separação de misturas",
+          "escopos": [
+            {
+              "id": "quim.materia_misturas.separacao.decantacao_liquidos_imisciveis",
+              "label": "Decantação de líquidos imiscíveis",
+              "descricao": "Separação de fases líquidas imiscíveis por decantação (funil de separação). NÃO cobre botânica ou origem vegetal dos componentes se o foco é método de separação.",
+              "keywords": [
+                "decantação",
+                "decantacao",
+                "líquidos imiscíveis",
+                "liquidos imisciveis",
+                "funil de separação",
+                "funil de separacao",
+                "fase aquosa",
+                "fase oleosa",
+                "óleo essencial",
+                "oleo essencial",
+                "separação de fases",
+                "separacao de fases"
+              ],
+              "keywordsContexto": [
+                "destilação por arraste de vapor",
+                "destilacao por arraste de vapor",
+                "mistura heterogênea",
+                "alecrim",
+                "capim-limão"
+              ],
+              "exemplosEnunciado": [
+                "Após destilação por arraste de vapor para obtenção de óleo essencial, a separação final entre óleo e fase aquosa ocorre por..."
+              ],
+              "negativeHints": [
+                "fotossíntese",
+                "anatomia vegetal",
+                "ecologia",
+                "sucessão ecológica"
+              ],
+              "naoConfundirCom": [
+                "quim.materia_misturas.separacao.destilacao_decantacao",
+                "bio.botanica.plantas.estrutura"
+              ],
+              "regraDesempate": "Se a questão apresenta plantas, óleos essenciais ou extratos vegetais, mas pergunta método de separação, decantação ou fases de mistura, classifique aqui. Só classifique como Biologia se o comando exigir botânica, fisiologia vegetal ou ecologia."
+            },
+            {
+              "id": "quim.materia_misturas.separacao.destilacao_decantacao",
+              "label": "Destilação, filtração e outros métodos de separação",
+              "descricao": "Destilação simples ou fracionada, filtração, centrifugação, cristalização e outros métodos de separação de misturas. NÃO cobre destilação fracionada de petróleo como combustível (ver ambiental.combustiveis).",
+              "keywords": [
+                "destilação",
+                "destilacao",
+                "filtração",
+                "filtracao",
+                "centrifugação",
+                "centrifugacao",
+                "cristalização",
+                "cristalizacao",
+                "separação de misturas",
+                "separacao de misturas",
+                "método de separação",
+                "metodo de separacao",
+                "arraste de vapor"
+              ],
+              "keywordsContexto": [
+                "mistura homogênea",
+                "mistura heterogênea",
+                "ponto de ebulição"
+              ],
+              "exemplosEnunciado": [
+                "Para separar água e sal dissolvido após evaporação parcial, utiliza-se o método de..."
+              ],
+              "negativeHints": [
+                "petróleo como combustível fóssil",
+                "política ambiental"
+              ],
+              "naoConfundirCom": [
+                "quim.materia_misturas.separacao.decantacao_liquidos_imisciveis",
+                "quim.ambiental.combustiveis.fossil"
+              ],
+              "regraDesempate": "Se o procedimento central é identificar ou aplicar método de separação de misturas, classifique aqui, mesmo que plantas ou produtos naturais apareçam como contexto."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "assuntoId": "ambiental",
       "assuntoLabel": "Química ambiental",
       "dominios": [
@@ -1789,7 +1878,7 @@
             {
               "id": "quim.ambiental.poluicao.agua",
               "label": "Poluição da água",
-              "descricao": "Poluição hídrica: eutrofização, esgoto, DBO e contaminantes domésticos/industriais.",
+              "descricao": "Poluição hídrica: eutrofização, esgoto, DBO e contaminantes domésticos/industriais. NÃO cobre impacto ambiental territorial/saneamento quando o foco é qualidade da água sem cálculo químico — preferir Geografia (geo.fisica_ambiental.impactos_ambientais.poluicao_residuos).",
               "keywords": [
                 "eutrofização",
                 "poluição da água",
@@ -1805,8 +1894,21 @@
               "exemplosEnunciado": [
                 "O excesso de nutrientes em um lago causa proliferação de algas e queda do oxigênio, processo chamado..."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": []
+              "negativeHints": [
+                "tratamento de esgoto",
+                "esgoto in natura",
+                "saneamento ambiental",
+                "eutrofização como impacto ambiental",
+                "proliferação de algas",
+                "poluição hídrica",
+                "qualidade da água",
+                "recursos hídricos",
+                "proteção do meio ambiente"
+              ],
+              "naoConfundirCom": [
+                "geo.fisica_ambiental.impactos_ambientais.poluicao_residuos"
+              ],
+              "regraDesempate": "Se a questão trata de esgoto, saneamento, eutrofização ou qualidade da água em contexto ambiental/territorial sem cálculo químico central, classifique em Geografia. Só classifique aqui se a resolução exigir reação química, concentração, pH ou transformação molecular de poluentes."
             },
             {
               "id": "quim.ambiental.poluicao.metais",

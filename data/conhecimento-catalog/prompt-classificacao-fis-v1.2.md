@@ -11,6 +11,10 @@ Use structured output/JSON mode. O catálogo entra como contexto reduzido; a IA 
 6. Se confiança < 0.45 ou houver empate irresolvível, use `fis.__nao_classificado` e marque revisão.
 7. N3/conhecimentoExigido é texto livre curto, não ID.
 
+## Física × Matemática (geometria)
+- Figura plana com segmentos de reta pedindo **soma de ângulos** sem fenômeno físico, unidade física, força, movimento ou raio de luz → **Matemática** (`mat.geometria_plana.angulos_poligonos.soma_angulos`), não Física.
+- Colisões com massas/velocidades e conservação da quantidade de movimento → `fis.mecanica.quantidade_movimento.colisoes`.
+
 ## Schema de saída
 ```json
 {

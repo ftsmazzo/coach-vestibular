@@ -10,6 +10,11 @@ Use structured output/JSON mode. O catálogo entra como contexto reduzido; a IA 
 5. Se confiança < 0.45 ou houver empate irresolvível, use `quim.__nao_classificado` e marque revisão.
 6. N3/conhecimentoExigido é texto livre curto, não ID.
 
+## Química × Biologia × Geografia
+- Esgoto, saneamento, eutrofização, qualidade da água em contexto ambiental → Geografia (`geo.fisica_ambiental.impactos_ambientais.poluicao_residuos`), não Química, salvo cálculo/reação central.
+- Nicotina, neurotransmissores, enfisema, sucessão ecológica → Biologia, não Química.
+- Separação de misturas (decantação, destilação, filtração) → Química, mesmo com plantas/produtos naturais no texto-base.
+
 ## Schema de saída
 ```json
 {

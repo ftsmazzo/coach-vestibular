@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.2",
+  "catalogVersion": "1.2.3",
   "materiaId": "matematica",
   "materiaLabel": "Matemática",
   "areaEnem": "Matemática e suas Tecnologias",
@@ -773,15 +773,26 @@
                 "transversal",
                 "alternos",
                 "correspondentes",
-                "suplementares"
+                "suplementares",
+                "relações angulares",
+                "relacoes angulares"
               ],
               "descricao": "Questões que exigem procedimento matemático de ângulos e retas paralelas. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar ângulos e retas paralelas para chegar à alternativa correta."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "raio de luz",
+                "espelho físico",
+                "força",
+                "vetor físico"
+              ],
+              "naoConfundirCom": [
+                "mat.geometria_plana.angulos_poligonos.soma_angulos",
+                "fis.optica.geometrica.reflexao"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Se pede soma de ângulos em figura plana formada por segmentos de reta sem fenômeno físico, prefira soma_angulos."
             },
             {
               "id": "mat.geometria_plana.relacoes.lugar_geometrico",
@@ -800,6 +811,53 @@
               "negativeHints": [],
               "naoConfundirCom": [],
               "keywordsContexto": []
+            }
+          ]
+        },
+        {
+          "id": "mat.geometria_plana.angulos_poligonos",
+          "label": "Ângulos em polígonos e figuras planas",
+          "escopos": [
+            {
+              "id": "mat.geometria_plana.angulos_poligonos.soma_angulos",
+              "label": "Soma de ângulos em figuras planas",
+              "keywords": [
+                "figura plana",
+                "segmentos de reta",
+                "soma dos ângulos",
+                "soma das medidas dos ângulos",
+                "ângulos de vértices",
+                "angulos de vertices",
+                "ângulos indicados",
+                "angulos indicados",
+                "polígono",
+                "poligono",
+                "triângulos",
+                "triangulos",
+                "retas concorrentes",
+                "relações angulares",
+                "relacoes angulares"
+              ],
+              "descricao": "Determinar soma ou medida de ângulos destacados em figura plana formada por segmentos de reta, usando relações angulares e propriedades de polígonos. NÃO cobre fenômeno físico, espelho, raio de luz ou grandezas físicas.",
+              "exemplosEnunciado": [
+                "Determine a soma das medidas dos ângulos indicados na figura formada por segmentos de reta."
+              ],
+              "negativeHints": [
+                "raio de luz",
+                "espelho",
+                "reflexão física",
+                "força",
+                "movimento",
+                "velocidade",
+                "colisão",
+                "unidade física"
+              ],
+              "naoConfundirCom": [
+                "fis.optica.geometrica.reflexao",
+                "mat.geometria_plana.relacoes.angulos"
+              ],
+              "keywordsContexto": [],
+              "regraDesempate": "Se a questão pede soma ou medida de ângulos em figura plana sem fenômeno físico, classifique aqui. Só use Física se os segmentos representarem raios de luz, forças, vetores físicos ou grandezas físicas."
             }
           ]
         }

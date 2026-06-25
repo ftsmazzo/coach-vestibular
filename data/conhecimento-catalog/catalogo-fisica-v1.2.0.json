@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.2",
+  "catalogVersion": "1.2.3",
   "materiaId": "fisica",
   "materiaLabel": "Física",
   "areaEnem": "Ciências da Natureza",
@@ -430,10 +430,13 @@
               "keywords": [
                 "impulso",
                 "quantidade de movimento",
+                "momento linear",
                 "momentum",
                 "choque",
                 "colisão",
                 "colisao",
+                "colisões frontais",
+                "colisoes frontais",
                 "elastic"
               ],
               "descricao": "Impulso, quantidade de movimento, colisões e conservação do momento linear.",
@@ -444,10 +447,59 @@
                 "energia mecânica conservada"
               ],
               "naoConfundirCom": [
-                "fis.mecanica.energia.conservacao"
+                "fis.mecanica.energia.conservacao",
+                "fis.mecanica.quantidade_movimento.colisoes"
               ],
               "keywordsContexto": [],
-              "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
+              "regraDesempate": "Se envolve colisões entre corpos com massas e velocidades, prefira fis.mecanica.quantidade_movimento.colisoes quando o foco for conservação da quantidade de movimento."
+            }
+          ]
+        },
+        {
+          "id": "fis.mecanica.quantidade_movimento",
+          "label": "Quantidade de movimento e colisões",
+          "escopos": [
+            {
+              "id": "fis.mecanica.quantidade_movimento.colisoes",
+              "label": "Colisões e conservação da quantidade de movimento",
+              "keywords": [
+                "quantidade de movimento",
+                "momento linear",
+                "conservação da quantidade de movimento",
+                "conservacao da quantidade de movimento",
+                "colisão",
+                "colisao",
+                "colisões frontais",
+                "colisoes frontais",
+                "colisões sucessivas",
+                "colisoes sucessivas",
+                "impulso",
+                "sistema isolado",
+                "sem atrito",
+                "velocidade após a colisão",
+                "velocidade apos a colisao",
+                "massas diferentes"
+              ],
+              "descricao": "Conservação da quantidade de movimento em colisões frontais sucessivas; relação entre massas e velocidades antes/depois. NÃO cobre geometria pura de ângulos sem fenômeno físico.",
+              "exemplosEnunciado": [
+                "Moedas com massas diferentes colidem frontalmente sem atrito; determine a velocidade após cada colisão pela conservação da quantidade de movimento."
+              ],
+              "negativeHints": [
+                "figura plana",
+                "segmentos de reta",
+                "soma das medidas dos ângulos",
+                "polígono",
+                "geometria plana sem fenômeno físico"
+              ],
+              "naoConfundirCom": [
+                "fis.mecanica.energia.impulso_qdm",
+                "mat.geometria_plana.angulos_poligonos.soma_angulos"
+              ],
+              "keywordsContexto": [
+                "moedas",
+                "corpos em choque"
+              ],
+              "regraDesempate": "Se a questão envolve colisões entre corpos, massas, velocidades antes/depois e ausência de atrito, classifique aqui, mesmo que a resolução use proporções ou manipulação algébrica."
             }
           ]
         },
@@ -1051,11 +1103,20 @@
                 "regra de três sem grandezas físicas",
                 "função matemática abstrata",
                 "equação sem fenômeno físico",
-                "coordenadas cartesianas abstratas"
+                "coordenadas cartesianas abstratas",
+                "figura plana",
+                "segmentos de reta",
+                "soma das medidas dos ângulos",
+                "ângulos de vértices",
+                "polígono",
+                "geometria plana",
+                "sem fenômeno físico",
+                "sem unidade física"
               ],
               "naoConfundirCom": [
                 "fis.optica.geometrica.refracao",
-                "mat.geometria_analitica.plano.distancia_ponto"
+                "mat.geometria_analitica.plano.distancia_ponto",
+                "mat.geometria_plana.angulos_poligonos.soma_angulos"
               ],
               "keywordsContexto": [
                 "campo de visão",

@@ -1,12 +1,12 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.2.0",
+  "catalogVersion": "1.2.1",
   "materiaId": "biologia",
   "materiaLabel": "Biologia",
   "areaEnem": "Ciências da Natureza",
   "notas": "N0=área ENEM. Assunto=taxonomia Coach. N1=domínio. N2=escopo. N3=conhecimentoExigido livre por questão. Campos por escopo: descricao (cobre / NÃO cobre), keywords (fortes, peso 1.0), keywordsContexto (fracas, peso 0.4), exemplosEnunciado (referência semântica), negativeHints (termos que NÃO devem puxar a questão para cá), naoConfundirCom (IDs irmãos), regraDesempate, conceitoCanonic.",
   "changelog": [
-    "1.2.0: Alinhado ao padrão Química v1.2.0, incluindo negativeHints em todos os escopos e regra global de pesos.",
+    "1.2.1: Refino Bio×Quím — sucessão ecológica, nicotina/neurotransmissores, enfisema/alvéolos; plantas como contexto não puxam Bio se pergunta separação de misturas.",
     "1.2.0: Mantidos os acréscimos da v1.1.0: aberrações cromossômicas, biomoléculas, histologia, embriologia, genética de populações, sistemática/cladogramas e zoologia.",
     "1.2.0: Refatoração para o padrão Química v1.2 — descricao, exemplosEnunciado, keywordsContexto, negativeHints, naoConfundirCom e regraDesempate em escopos críticos.",
     "1.2.0: confiancaMinima elevada para 0.45; documentadas regras de multiLabel, política N3, pesos e fallback bio.__nao_classificado."
@@ -524,14 +524,24 @@
             {
               "id": "bio.ecologia.ecossistemas.sucessao",
               "label": "Sucessão ecológica",
-              "descricao": "Sucessão primária e secundária; comunidade pioneira → comunidade clímax.",
+              "descricao": "Sucessão primária e secundária; comunidade pioneira → comunidade clímax; recuperação após perturbações ambientais. NÃO cobre reação química ou composição molecular.",
               "keywords": [
                 "sucessão ecológica",
+                "sucessao ecologica",
                 "comunidade clímax",
                 "comunidade pioneira",
                 "sucessão primária",
                 "sucessão secundária",
-                "espécie pioneira"
+                "espécie pioneira",
+                "floresta regenerada",
+                "perturbações ambientais",
+                "perturbações ambientais em floresta",
+                "incêndios florestais",
+                "incendios florestais",
+                "seca",
+                "desmatamento",
+                "recuperação ecológica",
+                "recuperacao ecologica"
               ],
               "keywordsContexto": [
                 "recuperação de ecossistema",
@@ -540,8 +550,14 @@
               "exemplosEnunciado": [
                 "Após uma queimada, a recolonização gradual da área caracteriza a sucessão ecológica do tipo..."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": []
+              "negativeHints": [
+                "decantação",
+                "destilação",
+                "separação de misturas"
+              ],
+              "naoConfundirCom": [
+                "quim.materia_misturas.separacao.decantacao_liquidos_imisciveis"
+              ]
             },
             {
               "id": "bio.ecologia.ecossistemas.relacoes_interspecificas",
@@ -1164,15 +1180,19 @@
             {
               "id": "bio.fisiologia.sistemas.respiratorio",
               "label": "Sistema respiratório e trocas gasosas",
-              "descricao": "Ventilação pulmonar e trocas gasosas (hematose); transporte de O2 e CO2.",
+              "descricao": "Ventilação pulmonar e trocas gasosas (hematose); transporte de O2 e CO2; enfisema pulmonar e destruição alveolar. NÃO cobre concentração química ou propriedades moleculares como procedimento central.",
               "keywords": [
                 "sistema respiratório",
                 "hematose",
                 "alvéolo",
+                "alveolos pulmonares",
                 "trocas gasosas",
                 "ventilação pulmonar",
                 "difusão de gases",
-                "hemoglobina"
+                "hemoglobina",
+                "enfisema pulmonar",
+                "destruição das paredes dos alvéolos",
+                "problemas pulmonares obstrutivos crônicos"
               ],
               "keywordsContexto": [
                 "diafragma",
@@ -1181,8 +1201,15 @@
               "exemplosEnunciado": [
                 "A hematose ocorre nos alvéolos por difusão de gases entre o ar e o sangue dos capilares..."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": []
+              "negativeHints": [
+                "concentração molar",
+                "fórmula química",
+                "estequiometria"
+              ],
+              "naoConfundirCom": [
+                "quim.organicas.funcoes.alcool",
+                "quim.solucoes.concentracao.concentracao_comum"
+              ]
             },
             {
               "id": "bio.fisiologia.sistemas.excretor",
@@ -1212,16 +1239,24 @@
             {
               "id": "bio.fisiologia.sistemas.nervoso",
               "label": "Sistema nervoso e integração",
-              "descricao": "Neurônio, impulso nervoso, sinapse, arco reflexo, SNC/SNP e órgãos dos sentidos (olho, etc.).",
+              "descricao": "Neurônio, impulso nervoso, sinapse, neurotransmissores, dependência química (nicotina), arco reflexo, SNC/SNP e órgãos dos sentidos (olho, etc.). NÃO cobre propriedades químicas de substâncias como procedimento central.",
               "keywords": [
                 "sistema nervoso",
                 "neurônio",
                 "sinapse",
+                "sinapses",
                 "impulso nervoso",
                 "arco reflexo",
                 "SNC",
                 "SNP",
-                "potencial de ação"
+                "potencial de ação",
+                "nicotina",
+                "dependência química",
+                "neurotransmissores",
+                "liberação de neurotransmissores",
+                "vapes",
+                "cigarro eletrônico",
+                "cigarro eletronico"
               ],
               "keywordsContexto": [
                 "reflexo patelar",
@@ -1234,8 +1269,17 @@
                 "No arco reflexo patelar, o estímulo é conduzido inicialmente pelo neurônio...",
                 "A formação nítida da imagem no olho humano ocorre sobre a..."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": []
+              "negativeHints": [
+                "concentração",
+                "cobre",
+                "estanho",
+                "níquel",
+                "zinco",
+                "fórmula química"
+              ],
+              "naoConfundirCom": [
+                "quim.solucoes.concentracao.concentracao_comum"
+              ]
             },
             {
               "id": "bio.fisiologia.sistemas.reprodutor",

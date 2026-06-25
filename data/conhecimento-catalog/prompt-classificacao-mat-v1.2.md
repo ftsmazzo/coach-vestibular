@@ -11,6 +11,10 @@ Use structured output/JSON mode. O catálogo entra como contexto reduzido; a IA 
 6. Se confiança < 0.45 ou houver empate irresolvível, use `mat.__nao_classificado` e marque revisão.
 7. N3/conhecimentoExigido é texto livre curto, não ID.
 
+## Geometria plana × Física
+- Soma ou medida de ângulos em figura plana formada por segmentos de reta, sem fenômeno físico → `mat.geometria_plana.angulos_poligonos.soma_angulos`.
+- Só use escopos de Física se houver espelho/raio de luz/força/movimento como núcleo da resolução.
+
 ## Schema de saída
 ```json
 {

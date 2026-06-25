@@ -39,6 +39,8 @@ const REGRAS: Regra[] = [
       /\b(grafico v.?t|grafico s.?t|velocidade media|km\/h)\b/,
       /\b(forca resultante|leis de newton|newton)\b/,
       /\b(lampada|lampadas|iluminacao|potencia da lampada|lumen|lux\b|watt\b)\b/,
+      /\b(colisao|colisão|colisoes|colisões|quantidade de movimento|momento linear|conservacao da quantidade|impulso)\b/,
+      /\b(velocidade apos a colisao|velocidade após a colisão|sem atrito)\b/,
     ],
   },
   {
@@ -53,6 +55,8 @@ const REGRAS: Regra[] = [
       /\b(nitrato|mercurio|enferrujado)\b/,
       /\bquimic/,
       /\b(2,4-dinitrofenol|dnp\b)/,
+      /\b(decantacao|decantação|destilacao|destilação|separacao de misturas|separação de misturas|funil de separacao|funil de separação)\b/,
+      /\b(liquidos imisciveis|líquidos imiscíveis|oleo essencial|óleo essencial|arraste de vapor)\b/,
     ],
   },
   {
@@ -77,6 +81,8 @@ const REGRAS: Regra[] = [
       /\b(plaqueta|coagulacao|anticorpo|linhaca|linhaça|terapia celular|terapia genica)\b/,
       /\b(olho humano|retina|cornea|visao|visão|eletrocardiograma|ecg\b)\b/,
       /\b(mamute|dna de osso|datacao por carbono|meia-vida do carbono)\b/,
+      /\b(sucessao ecologica|sucessão ecológica|perturbacoes ambientais|perturbações ambientais|incendio florest|incêndio florest|recuperacao ecologica|recuperação ecológica)\b/,
+      /\b(nicotina|neurotransmissor|vape|cigarro eletronico|cigarro eletrônico|enfisema pulmonar|alveolos pulmonares|alvéolos pulmonares)\b/,
     ],
   },
 ];

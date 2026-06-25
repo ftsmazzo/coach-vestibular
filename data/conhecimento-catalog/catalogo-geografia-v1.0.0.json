@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.0.2",
+  "catalogVersion": "1.0.3",
   "materiaId": "geografia",
   "materiaLabel": "Geografia",
   "areaEnem": "Ciências Humanas e suas Tecnologias",
@@ -398,19 +398,39 @@
             {
               "id": "geo.fisica_ambiental.impactos_ambientais.poluicao_residuos",
               "label": "Poluição, resíduos e degradação ambiental",
-              "descricao": "Cobre poluição do ar, água e solo, resíduos sólidos, contaminação, saneamento ambiental e impactos territoriais. NÃO cobre reação química de poluentes como Química se o cálculo/estequiometria for central.",
+              "descricao": "Cobre poluição do ar, água e solo, resíduos sólidos, contaminação, saneamento ambiental, eutrofização e impactos territoriais em recursos hídricos. NÃO cobre reação química, cálculo de concentração, pH ou estequiometria como procedimento central.",
               "keywords": [
                 "poluição",
                 "resíduos sólidos",
                 "lixo",
                 "contaminação",
                 "degradação ambiental",
-                "saneamento ambiental"
+                "saneamento ambiental",
+                "eutrofização",
+                "esgoto in natura",
+                "tratamento de esgoto",
+                "qualidade da água",
+                "recursos hídricos",
+                "poluição hídrica",
+                "matéria orgânica no esgoto",
+                "excesso de nutrientes",
+                "proliferação de algas",
+                "reprodução descontrolada de algas"
               ],
               "keywordsContexto": [
                 "aterro",
                 "esgoto",
-                "rios urbanos"
+                "rios urbanos",
+                "micróbios",
+                "ação microbiana",
+                "biorreatores",
+                "tratamento biológico",
+                "água tratada",
+                "proteção do meio ambiente",
+                "instalações de tratamento de esgoto",
+                "oxigênio dissolvido",
+                "nitrogênio",
+                "lançamento de matéria orgânica"
               ],
               "exemplosEnunciado": [
                 "Uma questão exige aplicar poluição, resíduos e degradação ambiental para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
@@ -421,9 +441,10 @@
                 "estequiometria"
               ],
               "naoConfundirCom": [
-                "quim.solucoes.concentracao.concentracao_comum"
+                "quim.solucoes.concentracao.concentracao_comum",
+                "quim.ambiental.poluicao.agua"
               ],
-              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente.",
+              "regraDesempate": "Se a questão trata de esgoto, saneamento, poluição hídrica, excesso de nutrientes, eutrofização, proliferação de algas ou qualidade da água em contexto ambiental/territorial, classifique aqui. Só classifique como Química se a resolução exigir cálculo químico, concentração, reação, fórmula, pH ou transformação molecular. Termos como nitrogênio, oxigênio dissolvido, matéria orgânica, micróbios ou tratamento biológico não bastam para Química se o comando cobra impacto ambiental.",
               "conceitoCanonic": "poluicao_ambiental"
             },
             {

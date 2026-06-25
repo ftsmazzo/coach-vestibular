@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.2.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.0.1",
   "materiaId": "ingles",
   "materiaLabel": "Inglês",
   "areaEnem": "Linguagens, Códigos e suas Tecnologias",
@@ -86,12 +86,23 @@
                 "suggest",
                 "implicit",
                 "conclude",
-                "read between the lines"
+                "read between the lines",
+                "argumento invalidado",
+                "trecho da tira",
+                "no contexto da tira",
+                "contradiz",
+                "enfraquece o argumento",
+                "fala do personagem",
+                "sequência da tira",
+                "sequencia da tira"
               ],
               "keywordsContexto": [
                 "it can be inferred",
                 "the passage suggests",
-                "likely means"
+                "likely means",
+                "invalidates the argument",
+                "weakens the argument",
+                "which speech"
               ],
               "negativeHints": [
                 "infere-se em português",
@@ -104,7 +115,7 @@
                 "ing.reading.comprehension.explicit_information",
                 "ing.vocabulary.context.expression_meaning"
               ],
-              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "regraDesempate": "Se a questão pede identificar qual fala/trecho em inglês contradiz, invalida ou enfraquece uma posição de personagem em tira ou texto multimodal, classifique aqui, mesmo com comando em português. Escolha este escopo apenas se o conhecimento exigido corresponder à inferência em leitura de inglês; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
               "conceitoCanonic": null
             },
             {
@@ -391,12 +402,24 @@
                 "phrasal verb",
                 "phrase means",
                 "figurative meaning",
-                "meaning of the expression"
+                "meaning of the expression",
+                "That'll be the day",
+                "equivale em português",
+                "equivale, em portugues",
+                "sentido da expressão",
+                "sentido da expressao",
+                "expressão idiomática",
+                "expressao idiomatica",
+                "ironia",
+                "descrença",
+                "pode esperar sentado"
               ],
               "keywordsContexto": [
                 "in this context",
                 "the expression suggests",
-                "idiomatic"
+                "idiomatic",
+                "equivalent in Portuguese",
+                "meaning in context"
               ],
               "negativeHints": [
                 "expressão em português",
@@ -408,7 +431,7 @@
               "naoConfundirCom": [
                 "ing.vocabulary.context.word_meaning"
               ],
-              "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
+              "regraDesempate": "Se a questão pede equivalência em português ou sentido contextual de fala/expressão em inglês, classifique aqui, mesmo que o comando esteja em português. Escolha este escopo apenas se o conhecimento exigido corresponder a expressão idiomática/contextual em inglês; se for palavra isolada simples, prefira word_meaning.",
               "conceitoCanonic": null
             },
             {
