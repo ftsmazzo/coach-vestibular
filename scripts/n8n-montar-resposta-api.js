@@ -50,8 +50,8 @@ if (first.erro || first.precisa_sanitizacao) {
 const questoes = items
   .map((i) => i.json)
   .filter((q) => q && q.numero > 0 && q.valido !== false)
-  .map((q) => ({
-    indice_global: q.indice_global ?? null,
+  .map((q, idx) => ({
+    indice_global: idx + 1,
     numero: q.numero,
     secao: q.secao ?? null,
     opcao_lingua_estrangeira: q.opcao_lingua_estrangeira ?? null,

@@ -1,5 +1,6 @@
 import type { N8nQuestaoExtraida } from "@/lib/prova-atribuir-area-bloco";
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
+import { ENUNCIADO_VALIDACAO_MIN_CHARS } from "@/lib/prova-texto-prova";
 
 export type N8nExtracaoMetricas = {
   total_itens?: number;
@@ -146,21 +147,39 @@ export function validarCoberturaExtracaoN8n(
   rows: ProvaQuestaoRow[],
   totalEsperado: number | null
 ): { ok: boolean; motivo?: string } {
-  const comEnunciado = rows.filter((r) => (r.enunciado?.trim().length ?? 0) >= 20);
-  const numerosUnicos = new Set(comEnunciado.map((r) => r.numero)).size;
+  if (rows.length === 0) {
+    return { ok: false, motivo: "Nenhuma questão após normalização do n8n." };
+  }
 
-  if (comEnunciado.length === 0) {
+  const ordens = rows.map((r) => r.ordemExtracao ?? 0);
+  const ordemContigua =
+    ordens.length > 0 &&
+    ordens.every((o, i) => o === i + 1);
+  if (!ordemContigua) {
+    return {
+      ok: false,
+      motivo: "Ordens de extração não contíguas após import n8n — use fallback.",
+    };
+  }
+
+  const comEnunciadoOk = rows.filter(
+    (r) => (r.enunciado?.trim().length ?? 0) >= ENUNCIADO_VALIDACAO_MIN_CHARS
+  );
+  const comEnunciadoMin = rows.filter((r) => (r.enunciado?.trim().length ?? 0) >= 20);
+  const numerosUnicos = new Set(rows.map((r) => r.numero)).size;
+
+  if (comEnunciadoMin.length === 0) {
     return { ok: false, motivo: "Nenhuma questão com enunciado válido." };
   }
 
   if (!totalEsperado || totalEsperado <= 0) {
-    return comEnunciado.length >= 10
+    return comEnunciadoMin.length >= 10
       ? { ok: true }
       : { ok: false, motivo: "Poucas questões extraídas e total esperado não cadastrado." };
   }
 
   const minUnicos = Math.floor(totalEsperado * COBERTURA_MIN_N8N);
-  const minLinhas = Math.floor(totalEsperado * COBERTURA_MIN_N8N);
+  const minLinhasFisicas = Math.floor(totalEsperado * COBERTURA_MIN_N8N);
 
   if (numerosUnicos < minUnicos) {
     return {
@@ -169,10 +188,18 @@ export function validarCoberturaExtracaoN8n(
     };
   }
 
-  if (comEnunciado.length < minLinhas) {
+  if (rows.length < minLinhasFisicas) {
     return {
       ok: false,
-      motivo: `Cobertura física ${comEnunciado.length}/${totalEsperado} linhas (mín. ${minLinhas}).`,
+      motivo: `Cobertura física ${rows.length}/${totalEsperado} linhas (mín. ${minLinhasFisicas}).`,
+    };
+  }
+
+  const ratioOk = comEnunciadoOk.length / rows.length;
+  if (ratioOk < 0.55) {
+    return {
+      ok: false,
+      motivo: `Muitos enunciados curtos após import (${comEnunciadoOk.length}/${rows.length} ≥ ${ENUNCIADO_VALIDACAO_MIN_CHARS} chars) — fallback recomendado.`,
     };
   }
 

@@ -88,24 +88,63 @@ function alternativasN8nParaTexto(
   return linhas.length ? linhas.join("\n") : undefined;
 }
 
+function montarEnunciadoN8n(item: N8nQuestaoExtraida): string | undefined {
+  const base = item.texto_base_anterior?.trim();
+  const en = item.enunciado?.trim();
+  if (base && en) return `${base}\n\n${en}`;
+  return en || base || undefined;
+}
+
+function contagemAlternativasN8n(
+  alt: Record<string, string> | string | null | undefined
+): number {
+  if (!alt) return 0;
+  if (typeof alt === "string") {
+    return (alt.match(/\([A-E]\)/g) ?? []).length;
+  }
+  return Object.keys(alt).filter((k) => /^[A-E]$/i.test(k)).length;
+}
+
+/** Descarta fragmentos típicos de falso positivo do parser n8n (ordinais soltos, continuação de enunciado). */
+export function itemN8nEspurio(item: N8nQuestaoExtraida): boolean {
+  const en = item.enunciado?.trim() ?? "";
+  if (!en) return true;
+
+  const nAlts = contagemAlternativasN8n(item.alternativas);
+  const temBase = Boolean(item.texto_base_anterior?.trim());
+
+  if (nAlts >= 4) {
+    if (!temBase && /^[a-zà-ÿ]/.test(en) && en.length < 45 && !/\?/.test(en)) {
+      return true;
+    }
+    return false;
+  }
+
+  if (/^\d{0,2}[ªº°]\s/.test(en)) return true;
+  if (/^[ªº°]\s/.test(en)) return true;
+  if (/^[éa]\s+x\s+cm/i.test(en)) return true;
+  if (/^logaritmo\s+de\s+x/i.test(en)) return true;
+  if (en.length < 25 && !temBase) return true;
+
+  return false;
+}
+
 export function n8nItensParaRows(itens: N8nQuestaoExtraida[]): ProvaQuestaoRow[] {
-  const validos = itens.filter((i) => i.valido !== false && i.numero > 0);
+  const validos = itens.filter(
+    (i) => i.valido !== false && i.numero > 0 && !itemN8nEspurio(i)
+  );
   const sorted = [...validos].sort(
     (a, b) => (a.indice_global ?? a.numero) - (b.indice_global ?? b.numero)
   );
 
   return sorted.map((item, idx) => {
-    const ordem = item.indice_global && item.indice_global > 0 ? item.indice_global : idx + 1;
+    const ordem = idx + 1;
+    const enunciado = montarEnunciadoN8n(item);
     const area =
       secaoN8nParaAreaBloco(item.secao) ??
       (opcaoLinguaN8nParaVariante(item.opcao_lingua_estrangeira) !== "COMUM"
         ? normalizarAreaBloco("Língua estrangeira moderna – Inglês")
         : null);
-
-    let observacoes: string | undefined;
-    if (item.texto_base_anterior?.trim()) {
-      observacoes = `[texto-base compartilhado]\n${item.texto_base_anterior.trim().slice(0, 500)}`;
-    }
 
     return {
       ordemExtracao: ordem,
@@ -114,9 +153,8 @@ export function n8nItensParaRows(itens: N8nQuestaoExtraida[]): ProvaQuestaoRow[]
       areaBloco: area ?? undefined,
       materia: "A classificar",
       assunto: "A classificar",
-      enunciado: item.enunciado?.trim() || undefined,
+      enunciado,
       alternativas: alternativasN8nParaTexto(item.alternativas),
-      observacoes,
     };
   });
 }

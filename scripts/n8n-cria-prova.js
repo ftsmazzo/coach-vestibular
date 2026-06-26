@@ -380,6 +380,17 @@ function detectarIdiomaOuOpcao(secao, numero, textoAntes) {
     if (idxEsp > idxIng) return 'espanhol';
   }
 
+  const mIng = base.match(/quest(?:ões|oes)\s+de\s+(\d{1,2})\s+a\s+(\d{1,2})[^\n]*ingl[eê]s/i);
+  if (mIng && numero >= Number(mIng[1]) && numero <= Number(mIng[2])) return 'ingles';
+
+  const mEsp = base.match(/quest(?:ões|oes)\s+de\s+(\d{1,2})\s+a\s+(\d{1,2})[^\n]*espanhol/i);
+  if (mEsp && numero >= Number(mEsp[1]) && numero <= Number(mEsp[2])) return 'espanhol';
+
+  if (/Leia o texto para responder[^\n]*quest(?:ões|oes)\s+de\s+21\s+a\s+26/i.test(base.slice(-800)) &&
+      numero >= 21 && numero <= 26) {
+    return 'ingles';
+  }
+
   if (secao && /ingl[eê]s/i.test(secao)) return 'ingles';
   if (secao && /espanhol/i.test(secao)) return 'espanhol';
 
@@ -585,7 +596,7 @@ function precisaSanitizacaoPorCobertura(texto, questoes) {
   const ordinaisNoEnunciado = validas.filter(q =>
     /^\d{1,2}[ªº°]\s/.test(String(q.enunciado || '').trim())
   ).length;
-  if (ordinaisNoEnunciado >= 3) return true;
+  if (ordinaisNoEnunciado >= 5) return true;
 
   return false;
 }
