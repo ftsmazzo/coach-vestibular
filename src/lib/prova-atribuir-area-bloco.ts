@@ -12,6 +12,7 @@ export type N8nQuestaoExtraida = {
   alternativas?: Record<string, string> | string | null;
   texto_base_anterior?: string | null;
   valido?: boolean;
+  precisa_revisao_imagem?: boolean;
 };
 
 function blocoTituloParaArea(titulo: string): string | null {
@@ -88,11 +89,18 @@ function alternativasN8nParaTexto(
   return linhas.length ? linhas.join("\n") : undefined;
 }
 
+function repararEnunciadoN8n(en: string): string {
+  return en
+    .replace(/^ª\s+figura\b/i, "A figura")
+    .replace(/^º\s+diagrama\b/i, "O diagrama");
+}
+
 function montarEnunciadoN8n(item: N8nQuestaoExtraida): string | undefined {
   const base = item.texto_base_anterior?.trim();
   const en = item.enunciado?.trim();
-  if (base && en) return `${base}\n\n${en}`;
-  return en || base || undefined;
+  const enReparado = en ? repararEnunciadoN8n(en) : en;
+  if (base && enReparado) return `${base}\n\n${enReparado}`;
+  return enReparado || base || undefined;
 }
 
 function contagemAlternativasN8n(
@@ -107,7 +115,7 @@ function contagemAlternativasN8n(
 
 /** Descarta fragmentos típicos de falso positivo do parser n8n (ordinais soltos, continuação de enunciado). */
 export function itemN8nEspurio(item: N8nQuestaoExtraida): boolean {
-  const en = item.enunciado?.trim() ?? "";
+  const en = repararEnunciadoN8n(item.enunciado?.trim() ?? "");
   if (!en) return true;
 
   const nAlts = contagemAlternativasN8n(item.alternativas);

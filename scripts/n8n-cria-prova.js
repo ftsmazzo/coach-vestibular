@@ -57,8 +57,66 @@ function cortarAnexosEGabaritos(texto) {
 
 function normalizarOrdinaisQuebrados(texto) {
   return String(texto || '')
-    .replace(/(\d{1,2})\s*\n\s*o\b/gi, '$1º')
-    .replace(/(\d{1,2})\s*\n\s*a\b/gi, '$1ª');
+    .replace(
+      /(\d{1,2})\s*\n\s*([oa])\b(?=\s*(?:colis[aã]o|quadrinho|par[aá]grafo))/gi,
+      (_, n, l) => (l.toLowerCase() === 'a' ? `${n}ª` : `${n}º`)
+    );
+}
+
+/** PDFs VUNESP/InDesign quebram subscritos em linhas (Na\\n2\\nTeO) — gera marcadores espúrios. */
+function colapsarSubscritosQuimica(texto) {
+  let t = String(texto || '');
+  for (let i = 0; i < 8; i++) {
+    const next = t
+      .replace(
+        /([A-Za-zÀ-ÿ]{1,6})\s*\n\s*(\d{1,2})\s*\n\s*(?=[A-Za-zÀ-ÿ])/g,
+        '$1$2'
+      )
+      .replace(
+        /([A-Za-zÀ-ÿ]{1,6})\s*\n\s*(\d{1,2})\s*(?=[+\-→=;,\s)]|$)/gm,
+        '$1$2'
+      )
+      .replace(/(\))\s*\n\s*(\d{1,2})\s*(?=[+\-→\s]|$)/gm, ')$2');
+    if (next === t) break;
+    t = next;
+  }
+  return t;
+}
+
+/** Subscritos de variáveis físicas quebrados no PDF (v\\n0, m\\nA). */
+function colapsarSubscritosFisica(texto) {
+  return String(texto || '')
+    .replace(/\b([mMvV])\s*\n\s*([0-9A-Za-z])\b/g, '$1_$2')
+    .replace(/⋅\s*v\s*\n\s*(\d)/g, '⋅ v$1')
+    .replace(/\bv\s*\n\s*(\d)\b/g, 'v$1');
+}
+
+function inserirQuebraAntesMarcadorQuestaoColado(texto) {
+  return String(texto || '')
+    .replace(
+      /([^\n\s])(QUEST(?:Ã|A|Õ|O)[oOº]?\s+\d{1,3}\b)/gi,
+      '$1\n$2'
+    )
+    .replace(
+      /(\([A-E]\)\s*[^\n]{0,120})(QUEST(?:Ã|A|Õ|O)[oOº]?\s+\d{1,3}\b)/gi,
+      '$1\n$2'
+    );
+}
+
+function recortarRodapePagina(bloco) {
+  return String(bloco || '')
+    .split(/\n\s*\d{1,2}\s*\n\s*VNSP\d+/i)[0]
+    .split(/\nVNSP\d+\s*\|/i)[0]
+    .split(/\nConfidencial até o momento da aplicação\.?/i)[0]
+    .trim();
+}
+
+function recortarProximaQuestaoDoBloco(bloco) {
+  const m = String(bloco || '').match(/\n\s*QUEST(?:Ã|A|Õ|O)[oOº]?\s+\d{1,3}\b/i);
+  if (m && m.index != null && m.index > 40) {
+    return bloco.slice(0, m.index).trim();
+  }
+  return bloco;
 }
 
 function removerMarcadoresDecorativos(texto) {
@@ -169,8 +227,33 @@ function separarTextoBaseCompartilhado(bloco) {
   };
 }
 
+/** Texto de apoio + pergunta na mesma questão (ex.: Q58 — «Leia o trecho…» + enunciado). */
+function separarTextoApoioEmbutido(bloco) {
+  const t = String(bloco || '').trim();
+  if (!/^Leia o (?:trecho|texto|poema)/i.test(t)) {
+    return { textoApoio: '', blocoQuestao: bloco };
+  }
+
+  const m = t.match(
+    /^((?:Leia o (?:trecho|texto|poema))[\s\S]*?\([^)]*\d{4}[^)]*\)\.?)\s*\n+\s*([\s\S]+)$/i
+  );
+  if (m && m[2].trim().length >= 15) {
+    return { textoApoio: m[1].trim(), blocoQuestao: m[2].trim() };
+  }
+
+  const m2 = t.match(
+    /^(Leia o trecho[\s\S]+?\.)\s*\n+\s*(No trecho[\s\S]+)$/i
+  );
+  if (m2) {
+    return { textoApoio: m2[1].trim(), blocoQuestao: m2[2].trim() };
+  }
+
+  return { textoApoio: '', blocoQuestao: bloco };
+}
+
 function normalizarAlternativas(bloco) {
   return String(bloco || '')
+    .replace(/(?:^|\n)\s*(\([A-E]\))\s*/g, '\n$1 ')
     .replace(/\s+(\([A-E]\)|[A-E]\)|\[[A-E]\]|[A-E]\.)\s+/g, '\n$1 ')
     .replace(/(?:^|\n)\s*([A-E])\s*\n+/g, '\n$1) ')
     .replace(/(?:^|\n)\s*([A-E])\s{2,}/g, '\n$1) ')
@@ -206,6 +289,9 @@ function separarAlternativas(bloco) {
 
     alternativas[letra] = bloco
       .slice(inicio, fim)
+      .split(/\n\s*QUEST(?:Ã|A|Õ|O)[oOº]?\s+\d/i)[0]
+      .split(/\n\s*\d{1,2}\s*\n\s*VNSP/i)[0]
+      .replace(/\s*QUEST(?:Ã|A|Õ|O)[oOº]?\s+\d[\s\S]*$/, '')
       .replace(/\n+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
@@ -225,7 +311,11 @@ function retirarTextoBaseDeAlternativas(alternativas) {
     const idx = encontrarInicioTextoBase(valor);
 
     if (idx > 0) {
-      textoBaseProximo = valor.slice(idx).trim();
+      const candidato = valor.slice(idx).trim();
+      const altCount = (normalizarAlternativas(candidato).match(/\([A-E]\)/g) || []).length;
+      if (altCount >= 4) continue;
+
+      textoBaseProximo = candidato;
       alternativas[letra] = valor.slice(0, idx).trim();
     }
   }
@@ -234,6 +324,13 @@ function retirarTextoBaseDeAlternativas(alternativas) {
     alternativas,
     textoBaseProximo
   };
+}
+
+function repararEnunciadoCorrupto(enunciado) {
+  return String(enunciado || '')
+    .replace(/^ª\s+figura\b/i, 'A figura')
+    .replace(/^º\s+diagrama\b/i, 'O diagrama')
+    .trim();
 }
 
 function limparFinal(texto) {
@@ -263,18 +360,39 @@ function linhaPareceInicioEnunciado(linha) {
   if (/^(?:Para responder|Leia o|Read Text|Read the|Analise o|examine o|When Tinder)/i.test(t)) {
     return false;
   }
+  if (/^(?:Balanceando|Tendo como base|A massa|A soma|O pH|Uma fin|Com o intuito|Determinada quantidade|O benzeno|A seguir|A figura|Desprezando)/i.test(t)) {
+    return true;
+  }
   if (/^["'""«(\[]/.test(t)) return t.length >= 12;
   return /^(?:[A-ZÀ-ÿ"([]|O |A |No |Na |Depreende|Consid|Analis|Examin|The |In |When |Pelo )/.test(t);
+}
+
+function linhaPareceContinuacaoFormula(linha) {
+  const t = String(linha || '').trim();
+  if (!t) return true;
+  if (/^\([A-E]\)/.test(t)) return false;
+  return /^(?:\+|\→|→|=|\)|\(|[A-Z][a-z]?[\d]*|[∆Δ][Hh]|mol\b|kJ|mg\b|Te|Na|Cl|H2|I2|C6|C2|Ag|HCl|NaCl|H2O)/i.test(t)
+    || /^[\d\s+\-→=;,.]+$/.test(t);
+}
+
+function contextoQuimicoAntesNumero(texto, indexMatch) {
+  const antes = texto.slice(Math.max(0, indexMatch - 40), indexMatch);
+  return /(?:Na|H|TeO|Te|Cl|Ag|C|O|I|Mg|K|Fe|Al|Zn|S|∆|Δ|\(|\+|\→|→|=)\s*$/i.test(antes);
 }
 
 function contextoPermiteNumeroQuestao(texto, indexMatch, numStr) {
   const num = Number(numStr);
   if (num < 1 || num > 120) return false;
+  if (contextoQuimicoAntesNumero(texto, indexMatch)) return false;
   const depois = texto.slice(indexMatch);
   const m = depois.match(/^\d{1,2}\s*\n([^\n]+)/);
   if (!m) return false;
   const linha = m[1].trim();
   if (/^[ªº°oa]\b/i.test(linha)) return false;
+  if (/^colis[aã]o/i.test(linha)) return false;
+  if (/^quadrinho/i.test(linha)) return false;
+  if (/^par[aá]grafo/i.test(linha)) return false;
+  if (linhaPareceContinuacaoFormula(linha)) return false;
   return linhaPareceInicioEnunciado(linha);
 }
 
@@ -298,11 +416,11 @@ function marcadorOrdinalReferencia(texto, index, raw) {
 function extrairMarcadores(texto) {
   texto = removerMarcadoresDecorativos(texto);
 
-  const regex = /(?:^|\n)\s*(?:q\s*u\s*e\s*s\s*t\s*[ãa]\s*o\s*(\d{1,3})|QUESTÃO\s+(\d{1,3})|Quest(?:ão|ao)\s+(\d{1,3})|Q(?:uestão)?\.?\s*(\d{1,3})\b|(\d{2})\s*[-–]\s+)/gi;
+  const regex = /(?:^|\n)\s*(?:q\s*u\s*e\s*s\s*t\s*[ãa]\s*o\s*(\d{1,3})|QUEST(?:Ã|A|Õ|O)[oOº]?\s+(\d{1,3})|QUESTÃO\s+(\d{1,3})|Quest(?:ã|Ã|a|A)(?:o|O|ão|ÃO)?\s+(\d{1,3})|Q(?:uestão)?\.?\s*(\d{1,3})\b|(\d{2})\s*[-–]\s+)/gi;
 
   const marcadores = [...texto.matchAll(regex)]
     .map(m => ({
-      numero: Number(m[1] || m[2] || m[3] || m[4] || m[5]),
+      numero: Number(m[1] || m[2] || m[3] || m[4] || m[5] || m[6]),
       index: m.index,
       fimCabecalho: m.index + m[0].length,
       raw: m[0].trim()
@@ -351,7 +469,27 @@ function filtrarMarcadoresEspurios(texto, marcadores) {
 
 function blocoPareceTextoBase(bloco) {
   const t = String(bloco || '').trim();
-  return /^(?:Para responder(?:\s+às|\s+a)\s+quest(?:ões|oes)|Leia o (?:texto|trecho|poema)|Read (?:Text|the)|Analise o gr[aá]fico|examine o gr[aá]fico|When Tinder)/i.test(t);
+  if (
+    !/^(?:Para responder(?:\s+às|\s+a)\s+quest(?:ões|oes)|Leia o (?:texto|trecho|poema)|Read (?:Text|the)|Analise o gr[aá]fico|examine o gr[aá]fico|When Tinder)/i.test(
+      t
+    )
+  ) {
+    return false;
+  }
+  const altCount = (normalizarAlternativas(bloco).match(/\([A-E]\)/g) || []).length;
+  if (altCount >= 4) return false;
+  return true;
+}
+
+function preencherAlternativasImagem(alternativas, marcadores) {
+  if (marcadores.length < 5) return false;
+  const letras = marcadores.map(
+    m => m[2] || m[3] || m[4] || m[5]
+  );
+  const unicas = [...new Set(letras)];
+  if (unicas.length < 5) return false;
+  const preenchidas = unicas.filter(l => (alternativas[l] || '').trim().length > 2);
+  return preenchidas.length < 4;
 }
 
 function blocoPareceQuestao(bloco) {
@@ -363,10 +501,12 @@ function blocoPareceQuestao(bloco) {
   const temAlternativa =
     /(?:^|\s)(\([A-E]\)|[A-E]\)|\[[A-E]\]|[A-E]\.)\s+/.test(normalizado);
 
-  const temPerguntaOuComando =
-    /\?|assinale|indique|considere|according|based on|de acordo|é correto|correta|correto|alternativa|preench|complete|responda|answer|considerando|com base|no texto|o texto|a partir|será o|ser[aá] o|é igual a|equivale/i.test(b);
+  const marcadoresAlt = (normalizado.match(/\([A-E]\)/g) || []).length;
 
-  return temAlternativa || temPerguntaOuComando;
+  const temPerguntaOuComando =
+    /\?|assinale|indique|considere|according|based on|de acordo|é correto|correta|correto|alternativa|preench|complete|responda|answer|considerando|com base|no texto|o texto|a partir|será o|ser[aá] o|é igual a|equivale|balanceando|tendo como base|as lacunas|a soma dos|a massa total|ser[aá]|pode.?ser|deve.?ser|est[aá] representad|é:\s*$/i.test(b);
+
+  return temAlternativa || marcadoresAlt >= 5 || temPerguntaOuComando;
 }
 
 function detectarIdiomaOuOpcao(secao, numero, textoAntes) {
@@ -435,15 +575,64 @@ function criarBlocoAuditoria(marcador, bloco, texto, textoBasePendente) {
   };
 }
 
+function blocoParecePreambuloEnunciado(enunciado) {
+  const t = String(enunciado || '').trim();
+  if (!t || t.length < 12) return false;
+  if (/\([A-E]\)\s/.test(t)) return false;
+  return /(?:equa[cç][ãa]o|n[aã]o balanceada|Analise a|Analise o|fórmula|∆H|ΔH|mol de|benzeno|Tendo como base|Elemento|Concentra[cç][ãa]o|tabela apresenta|Na2TeO|H2O|C6H6|C2H2|acetileno|telurito|entalpia|estequiom[eé]tric)/i.test(
+    t
+  );
+}
+
+function anexarPreambulosFragmentados(questoes) {
+  const out = [];
+  let preambulo = '';
+
+  for (const q of questoes) {
+    if (!q.valido && blocoParecePreambuloEnunciado(q.enunciado)) {
+      preambulo = preambulo
+        ? `${preambulo}\n\n${q.enunciado}`.trim()
+        : String(q.enunciado || '').trim();
+      continue;
+    }
+
+    if (q.valido && preambulo) {
+      q.enunciado = `${preambulo}\n\n${q.enunciado}`.replace(/\s+/g, ' ').trim();
+      preambulo = '';
+    }
+
+    out.push(q);
+  }
+
+  return out.length ? out : questoes;
+}
+
 function consolidarSaida(questoes) {
   const saida = [];
 
   for (const q of questoes) {
     if (!q.valido) {
       if (blocoPareceTextoBase(q.enunciado)) continue;
+      if (blocoParecePreambuloEnunciado(q.enunciado)) continue;
       const duplicataValida = questoes.some(x => x.valido && x.numero === q.numero);
       if (duplicataValida) continue;
+      if (
+        /^\d{1,2}$/.test(String(q.marcador_original || '').trim()) &&
+        q.numero >= 1 &&
+        q.numero <= 20
+      ) {
+        continue;
+      }
       if (q.enunciado.length < 25) continue;
+    }
+    if (
+      q.valido &&
+      /^\d{1,2}$/.test(String(q.marcador_original || '').trim()) &&
+      questoes.some(x => x.valido && x.numero !== q.numero && x.marcador_original && /QUEST/i.test(x.marcador_original))
+    ) {
+      const esperado = questoes.filter(x => x.valido && /QUEST/i.test(String(x.marcador_original || ''))).map(x => x.numero);
+      const maxEsperado = esperado.length ? Math.max(...esperado) : 0;
+      if (q.numero <= 20 && q.numero < maxEsperado - 5) continue;
     }
     saida.push(q);
   }
@@ -460,6 +649,9 @@ function normalizarOrdinaisDeQuestaoEmTextoCompartilhado(texto) {
 
 function extrairQuestoes(texto) {
   texto = cortarAnexosEGabaritos(limparTexto(texto));
+  texto = colapsarSubscritosQuimica(texto);
+  texto = colapsarSubscritosFisica(texto);
+  texto = inserirQuebraAntesMarcadorQuestaoColado(texto);
   texto = normalizarOrdinaisQuebrados(texto);
   texto = normalizarOrdinaisDeQuestaoEmTextoCompartilhado(texto);
   texto = removerMarcadoresDecorativos(texto);
@@ -497,8 +689,17 @@ function extrairQuestoes(texto) {
       continue;
     }
 
+    bloco = recortarRodapePagina(recortarProximaQuestaoDoBloco(bloco));
+
+    const embutido = separarTextoApoioEmbutido(bloco);
+    const textoBaseEmbutido = embutido.textoApoio;
+    bloco = embutido.blocoQuestao;
+
     const separadoAntes = separarTextoBaseCompartilhado(bloco);
     bloco = separadoAntes.blocoQuestao;
+
+    const blocoNormalizado = normalizarAlternativas(bloco);
+    const marcadoresAlt = [...blocoNormalizado.matchAll(/\n?(\(([A-E])\)|([A-E])\)|\[([A-E])\]|([A-E])\.)\s+/g)];
 
     const resultado = separarAlternativas(bloco);
     const alternativasProcessadas = retirarTextoBaseDeAlternativas(resultado.alternativas);
@@ -509,6 +710,16 @@ function extrairQuestoes(texto) {
       if (valorLimpo) alternativasLimpas[letra] = valorLimpo;
     }
 
+    let precisaRevisaoImagem = false;
+    if (preencherAlternativasImagem(alternativasLimpas, marcadoresAlt)) {
+      for (const letra of ['A', 'B', 'C', 'D', 'E']) {
+        if (!alternativasLimpas[letra]?.trim()) {
+          alternativasLimpas[letra] = '[revisar: alternativa em imagem]';
+        }
+      }
+      precisaRevisaoImagem = true;
+    }
+
     const textoBaseDetectado =
       separadoAntes.textoBaseProximo ||
       alternativasProcessadas.textoBaseProximo ||
@@ -517,28 +728,34 @@ function extrairQuestoes(texto) {
     const textoAntes = texto.slice(0, marcador.index);
     const secao = obterSecaoAntes(textoAntes);
 
+    const qtdAlts = Object.keys(alternativasLimpas).length;
     questoes.push({
       indice_global: questoes.length + 1,
       numero: marcador.numero,
       marcador_original: marcador.raw,
       secao,
       opcao_lingua_estrangeira: detectarIdiomaOuOpcao(secao, marcador.numero, textoAntes),
-      enunciado: limparFinal(
-        resultado.enunciado
-          .replace(/\n+/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
+      enunciado: repararEnunciadoCorrupto(
+        limparFinal(
+          resultado.enunciado
+            .replace(/\n+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+        )
       ),
       alternativas: alternativasLimpas,
-      quantidade_alternativas: Object.keys(alternativasLimpas).length,
-      texto_base_anterior: textoBasePendente || null,
-      valido: Object.keys(alternativasLimpas).length >= 4
+      quantidade_alternativas: qtdAlts,
+      texto_base_anterior: textoBaseEmbutido || textoBasePendente || null,
+      valido: qtdAlts >= 4 || precisaRevisaoImagem,
+      precisa_revisao_imagem: precisaRevisaoImagem
     });
 
     textoBasePendente = textoBaseDetectado;
   }
 
-  return consolidarSaida(reordenarSeNumeracaoUnica(questoes));
+  return consolidarSaida(
+    reordenarSeNumeracaoUnica(anexarPreambulosFragmentados(questoes))
+  );
 }
 
 function detectarTotalQuestoesEsperado(texto) {

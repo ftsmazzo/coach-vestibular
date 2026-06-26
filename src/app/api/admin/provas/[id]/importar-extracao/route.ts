@@ -22,6 +22,7 @@ const itemSchema = z.object({
   alternativas: z.union([z.record(z.string(), z.string()), z.string()]).optional().nullable(),
   texto_base_anterior: z.string().optional().nullable(),
   valido: z.boolean().optional(),
+  precisa_revisao_imagem: z.boolean().optional(),
 });
 
 const bodySchema = z.object({
@@ -67,6 +68,9 @@ export async function POST(
       : null;
 
     const comArea = rows.filter((r) => r.areaBloco?.trim()).length;
+    const revisaoImagem = (body.questoes as N8nQuestaoExtraida[]).filter(
+      (q) => q.precisa_revisao_imagem
+    ).length;
 
     return NextResponse.json({
       ok: true,
@@ -74,12 +78,19 @@ export async function POST(
       gravadas,
       totalRecebidas: body.questoes.length,
       comAreaBloco: comArea,
-      avisos:
-        comArea < rows.length
+      revisaoImagem,
+      avisos: [
+        ...(comArea < rows.length
           ? [
               `${rows.length - comArea} questão(ões) sem área — use «Atribuir áreas do PDF» ou confira o campo secao no n8n.`,
             ]
-          : [],
+          : []),
+        ...(revisaoImagem > 0
+          ? [
+              `${revisaoImagem} questão(ões) com alternativas em imagem — revisar manualmente no banco.`,
+            ]
+          : []),
+      ],
       ...(relatorio
         ? { resumoExtracao: resumoExtracao(relatorio), relatorio }
         : {}),
