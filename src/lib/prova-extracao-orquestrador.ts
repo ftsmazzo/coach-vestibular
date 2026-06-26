@@ -1,4 +1,5 @@
 import { executarExtracaoProvaV2 } from "@/lib/prova-pipeline-v2";
+import type { ProvaPipelineContext } from "@/lib/prova-pipeline-contexto";
 import {
   chamarN8nExtracaoProva,
   n8nExtracaoDisponivel,
@@ -24,26 +25,11 @@ export type ResultadoExtracaoOrquestrada = {
   pipeline?: Pick<PipelineV2Result, "modeloUsado" | "csv" | "etapas">;
 };
 
-type ContextoProva = {
-  nome: string;
-  banca: string | null;
-  tipo: string | null;
-  ano: number | null;
-  dia: number | null;
-  caderno: string | null;
-  descricao: string | null;
-  totalEsperado: number | null;
-  politicaIdiomas: string | null;
-  idiomaQuestaoInicio: number | null;
-  idiomaQuestaoFim: number | null;
-  ordemIdiomasFaixa: string | null;
-};
-
 export async function extrairProvaOrquestrada(
   pdfBuffer: Buffer,
   pdfNome: string,
   provaId: string,
-  contexto: ContextoProva,
+  ctx: ProvaPipelineContext,
   opts?: { gabaritoTexto?: string; incluirGabarito?: boolean; gerarCsv?: boolean }
 ): Promise<ResultadoExtracaoOrquestrada> {
   const etapas: string[] = [];
@@ -56,7 +42,7 @@ export async function extrairProvaOrquestrada(
         pdfBuffer,
         pdfNome,
         provaId,
-        totalQuestoes: contexto.totalEsperado,
+        totalQuestoes: ctx.totalEsperado,
       });
 
       if (resposta.status === "fallback_pipeline") {
@@ -65,7 +51,7 @@ export async function extrairProvaOrquestrada(
         );
       } else {
         const rows = n8nItensParaRows(resposta.questoes);
-        const cobertura = validarCoberturaExtracaoN8n(rows, contexto.totalEsperado);
+        const cobertura = validarCoberturaExtracaoN8n(rows, ctx.totalEsperado);
 
         if (cobertura.ok) {
           etapas.push(
@@ -95,20 +81,7 @@ export async function extrairProvaOrquestrada(
   etapas.push("Passo B — Pipeline V2 (OpenAI)…");
   const pipeline = await executarExtracaoProvaV2(
     pdfBuffer,
-    {
-      nome: contexto.nome,
-      banca: contexto.banca,
-      tipo: contexto.tipo,
-      ano: contexto.ano,
-      dia: contexto.dia,
-      caderno: contexto.caderno,
-      descricao: contexto.descricao,
-      totalEsperado: contexto.totalEsperado,
-      politicaIdiomas: contexto.politicaIdiomas,
-      idiomaQuestaoInicio: contexto.idiomaQuestaoInicio,
-      idiomaQuestaoFim: contexto.idiomaQuestaoFim,
-      ordemIdiomasFaixa: contexto.ordemIdiomasFaixa,
-    },
+    ctx,
     {
       gabaritoTexto: opts?.gabaritoTexto,
       incluirGabarito: opts?.incluirGabarito,
