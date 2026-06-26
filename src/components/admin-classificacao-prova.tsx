@@ -79,6 +79,23 @@ export function AdminClassificacaoProva({
     void rodarFase("N2", { numerosQuestao: numeros });
   }
 
+  async function atribuirAreasPdf() {
+    setRodando(null);
+    onMensagem("");
+    try {
+      const res = await fetch(`/api/admin/provas/${provaId}/atribuir-areas`, { method: "POST" });
+      const data = (await res.json()) as { mensagem?: string; error?: string };
+      if (!res.ok) {
+        onMensagem(data.error ?? "Erro ao atribuir áreas.");
+        return;
+      }
+      onMensagem(data.mensagem ?? "Áreas atribuídas.");
+      onAtualizado();
+    } catch {
+      onMensagem("Falha de rede ao atribuir áreas.");
+    }
+  }
+
   async function rodarFase(
     fase: Fase,
     opts?: { apenasFaltantes?: boolean; modoN1?: ModoN1; numerosQuestao?: number[] }
@@ -203,6 +220,18 @@ export function AdminClassificacaoProva({
           <strong>Reprocessar automático</strong> — recalcula N1 já gravado (preserva manuais); limpa
           N2/N3 se o catálogo mudar.{" "}
           <strong>Tudo</strong> — sobrescreve inclusive correções manuais.
+        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={rodando !== null || totalQuestoes === 0}
+          onClick={() => void atribuirAreasPdf()}
+        >
+          Atribuir áreas do PDF (pré-N1)
+        </Button>
+        <p className="text-xs text-slate-500">
+          Se N1 retornar «área indefinida», rode isto antes — lê cabeçalhos do PDF salvo no servidor
+          (Pipeline) ou importe do n8n com campo <code className="text-xs">secao</code> preenchido.
         </p>
       </div>
 

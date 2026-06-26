@@ -167,7 +167,7 @@ export async function persistirQuestoesExtracaoProva(
     .filter((r) => r.ordemExtracao != null && r.ordemExtracao > 0)
     .map((r) => ({
       ...r,
-      areaBloco: undefined,
+      areaBloco: normalizarAreaBloco(r.areaBloco, r.materia) ?? undefined,
       materia: "A classificar",
       assunto: "A classificar",
       idiomaVariante: "COMUM" as const,

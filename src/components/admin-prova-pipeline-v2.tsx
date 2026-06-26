@@ -80,12 +80,12 @@ export function AdminProvaPipelineV2({
       setCarregando(true);
       onMensagem(
         aplicar
-          ? "Lendo o PDF e extraindo enunciados + alternativas… (alguns minutos)"
+          ? "Enviando PDF — n8n primeiro, Pipeline IA se necessário…"
           : "Extraindo prova para pré-visualização…"
       );
 
       try {
-        const res = await fetch(`/api/admin/provas/${provaId}/pipeline`, {
+        const res = await fetch(`/api/admin/provas/${provaId}/extrair-hibrido`, {
           method: "POST",
           body: montarFormData(aplicar, origem),
         });
@@ -99,6 +99,12 @@ export function AdminProvaPipelineV2({
 
         if (aplicar) {
           setPreview(null);
+          const fonte =
+            data.fonte === "n8n"
+              ? "n8n (fast path)"
+              : data.fonte === "pipeline"
+                ? "Pipeline IA (fallback)"
+                : "";
           const resumoStr =
             typeof data.resumoExtracao === "string"
               ? data.resumoExtracao
@@ -106,16 +112,20 @@ export function AdminProvaPipelineV2({
                 ? `${data.relatorio.ok}/${data.relatorio.linhasFisicas} OK · ${data.relatorio.curto} curto(s) · ${data.relatorio.faltando} faltando`
                 : null;
           const msgResumo = resumoStr
-            ? `${data.gravadas ?? 0} questões gravadas · ${resumoStr}. Revise abaixo e confirme a extração.`
-            : `${data.gravadas ?? 0} questões gravadas (modelo ${data.modeloUsado ?? ""}). Revise a validação abaixo.`;
+            ? `${data.gravadas ?? 0} questões gravadas via ${fonte} · ${resumoStr}. Revise abaixo e confirme a extração.`
+            : `${data.gravadas ?? 0} questões gravadas via ${fonte}. Revise a validação abaixo.`;
           onMensagem(msgResumo);
           onAtualizado();
         } else {
           setPreview({
             rows: data.rows ?? [],
-            avisos: data.avisos ?? [],
+            avisos: [
+              ...(data.avisos ?? []),
+              data.fonte ? `Fonte: ${data.fonte}` : "",
+              ...(data.etapas ?? []).slice(-3),
+            ].filter(Boolean),
             etapas: data.etapas ?? [],
-            modeloUsado: data.modeloUsado ?? "",
+            modeloUsado: data.modeloUsado ?? data.fonte ?? "",
           });
           onMensagem(
             `Prévia: ${data.rows?.length ?? 0} questões extraídas (cadastro espera ${totalQuestoes}). Confira enunciados e grave.`
@@ -185,10 +195,9 @@ export function AdminProvaPipelineV2({
     <Card className="border-indigo-200 bg-indigo-50/50">
       <h2 className="mb-2 font-semibold text-indigo-900">Passo 2 — Extrair prova (PDF → banco)</h2>
       <p className="mb-3 text-sm text-indigo-800">
-        Envie o PDF da prova ou simulado. A IA extrai <strong>enunciado literal</strong> e{" "}
-        <strong>alternativas</strong> na <strong>ordem física do caderno</strong> — cada ocorrência
-        vira uma linha (número impresso pode repetir em blocos EN/ES). Valide abaixo antes de
-        classificar.
+        Envie o PDF. O sistema tenta primeiro o <strong>n8n</strong> (rápido, EN/ES) e, se a cobertura
+        for insuficiente, usa o <strong>Pipeline IA</strong> automaticamente. Extração pura — valide abaixo
+        antes de classificar.
       </p>
 
       {temCadernoSalvo && (
@@ -206,7 +215,7 @@ export function AdminProvaPipelineV2({
           disabled={carregando || !podeExtrair}
           onClick={() => extrairPdf(true, pdfFile ? "upload" : "salvo")}
         >
-          {carregando ? "Extraindo…" : pdfFile ? "Extrair PDF e gravar no banco" : "Reextrair do PDF salvo"}
+          {carregando ? "Extraindo…" : pdfFile ? "Extrair prova (n8n → IA)" : "Reextrair do PDF salvo"}
         </Button>
         <Button
           type="button"

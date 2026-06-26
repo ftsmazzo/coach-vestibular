@@ -31,6 +31,7 @@ import {
   PROMPT_SISTEMA_EXTRACAO_LITERAL,
   PROMPT_SISTEMA_ESTRUTURA,
 } from "@/lib/prova-pipeline-v2-prompts";
+import { atribuirAreaBlocoNasRows } from "@/lib/prova-atribuir-area-bloco";
 
 export type { ProvaPipelineContext };
 
@@ -435,12 +436,15 @@ NÃO resuma. NÃO classifique matéria, área ou idioma.`;
   validarRowsExtracao(rows, ctx.totalEsperado, totalOcorrencias, numerosLogicos, avisos);
   exigirCoberturaOrdens(rows, totalOcorrencias);
 
+  const comAreas = atribuirAreaBlocoNasRows(rows, estrutura);
+  avisos.push(...comAreas.avisos);
+
   if (estrutura.observacoes?.trim()) {
     avisos.push(`Leitura do PDF: ${estrutura.observacoes.trim().slice(0, 300)}`);
   }
 
   return {
-    rows,
+    rows: comAreas.rows,
     csv: opts?.gerarCsv ? gerarCsvProvaQuestoes(rows) : "",
     avisos,
     modeloUsado: modelExtracao,

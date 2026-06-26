@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { extrairTrechosPorNumero } from "@/lib/prova-texto-parse";
 import { compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
 import { areaBlocoIdDeLabel, inferirAreaBlocoPorMateria } from "@/lib/areas-bloco";
+import { atribuirAreasProvaDoCaderno } from "@/lib/prova-atribuir-area-caderno";
 import { MARCADOR_EXTRACAO_ACEITA } from "@/lib/prova-texto-prova";
 import {
   camposLimpezaN2N3,
@@ -172,13 +173,24 @@ export async function executarFaseN1Prova(
   opts?: OpcoesFaseN1Prova
 ): Promise<ResultadoFaseProva> {
   const opcoes = resolverOpcoesFaseN1(opts);
-  const { prova, questoes, trechos } = await carregarContextoProva(provaId);
+  let { prova, questoes, trechos } = await carregarContextoProva(provaId);
   const avisos: string[] = [];
   const etapas: string[] = [
     "═══ FASE N1 — roteamento / catálogo destino ═══",
     `Modo: ${opcoes.forcarTudo ? "forcarTudo" : opcoes.reprocessarTodas ? "reprocessarTodas" : "apenasFaltantes"}` +
       (opcoes.preservarManuais ? " · preservarManuais" : ""),
   ];
+
+  const semAreaInicial = questoes.filter((q) => !areaFromRow(q)).length;
+  if (semAreaInicial > 0) {
+    etapas.push(`${semAreaInicial} questão(ões) sem área — tentando inferir do PDF salvo…`);
+    const inferencia = await atribuirAreasProvaDoCaderno(provaId);
+    avisos.push(...inferencia.avisos);
+    if (inferencia.atualizadas > 0) {
+      etapas.push(`Áreas atribuídas automaticamente: ${inferencia.atualizadas} questão(ões).`);
+      ({ prova, questoes, trechos } = await carregarContextoProva(provaId));
+    }
+  }
   let ok = 0;
   let processadas = 0;
   let puladas = 0;
