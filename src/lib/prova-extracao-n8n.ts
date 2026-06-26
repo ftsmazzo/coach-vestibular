@@ -95,7 +95,7 @@ export async function chamarN8nExtracaoProva(opts: {
   }
 
   const fd = new FormData();
-  const blob = new Blob([opts.pdfBuffer], { type: "application/pdf" });
+  const blob = new Blob([new Uint8Array(opts.pdfBuffer)], { type: "application/pdf" });
   fd.append("file", blob, opts.pdfNome || "prova.pdf");
   fd.append("provaId", opts.provaId);
   if (opts.totalQuestoes != null && opts.totalQuestoes > 0) {
