@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Label } from "@/components/ui";
+import { Button, Input, Label } from "@/components/ui";
 import { AdminZonaColarImagem } from "./admin-zona-colar-imagem";
 import { AREAS_BLOCO } from "@/lib/areas-bloco";
 import { LABEL_TEXTO_INCOMPLETO } from "@/lib/prova-pendencias-admin";
