@@ -43,6 +43,7 @@ export function AdminProvaAbaQuestoes({
 
   const cadastradas = prova.questoesCadastradas ?? numerosLogicos.size;
   const faltando = prova.questoesFaltando ?? [];
+  const revisaoImagem = prova.questoesRevisaoImagem ?? [];
 
   return (
     <div className="space-y-6">
@@ -50,6 +51,7 @@ export function AdminProvaAbaQuestoes({
         totalQuestoes={prova.totalQuestoes}
         cadastradas={cadastradas}
         faltando={faltando}
+        revisaoImagem={revisaoImagem}
         numerosExistentes={numerosLogicos}
         onAdicionar={onAdicionarQuestao}
         onEditar={onEditarQuestao}

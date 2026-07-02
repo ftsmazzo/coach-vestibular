@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { buildProvaNome } from "@/lib/prova-nome";
+import { numerosLogicosRevisaoImagem } from "@/lib/prova-revisao-imagem";
 import { statsQuestoesProva } from "@/lib/prova-stats";
 import { prisma } from "@/lib/prisma";
 import { compararQuestoesPorNumeroEOrdem } from "@/lib/prova-idioma";
@@ -53,6 +54,7 @@ export async function GET(
     questoesCadastradas: stats.cadastradas,
     maiorNumeroQuestao: stats.maiorNumero,
     questoesFaltando: stats.faltando,
+    questoesRevisaoImagem: numerosLogicosRevisaoImagem(questoesOrdenadas),
     bancoIncompleto: stats.incompleto,
   });
 }

@@ -51,4 +51,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# artefatos locais de sync n8n / MCP
+tmp-*
+.mcp-update-args.json
+
 /src/generated/prisma

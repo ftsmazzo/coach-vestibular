@@ -9,6 +9,7 @@ import { AdminProvaAbaQuestoes } from "@/components/admin-prova/admin-prova-aba-
 import { AdminProvaQuestaoModal } from "@/components/admin-prova/admin-prova-questao-modal";
 import { AdminProvaTabNav } from "@/components/admin-prova/admin-prova-tab-nav";
 import type { AbaProvaAdmin, ProvaAdmin, ProvaMetaForm } from "@/components/admin-prova/types";
+import { numerosLogicosRevisaoImagem } from "@/lib/prova-revisao-imagem";
 import { statsFasesProva } from "@/lib/prova-classificacao-stats";
 import {
   buildGradeRevisao,
@@ -117,6 +118,11 @@ export default function AdminProvaDetailPage() {
   }, [prova]);
 
   const faixaIdiomaDual = useMemo(() => faixaIdiomaProva(prova ?? undefined), [prova]);
+
+  const revisaoImagem = useMemo(
+    () => prova?.questoesRevisaoImagem ?? numerosLogicosRevisaoImagem(prova?.questoes ?? []),
+    [prova?.questoes, prova?.questoesRevisaoImagem]
+  );
 
   const statsClassificacao = useMemo(
     () => (prova?.questoes.length ? statsFasesProva(prova.questoes) : null),
@@ -374,7 +380,10 @@ export default function AdminProvaDetailPage() {
   if (!prova) return <p className="text-slate-500">Carregando…</p>;
 
   const alertaQuestoes =
-    prova.bancoIncompleto || !prova.extracaoValidada || prova.questoes.length === 0;
+    prova.bancoIncompleto ||
+    !prova.extracaoValidada ||
+    prova.questoes.length === 0 ||
+    revisaoImagem.length > 0;
   const alertaPedagogia = prova.questoes.length > 0 && !prova.gabaritoCompleto;
 
   return (
@@ -388,6 +397,12 @@ export default function AdminProvaDetailPage() {
           <h1 className="text-2xl font-bold text-slate-900">{prova.nome}</h1>
           <p className="mt-1 text-sm text-slate-600">
             {prova.questoesCadastradas ?? prova.questoes.length}/{prova.totalQuestoes} questões ·
+            {revisaoImagem.length > 0 && (
+              <>
+                {" "}
+                <span className="text-violet-700">{revisaoImagem.length} revisar imagem</span> ·
+              </>
+            )}
             Gabarito {prova.gabaritoCompleto ? "ok" : "pendente"} ·
             Classificação {statsClassificacao?.comN1 ?? 0}/{prova.questoes.length} N1
           </p>
@@ -514,6 +529,7 @@ export default function AdminProvaDetailPage() {
             onAtualizarQuestoes={aoAtualizarQuestoes}
             onMensagem={setMsg}
             onEditarQuestaoAlvo={setEditarQuestaoAlvo}
+            onEditarTextoQuestao={(numero) => setModalNumero(numero)}
             onAlertasChange={setAlertaChaves}
           />
         )}

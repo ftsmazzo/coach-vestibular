@@ -36,6 +36,7 @@ export interface ProvaAdmin {
   ordemIdiomasFaixa?: "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO";
   questoesCadastradas?: number;
   questoesFaltando?: number[];
+  questoesRevisaoImagem?: number[];
   bancoIncompleto?: boolean;
   questoes: ProvaQuestaoAdmin[];
   temTextoFonte?: boolean;

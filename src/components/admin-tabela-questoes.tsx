@@ -14,6 +14,7 @@ import {
   marcarObservacoesConferidas,
   questaoConferidaPeloRevisor,
 } from "@/lib/prova-auditoria";
+import { questaoPrecisaRevisaoImagem } from "@/lib/prova-revisao-imagem";
 
 export interface QuestaoRow {
   id: string;
@@ -29,6 +30,7 @@ export interface QuestaoRow {
   classificacaoVersao?: string | null;
   nivelDificuldade: string | null;
   observacoes: string | null;
+  alternativas?: string | null;
   gabarito: string | null;
 }
 
@@ -59,6 +61,7 @@ interface Props {
   alertaChaves?: string[];
   abrirEdicao?: { numero: number; idiomaVariante?: string } | null;
   onEdicaoAberta?: () => void;
+  onEditarTexto?: (numero: number) => void;
   onAtualizado: () => void;
   onMensagem?: (msg: string) => void;
 }
@@ -126,6 +129,7 @@ export function AdminTabelaQuestoes({
   alertaChaves = [],
   abrirEdicao = null,
   onEdicaoAberta,
+  onEditarTexto,
   onAtualizado,
   onMensagem,
 }: Props) {
@@ -134,7 +138,9 @@ export function AdminTabelaQuestoes({
   const [form, setForm] = useState<FormEdicao | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [conferida, setConferida] = useState(true);
-  const [filtro, setFiltro] = useState<"todas" | "alerta" | "sem_n1" | "sem_n2">("todas");
+  const [filtro, setFiltro] = useState<"todas" | "alerta" | "sem_n1" | "sem_n2" | "revisao_imagem">(
+    "todas"
+  );
   const [escoposN2, setEscoposN2] = useState<EscopoN2Opcao[]>([]);
   const [buscaEscopo, setBuscaEscopo] = useState("");
   const [carregandoEscopos, setCarregandoEscopos] = useState(false);
@@ -241,6 +247,9 @@ export function AdminTabelaQuestoes({
         return !id || id.endsWith(".__nao_classificado");
       });
     }
+    if (filtro === "revisao_imagem") {
+      return questoes.filter((q) => questaoPrecisaRevisaoImagem(q));
+    }
     return questoes;
   }, [filtro, questoes, alertaSet]);
 
@@ -335,6 +344,8 @@ export function AdminTabelaQuestoes({
     (q) => !n1Completo(parseClassificacaoN1(q.classificacaoN1Json))
   ).length;
 
+  const revisaoImagem = questoes.filter((q) => questaoPrecisaRevisaoImagem(q)).length;
+
   return (
     <>
       <Card>
@@ -381,6 +392,15 @@ export function AdminTabelaQuestoes({
                 Alertas ({alertaChaves.length})
               </Button>
             )}
+            {revisaoImagem > 0 && (
+              <Button
+                type="button"
+                variant={filtro === "revisao_imagem" ? "primary" : "secondary"}
+                onClick={() => setFiltro("revisao_imagem")}
+              >
+                Revisar imagem ({revisaoImagem})
+              </Button>
+            )}
           </div>
         </div>
 
@@ -392,7 +412,9 @@ export function AdminTabelaQuestoes({
                 ? "Todas as questões têm N1."
                 : filtro === "sem_n2"
                 ? "Todas as questões têm escopo N2 real."
-                : "Nenhuma questão no banco."}
+                : filtro === "revisao_imagem"
+                  ? "Nenhuma questão com placeholder de imagem."
+                  : "Nenhuma questão no banco."}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -415,15 +437,28 @@ export function AdminTabelaQuestoes({
                 {lista.map((q) => {
                   const st = statusN2(q);
                   const n1 = parseClassificacaoN1(q.classificacaoN1Json);
+                  const revisarImg = questaoPrecisaRevisaoImagem(q);
                   return (
                     <tr
                       key={q.id}
                       className={`border-b border-slate-100 ${
-                        alertaSet.has(chaveAlerta(q)) ? "bg-amber-50" : ""
+                        alertaSet.has(chaveAlerta(q))
+                          ? "bg-amber-50"
+                          : revisarImg
+                            ? "bg-violet-50/60"
+                            : ""
                       }`}
                     >
                       <td className="p-2 font-medium">
                         {q.numero}
+                        {revisarImg && (
+                          <span
+                            className="ml-1 inline-block rounded bg-violet-100 px-1 text-[9px] font-semibold text-violet-800"
+                            title="Alternativas em imagem — revisar enunciado/alternativas"
+                          >
+                            img
+                          </span>
+                        )}
                         {q.idiomaVariante && q.idiomaVariante !== "COMUM" && (
                           <span className="ml-1 text-[10px] font-normal text-slate-500">
                             {q.idiomaVariante === "INGLES" ? "EN" : "ES"}
@@ -465,14 +500,26 @@ export function AdminTabelaQuestoes({
                         )}
                       </td>
                       <td className="p-2 text-right">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="px-2 py-1 text-xs"
-                          onClick={() => abrirModal(q)}
-                        >
-                          Editar
-                        </Button>
+                        <div className="flex flex-wrap justify-end gap-1">
+                          {onEditarTexto && (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className="px-2 py-1 text-xs"
+                              onClick={() => onEditarTexto(q.numero)}
+                            >
+                              Texto
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            className="px-2 py-1 text-xs"
+                            onClick={() => abrirModal(q)}
+                          >
+                            Editar
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );

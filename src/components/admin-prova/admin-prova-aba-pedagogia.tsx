@@ -38,6 +38,7 @@ interface Props {
   onAtualizarQuestoes: () => void;
   onMensagem: (msg: string) => void;
   onEditarQuestaoAlvo: (v: { numero: number; idiomaVariante?: string } | null) => void;
+  onEditarTextoQuestao?: (numero: number) => void;
   onAlertasChange: (chaves: string[]) => void;
 }
 
@@ -67,6 +68,7 @@ export function AdminProvaAbaPedagogia({
   onAtualizarQuestoes,
   onMensagem,
   onEditarQuestaoAlvo,
+  onEditarTextoQuestao,
   onAlertasChange,
 }: Props) {
   if (prova.questoes.length === 0) {
@@ -119,6 +121,7 @@ export function AdminProvaAbaPedagogia({
         alertaChaves={alertaChaves}
         abrirEdicao={editarQuestaoAlvo}
         onEdicaoAberta={() => onEditarQuestaoAlvo(null)}
+        onEditarTexto={onEditarTextoQuestao}
         onAtualizado={onAtualizarQuestoes}
         onMensagem={onMensagem}
       />
