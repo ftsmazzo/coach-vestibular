@@ -6,9 +6,9 @@ import {
   inferirFaixaPorNumerosDuplicados,
   questaoPorNumeroETentativa,
   questoesParaTentativa,
+  resolverFaixaIdiomaDualDeQuestoes,
   varianteParaNumero,
 } from "./prova-idioma";
-import { resolverFaixaIdiomaDualDeQuestoes } from "./prova-pos-extracao";
 
 describe("prova-idioma", () => {
   const meta = {

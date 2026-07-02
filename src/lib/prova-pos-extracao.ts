@@ -1,9 +1,10 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 import {
-  faixaIdiomaProva,
   inferirFaixaPorNumerosDuplicados,
-  inferirFaixaPorVariantesEnEs,
   questoesTemVariantesEnEs,
+  resolverFaixaIdiomaDualDeQuestoes,
   type FaixaIdiomaOpcional,
 } from "@/lib/prova-idioma";
 
@@ -20,22 +21,6 @@ type QuestaoSync = {
   numero: number;
   idiomaVariante: string;
 };
-
-/** Faixa EN/ES: cadastro da prova → variantes INGLES/ESPANHOL → números repetidos no banco. */
-export function resolverFaixaIdiomaDualDeQuestoes(
-  questoes: { numero: number; idiomaVariante?: string | null }[],
-  meta?: {
-    politicaIdiomas?: string | null;
-    idiomaQuestaoInicio?: number | null;
-    idiomaQuestaoFim?: number | null;
-  }
-): FaixaIdiomaOpcional | null {
-  const cadastrada = faixaIdiomaProva(meta ?? undefined);
-  if (cadastrada) return cadastrada;
-  return (
-    inferirFaixaPorVariantesEnEs(questoes) ?? inferirFaixaPorNumerosDuplicados(questoes)
-  );
-}
 
 async function repararVariantesComumDuplicadas(
   questoes: QuestaoSync[],

@@ -27,7 +27,7 @@ import {
   respostasParaGabaritoLote,
   type LinhaRevisaoGabarito,
 } from "@/lib/extrair-gabarito-aluno";
-import { resolverFaixaIdiomaDualDeQuestoes } from "@/lib/prova-pos-extracao";
+import { resolverFaixaIdiomaDualDeQuestoes } from "@/lib/prova-idioma";
 import { parseGabaritoLoteDual } from "@/lib/gabarito";
 import { resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 import { Button, Card } from "@/components/ui";

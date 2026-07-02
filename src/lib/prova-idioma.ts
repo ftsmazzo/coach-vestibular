@@ -133,6 +133,18 @@ export function inferirFaixaPorNumerosDuplicados(
   return { inicio: dup[0], fim: dup[dup.length - 1] };
 }
 
+/** Faixa EN/ES: cadastro da prova → variantes INGLES/ESPANHOL → números repetidos no banco. */
+export function resolverFaixaIdiomaDualDeQuestoes(
+  questoes: { numero: number; idiomaVariante?: string | null }[],
+  meta?: MetaPoliticaIdiomas
+): FaixaIdiomaOpcional | null {
+  const cadastrada = faixaIdiomaProva(meta ?? undefined);
+  if (cadastrada) return cadastrada;
+  return (
+    inferirFaixaPorVariantesEnEs(questoes) ?? inferirFaixaPorNumerosDuplicados(questoes)
+  );
+}
+
 /** Faixa EN/ES só quando início e fim estão explicitamente cadastrados (evita gabarito «travado» em 1–5). */
 export function faixaIdiomaProva(meta?: MetaPoliticaIdiomas): FaixaIdiomaOpcional | null {
   if (!temDuplicataEnEs(meta)) return null;
