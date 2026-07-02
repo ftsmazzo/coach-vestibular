@@ -27,7 +27,7 @@ import {
   respostasParaGabaritoLote,
   type LinhaRevisaoGabarito,
 } from "@/lib/extrair-gabarito-aluno";
-import { faixaIdiomaProva } from "@/lib/prova-idioma";
+import { faixaIdiomaProva, inferirFaixaPorVariantesEnEs, questoesTemVariantesEnEs } from "@/lib/prova-idioma";
 import { parseGabaritoLoteDual } from "@/lib/gabarito";
 import { resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 import { Button, Card } from "@/components/ui";
@@ -112,6 +112,7 @@ export default function AdminProvaDetailPage() {
     idiomaQuestaoFim: "",
   });
   const [detectandoFaixa, setDetectandoFaixa] = useState(false);
+  const [aplicandoFaixaEnEs, setAplicandoFaixaEnEs] = useState(false);
 
   const extracaoRefreshKey = useMemo(() => {
     if (!prova) return "init";
@@ -348,6 +349,44 @@ export default function AdminProvaDetailPage() {
       setMsg("Falha de rede.");
     } finally {
       setDetectandoFaixa(false);
+    }
+  }
+
+  async function aplicarFaixaEnEsDaExtracao() {
+    if (!prova) return;
+    const faixa = inferirFaixaPorVariantesEnEs(prova.questoes);
+    if (!faixa) {
+      setMsg("Não encontrei pares INGLES+ESPANHOL no banco.");
+      return;
+    }
+    setAplicandoFaixaEnEs(true);
+    try {
+      const res = await fetch(`/api/admin/provas/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          politicaIdiomas: "DUPLICATA_EN_ES",
+          idiomaQuestaoInicio: faixa.inicio,
+          idiomaQuestaoFim: faixa.fim,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setMsg(data.error ?? "Erro ao aplicar faixa EN/ES.");
+        return;
+      }
+      setMeta((m) => ({
+        ...m,
+        politicaIdiomas: "DUPLICATA_EN_ES",
+        idiomaQuestaoInicio: String(faixa.inicio),
+        idiomaQuestaoFim: String(faixa.fim),
+      }));
+      setMsg(`Gabarito dual ativado: Q${faixa.inicio}–${faixa.fim} (inglês + espanhol).`);
+      await load();
+    } catch {
+      setMsg("Falha de rede.");
+    } finally {
+      setAplicandoFaixaEnEs(false);
     }
   }
 
@@ -591,6 +630,8 @@ export default function AdminProvaDetailPage() {
             onAplicarTextoColado={aplicarTextoColadoNoGrid}
             onLimparGabaritos={limparGabaritos}
             onSalvarGabarito={salvarGabaritoLote}
+            onAplicarFaixaEnEs={aplicarFaixaEnEsDaExtracao}
+            aplicandoFaixaEnEs={aplicandoFaixaEnEs}
             onAtualizarQuestoes={aoAtualizarQuestoes}
             onMensagem={setMsg}
             onEditarQuestaoAlvo={setEditarQuestaoAlvo}

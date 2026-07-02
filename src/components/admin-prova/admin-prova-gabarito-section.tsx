@@ -3,7 +3,13 @@
 import { Button, Card, Input, Label } from "@/components/ui";
 import { GabaritoRevisaoGrid } from "@/components/gabarito-revisao-grid";
 import type { LinhaRevisaoGabarito } from "@/lib/extrair-gabarito-aluno";
-import { temDuplicataEnEs, type FaixaIdiomaOpcional } from "@/lib/prova-idioma";
+import {
+  inferirFaixaPorVariantesEnEs,
+  questoesTemVariantesEnEs,
+  temDuplicataEnEs,
+  type FaixaIdiomaOpcional,
+} from "@/lib/prova-idioma";
+import { AdminZonaColarImagem } from "./admin-zona-colar-imagem";
 import type { ProvaAdmin } from "./types";
 
 interface Props {
@@ -25,6 +31,8 @@ interface Props {
   onAplicarTextoColado: () => void;
   onLimparGabaritos: () => void;
   onSalvarGabarito: () => void;
+  onAplicarFaixaEnEs?: () => void;
+  aplicandoFaixaEnEs?: boolean;
 }
 
 export function AdminProvaGabaritoSection({
@@ -46,14 +54,46 @@ export function AdminProvaGabaritoSection({
   onAplicarTextoColado,
   onLimparGabaritos,
   onSalvarGabarito,
+  onAplicarFaixaEnEs,
+  aplicandoFaixaEnEs,
 }: Props) {
+  const faixaSugerida = inferirFaixaPorVariantesEnEs(prova.questoes);
+  const precisaConfigurarFaixa =
+    questoesTemVariantesEnEs(prova.questoes) && !faixaIdiomaDual;
+
   return (
     <Card>
       <h2 className="mb-1 font-semibold text-slate-900">Gabarito oficial</h2>
       <p className="mb-3 text-sm text-slate-600">
         A extração não inventa gabarito. Leia da foto/PDF da banca, revise no grid e salve.
       </p>
-      {temDuplicataEnEs(prova) && !faixaIdiomaDual && (
+      {precisaConfigurarFaixa && (
+        <div className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-3 text-sm text-sky-950">
+          <p className="font-medium">Inglês e espanhol detectados na extração</p>
+          <p className="mt-1 text-xs text-sky-900">
+            No banco existem <strong>duas linhas por número</strong> (INGLES + ESPANHOL) — isso é
+            correto. Para o gabarito aparecer como planejado (uma linha com EN e ES), confirme a
+            faixa de idiomas.
+            {faixaSugerida && (
+              <>
+                {" "}
+                Sugestão: Q{faixaSugerida.inicio}–{faixaSugerida.fim}.
+              </>
+            )}
+          </p>
+          {onAplicarFaixaEnEs && faixaSugerida && (
+            <Button
+              type="button"
+              className="mt-2"
+              disabled={aplicandoFaixaEnEs}
+              onClick={onAplicarFaixaEnEs}
+            >
+              {aplicandoFaixaEnEs ? "Aplicando…" : `Ativar gabarito dual Q${faixaSugerida.inicio}–${faixaSugerida.fim}`}
+            </Button>
+          )}
+        </div>
+      )}
+      {temDuplicataEnEs(prova) && !faixaIdiomaDual && !precisaConfigurarFaixa && (
         <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           Duplicata EN/ES sem faixa confirmada — confirme Q inicial/final na aba Prova.
         </p>
@@ -79,13 +119,24 @@ export function AdminProvaGabaritoSection({
       <div className="mb-4 space-y-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
         <div>
           <Label>PDF ou foto do gabarito</Label>
+          <div className="mt-2">
+            <AdminZonaColarImagem
+              arquivo={arquivosGabarito[0] ?? null}
+              onArquivo={(f) => onArquivosGabaritoChange(f ? [f] : [])}
+              dica="Cole o print do gabarito (Ctrl+V) ou escolha arquivo"
+            />
+          </div>
           <Input
             type="file"
             accept=".pdf,image/jpeg,image/png,image/webp"
             multiple
-            className="mt-2"
             onChange={(e) => onArquivosGabaritoChange(Array.from(e.target.files ?? []))}
           />
+          {arquivosGabarito.length > 0 && (
+            <p className="text-xs text-slate-600">
+              {arquivosGabarito.length} arquivo(s): {arquivosGabarito.map((f) => f.name).join(", ")}
+            </p>
+          )}
         </div>
         <Button
           type="button"

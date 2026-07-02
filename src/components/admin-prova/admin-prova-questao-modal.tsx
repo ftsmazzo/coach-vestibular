@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Input, Label } from "@/components/ui";
+import { Button, Label } from "@/components/ui";
+import { AdminZonaColarImagem } from "./admin-zona-colar-imagem";
 import { AREAS_BLOCO } from "@/lib/areas-bloco";
 import { LABEL_TEXTO_INCOMPLETO } from "@/lib/prova-pendencias-admin";
 import type { ProvaQuestaoAdmin } from "./types";
@@ -169,16 +170,13 @@ export function AdminProvaQuestaoModal({
               Útil quando a extração automática deixou lacunas — figuras, fórmulas ou layout atípico
               de qualquer vestibular.
             </p>
-            <Input
-              key={fileInputKey}
-              type="file"
-              accept=".pdf,application/pdf,image/jpeg,image/png,image/webp"
-              className="mt-2"
-              onChange={(e) => setArquivoPrint(e.target.files?.[0] ?? null)}
+            <AdminZonaColarImagem
+              arquivo={arquivoPrint}
+              onArquivo={setArquivoPrint}
+              inputKey={fileInputKey}
+              ativo={aberto}
+              dica="Cole aqui (Ctrl+V) após printar a questão, ou arraste a imagem"
             />
-            {arquivoPrint && (
-              <p className="mt-1 text-xs text-slate-600">{arquivoPrint.name}</p>
-            )}
             <Button
               type="button"
               variant="secondary"

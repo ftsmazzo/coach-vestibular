@@ -84,6 +84,39 @@ export function temDuplicataEnEs(meta?: MetaPoliticaIdiomas): boolean {
   return meta?.politicaIdiomas === "DUPLICATA_EN_ES";
 }
 
+/** Extração gravou linhas INGLES + ESPANHOL (mesmo número impresso). */
+export function questoesTemVariantesEnEs(
+  questoes: { idiomaVariante?: string | null }[]
+): boolean {
+  let ing = false;
+  let es = false;
+  for (const q of questoes) {
+    if (q.idiomaVariante === "INGLES") ing = true;
+    if (q.idiomaVariante === "ESPANHOL") es = true;
+    if (ing && es) return true;
+  }
+  return false;
+}
+
+/** Faixa Qn–Qm a partir dos números que têm par EN+ES no banco. */
+export function inferirFaixaPorVariantesEnEs(
+  questoes: { numero: number; idiomaVariante?: string | null }[]
+): FaixaIdiomaOpcional | null {
+  const porNumero = new Map<number, Set<string>>();
+  for (const q of questoes) {
+    const v = q.idiomaVariante ?? "COMUM";
+    if (v !== "INGLES" && v !== "ESPANHOL") continue;
+    if (!porNumero.has(q.numero)) porNumero.set(q.numero, new Set());
+    porNumero.get(q.numero)!.add(v);
+  }
+  const nums = [...porNumero.entries()]
+    .filter(([, vs]) => vs.has("INGLES") && vs.has("ESPANHOL"))
+    .map(([n]) => n)
+    .sort((a, b) => a - b);
+  if (nums.length === 0) return null;
+  return { inicio: nums[0], fim: nums[nums.length - 1] };
+}
+
 /** Faixa EN/ES só quando início e fim estão explicitamente cadastrados (evita gabarito «travado» em 1–5). */
 export function faixaIdiomaProva(meta?: MetaPoliticaIdiomas): FaixaIdiomaOpcional | null {
   if (!temDuplicataEnEs(meta)) return null;

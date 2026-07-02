@@ -2,7 +2,7 @@
 
 import { Button, Card, Input, Label } from "@/components/ui";
 import { buildProvaNome } from "@/lib/prova-nome";
-import { temDuplicataEnEs } from "@/lib/prova-idioma";
+import { questoesTemVariantesEnEs } from "@/lib/prova-idioma";
 import type { ProvaAdmin, ProvaMetaForm } from "./types";
 
 interface Props {
@@ -155,9 +155,10 @@ export function AdminProvaAbaProva({
               </div>
             </div>
           )}
-          {temDuplicataEnEs(prova) && meta.politicaIdiomas === "NENHUMA" && (
+          {questoesTemVariantesEnEs(prova.questoes) && meta.politicaIdiomas === "NENHUMA" && (
             <p className="sm:col-span-2 text-xs text-amber-800">
-              Extração detectou EN/ES — confirme a faixa acima antes do gabarito dual.
+              Extração detectou inglês e espanhol (mesmo número repetido) — na aba Pedagogia use
+              «Ativar gabarito dual» ou confirme a faixa abaixo.
             </p>
           )}
         </div>
