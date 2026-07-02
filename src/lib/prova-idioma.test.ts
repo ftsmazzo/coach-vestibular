@@ -3,10 +3,12 @@ import {
   faixaIdiomaProva,
   faixaIdiomaHeuristicaBanca,
   inferirFaixaIdiomaDoPdf,
+  inferirFaixaPorNumerosDuplicados,
   questaoPorNumeroETentativa,
   questoesParaTentativa,
   varianteParaNumero,
 } from "./prova-idioma";
+import { resolverFaixaIdiomaDualDeQuestoes } from "./prova-pos-extracao";
 
 describe("prova-idioma", () => {
   const meta = {
@@ -93,5 +95,40 @@ describe("prova-idioma", () => {
         idiomaQuestaoFim: 20,
       })
     ).toEqual({ inicio: 16, fim: 20 });
+  });
+
+  it("inferirFaixaPorNumerosDuplicados detecta faixa EN/ES por linhas repetidas", () => {
+    const questoes = [
+      ...Array.from({ length: 15 }, (_, i) => ({ numero: i + 1 })),
+      { numero: 16 },
+      { numero: 16 },
+      { numero: 17 },
+      { numero: 17 },
+      { numero: 18 },
+      { numero: 18 },
+      { numero: 19 },
+      { numero: 19 },
+      { numero: 20 },
+      { numero: 20 },
+    ];
+    expect(inferirFaixaPorNumerosDuplicados(questoes)).toEqual({ inicio: 16, fim: 20 });
+  });
+
+  it("resolverFaixaIdiomaDualDeQuestoes prioriza cadastro e cai em duplicatas", () => {
+    const meta = {
+      politicaIdiomas: "DUPLICATA_EN_ES" as const,
+      idiomaQuestaoInicio: 16,
+      idiomaQuestaoFim: 20,
+    };
+    expect(
+      resolverFaixaIdiomaDualDeQuestoes([{ numero: 1 }, { numero: 16 }, { numero: 16 }], meta)
+    ).toEqual({ inicio: 16, fim: 20 });
+
+    expect(
+      resolverFaixaIdiomaDualDeQuestoes([
+        { numero: 16, idiomaVariante: "INGLES" },
+        { numero: 16, idiomaVariante: "ESPANHOL" },
+      ])
+    ).toEqual({ inicio: 16, fim: 16 });
   });
 });

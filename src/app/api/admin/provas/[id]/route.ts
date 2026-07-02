@@ -3,9 +3,14 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { buildProvaNome } from "@/lib/prova-nome";
 import { numerosLogicosRevisaoImagem } from "@/lib/prova-revisao-imagem";
+import { sincronizarMetadadosPosExtracao } from "@/lib/prova-pos-extracao";
 import { statsQuestoesProva } from "@/lib/prova-stats";
 import { prisma } from "@/lib/prisma";
-import { compararQuestoesPorNumeroEOrdem } from "@/lib/prova-idioma";
+import {
+  compararQuestoesPorNumeroEOrdem,
+  faixaIdiomaProva,
+  inferirFaixaPorNumerosDuplicados,
+} from "@/lib/prova-idioma";
 
 export async function GET(
   _request: Request,
@@ -34,6 +39,29 @@ export async function GET(
     },
   });
   if (!prova) return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
+
+  if (
+    prova.extracaoValidada &&
+    prova.questoes.length > 0 &&
+    !faixaIdiomaProva(prova) &&
+    inferirFaixaPorNumerosDuplicados(prova.questoes)
+  ) {
+    const sync = await sincronizarMetadadosPosExtracao(id);
+    const atualizada = await prisma.prova.findUnique({ where: { id } });
+    if (atualizada) {
+      prova.politicaIdiomas = atualizada.politicaIdiomas;
+      prova.idiomaQuestaoInicio = atualizada.idiomaQuestaoInicio;
+      prova.idiomaQuestaoFim = atualizada.idiomaQuestaoFim;
+    }
+    if (sync.variantesReparadas > 0) {
+      const questoesAtualizadas = await prisma.provaQuestao.findMany({
+        where: { provaId: id },
+        orderBy: { ordemExtracao: "asc" },
+      });
+      prova.questoes = questoesAtualizadas;
+    }
+  }
+
   const questoesOrdenadas = [...prova.questoes].sort((a, b) =>
     compararQuestoesPorNumeroEOrdem(a, b, prova.ordemIdiomasFaixa)
   );

@@ -17,6 +17,7 @@ import {
   observacaoComExtracaoAceita,
   observacaoSemMarcadorExtracao,
 } from "@/lib/prova-texto-prova";
+import { sincronizarMetadadosPosExtracao } from "@/lib/prova-pos-extracao";
 
 function truncarEnunciado(t?: string | null): string | null {
   if (!t?.trim()) return null;
@@ -170,7 +171,7 @@ export async function persistirQuestoesExtracaoProva(
       areaBloco: normalizarAreaBloco(r.areaBloco, r.materia) ?? undefined,
       materia: "A classificar",
       assunto: "A classificar",
-      idiomaVariante: "COMUM" as const,
+      idiomaVariante: varianteRow(r),
       conhecimentoExigido: undefined,
       conhecimentoEscopoId: null,
       conhecimentoDominioId: null,
@@ -204,6 +205,7 @@ export async function persistirQuestoesExtracaoProva(
       prisma.provaQuestao.deleteMany({ where: { provaId } }),
       prisma.provaQuestao.createMany({ data }),
     ]);
+    await sincronizarMetadadosPosExtracao(provaId);
     return data.length;
   }
 
@@ -219,6 +221,7 @@ export async function persistirQuestoesExtracaoProva(
       create: row,
       update: {
         numero: row.numero,
+        idiomaVariante: row.idiomaVariante,
         enunciado: row.enunciado,
         alternativas: row.alternativas,
         materia: row.materia,
@@ -237,6 +240,7 @@ export async function persistirQuestoesExtracaoProva(
     });
     n++;
   }
+  await sincronizarMetadadosPosExtracao(provaId);
   return n;
 }
 

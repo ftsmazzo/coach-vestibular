@@ -27,7 +27,7 @@ import {
   respostasParaGabaritoLote,
   type LinhaRevisaoGabarito,
 } from "@/lib/extrair-gabarito-aluno";
-import { faixaIdiomaProva, inferirFaixaPorVariantesEnEs, questoesTemVariantesEnEs } from "@/lib/prova-idioma";
+import { resolverFaixaIdiomaDualDeQuestoes } from "@/lib/prova-pos-extracao";
 import { parseGabaritoLoteDual } from "@/lib/gabarito";
 import { resolverNumerosGradeProva } from "@/lib/prova-numeracao";
 import { Button, Card } from "@/components/ui";
@@ -112,7 +112,6 @@ export default function AdminProvaDetailPage() {
     idiomaQuestaoFim: "",
   });
   const [detectandoFaixa, setDetectandoFaixa] = useState(false);
-  const [aplicandoFaixaEnEs, setAplicandoFaixaEnEs] = useState(false);
 
   const extracaoRefreshKey = useMemo(() => {
     if (!prova) return "init";
@@ -130,7 +129,10 @@ export default function AdminProvaDetailPage() {
     });
   }, [prova]);
 
-  const faixaIdiomaDual = useMemo(() => faixaIdiomaProva(prova ?? undefined), [prova]);
+  const faixaIdiomaDual = useMemo(() => {
+    if (!prova) return null;
+    return resolverFaixaIdiomaDualDeQuestoes(prova.questoes, prova);
+  }, [prova]);
 
   const revisaoImagem = useMemo(
     () => prova?.questoesRevisaoImagem ?? numerosLogicosRevisaoImagem(prova?.questoes ?? []),
@@ -244,7 +246,10 @@ export default function AdminProvaDetailPage() {
   const filtroTabelaPedagogia = parseFiltroTabelaPedagogia(filtroPedagogiaUrl);
 
   useEffect(() => {
-    if (!prova || numerosGrade.length === 0) return;
+    if (!prova?.extracaoValidada || numerosGrade.length === 0) {
+      setGradeGabarito(null);
+      return;
+    }
     setGradeGabarito(gradeFromQuestoesGabarito(numerosGrade, prova.questoes, faixaIdiomaDual));
   }, [prova, numerosGrade, faixaIdiomaDual]);
 
@@ -258,6 +263,10 @@ export default function AdminProvaDetailPage() {
   }
 
   async function lerGabaritoDaFoto() {
+    if (!prova?.extracaoValidada) {
+      setMsg("Valide a extração na aba Questões antes de montar o gabarito.");
+      return;
+    }
     if (!prova || arquivosGabarito.length === 0) {
       setMsg("Anexe um PDF ou foto do gabarito oficial.");
       return;
@@ -285,7 +294,7 @@ export default function AdminProvaDetailPage() {
   }
 
   function aplicarTextoColadoNoGrid() {
-    if (!prova || numerosGrade.length === 0) return;
+    if (!prova?.extracaoValidada || numerosGrade.length === 0) return;
     const dualMap = parseGabaritoLoteDual(gabaritoLote);
     if (dualMap.size === 0) {
       setMsg("Nenhuma linha válida no texto colado.");
@@ -349,44 +358,6 @@ export default function AdminProvaDetailPage() {
       setMsg("Falha de rede.");
     } finally {
       setDetectandoFaixa(false);
-    }
-  }
-
-  async function aplicarFaixaEnEsDaExtracao() {
-    if (!prova) return;
-    const faixa = inferirFaixaPorVariantesEnEs(prova.questoes);
-    if (!faixa) {
-      setMsg("Não encontrei pares INGLES+ESPANHOL no banco.");
-      return;
-    }
-    setAplicandoFaixaEnEs(true);
-    try {
-      const res = await fetch(`/api/admin/provas/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          politicaIdiomas: "DUPLICATA_EN_ES",
-          idiomaQuestaoInicio: faixa.inicio,
-          idiomaQuestaoFim: faixa.fim,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setMsg(data.error ?? "Erro ao aplicar faixa EN/ES.");
-        return;
-      }
-      setMeta((m) => ({
-        ...m,
-        politicaIdiomas: "DUPLICATA_EN_ES",
-        idiomaQuestaoInicio: String(faixa.inicio),
-        idiomaQuestaoFim: String(faixa.fim),
-      }));
-      setMsg(`Gabarito dual ativado: Q${faixa.inicio}–${faixa.fim} (inglês + espanhol).`);
-      await load();
-    } catch {
-      setMsg("Falha de rede.");
-    } finally {
-      setAplicandoFaixaEnEs(false);
     }
   }
 
@@ -475,6 +446,10 @@ export default function AdminProvaDetailPage() {
   }
 
   async function salvarGabaritoLote() {
+    if (!prova?.extracaoValidada) {
+      setMsg("Valide a extração na aba Questões antes de salvar o gabarito.");
+      return;
+    }
     if (!gradeGabarito?.length) {
       setMsg("Marque ao menos uma alternativa no grid.");
       return;
@@ -630,8 +605,6 @@ export default function AdminProvaDetailPage() {
             onAplicarTextoColado={aplicarTextoColadoNoGrid}
             onLimparGabaritos={limparGabaritos}
             onSalvarGabarito={salvarGabaritoLote}
-            onAplicarFaixaEnEs={aplicarFaixaEnEsDaExtracao}
-            aplicandoFaixaEnEs={aplicandoFaixaEnEs}
             onAtualizarQuestoes={aoAtualizarQuestoes}
             onMensagem={setMsg}
             onEditarQuestaoAlvo={setEditarQuestaoAlvo}

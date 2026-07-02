@@ -3,17 +3,13 @@
 import { Button, Card, Input, Label } from "@/components/ui";
 import { GabaritoRevisaoGrid } from "@/components/gabarito-revisao-grid";
 import type { LinhaRevisaoGabarito } from "@/lib/extrair-gabarito-aluno";
-import {
-  inferirFaixaPorVariantesEnEs,
-  questoesTemVariantesEnEs,
-  temDuplicataEnEs,
-  type FaixaIdiomaOpcional,
-} from "@/lib/prova-idioma";
+import { type FaixaIdiomaOpcional } from "@/lib/prova-idioma";
 import { AdminZonaColarImagem } from "./admin-zona-colar-imagem";
 import type { ProvaAdmin } from "./types";
 
 interface Props {
   prova: ProvaAdmin;
+  extracaoValidada: boolean;
   faixaIdiomaDual: FaixaIdiomaOpcional | null;
   gradeGabarito: LinhaRevisaoGabarito[] | null;
   numerosGrade: number[];
@@ -31,12 +27,11 @@ interface Props {
   onAplicarTextoColado: () => void;
   onLimparGabaritos: () => void;
   onSalvarGabarito: () => void;
-  onAplicarFaixaEnEs?: () => void;
-  aplicandoFaixaEnEs?: boolean;
 }
 
 export function AdminProvaGabaritoSection({
   prova,
+  extracaoValidada,
   faixaIdiomaDual,
   gradeGabarito,
   numerosGrade,
@@ -54,50 +49,31 @@ export function AdminProvaGabaritoSection({
   onAplicarTextoColado,
   onLimparGabaritos,
   onSalvarGabarito,
-  onAplicarFaixaEnEs,
-  aplicandoFaixaEnEs,
 }: Props) {
-  const faixaSugerida = inferirFaixaPorVariantesEnEs(prova.questoes);
-  const precisaConfigurarFaixa =
-    questoesTemVariantesEnEs(prova.questoes) && !faixaIdiomaDual;
+  if (!extracaoValidada) {
+    return (
+      <Card>
+        <h2 className="mb-1 font-semibold text-slate-900">Gabarito oficial</h2>
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+          Valide a extração na aba <strong>Questões</strong> antes de montar o gabarito. O grid só
+          aparece depois da confirmação — já com a faixa EN/ES detectada automaticamente quando
+          houver numeração duplicada.
+        </p>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <h2 className="mb-1 font-semibold text-slate-900">Gabarito oficial</h2>
       <p className="mb-3 text-sm text-slate-600">
-        A extração não inventa gabarito. Leia da foto/PDF da banca, revise no grid e salve.
+        Leia da foto/PDF da banca, revise no grid e salve.{" "}
+        {faixaIdiomaDual && (
+          <span className="text-slate-700">
+            Faixa dual EN/ES: Q{faixaIdiomaDual.inicio}–{faixaIdiomaDual.fim}.
+          </span>
+        )}
       </p>
-      {precisaConfigurarFaixa && (
-        <div className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-3 text-sm text-sky-950">
-          <p className="font-medium">Inglês e espanhol detectados na extração</p>
-          <p className="mt-1 text-xs text-sky-900">
-            No banco existem <strong>duas linhas por número</strong> (INGLES + ESPANHOL) — isso é
-            correto. Para o gabarito aparecer como planejado (uma linha com EN e ES), confirme a
-            faixa de idiomas.
-            {faixaSugerida && (
-              <>
-                {" "}
-                Sugestão: Q{faixaSugerida.inicio}–{faixaSugerida.fim}.
-              </>
-            )}
-          </p>
-          {onAplicarFaixaEnEs && faixaSugerida && (
-            <Button
-              type="button"
-              className="mt-2"
-              disabled={aplicandoFaixaEnEs}
-              onClick={onAplicarFaixaEnEs}
-            >
-              {aplicandoFaixaEnEs ? "Aplicando…" : `Ativar gabarito dual Q${faixaSugerida.inicio}–${faixaSugerida.fim}`}
-            </Button>
-          )}
-        </div>
-      )}
-      {temDuplicataEnEs(prova) && !faixaIdiomaDual && !precisaConfigurarFaixa && (
-        <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          Duplicata EN/ES sem faixa confirmada — confirme Q inicial/final na aba Prova.
-        </p>
-      )}
       <label className="mb-3 flex items-center gap-2 text-sm text-slate-600">
         <input
           type="checkbox"
@@ -157,7 +133,7 @@ export function AdminProvaGabaritoSection({
           permitirMarcarAnulada
         />
       ) : (
-        <p className="text-sm text-slate-500">Defina o total de questões para exibir o grid.</p>
+        <p className="text-sm text-slate-500">Carregando grade do gabarito…</p>
       )}
       <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2">
         <summary className="cursor-pointer text-sm font-medium text-slate-700">

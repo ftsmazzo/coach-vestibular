@@ -117,6 +117,22 @@ export function inferirFaixaPorVariantesEnEs(
   return { inicio: nums[0], fim: nums[nums.length - 1] };
 }
 
+/** Faixa a partir de números que aparecem ≥2 vezes (duplicata física, ex. 70 linhas / 65 lógicas). */
+export function inferirFaixaPorNumerosDuplicados(
+  questoes: { numero: number }[]
+): FaixaIdiomaOpcional | null {
+  const counts = new Map<number, number>();
+  for (const q of questoes) {
+    counts.set(q.numero, (counts.get(q.numero) ?? 0) + 1);
+  }
+  const dup = [...counts.entries()]
+    .filter(([, c]) => c >= 2)
+    .map(([n]) => n)
+    .sort((a, b) => a - b);
+  if (dup.length === 0) return null;
+  return { inicio: dup[0], fim: dup[dup.length - 1] };
+}
+
 /** Faixa EN/ES só quando início e fim estão explicitamente cadastrados (evita gabarito «travado» em 1–5). */
 export function faixaIdiomaProva(meta?: MetaPoliticaIdiomas): FaixaIdiomaOpcional | null {
   if (!temDuplicataEnEs(meta)) return null;

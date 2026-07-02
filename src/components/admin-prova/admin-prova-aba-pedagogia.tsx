@@ -36,8 +36,6 @@ interface Props {
   onAplicarTextoColado: () => void;
   onLimparGabaritos: () => void;
   onSalvarGabarito: () => void;
-  onAplicarFaixaEnEs?: () => void;
-  aplicandoFaixaEnEs?: boolean;
   onAtualizarQuestoes: () => void;
   onMensagem: (msg: string) => void;
   onEditarQuestaoAlvo: (v: { numero: number; idiomaVariante?: string } | null) => void;
@@ -69,8 +67,6 @@ export function AdminProvaAbaPedagogia({
   onAplicarTextoColado,
   onLimparGabaritos,
   onSalvarGabarito,
-  onAplicarFaixaEnEs,
-  aplicandoFaixaEnEs,
   onAtualizarQuestoes,
   onMensagem,
   onEditarQuestaoAlvo,
@@ -91,6 +87,7 @@ export function AdminProvaAbaPedagogia({
     <div className="space-y-6">
       <AdminProvaGabaritoSection
         prova={prova}
+        extracaoValidada={prova.extracaoValidada ?? false}
         faixaIdiomaDual={faixaIdiomaDual}
         gradeGabarito={gradeGabarito}
         numerosGrade={numerosGrade}
@@ -108,8 +105,6 @@ export function AdminProvaAbaPedagogia({
         onAplicarTextoColado={onAplicarTextoColado}
         onLimparGabaritos={onLimparGabaritos}
         onSalvarGabarito={onSalvarGabarito}
-        onAplicarFaixaEnEs={onAplicarFaixaEnEs}
-        aplicandoFaixaEnEs={aplicandoFaixaEnEs}
       />
 
       <AdminClassificacaoProva

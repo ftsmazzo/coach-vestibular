@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { montarRelatorioExtracao, resumoExtracao } from "@/lib/prova-extracao-relatorio";
+import { sincronizarMetadadosPosExtracao } from "@/lib/prova-pos-extracao";
 import { prisma } from "@/lib/prisma";
 import { compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
 
@@ -34,6 +35,8 @@ export async function POST(
     );
   }
 
+  const sync = await sincronizarMetadadosPosExtracao(provaId);
+
   await prisma.prova.update({
     where: { id: provaId },
     data: { extracaoValidada: true },
@@ -42,6 +45,7 @@ export async function POST(
   return NextResponse.json({
     extracaoValidada: true,
     relatorio,
-    mensagem: "Extração validada. A classificação (roteamento) será liberada em breve.",
+    sync,
+    mensagem: "Extração validada. Gabarito e classificação liberados na aba Pedagogia.",
   });
 }
