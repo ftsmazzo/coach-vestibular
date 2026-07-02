@@ -60,8 +60,8 @@ export function AdminProvaAbaQuestoes({
       <Card>
         <h2 className="mb-1 font-semibold text-slate-900">Extrair do PDF</h2>
         <p className="mb-3 text-sm text-slate-600">
-          Fluxo principal: <strong>n8n</strong> (rápido) com fallback para Pipeline IA. Depois valide
-          enunciados e complete lacunas manualmente.
+          Envie o PDF do caderno. O fluxo tenta extração rápida (n8n) e, se necessário, Pipeline IA.
+          Depois confira a cobertura e complete lacunas manualmente ou com print + IA.
         </p>
         <div className="mb-4">
           <Label>PDF da prova</Label>

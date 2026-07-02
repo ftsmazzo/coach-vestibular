@@ -87,7 +87,7 @@ export async function POST(
           : []),
         ...(revisaoImagem > 0
           ? [
-              `${revisaoImagem} questão(ões) com alternativas em imagem — revisar manualmente no banco.`,
+              `${revisaoImagem} questão(ões) com texto incompleto — revise enunciado/alternativas no banco.`,
             ]
           : []),
       ],

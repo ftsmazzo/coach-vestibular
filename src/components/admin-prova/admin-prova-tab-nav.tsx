@@ -13,34 +13,54 @@ interface Props {
   onChange: (aba: AbaProvaAdmin) => void;
   alertaQuestoes?: boolean;
   alertaPedagogia?: boolean;
+  hintQuestoes?: string | null;
+  hintPedagogia?: string | null;
 }
 
-export function AdminProvaTabNav({ aba, onChange, alertaQuestoes, alertaPedagogia }: Props) {
+export function AdminProvaTabNav({
+  aba,
+  onChange,
+  alertaQuestoes,
+  alertaPedagogia,
+  hintQuestoes,
+  hintPedagogia,
+}: Props) {
   return (
-    <nav className="flex flex-wrap gap-2 border-b border-slate-200 pb-1">
+    <nav
+      className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-50/80 p-1"
+      aria-label="Seções da prova"
+    >
       {ABAS.map((item) => {
         const ativo = aba === item.id;
         const alerta =
           (item.id === "questoes" && alertaQuestoes) ||
           (item.id === "pedagogia" && alertaPedagogia);
+        const hint = item.id === "questoes" ? hintQuestoes : item.id === "pedagogia" ? hintPedagogia : null;
+
         return (
           <button
             key={item.id}
             type="button"
             onClick={() => onChange(item.id)}
-            className={`relative rounded-t-xl px-4 py-2.5 text-left transition-colors ${
+            title={hint ?? undefined}
+            className={`min-w-[7.5rem] flex-1 rounded-lg px-3 py-2.5 text-left transition-colors sm:flex-none ${
               ativo
-                ? "bg-white border border-b-white border-slate-200 -mb-px shadow-sm"
-                : "text-slate-600 hover:bg-slate-50"
+                ? "bg-white shadow-sm ring-1 ring-slate-200"
+                : "text-slate-600 hover:bg-white/70"
             }`}
           >
-            <span className={`block text-sm font-semibold ${ativo ? "text-slate-900" : ""}`}>
+            <span className={`flex items-center gap-1.5 text-sm font-semibold ${ativo ? "text-slate-900" : ""}`}>
               {item.label}
-              {alerta && !ativo && (
-                <span className="ml-1.5 inline-block h-2 w-2 rounded-full bg-amber-500" title="Ação pendente" />
+              {alerta && (
+                <span
+                  className={`inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500`}
+                  aria-hidden
+                />
               )}
             </span>
-            <span className="block text-xs text-slate-500">{item.descricao}</span>
+            <span className="mt-0.5 block truncate text-xs text-slate-500">
+              {alerta && hint ? hint : item.descricao}
+            </span>
           </button>
         );
       })}

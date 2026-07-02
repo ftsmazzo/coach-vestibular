@@ -6,10 +6,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminProvaAbaPedagogia } from "@/components/admin-prova/admin-prova-aba-pedagogia";
 import { AdminProvaAbaProva } from "@/components/admin-prova/admin-prova-aba-prova";
 import { AdminProvaAbaQuestoes } from "@/components/admin-prova/admin-prova-aba-questoes";
+import { AdminProvaMensagem } from "@/components/admin-prova/admin-prova-mensagem";
 import { AdminProvaQuestaoModal } from "@/components/admin-prova/admin-prova-questao-modal";
+import { AdminProvaResumoStatus } from "@/components/admin-prova/admin-prova-resumo-status";
 import { AdminProvaTabNav } from "@/components/admin-prova/admin-prova-tab-nav";
 import type { AbaProvaAdmin, ProvaAdmin, ProvaMetaForm } from "@/components/admin-prova/types";
 import { numerosLogicosRevisaoImagem } from "@/lib/prova-revisao-imagem";
+import {
+  calcularPendenciasProva,
+  resumoPendenciasQuestoes,
+} from "@/lib/prova-pendencias-admin";
 import { statsFasesProva } from "@/lib/prova-classificacao-stats";
 import {
   buildGradeRevisao,
@@ -122,6 +128,23 @@ export default function AdminProvaDetailPage() {
   const revisaoImagem = useMemo(
     () => prova?.questoesRevisaoImagem ?? numerosLogicosRevisaoImagem(prova?.questoes ?? []),
     [prova?.questoes, prova?.questoesRevisaoImagem]
+  );
+
+  const pendencias = useMemo(
+    () =>
+      prova
+        ? calcularPendenciasProva({
+            totalQuestoes: prova.totalQuestoes,
+            questoesCadastradas: prova.questoesCadastradas,
+            questoesFaltando: prova.questoesFaltando,
+            questoesRevisaoImagem: revisaoImagem,
+            questoes: prova.questoes,
+            extracaoValidada: prova.extracaoValidada,
+            gabaritoCompleto: prova.gabaritoCompleto,
+            temTextoFonte: prova.temTextoFonte,
+          })
+        : null,
+    [prova, revisaoImagem]
   );
 
   const statsClassificacao = useMemo(
@@ -377,35 +400,34 @@ export default function AdminProvaDetailPage() {
     load();
   }
 
-  if (!prova) return <p className="text-slate-500">Carregando…</p>;
+  if (!prova || !pendencias) return <p className="text-slate-500">Carregando…</p>;
 
-  const alertaQuestoes =
-    prova.bancoIncompleto ||
-    !prova.extracaoValidada ||
-    prova.questoes.length === 0 ||
-    revisaoImagem.length > 0;
-  const alertaPedagogia = prova.questoes.length > 0 && !prova.gabaritoCompleto;
+  const hintQuestoes = resumoPendenciasQuestoes(pendencias);
+  const hintPedagogia = pendencias.gabaritoPendente ? "Gabarito incompleto" : null;
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto max-w-5xl space-y-5">
       <Link href="/admin/provas" className="text-sm text-teal-700 hover:underline">
         ← Banco de provas
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold text-slate-900">{prova.nome}</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            {prova.questoesCadastradas ?? prova.questoes.length}/{prova.totalQuestoes} questões ·
-            {revisaoImagem.length > 0 && (
-              <>
-                {" "}
-                <span className="text-violet-700">{revisaoImagem.length} revisar imagem</span> ·
-              </>
-            )}
-            Gabarito {prova.gabaritoCompleto ? "ok" : "pendente"} ·
-            Classificação {statsClassificacao?.comN1 ?? 0}/{prova.questoes.length} N1
+          <p className="mt-1 text-sm text-slate-500">
+            {prova.banca}
+            {prova.ano ? ` · ${prova.ano}` : ""}
+            {prova.caderno ? ` · ${prova.caderno}` : ""}
           </p>
+          <div className="mt-3">
+            <AdminProvaResumoStatus
+              pendencias={pendencias}
+              publicada={prova.publicada}
+              extracaoValidada={prova.extracaoValidada ?? false}
+              comN1={statsClassificacao?.comN1 ?? 0}
+              totalLinhasBanco={prova.questoes.length}
+            />
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={togglePublicada}>
@@ -414,23 +436,15 @@ export default function AdminProvaDetailPage() {
         </div>
       </div>
 
-      {msg && (
-        <p
-          className={`rounded-lg px-3 py-2 text-sm ${
-            msg.includes("Erro") || msg.includes("Falha")
-              ? "bg-rose-50 text-rose-800"
-              : "bg-teal-50 text-teal-900"
-          }`}
-        >
-          {msg}
-        </p>
-      )}
+      {msg && <AdminProvaMensagem mensagem={msg} onFechar={() => setMsg("")} />}
 
       <AdminProvaTabNav
         aba={aba}
         onChange={setAba}
-        alertaQuestoes={alertaQuestoes}
-        alertaPedagogia={alertaPedagogia}
+        alertaQuestoes={pendencias.alertaAbaQuestoes}
+        alertaPedagogia={pendencias.alertaAbaPedagogia}
+        hintQuestoes={hintQuestoes}
+        hintPedagogia={hintPedagogia}
       />
 
       <div className="pt-2">

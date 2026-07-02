@@ -15,6 +15,7 @@ import {
   questaoConferidaPeloRevisor,
 } from "@/lib/prova-auditoria";
 import { questaoPrecisaRevisaoImagem } from "@/lib/prova-revisao-imagem";
+import { LABEL_TEXTO_INCOMPLETO } from "@/lib/prova-pendencias-admin";
 
 export interface QuestaoRow {
   id: string;
@@ -398,7 +399,7 @@ export function AdminTabelaQuestoes({
                 variant={filtro === "revisao_imagem" ? "primary" : "secondary"}
                 onClick={() => setFiltro("revisao_imagem")}
               >
-                Revisar imagem ({revisaoImagem})
+                Revisar texto ({revisaoImagem})
               </Button>
             )}
           </div>
@@ -454,9 +455,9 @@ export function AdminTabelaQuestoes({
                         {revisarImg && (
                           <span
                             className="ml-1 inline-block rounded bg-violet-100 px-1 text-[9px] font-semibold text-violet-800"
-                            title="Alternativas em imagem — revisar enunciado/alternativas"
+                            title={LABEL_TEXTO_INCOMPLETO}
                           >
-                            img
+                            !
                           </span>
                         )}
                         {q.idiomaVariante && q.idiomaVariante !== "COMUM" && (

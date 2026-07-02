@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import { buildProvaNome } from "@/lib/prova-nome";
+import { numerosLogicosRevisaoImagem } from "@/lib/prova-revisao-imagem";
 import { statsQuestoesProva } from "@/lib/prova-stats";
 import { prisma } from "@/lib/prisma";
 
@@ -12,7 +13,9 @@ export async function GET() {
   const provas = await prisma.prova.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      questoes: { select: { numero: true, idiomaVariante: true } },
+      questoes: {
+        select: { numero: true, idiomaVariante: true, alternativas: true },
+      },
       _count: { select: { questoes: true, tentativas: true } },
     },
   });
@@ -44,6 +47,7 @@ export async function GET() {
         maiorNumeroQuestao: stats.maiorNumero,
         questoesFaltando: stats.faltando,
         bancoIncompleto: stats.incompleto,
+        questoesRevisaoImagem: numerosLogicosRevisaoImagem(p.questoes),
       };
     })
   );

@@ -72,7 +72,7 @@ export function AdminProvaAbaProva({
             <Input
               value={meta.caderno}
               onChange={(e) => setMeta({ ...meta, caderno: e.target.value })}
-              placeholder="Azul, Tipo 1, VUNESP…"
+              placeholder="Azul, Tipo A, 1º dia…"
             />
           </div>
           <div>

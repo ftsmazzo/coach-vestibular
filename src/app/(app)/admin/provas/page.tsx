@@ -16,6 +16,7 @@ interface Prova {
   questoesCadastradas: number;
   bancoIncompleto: boolean;
   questoesFaltando: number[];
+  questoesRevisaoImagem?: number[];
   _count: { questoes: number; tentativas: number };
 }
 
@@ -103,7 +104,7 @@ export default function AdminProvasPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Banco de provas</h1>
         <p className="text-slate-600">
@@ -238,36 +239,55 @@ export default function AdminProvasPage() {
       )}
 
       <ul className="space-y-3">
-        {provas.map((p) => (
+        {provas.map((p) => {
+          const revisao = p.questoesRevisaoImagem?.length ?? 0;
+          return (
           <li key={p.id}>
             <Card className="flex flex-wrap items-center justify-between gap-3">
-              <div>
+              <div className="min-w-0 flex-1">
                 <h3 className="font-semibold">{p.nome}</h3>
-                <p className="text-sm text-slate-500">
-                  <span className={p.bancoIncompleto ? "font-medium text-amber-700" : ""}>
-                    {p.questoesCadastradas} de {p.totalQuestoes} questões no banco
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      p.bancoIncompleto
+                        ? "bg-amber-100 text-amber-950"
+                        : "bg-emerald-100 text-emerald-900"
+                    }`}
+                  >
+                    {p.questoesCadastradas}/{p.totalQuestoes} no banco
                   </span>
-                  {p.bancoIncompleto && p.questoesFaltando.length > 0 && (
-                    <span className="block text-xs text-amber-700">
-                      Faltam no banco: nº{" "}
-                      {p.questoesFaltando.slice(0, 12).join(", ")}
-                      {p.questoesFaltando.length > 12
-                        ? ` (+${p.questoesFaltando.length - 12})`
-                        : ""}
+                  {revisao > 0 && (
+                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-900">
+                      {revisao} texto incompleto
                     </span>
                   )}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {p.publicada ? "Publicada" : "Rascunho"} · Gabarito{" "}
-                  {p.gabaritoCompleto ? "completo" : "incompleto"}
-                </p>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      p.gabaritoCompleto
+                        ? "bg-slate-100 text-slate-700"
+                        : "bg-amber-50 text-amber-900 ring-1 ring-amber-200"
+                    }`}
+                  >
+                    Gabarito {p.gabaritoCompleto ? "ok" : "pendente"}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                    {p.publicada ? "Publicada" : "Rascunho"}
+                  </span>
+                </div>
+                {p.bancoIncompleto && p.questoesFaltando.length > 0 && (
+                  <p className="mt-1 text-xs text-amber-800">
+                    Ausentes: {p.questoesFaltando.slice(0, 10).join(", ")}
+                    {p.questoesFaltando.length > 10 ? ` (+${p.questoesFaltando.length - 10})` : ""}
+                  </p>
+                )}
               </div>
               <Link href={`/admin/provas/${p.id}`}>
-                <Button variant="secondary">Gerenciar questões</Button>
+                <Button variant="secondary">Gerenciar</Button>
               </Link>
             </Card>
           </li>
-        ))}
+        );
+        })}
       </ul>
     </div>
   );

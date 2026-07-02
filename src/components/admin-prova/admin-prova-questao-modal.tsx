@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button, Input, Label } from "@/components/ui";
 import { AREAS_BLOCO } from "@/lib/areas-bloco";
+import { LABEL_TEXTO_INCOMPLETO } from "@/lib/prova-pendencias-admin";
 import type { ProvaQuestaoAdmin } from "./types";
 
 interface Props {
@@ -77,8 +78,8 @@ export function AdminProvaQuestaoModal({
       setAvisosIa(Array.isArray(data.avisos) ? data.avisos : []);
       onMensagem(
         data.precisaRevisaoImagem
-          ? "Texto extraído — revise alternativas em imagem antes de salvar."
-          : "Texto extraído da imagem. Revise e salve."
+          ? `Texto extraído — revise trechos marcados (${LABEL_TEXTO_INCOMPLETO.toLowerCase()}).`
+          : "Texto extraído. Revise e salve."
       );
     } catch {
       onMensagem("Falha de rede ao ler imagem.");
@@ -155,16 +156,18 @@ export function AdminProvaQuestaoModal({
             {questaoExistente ? `Editar questão ${numero}` : `Adicionar questão ${numero}`}
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Envie um print da questão para a IA preencher, ou digite manualmente.
+            Corrija enunciado e alternativas manualmente ou envie um recorte para a IA transcrever.
           </p>
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
-            <Label>Ler da imagem (print ou recorte PDF)</Label>
-            <p className="mt-1 text-xs text-slate-600">
-              Ideal para questões com fórmulas ou alternativas só-imagem. Recorte nítido funciona
-              melhor.
+          <details className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3">
+            <summary className="cursor-pointer text-sm font-medium text-slate-800">
+              Ler de foto ou PDF (opcional)
+            </summary>
+            <p className="mt-2 text-xs text-slate-600">
+              Útil quando a extração automática deixou lacunas — figuras, fórmulas ou layout atípico
+              de qualquer vestibular.
             </p>
             <Input
               key={fileInputKey}
@@ -192,7 +195,7 @@ export function AdminProvaQuestaoModal({
                 ))}
               </ul>
             )}
-          </div>
+          </details>
 
           {!questaoExistente && (
             <div>

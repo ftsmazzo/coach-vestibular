@@ -8,7 +8,7 @@ export function questaoPrecisaRevisaoImagem(q: {
   return alt.includes(PLACEHOLDER_REVISAO_IMAGEM);
 }
 
-/** Números lógicos (ignora variante ES duplicada) com alternativas só-imagem. */
+/** Números lógicos (ignora variante ES duplicada) com placeholder de transcrição incompleta. */
 export function numerosLogicosRevisaoImagem(
   questoes: {
     numero: number;
