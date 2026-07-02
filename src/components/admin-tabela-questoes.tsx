@@ -15,7 +15,10 @@ import {
   questaoConferidaPeloRevisor,
 } from "@/lib/prova-auditoria";
 import { questaoPrecisaRevisaoImagem } from "@/lib/prova-revisao-imagem";
-import { LABEL_TEXTO_INCOMPLETO } from "@/lib/prova-pendencias-admin";
+import {
+  LABEL_TEXTO_INCOMPLETO,
+  type FiltroTabelaPedagogia,
+} from "@/lib/prova-pendencias-admin";
 
 export interface QuestaoRow {
   id: string;
@@ -63,6 +66,7 @@ interface Props {
   abrirEdicao?: { numero: number; idiomaVariante?: string } | null;
   onEdicaoAberta?: () => void;
   onEditarTexto?: (numero: number) => void;
+  filtroInicial?: FiltroTabelaPedagogia;
   onAtualizado: () => void;
   onMensagem?: (msg: string) => void;
 }
@@ -131,6 +135,7 @@ export function AdminTabelaQuestoes({
   abrirEdicao = null,
   onEdicaoAberta,
   onEditarTexto,
+  filtroInicial,
   onAtualizado,
   onMensagem,
 }: Props) {
@@ -139,9 +144,9 @@ export function AdminTabelaQuestoes({
   const [form, setForm] = useState<FormEdicao | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [conferida, setConferida] = useState(true);
-  const [filtro, setFiltro] = useState<"todas" | "alerta" | "sem_n1" | "sem_n2" | "revisao_imagem">(
-    "todas"
-  );
+  const [filtro, setFiltro] = useState<
+    "todas" | "alerta" | "sem_n1" | "sem_n2" | "revisao_imagem"
+  >(filtroInicial ?? "todas");
   const [escoposN2, setEscoposN2] = useState<EscopoN2Opcao[]>([]);
   const [buscaEscopo, setBuscaEscopo] = useState("");
   const [carregandoEscopos, setCarregandoEscopos] = useState(false);
@@ -253,6 +258,10 @@ export function AdminTabelaQuestoes({
     }
     return questoes;
   }, [filtro, questoes, alertaSet]);
+
+  useEffect(() => {
+    if (filtroInicial) setFiltro(filtroInicial);
+  }, [filtroInicial]);
 
   useEffect(() => {
     if (abrirEdicao == null) return;
@@ -502,7 +511,17 @@ export function AdminTabelaQuestoes({
                       </td>
                       <td className="p-2 text-right">
                         <div className="flex flex-wrap justify-end gap-1">
-                          {onEditarTexto && (
+                          {onEditarTexto && revisarImg && (
+                            <Button
+                              type="button"
+                              variant="primary"
+                              className="px-2 py-1 text-xs"
+                              onClick={() => onEditarTexto(q.numero)}
+                            >
+                              Completar
+                            </Button>
+                          )}
+                          {onEditarTexto && !revisarImg && (
                             <Button
                               type="button"
                               variant="secondary"
@@ -518,7 +537,7 @@ export function AdminTabelaQuestoes({
                             className="px-2 py-1 text-xs"
                             onClick={() => abrirModal(q)}
                           >
-                            Editar
+                            Classificar
                           </Button>
                         </div>
                       </td>

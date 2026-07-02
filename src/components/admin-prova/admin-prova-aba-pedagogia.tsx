@@ -5,6 +5,7 @@ import { AdminTabelaQuestoes } from "@/components/admin-tabela-questoes";
 import { AdminProvaGabaritoSection } from "./admin-prova-gabarito-section";
 import type { LinhaRevisaoGabarito } from "@/lib/extrair-gabarito-aluno";
 import type { FaixaIdiomaOpcional } from "@/lib/prova-idioma";
+import type { FiltroTabelaPedagogia } from "@/lib/prova-pendencias-admin";
 import type { ProvaAdmin, ProvaQuestaoAdmin } from "./types";
 
 interface Props {
@@ -39,6 +40,7 @@ interface Props {
   onMensagem: (msg: string) => void;
   onEditarQuestaoAlvo: (v: { numero: number; idiomaVariante?: string } | null) => void;
   onEditarTextoQuestao?: (numero: number) => void;
+  filtroTabelaInicial?: FiltroTabelaPedagogia | null;
   onAlertasChange: (chaves: string[]) => void;
 }
 
@@ -69,6 +71,7 @@ export function AdminProvaAbaPedagogia({
   onMensagem,
   onEditarQuestaoAlvo,
   onEditarTextoQuestao,
+  filtroTabelaInicial,
   onAlertasChange,
 }: Props) {
   if (prova.questoes.length === 0) {
@@ -122,6 +125,7 @@ export function AdminProvaAbaPedagogia({
         abrirEdicao={editarQuestaoAlvo}
         onEdicaoAberta={() => onEditarQuestaoAlvo(null)}
         onEditarTexto={onEditarTextoQuestao}
+        filtroInicial={filtroTabelaInicial ?? undefined}
         onAtualizado={onAtualizarQuestoes}
         onMensagem={onMensagem}
       />

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminProvaAbaPedagogia } from "@/components/admin-prova/admin-prova-aba-pedagogia";
 import { AdminProvaAbaProva } from "@/components/admin-prova/admin-prova-aba-prova";
@@ -14,6 +14,9 @@ import type { AbaProvaAdmin, ProvaAdmin, ProvaMetaForm } from "@/components/admi
 import { numerosLogicosRevisaoImagem } from "@/lib/prova-revisao-imagem";
 import {
   calcularPendenciasProva,
+  hrefAdminProva,
+  parseAbaProvaUrl,
+  parseFiltroTabelaPedagogia,
   resumoPendenciasQuestoes,
 } from "@/lib/prova-pendencias-admin";
 import { statsFasesProva } from "@/lib/prova-classificacao-stats";
@@ -73,7 +76,10 @@ function ForcarRecalculoButton({ examId }: { examId: string }) {
 
 export default function AdminProvaDetailPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { id } = useParams<{ id: string }>();
+  const filtroPedagogiaUrl = searchParams.get("filtro");
+  const [urlInicialLida, setUrlInicialLida] = useState(false);
   const [prova, setProva] = useState<ProvaAdmin | null>(null);
   const [aba, setAba] = useState<AbaProvaAdmin>("questoes");
   const [modalNumero, setModalNumero] = useState<number | null>(null);
@@ -190,6 +196,51 @@ export default function AdminProvaDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (urlInicialLida) return;
+    const abaParam = parseAbaProvaUrl(searchParams.get("aba"));
+    if (abaParam) setAba(abaParam);
+    const qRaw = searchParams.get("q");
+    if (qRaw) {
+      const n = parseInt(qRaw, 10);
+      if (Number.isFinite(n) && n >= 1) setModalNumero(n);
+    }
+    setUrlInicialLida(true);
+  }, [searchParams, urlInicialLida]);
+
+  const syncUrl = useCallback(
+    (opts: { aba?: AbaProvaAdmin; q?: number | null; filtro?: string | null }) => {
+      const abaAtual = opts.aba ?? aba;
+      const qAtual = opts.q === null ? undefined : (opts.q ?? modalNumero ?? undefined);
+      const filtroAtual =
+        opts.filtro === null
+          ? undefined
+          : (opts.filtro ?? filtroPedagogiaUrl ?? undefined);
+      router.replace(
+        hrefAdminProva(id, { aba: abaAtual, q: qAtual, filtro: filtroAtual }),
+        { scroll: false }
+      );
+    },
+    [aba, filtroPedagogiaUrl, id, modalNumero, router]
+  );
+
+  function mudarAba(nova: AbaProvaAdmin) {
+    setAba(nova);
+    syncUrl({ aba: nova });
+  }
+
+  function abrirModalQuestao(numero: number) {
+    setModalNumero(numero);
+    syncUrl({ q: numero });
+  }
+
+  function fecharModalQuestao() {
+    setModalNumero(null);
+    syncUrl({ q: null });
+  }
+
+  const filtroTabelaPedagogia = parseFiltroTabelaPedagogia(filtroPedagogiaUrl);
 
   useEffect(() => {
     if (!prova || numerosGrade.length === 0) return;
@@ -440,7 +491,7 @@ export default function AdminProvaDetailPage() {
 
       <AdminProvaTabNav
         aba={aba}
-        onChange={setAba}
+        onChange={mudarAba}
         alertaQuestoes={pendencias.alertaAbaQuestoes}
         alertaPedagogia={pendencias.alertaAbaPedagogia}
         hintQuestoes={hintQuestoes}
@@ -509,8 +560,8 @@ export default function AdminProvaDetailPage() {
             gabaritoLote={gabaritoLote}
             csvIncluirGabarito={csvIncluirGabarito}
             extracaoRefreshKey={extracaoRefreshKey}
-            onAdicionarQuestao={setModalNumero}
-            onEditarQuestao={setModalNumero}
+            onAdicionarQuestao={abrirModalQuestao}
+            onEditarQuestao={abrirModalQuestao}
             onMensagem={setMsg}
             onAtualizado={load}
           />
@@ -543,7 +594,8 @@ export default function AdminProvaDetailPage() {
             onAtualizarQuestoes={aoAtualizarQuestoes}
             onMensagem={setMsg}
             onEditarQuestaoAlvo={setEditarQuestaoAlvo}
-            onEditarTextoQuestao={(numero) => setModalNumero(numero)}
+            onEditarTextoQuestao={abrirModalQuestao}
+            filtroTabelaInicial={filtroTabelaPedagogia}
             onAlertasChange={setAlertaChaves}
           />
         )}
@@ -554,7 +606,7 @@ export default function AdminProvaDetailPage() {
         aberto={modalNumero != null}
         numeroInicial={modalNumero ?? 1}
         questaoExistente={questaoModal}
-        onFechar={() => setModalNumero(null)}
+        onFechar={fecharModalQuestao}
         onSalvo={load}
         onMensagem={setMsg}
       />
