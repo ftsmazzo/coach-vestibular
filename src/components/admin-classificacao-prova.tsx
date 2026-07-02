@@ -150,7 +150,7 @@ export function AdminClassificacaoProva({
 
   return (
     <Card className="border-violet-200 bg-violet-50/40">
-      <h2 className="mb-2 font-semibold text-violet-900">Passo 5 — Classificação em 3 fases</h2>
+      <h2 className="mb-2 font-semibold text-violet-900">Classificação N1 / N2 / N3</h2>
       <p className="text-sm text-violet-800">
         Fluxo sequencial: <strong>N1</strong> define o catálogo destino (mat, bio, hist…) → você
         valida → <strong>N2</strong> classifica o escopo dentro desse catálogo → valida →{" "}
@@ -160,8 +160,8 @@ export function AdminClassificacaoProva({
 
       {!extracaoValidada && (
         <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Confirme a extração no <strong>Passo 3</strong> antes de rodar N1/N2/N3. Você pode corrigir
-          enunciados a qualquer momento — a classificação já feita permanece visível na tabela abaixo.
+          Confirme a validação dos enunciados na aba <strong>Questões</strong> antes de rodar N1/N2/N3.
+          Você pode corrigir enunciados a qualquer momento — a classificação já feita permanece na tabela.
         </p>
       )}
 

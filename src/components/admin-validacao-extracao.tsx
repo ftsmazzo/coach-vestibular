@@ -217,7 +217,7 @@ export function AdminValidacaoExtracao({
     <Card className="border-teal-200 bg-teal-50/40">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-teal-900">Passo 3 — Validar extração</h2>
+          <h2 className="font-semibold text-teal-900">Validar enunciados</h2>
           <p className="mt-1 text-sm text-teal-800">
             Uma linha por ocorrência física no PDF. <strong>Ordem</strong> = posição no caderno;{" "}
             <strong>Q#</strong> = número impresso (pode repetir em blocos EN/ES). Revise antes de

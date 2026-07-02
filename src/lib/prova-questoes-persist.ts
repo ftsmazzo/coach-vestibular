@@ -302,6 +302,86 @@ export async function upsertQuestaoExtracaoManual(
   return atualizarQuestaoExtracaoManual(provaId, input as { questaoId: string; enunciado: string; alternativas?: string | null });
 }
 
+/** Cria ou atualiza questão por número lógico (entrada manual / lacuna). */
+export async function criarOuAtualizarQuestaoManual(
+  provaId: string,
+  input: {
+    numero: number;
+    enunciado: string;
+    alternativas?: string | null;
+    areaBloco?: string | null;
+    gabarito?: string | null;
+  }
+): Promise<{ id: string; criada: boolean }> {
+  const enunciado = truncarEnunciado(input.enunciado);
+  if (!enunciado || enunciado.length < 10) {
+    throw new Error("Enunciado muito curto (mínimo 10 caracteres).");
+  }
+
+  const existente = await prisma.provaQuestao.findFirst({
+    where: { provaId, numero: input.numero, idiomaVariante: "COMUM" },
+    select: { id: true },
+  });
+
+  const alternativas = truncarAlternativas(input.alternativas);
+  const gabarito = input.gabarito?.toUpperCase() ?? null;
+
+  if (existente) {
+    const row = await prisma.provaQuestao.update({
+      where: { id: existente.id },
+      data: {
+        enunciado,
+        alternativas,
+        ...(input.areaBloco !== undefined ? { areaBloco: input.areaBloco || null } : {}),
+        ...(gabarito ? { gabarito } : {}),
+        materia: "A classificar",
+        assunto: "A classificar",
+        conhecimentoExigido: null,
+        conhecimentoEscopoId: null,
+        conhecimentoDominioId: null,
+        classificacaoVersao: null,
+        classificacaoConfianca: null,
+        classificacaoSecundariosJson: null,
+        conceitosCanonicosJson: null,
+        classificacaoN1Json: null,
+      },
+    });
+    await prisma.prova.update({
+      where: { id: provaId },
+      data: { extracaoValidada: false },
+    });
+    return { id: row.id, criada: false };
+  }
+
+  const max = await prisma.provaQuestao.aggregate({
+    where: { provaId },
+    _max: { ordemExtracao: true },
+  });
+  const ordemExtracao = (max._max.ordemExtracao ?? 0) + 1;
+
+  const row = await prisma.provaQuestao.create({
+    data: {
+      provaId,
+      ordemExtracao,
+      numero: input.numero,
+      idiomaVariante: "COMUM",
+      enunciado,
+      alternativas,
+      areaBloco: input.areaBloco ?? null,
+      gabarito,
+      materia: "A classificar",
+      assunto: "A classificar",
+    },
+  });
+
+  await prisma.prova.update({
+    where: { id: provaId },
+    data: { extracaoValidada: false },
+  });
+
+  return { id: row.id, criada: true };
+}
+
 export async function aceitarEnunciadoExtracaoProva(
   provaId: string,
   input: { questaoId: string }

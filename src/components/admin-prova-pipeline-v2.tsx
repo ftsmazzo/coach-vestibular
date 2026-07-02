@@ -16,6 +16,8 @@ interface Props {
   incluirGabarito: boolean;
   onMensagem: (msg: string) => void;
   onAtualizado: () => void;
+  /** Sem card externo — usado dentro da aba Questões */
+  embedded?: boolean;
 }
 
 interface PreviewRow {
@@ -36,6 +38,7 @@ export function AdminProvaPipelineV2({
   incluirGabarito,
   onMensagem,
   onAtualizado,
+  embedded = false,
 }: Props) {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [carregando, setCarregando] = useState(false);
@@ -191,14 +194,16 @@ export function AdminProvaPipelineV2({
     }
   }
 
-  return (
-    <Card className="border-indigo-200 bg-indigo-50/50">
-      <h2 className="mb-2 font-semibold text-indigo-900">Passo 2 — Extrair prova (PDF → banco)</h2>
-      <p className="mb-3 text-sm text-indigo-800">
-        Envie o PDF. O sistema tenta primeiro o <strong>n8n</strong> (rápido, EN/ES) e, se a cobertura
-        for insuficiente, usa o <strong>Pipeline IA</strong> automaticamente. Extração pura — valide abaixo
-        antes de classificar.
-      </p>
+  const conteudo = (
+    <>
+      {!embedded && (
+        <>
+          <h2 className="mb-2 font-semibold text-indigo-900">Extrair prova (PDF → banco)</h2>
+          <p className="mb-3 text-sm text-indigo-800">
+            n8n primeiro, Pipeline IA se a cobertura for insuficiente.
+          </p>
+        </>
+      )}
 
       {temCadernoSalvo && (
         <p className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
@@ -295,6 +300,12 @@ export function AdminProvaPipelineV2({
           {importandoCsv ? "Importando…" : "Importar CSV no banco"}
         </Button>
       </details>
-    </Card>
+    </>
   );
+
+  if (embedded) {
+    return <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">{conteudo}</div>;
+  }
+
+  return <Card className="border-indigo-200 bg-indigo-50/50">{conteudo}</Card>;
 }
