@@ -30,6 +30,10 @@ export function AdminProvaQuestaoModal({
   const [areaBloco, setAreaBloco] = useState("");
   const [gabarito, setGabarito] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [lendoImagem, setLendoImagem] = useState(false);
+  const [avisosIa, setAvisosIa] = useState<string[]>([]);
+  const [arquivoPrint, setArquivoPrint] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   useEffect(() => {
     if (!aberto) return;
@@ -38,9 +42,50 @@ export function AdminProvaQuestaoModal({
     setAlternativas(questaoExistente?.alternativas?.trim() ?? "");
     setAreaBloco(questaoExistente?.areaBloco ?? "");
     setGabarito(questaoExistente?.gabarito?.toUpperCase() ?? "");
+    setAvisosIa([]);
+    setArquivoPrint(null);
+    setFileInputKey((k) => k + 1);
   }, [aberto, numeroInicial, questaoExistente]);
 
   if (!aberto) return null;
+
+  async function lerPrintComIa() {
+    if (!arquivoPrint) {
+      onMensagem("Selecione uma foto ou PDF da questão.");
+      return;
+    }
+    setLendoImagem(true);
+    setAvisosIa([]);
+    onMensagem("");
+    try {
+      const fd = new FormData();
+      fd.append("file", arquivoPrint);
+      fd.append("numero", String(numero));
+      const res = await fetch(`/api/admin/provas/${provaId}/questoes/extrair-imagem`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        onMensagem(data.error ?? "Não foi possível ler a imagem.");
+        return;
+      }
+      if (data.numero && !questaoExistente) setNumero(data.numero);
+      if (data.enunciado) setEnunciado(data.enunciado);
+      if (data.alternativas) setAlternativas(data.alternativas);
+      if (data.areaBloco) setAreaBloco(data.areaBloco);
+      setAvisosIa(Array.isArray(data.avisos) ? data.avisos : []);
+      onMensagem(
+        data.precisaRevisaoImagem
+          ? "Texto extraído — revise alternativas em imagem antes de salvar."
+          : "Texto extraído da imagem. Revise e salve."
+      );
+    } catch {
+      onMensagem("Falha de rede ao ler imagem.");
+    } finally {
+      setLendoImagem(false);
+    }
+  }
 
   async function salvar() {
     if (!enunciado.trim() || enunciado.trim().length < 10) {
@@ -110,11 +155,45 @@ export function AdminProvaQuestaoModal({
             {questaoExistente ? `Editar questão ${numero}` : `Adicionar questão ${numero}`}
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Preencha manualmente ou cole o texto extraído do PDF. Em breve: envio de print com IA.
+            Envie um print da questão para a IA preencher, ou digite manualmente.
           </p>
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
+            <Label>Ler da imagem (print ou recorte PDF)</Label>
+            <p className="mt-1 text-xs text-slate-600">
+              Ideal para questões com fórmulas ou alternativas só-imagem. Recorte nítido funciona
+              melhor.
+            </p>
+            <Input
+              key={fileInputKey}
+              type="file"
+              accept=".pdf,application/pdf,image/jpeg,image/png,image/webp"
+              className="mt-2"
+              onChange={(e) => setArquivoPrint(e.target.files?.[0] ?? null)}
+            />
+            {arquivoPrint && (
+              <p className="mt-1 text-xs text-slate-600">{arquivoPrint.name}</p>
+            )}
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-2"
+              disabled={lendoImagem || !arquivoPrint}
+              onClick={lerPrintComIa}
+            >
+              {lendoImagem ? "Lendo com IA…" : "Extrair texto da imagem"}
+            </Button>
+            {avisosIa.length > 0 && (
+              <ul className="mt-2 space-y-1 text-xs text-amber-800">
+                {avisosIa.map((a, i) => (
+                  <li key={i}>• {a}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {!questaoExistente && (
             <div>
               <Label>Número da questão</Label>
@@ -184,10 +263,10 @@ export function AdminProvaQuestaoModal({
         </div>
 
         <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
-          <Button type="button" variant="secondary" onClick={onFechar} disabled={salvando}>
+          <Button type="button" variant="secondary" onClick={onFechar} disabled={salvando || lendoImagem}>
             Cancelar
           </Button>
-          <Button type="button" onClick={salvar} disabled={salvando}>
+          <Button type="button" onClick={salvar} disabled={salvando || lendoImagem}>
             {salvando ? "Salvando…" : "Salvar questão"}
           </Button>
         </div>
