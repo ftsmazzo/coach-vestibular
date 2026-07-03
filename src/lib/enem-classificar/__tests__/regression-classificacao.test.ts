@@ -17,6 +17,7 @@ import {
 } from "@/lib/classificacao-n1-types";
 import { validarExatasPosIA, validarTriagemNaturezaPosIA } from "@/lib/enem-classificar/validacao-pos-ia-n1";
 import { montarBlocoLinhaClassificacao } from "@/lib/enem-classificar/linha-classificacao";
+import { resolverAreaMacroQuestao } from "@/lib/inferir-area-macro-conteudo";
 
 describe("regressão N1 produção", () => {
   it("Q29 tira inglês expressão idiomática → Inglês", () => {
@@ -205,5 +206,46 @@ describe("linha de classificação recursiva", () => {
     assert.match(bloco, /N1: humanas → historia/);
     assert.match(bloco, new RegExp(`N2: ${escopo.replace(/\./g, "\\.")}`));
     assert.match(bloco, /conhecimento exigido \(N3\)/);
+  });
+});
+
+describe("inferência de área macro por conteúdo (Fase 4 N1)", () => {
+  it("inglês → linguagens sem areaBloco", () => {
+    const texto =
+      "No contexto da tira, a fala 'That'll be the day!' equivale, em português, a:";
+    const r = resolverAreaMacroQuestao(texto, { areaBloco: null, materia: "A classificar" });
+    assert.equal(r?.area, "linguagens");
+    assert.equal(r?.via, "conteudo");
+  });
+
+  it("sociologia → humanas sem cadastro", () => {
+    const texto =
+      "Com base no ensaio de Simone de Beauvoir, identifique como a sociedade reduz o valor do indivíduo à capacidade produtiva.";
+    const r = resolverAreaMacroQuestao(texto, { materia: "A classificar" });
+    assert.equal(r?.area, "humanas");
+  });
+
+  it("sucessão ecológica → natureza", () => {
+    const texto =
+      "Após perturbações ambientais em uma floresta, qual processo ecológico de recuperação ocorre? sucessão ecológica";
+    const r = resolverAreaMacroQuestao(texto, {});
+    assert.equal(r?.area, "natureza");
+  });
+
+  it("matriz → exatas", () => {
+    const texto = "Considere a matriz quadrada de ordem 2 e calcule o determinante.";
+    const r = resolverAreaMacroQuestao(texto, {});
+    assert.equal(r?.area, "exatas");
+  });
+
+  it("conteúdo prevalece sobre areaBloco errado", () => {
+    const texto =
+      "A nicotina altera a liberação de neurotransmissores causando enfisema pulmonar com destruição dos alvéolos.";
+    const r = resolverAreaMacroQuestao(texto, {
+      areaBloco: "Exatas",
+      materia: "A classificar",
+    });
+    assert.equal(r?.area, "natureza");
+    assert.equal(r?.via, "conteudo");
   });
 });

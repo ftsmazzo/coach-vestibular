@@ -21,7 +21,7 @@ import {
 import { MARCADOR_EXTRACAO_ACEITA } from "@/lib/prova-texto-prova";
 import type { ResultadoClassificacao } from "@/lib/conhecimento-catalog/types";
 import { camposClassificacaoFromResultado } from "@/lib/canonical-question/persist-classificacao";
-import { areaBlocoIdDeLabel, inferirAreaBlocoPorMateria } from "@/lib/areas-bloco";
+import { resolverAreaMacroQuestao } from "@/lib/inferir-area-macro-conteudo";
 import { chaveQuestaoVariante } from "@/lib/prova-idioma";
 import { chaveOrdemExtracao } from "@/lib/prova-questao-ordem";
 import type { ProvaQuestaoRow } from "@/lib/parse-prova-csv";
@@ -94,15 +94,14 @@ function textoBaseQuestao(row: ProvaQuestaoRow, trechoFonte?: string): string | 
   return null;
 }
 
-function resolverAreaPipeline(row: ProvaQuestaoRow): MetaPipelineProva["area"] {
-  const areaId =
-    areaBlocoIdDeLabel(row.areaBloco) ??
-    areaBlocoIdDeLabel(inferirAreaBlocoPorMateria(row.materia));
-  if (areaId === "linguagens") return "linguagens";
-  if (areaId === "humanas") return "humanas";
-  if (areaId === "exatas") return "exatas";
-  if (areaId === "natureza") return "natureza";
-  return undefined;
+function resolverAreaPipeline(row: ProvaQuestaoRow, trechoFonte?: string): MetaPipelineProva["area"] {
+  const texto = textoQuestao(row, trechoFonte);
+  const res = resolverAreaMacroQuestao(texto, {
+    areaBloco: row.areaBloco,
+    materia: row.materia,
+    idiomaVariante: row.idiomaVariante,
+  });
+  return res?.area;
 }
 
 function textoMinimoClassificacao(row: ProvaQuestaoRow): number {
@@ -241,7 +240,7 @@ export async function classificarRowsProvaComCatalogo(
       continue;
     }
 
-    const area = resolverAreaPipeline(row);
+    const area = resolverAreaPipeline(row, trecho);
     if (!area) {
       avisos.push(`Q${row.numero}: área indefinida — classificação adiada.`);
       continue;

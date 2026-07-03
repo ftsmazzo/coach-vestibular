@@ -152,10 +152,10 @@ export function AdminClassificacaoProva({
     <Card className="border-violet-200 bg-violet-50/40">
       <h2 className="mb-2 font-semibold text-violet-900">Classificação N1 / N2 / N3</h2>
       <p className="text-sm text-violet-800">
-        Fluxo sequencial: <strong>N1</strong> define o catálogo destino (mat, bio, hist…) → você
-        valida → <strong>N2</strong> classifica o escopo dentro desse catálogo → valida →{" "}
-        <strong>N3</strong> conhecimento exigido. Se o N1 mudar, N2 e N3 da questão são limpos
-        automaticamente.
+        Fluxo sequencial: <strong>N1</strong> infere área e catálogo destino a partir do enunciado
+        (mat, bio, hist…) → você valida → <strong>N2</strong> classifica o escopo dentro desse
+        catálogo → valida → <strong>N3</strong> conhecimento exigido. Se o N1 mudar, N2 e N3 da
+        questão são limpos automaticamente.
       </p>
 
       {!extracaoValidada && (
@@ -230,8 +230,8 @@ export function AdminClassificacaoProva({
           Atribuir áreas do PDF (pré-N1)
         </Button>
         <p className="text-xs text-slate-500">
-          Se N1 retornar «área indefinida», rode isto antes — lê cabeçalhos do PDF salvo no servidor
-          (Pipeline) ou importe do n8n com campo <code className="text-xs">secao</code> preenchido.
+          Opcional — só se ainda restarem questões «área indefinida» após o N1 (inferência por
+          enunciado é automática). Lê cabeçalhos do PDF salvo no servidor.
         </p>
       </div>
 

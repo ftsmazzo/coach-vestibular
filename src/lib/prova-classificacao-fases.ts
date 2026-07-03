@@ -7,7 +7,11 @@ import type { IdiomaVarianteQuestao } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { extrairTrechosPorNumero } from "@/lib/prova-texto-parse";
 import { compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
-import { areaBlocoIdDeLabel, inferirAreaBlocoPorMateria } from "@/lib/areas-bloco";
+import { areaBlocoPorId } from "@/lib/areas-bloco";
+import {
+  resolverAreaMacroQuestao,
+  type AreaMacro,
+} from "@/lib/inferir-area-macro-conteudo";
 import { atribuirAreasProvaDoCaderno } from "@/lib/prova-atribuir-area-caderno";
 import { MARCADOR_EXTRACAO_ACEITA } from "@/lib/prova-texto-prova";
 import {
@@ -82,15 +86,18 @@ function labelMateriaFromN1(n1: ClassificacaoN1): string {
   return cfg?.label ?? n1.catalogoId;
 }
 
-function areaFromRow(row: QuestaoDb): "linguagens" | "humanas" | "exatas" | "natureza" | undefined {
-  const areaId =
-    areaBlocoIdDeLabel(row.areaBloco) ??
-    areaBlocoIdDeLabel(inferirAreaBlocoPorMateria(row.materia));
-  if (areaId === "linguagens") return "linguagens";
-  if (areaId === "humanas") return "humanas";
-  if (areaId === "exatas") return "exatas";
-  if (areaId === "natureza") return "natureza";
-  return undefined;
+function resolverAreaParaN1(
+  q: QuestaoDb,
+  payload: PayloadQuestaoCompleto
+): { area: AreaMacro; via: string; motivo: string } | null {
+  const texto = textoCompletoPayload(payload);
+  const res = resolverAreaMacroQuestao(texto, {
+    areaBloco: q.areaBloco,
+    materia: q.materia,
+    idiomaVariante: q.idiomaVariante,
+  });
+  if (!res) return null;
+  return { area: res.area, via: res.via, motivo: res.motivo };
 }
 
 function questaoParaPayload(
@@ -181,9 +188,14 @@ export async function executarFaseN1Prova(
       (opcoes.preservarManuais ? " · preservarManuais" : ""),
   ];
 
-  const semAreaInicial = questoes.filter((q) => !areaFromRow(q)).length;
+  const semAreaInicial = questoes.filter((q) => {
+    const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
+    return !resolverAreaParaN1(q, payload);
+  }).length;
   if (semAreaInicial > 0) {
-    etapas.push(`${semAreaInicial} questão(ões) sem área — tentando inferir do PDF salvo…`);
+    etapas.push(
+      `${semAreaInicial} questão(ões) sem área por conteúdo — tentando cabeçalhos do PDF (fallback)…`
+    );
     const inferencia = await atribuirAreasProvaDoCaderno(provaId);
     avisos.push(...inferencia.avisos);
     if (inferencia.atualizadas > 0) {
@@ -221,14 +233,18 @@ export async function executarFaseN1Prova(
       continue;
     }
 
-    const area = areaFromRow(q);
-    if (!area) {
-      avisos.push(`Q${q.numero}: área indefinida.`);
+    const areaRes = resolverAreaParaN1(q, payload);
+    if (!areaRes) {
+      avisos.push(`Q${q.numero}: área indefinida (conteúdo + cadastro).`);
       puladas++;
       continue;
     }
 
-    const { n1, etapas: eq, avisos: aq } = await executarN1Questao(payload, area);
+    if (areaRes.via === "conteudo") {
+      etapas.push(`Q${q.numero} → área ${areaRes.area} (${areaRes.motivo})`);
+    }
+
+    const { n1, etapas: eq, avisos: aq } = await executarN1Questao(payload, areaRes.area);
     for (const e of eq) etapas.push(e.detalhe);
     avisos.push(...aq);
 
@@ -248,6 +264,9 @@ export async function executarFaseN1Prova(
         materia: labelMateriaFromN1(n1Gravar),
         ...(mudou ? { assunto: `N1: ${n1Gravar.catalogoId}` } : {}),
         classificacaoVersao: versaoLabelN1(n1Gravar),
+        ...(areaRes.via === "conteudo" && !q.areaBloco
+          ? { areaBloco: areaBlocoPorId(areaRes.area).label }
+          : {}),
         ...limparN2N3,
       },
     });
