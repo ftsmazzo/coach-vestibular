@@ -5,6 +5,7 @@ import {
   inferirFaixaIdiomaDoPdf,
   inferirFaixaEnEsConfiavel,
   inferirFaixaPorNumerosDuplicados,
+  inferirFaixaPorVariantesEnEs,
   questaoPorNumeroETentativa,
   questoesParaTentativa,
   resolverFaixaIdiomaDualDeQuestoes,
@@ -133,7 +134,29 @@ describe("prova-idioma", () => {
     expect(inferirFaixaEnEsConfiavel(questoes, 90)).toBeNull();
   });
 
-  it("resolverFaixaIdiomaDualDeQuestoes prioriza cadastro e variantes, sem inferir duplicata física", () => {
+  it("inferirFaixaPorVariantesEnEs rejeita pares esparsos (dois blocos)", () => {
+    const questoes = [
+      ...Array.from({ length: 4 }, (_, i) => [
+        { numero: 36 + i, idiomaVariante: "INGLES" as const },
+        { numero: 36 + i, idiomaVariante: "ESPANHOL" as const },
+      ]).flat(),
+      ...Array.from({ length: 4 }, (_, i) => [
+        { numero: 62 + i, idiomaVariante: "INGLES" as const },
+        { numero: 62 + i, idiomaVariante: "ESPANHOL" as const },
+      ]).flat(),
+    ];
+    expect(inferirFaixaPorVariantesEnEs(questoes)).toBeNull();
+  });
+
+  it("inferirFaixaPorVariantesEnEs aceita bloco contíguo de pares", () => {
+    const questoes = Array.from({ length: 5 }, (_, i) => [
+      { numero: i + 1, idiomaVariante: "INGLES" as const },
+      { numero: i + 1, idiomaVariante: "ESPANHOL" as const },
+    ]).flat();
+    expect(inferirFaixaPorVariantesEnEs(questoes)).toEqual({ inicio: 1, fim: 5 });
+  });
+
+  it("resolverFaixaIdiomaDualDeQuestoes prioriza cadastro e duplicata física confiável", () => {
     const meta = {
       politicaIdiomas: "DUPLICATA_EN_ES" as const,
       idiomaQuestaoInicio: 16,
@@ -148,7 +171,10 @@ describe("prova-idioma", () => {
       { numero: n },
       { numero: n },
     ]);
-    expect(resolverFaixaIdiomaDualDeQuestoes([...base, ...faixa], undefined, 90)).toBeNull();
+    expect(resolverFaixaIdiomaDualDeQuestoes([...base, ...faixa], undefined, 90)).toEqual({
+      inicio: 83,
+      fim: 90,
+    });
 
     expect(
       resolverFaixaIdiomaDualDeQuestoes([

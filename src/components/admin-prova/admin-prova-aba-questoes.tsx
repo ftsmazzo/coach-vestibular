@@ -35,7 +35,6 @@ export function AdminProvaAbaQuestoes({
   const numerosLogicos = useMemo(() => {
     const set = new Set<number>();
     for (const q of prova.questoes) {
-      if (q.idiomaVariante === "ESPANHOL") continue;
       set.add(q.numero);
     }
     return set;

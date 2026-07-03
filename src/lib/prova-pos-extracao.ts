@@ -3,9 +3,12 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import {
   faixaIdiomaProva,
+  inferirFaixaEnEsConfiavel,
   inferirFaixaPorVariantesEnEs,
-  questoesTemVariantesEnEs,
+  numeroNaFaixaIdioma,
+  provaTemDuplicataEnEsReal,
   type FaixaIdiomaOpcional,
+  type MetaPoliticaIdiomas,
 } from "@/lib/prova-idioma";
 
 export type ResultadoSyncPosExtracao = {
@@ -21,23 +24,6 @@ type QuestaoSync = {
   numero: number;
   idiomaVariante: string;
 };
-
-function resolverFaixaParaSync(
-  questoes: QuestaoSync[],
-  prova: {
-    politicaIdiomas?: string | null;
-    idiomaQuestaoInicio?: number | null;
-    idiomaQuestaoFim?: number | null;
-    totalQuestoes: number;
-  }
-): FaixaIdiomaOpcional | null {
-  const cadastrada = faixaIdiomaProva(prova);
-  if (cadastrada) return cadastrada;
-  if (questoesTemVariantesEnEs(questoes)) {
-    return inferirFaixaPorVariantesEnEs(questoes);
-  }
-  return null;
-}
 
 async function repararVariantesComumDuplicadas(
   questoes: QuestaoSync[],
@@ -65,9 +51,65 @@ async function repararVariantesComumDuplicadas(
   return reparadas;
 }
 
+async function normalizarVariantesOrfasParaComum(
+  questoes: QuestaoSync[],
+  faixaConfirmada: FaixaIdiomaOpcional | null
+): Promise<number> {
+  let reparadas = 0;
+  for (const q of questoes) {
+    const v = q.idiomaVariante ?? "COMUM";
+    if (v !== "INGLES" && v !== "ESPANHOL") continue;
+
+    const par = questoes.find(
+      (o) =>
+        o.id !== q.id &&
+        o.numero === q.numero &&
+        o.idiomaVariante !== v &&
+        (o.idiomaVariante === "INGLES" || o.idiomaVariante === "ESPANHOL")
+    );
+
+    if (
+      faixaConfirmada &&
+      par &&
+      numeroNaFaixaIdioma(q.numero, faixaConfirmada) &&
+      numeroNaFaixaIdioma(par.numero, faixaConfirmada)
+    ) {
+      continue;
+    }
+
+    await prisma.provaQuestao.update({
+      where: { id: q.id },
+      data: { idiomaVariante: "COMUM" },
+    });
+    q.idiomaVariante = "COMUM";
+    reparadas++;
+  }
+  return reparadas;
+}
+
+async function limparPoliticaDuplicata(provaId: string): Promise<void> {
+  await prisma.prova.update({
+    where: { id: provaId },
+    data: {
+      politicaIdiomas: "NENHUMA",
+      idiomaQuestaoInicio: null,
+      idiomaQuestaoFim: null,
+    },
+  });
+}
+
+function metaComFaixa(faixa: FaixaIdiomaOpcional): MetaPoliticaIdiomas {
+  return {
+    politicaIdiomas: "DUPLICATA_EN_ES",
+    idiomaQuestaoInicio: faixa.inicio,
+    idiomaQuestaoFim: faixa.fim,
+  };
+}
+
 /**
- * Após importar/extrair questões: detecta faixa EN/ES (só com evidência forte),
- * repara variantes COMUM duplicadas e grava política DUPLICATA_EN_ES (idempotente).
+ * Após importar/extrair questões: aplica DUPLICATA EN/ES só com evidência forte
+ * (duplicata física ENEM 90+8 ou pares INGLES+ESPANHOL contíguos). Provas simples
+ * (VUNESP/FAMERP) permanecem COMUM — interpretação em inglês no enunciado não conta.
  */
 export async function sincronizarMetadadosPosExtracao(
   provaId: string
@@ -89,58 +131,91 @@ export async function sincronizarMetadadosPosExtracao(
   }
 
   const questoes = prova.questoes as QuestaoSync[];
-  const faixa = resolverFaixaParaSync(questoes, prova);
+  const cadastrada = faixaIdiomaProva(prova);
+  const fisica = inferirFaixaEnEsConfiavel(questoes, prova.totalQuestoes);
+  const porVariantes = inferirFaixaPorVariantesEnEs(questoes);
 
-  if (!faixa) {
-    return { faixa: null, politicaAplicada: false, variantesReparadas: 0, avisos };
-  }
+  const aplicarPolitica = async (
+    faixa: FaixaIdiomaOpcional,
+    opts?: { repararDuplicataFisica?: boolean }
+  ): Promise<ResultadoSyncPosExtracao> => {
+    const jaConfigurada =
+      prova.politicaIdiomas === "DUPLICATA_EN_ES" &&
+      prova.idiomaQuestaoInicio === faixa.inicio &&
+      prova.idiomaQuestaoFim === faixa.fim;
 
-  const jaConfigurada =
-    prova.politicaIdiomas === "DUPLICATA_EN_ES" &&
-    prova.idiomaQuestaoInicio === faixa.inicio &&
-    prova.idiomaQuestaoFim === faixa.fim;
+    let variantesReparadas = 0;
+    const metaFaixa = metaComFaixa(faixa);
+    if (opts?.repararDuplicataFisica && !provaTemDuplicataEnEsReal(questoes, metaFaixa)) {
+      variantesReparadas = await repararVariantesComumDuplicadas(questoes, faixa);
+      if (variantesReparadas > 0) {
+        avisos.push(
+          `${variantesReparadas / 2} questão(ões) na faixa Q${faixa.inicio}–${faixa.fim} receberam trilha INGLES/ESPANHOL.`
+        );
+      }
+    }
 
-  let variantesReparadas = 0;
-  if (!questoesTemVariantesEnEs(questoes)) {
-    variantesReparadas = await repararVariantesComumDuplicadas(questoes, faixa);
-    if (variantesReparadas > 0) {
+    if (!provaTemDuplicataEnEsReal(questoes, metaFaixa)) {
+      variantesReparadas += await normalizarVariantesOrfasParaComum(questoes, null);
+      if (prova.politicaIdiomas === "DUPLICATA_EN_ES") {
+        await limparPoliticaDuplicata(provaId);
+        avisos.push("Política EN/ES removida — duplicata não confirmada após extração.");
+      }
+      return { faixa: null, politicaAplicada: false, variantesReparadas, avisos };
+    }
+
+    if (!jaConfigurada) {
+      await prisma.prova.update({
+        where: { id: provaId },
+        data: {
+          politicaIdiomas: "DUPLICATA_EN_ES",
+          idiomaQuestaoInicio: faixa.inicio,
+          idiomaQuestaoFim: faixa.fim,
+        },
+      });
       avisos.push(
-        `${variantesReparadas / 2} questão(ões) na faixa Q${faixa.inicio}–${faixa.fim} receberam trilha INGLES/ESPANHOL.`
+        `Faixa de idiomas Q${faixa.inicio}–${faixa.fim} configurada para gabarito dual EN/ES.`
       );
     }
-  }
 
-  const podeAplicarPolitica =
-    jaConfigurada ||
-    questoesTemVariantesEnEs(questoes) ||
-    variantesReparadas > 0 ||
-    faixaIdiomaProva(prova) != null;
-
-  if (!podeAplicarPolitica) {
-    avisos.push(
-      `Duplicatas em Q${faixa.inicio}–${faixa.fim} não confirmadas — configure a faixa EN/ES manualmente na aba Prova.`
-    );
-    return { faixa, politicaAplicada: false, variantesReparadas, avisos };
-  }
-
-  if (!jaConfigurada) {
-    await prisma.prova.update({
-      where: { id: provaId },
-      data: {
-        politicaIdiomas: "DUPLICATA_EN_ES",
-        idiomaQuestaoInicio: faixa.inicio,
-        idiomaQuestaoFim: faixa.fim,
-      },
-    });
-    avisos.push(
-      `Faixa de idiomas Q${faixa.inicio}–${faixa.fim} configurada para gabarito dual EN/ES.`
-    );
-  }
-
-  return {
-    faixa,
-    politicaAplicada: !jaConfigurada || variantesReparadas > 0,
-    variantesReparadas,
-    avisos,
+    return {
+      faixa,
+      politicaAplicada: !jaConfigurada || variantesReparadas > 0,
+      variantesReparadas,
+      avisos,
+    };
   };
+
+  if (fisica) {
+    return aplicarPolitica(fisica, { repararDuplicataFisica: true });
+  }
+
+  if (porVariantes && provaTemDuplicataEnEsReal(questoes, metaComFaixa(porVariantes))) {
+    return aplicarPolitica(porVariantes);
+  }
+
+  if (cadastrada && provaTemDuplicataEnEsReal(questoes, prova)) {
+    return {
+      faixa: cadastrada,
+      politicaAplicada: false,
+      variantesReparadas: 0,
+      avisos,
+    };
+  }
+
+  let variantesReparadas = 0;
+  if (prova.politicaIdiomas === "DUPLICATA_EN_ES") {
+    await limparPoliticaDuplicata(provaId);
+    avisos.push(
+      "Política EN/ES removida — esta prova não tem duplicata inglês+espanhol confirmada (mesmo número, duas trilhas)."
+    );
+  }
+  variantesReparadas = await normalizarVariantesOrfasParaComum(questoes, null);
+  if (variantesReparadas > 0) {
+    avisos.push(
+      `${variantesReparadas} linha(s) INGLES/ESPANHOL órfã(s) consolidadas como COMUM.`
+    );
+  }
+
+  return { faixa: null, politicaAplicada: false, variantesReparadas, avisos };
 }

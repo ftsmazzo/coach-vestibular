@@ -98,7 +98,41 @@ export function questoesTemVariantesEnEs(
   return false;
 }
 
-/** Faixa Qn–Qm a partir dos números que têm par EN+ES no banco. */
+/** Número com linhas INGLES e ESPANHOL (duplicata real). */
+export function numeroTemParEnEs(
+  questoes: { numero: number; idiomaVariante?: string | null }[],
+  numero: number
+): boolean {
+  let ing = false;
+  let es = false;
+  for (const q of questoes) {
+    if (q.numero !== numero) continue;
+    if (q.idiomaVariante === "INGLES") ing = true;
+    if (q.idiomaVariante === "ESPANHOL") es = true;
+  }
+  return ing && es;
+}
+
+/** Política DUPLICATA só vale se existir ao menos um par EN+ES na faixa cadastrada (ou em qualquer número). */
+export function provaTemDuplicataEnEsReal(
+  questoes: { numero: number; idiomaVariante?: string | null }[],
+  meta?: MetaPoliticaIdiomas
+): boolean {
+  const faixa = faixaIdiomaProva(meta);
+  if (faixa) {
+    for (let n = faixa.inicio; n <= faixa.fim; n++) {
+      if (numeroTemParEnEs(questoes, n)) return true;
+    }
+    return false;
+  }
+  const numeros = new Set(questoes.map((q) => q.numero));
+  for (const n of numeros) {
+    if (numeroTemParEnEs(questoes, n)) return true;
+  }
+  return false;
+}
+
+/** Faixa Qn–Qm a partir dos números que têm par EN+ES no banco (bloco contíguo único). */
 export function inferirFaixaPorVariantesEnEs(
   questoes: { numero: number; idiomaVariante?: string | null }[]
 ): FaixaIdiomaOpcional | null {
@@ -114,6 +148,11 @@ export function inferirFaixaPorVariantesEnEs(
     .map(([n]) => n)
     .sort((a, b) => a - b);
   if (nums.length === 0) return null;
+
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] !== nums[i - 1] + 1) return null;
+  }
+
   return { inicio: nums[0], fim: nums[nums.length - 1] };
 }
 
@@ -171,16 +210,18 @@ export function inferirFaixaEnEsConfiavel(
   return { inicio: dup[0], fim: dup[dup.length - 1] };
 }
 
-/** Faixa EN/ES: cadastro explícito → variantes INGLES/ESPANHOL no banco (sem inferir por duplicata física). */
+/** Faixa EN/ES: cadastro explícito → variantes INGLES/ESPANHOL → duplicata física confiável. */
 export function resolverFaixaIdiomaDualDeQuestoes(
   questoes: { numero: number; idiomaVariante?: string | null }[],
   meta?: MetaPoliticaIdiomas,
-  _totalLogico?: number
+  totalLogico?: number
 ): FaixaIdiomaOpcional | null {
   const cadastrada = faixaIdiomaProva(meta ?? undefined);
   if (cadastrada) return cadastrada;
-  if (questoesTemVariantesEnEs(questoes)) {
-    return inferirFaixaPorVariantesEnEs(questoes);
+  const porVariantes = inferirFaixaPorVariantesEnEs(questoes);
+  if (porVariantes) return porVariantes;
+  if (totalLogico != null && totalLogico > 0) {
+    return inferirFaixaEnEsConfiavel(questoes, totalLogico);
   }
   return null;
 }

@@ -40,13 +40,19 @@ export function statsQuestoesProva(
   });
 
   const faltando: number[] = [];
+  const usaDuplicataEnEs = temDuplicataEnEs(meta) && faixaIdiomaProva(meta) != null;
+
   for (const n of esperados) {
+    if (!usaDuplicataEnEs) {
+      if (!numerosSet.has(n)) faltando.push(n);
+      continue;
+    }
     const variantes = variantesExigidasPorNumero(n, meta ?? {});
     const ok = variantes.every((v) => presentes.has(chaveQuestaoVariante(n, v)));
     if (!ok) faltando.push(n);
   }
 
-  const cadastradas = temDuplicataEnEs(meta)
+  const cadastradas = usaDuplicataEnEs
     ? esperados.length - faltando.length
     : new Set(questoes.map((q) => q.numero)).size;
 

@@ -49,4 +49,20 @@ describe("statsQuestoesProva", () => {
     expect(stats.cadastradas).toBe(60);
     expect(stats.linhasBanco).toBe(65);
   });
+
+  it("prova simples cobre número com variante INGLES órfã", () => {
+    const questoes = Array.from({ length: 90 }, (_, i) => {
+      const n = i + 1;
+      const variante =
+        (n >= 36 && n <= 39) || (n >= 62 && n <= 65) ? ("INGLES" as const) : ("COMUM" as const);
+      return { numero: n, idiomaVariante: variante };
+    });
+    const stats = statsQuestoesProva(questoes, 90, {
+      politicaIdiomas: "NENHUMA",
+      banca: "VUNESP",
+    });
+    expect(stats.faltando).toEqual([]);
+    expect(stats.incompleto).toBe(false);
+    expect(stats.cadastradas).toBe(90);
+  });
 });
