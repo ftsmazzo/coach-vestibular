@@ -58,6 +58,12 @@ export function AdminProvaAbaQuestoes({
         onEditar={onEditarQuestao}
       />
 
+      <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+        <strong>Ordem do fluxo:</strong> (1) extraia o PDF → (2) complete âmbar/roxo na grade
+        acima (print + IA + <em>Salvar questão</em>) → (3) confira &quot;Validar enunciados&quot;
+        abaixo → (4) Pedagogia (gabarito).
+      </p>
+
       <Card>
         <h2 className="mb-1 font-semibold text-slate-900">Extrair do PDF</h2>
         <p className="mb-3 text-sm text-slate-600">

@@ -165,8 +165,12 @@ export default function AdminProvaDetailPage() {
     if (modalNumero == null || !prova) return null;
     return (
       prova.questoes.find(
-        (q) => q.numero === modalNumero && (q.idiomaVariante === "COMUM" || !q.idiomaVariante)
-      ) ?? null
+        (q) =>
+          q.numero === modalNumero &&
+          (q.idiomaVariante === "COMUM" || !q.idiomaVariante)
+      ) ??
+      prova.questoes.find((q) => q.numero === modalNumero) ??
+      null
     );
   }, [modalNumero, prova]);
 
@@ -621,7 +625,7 @@ export default function AdminProvaDetailPage() {
         numeroInicial={modalNumero ?? 1}
         questaoExistente={questaoModal}
         onFechar={fecharModalQuestao}
-        onSalvo={load}
+        onSalvo={aoAtualizarQuestoes}
         onMensagem={setMsg}
       />
     </div>

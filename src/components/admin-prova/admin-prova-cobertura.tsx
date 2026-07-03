@@ -137,7 +137,7 @@ export function AdminProvaCobertura({
                           ? `Editar questão ${n}`
                           : `Questão ${n}`
                   }
-                  onClick={() => (tem ? onEditar(n) : onAdicionar(n))}
+                  onClick={() => (falta ? onAdicionar(n) : onEditar(n))}
                   className={`min-w-[2rem] rounded-md px-1.5 py-0.5 text-xs font-medium transition-colors ${
                     falta
                       ? "bg-amber-200 text-amber-950 ring-1 ring-amber-400 hover:bg-amber-300"

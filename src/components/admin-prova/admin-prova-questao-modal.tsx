@@ -13,7 +13,7 @@ interface Props {
   numeroInicial: number;
   questaoExistente?: ProvaQuestaoAdmin | null;
   onFechar: () => void;
-  onSalvo: () => void;
+  onSalvo: () => void | Promise<void>;
   onMensagem: (msg: string) => void;
 }
 
@@ -111,9 +111,12 @@ export function AdminProvaQuestaoModal({
             }),
           }
         );
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          onMensagem(data.error ?? "Erro ao salvar");
+          onMensagem(
+            (data as { error?: string }).error ??
+              `Erro ao salvar (${res.status}). Verifique enunciado e alternativas.`
+          );
           return;
         }
         onMensagem(`Questão ${numero} atualizada.`);
@@ -126,17 +129,22 @@ export function AdminProvaQuestaoModal({
             enunciado: enunciado.trim(),
             alternativas: alternativas.trim() || null,
             areaBloco: areaBloco || null,
-            gabarito: gabarito || null,
+            ...(gabarito ? { gabarito } : {}),
           }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          onMensagem(data.error ?? "Erro ao criar questão");
+          onMensagem(
+            (data as { error?: string }).error ??
+              `Erro ao gravar (${res.status}). Enunciado precisa de ao menos 10 caracteres.`
+          );
           return;
         }
-        onMensagem(data.mensagem ?? `Questão ${numero} gravada.`);
+        onMensagem(
+          (data as { mensagem?: string }).mensagem ?? `Questão ${numero} gravada.`
+        );
       }
-      onSalvo();
+      await onSalvo();
       onFechar();
     } catch {
       onMensagem("Falha de rede ao salvar questão.");

@@ -306,6 +306,27 @@ export async function upsertQuestaoExtracaoManual(
   return atualizarQuestaoExtracaoManual(provaId, input as { questaoId: string; enunciado: string; alternativas?: string | null });
 }
 
+/** Próxima ordem física: prefere o número do caderno (VUNESP 1–90), senão primeiro buraco. */
+async function resolverOrdemExtracaoManual(
+  provaId: string,
+  numero: number,
+  totalQuestoes: number
+): Promise<number> {
+  const rows = await prisma.provaQuestao.findMany({
+    where: { provaId },
+    select: { ordemExtracao: true },
+  });
+  const ocupadas = new Set(rows.map((r) => r.ordemExtracao));
+  if (!ocupadas.has(numero)) return numero;
+
+  const max = rows.reduce((m, r) => Math.max(m, r.ordemExtracao), 0);
+  const limite = Math.max(max, totalQuestoes, numero);
+  for (let o = 1; o <= limite; o++) {
+    if (!ocupadas.has(o)) return o;
+  }
+  return max + 1;
+}
+
 /** Cria ou atualiza questão por número lógico (entrada manual / lacuna). */
 export async function criarOuAtualizarQuestaoManual(
   provaId: string,
@@ -317,6 +338,12 @@ export async function criarOuAtualizarQuestaoManual(
     gabarito?: string | null;
   }
 ): Promise<{ id: string; criada: boolean }> {
+  const prova = await prisma.prova.findUnique({
+    where: { id: provaId },
+    select: { totalQuestoes: true },
+  });
+  if (!prova) throw new Error("Prova não encontrada.");
+
   const enunciado = truncarEnunciado(input.enunciado);
   if (!enunciado || enunciado.length < 10) {
     throw new Error("Enunciado muito curto (mínimo 10 caracteres).");
@@ -363,11 +390,11 @@ export async function criarOuAtualizarQuestaoManual(
     return { id: row.id, criada: false };
   }
 
-  const max = await prisma.provaQuestao.aggregate({
-    where: { provaId },
-    _max: { ordemExtracao: true },
-  });
-  const ordemExtracao = (max._max.ordemExtracao ?? 0) + 1;
+  const ordemExtracao = await resolverOrdemExtracaoManual(
+    provaId,
+    input.numero,
+    prova.totalQuestoes
+  );
 
   const row = await prisma.provaQuestao.create({
     data: {

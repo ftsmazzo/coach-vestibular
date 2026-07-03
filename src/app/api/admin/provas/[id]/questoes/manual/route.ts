@@ -21,7 +21,16 @@ export async function POST(
   if (auth.error) return auth.error;
 
   const { id: provaId } = await params;
-  const body = bodySchema.parse(await request.json());
+  let body: z.infer<typeof bodySchema>;
+  try {
+    body = bodySchema.parse(await request.json());
+  } catch (e) {
+    const msg =
+      e instanceof z.ZodError
+        ? e.issues.map((i) => i.message).join("; ")
+        : "Dados inválidos";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 
   try {
     const areaBloco =
