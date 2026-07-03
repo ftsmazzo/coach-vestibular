@@ -171,18 +171,16 @@ export function inferirFaixaEnEsConfiavel(
   return { inicio: dup[0], fim: dup[dup.length - 1] };
 }
 
-/** Faixa EN/ES: cadastro da prova → variantes INGLES/ESPANHOL → duplicatas confiáveis. */
+/** Faixa EN/ES: cadastro explícito → variantes INGLES/ESPANHOL no banco (sem inferir por duplicata física). */
 export function resolverFaixaIdiomaDualDeQuestoes(
   questoes: { numero: number; idiomaVariante?: string | null }[],
   meta?: MetaPoliticaIdiomas,
-  totalLogico?: number
+  _totalLogico?: number
 ): FaixaIdiomaOpcional | null {
   const cadastrada = faixaIdiomaProva(meta ?? undefined);
   if (cadastrada) return cadastrada;
-  const porVariantes = inferirFaixaPorVariantesEnEs(questoes);
-  if (porVariantes) return porVariantes;
-  if (totalLogico != null && totalLogico > 0) {
-    return inferirFaixaEnEsConfiavel(questoes, totalLogico);
+  if (questoesTemVariantesEnEs(questoes)) {
+    return inferirFaixaPorVariantesEnEs(questoes);
   }
   return null;
 }

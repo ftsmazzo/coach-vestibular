@@ -3,7 +3,6 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import {
   faixaIdiomaProva,
-  inferirFaixaEnEsConfiavel,
   inferirFaixaPorVariantesEnEs,
   questoesTemVariantesEnEs,
   type FaixaIdiomaOpcional,
@@ -37,7 +36,7 @@ function resolverFaixaParaSync(
   if (questoesTemVariantesEnEs(questoes)) {
     return inferirFaixaPorVariantesEnEs(questoes);
   }
-  return inferirFaixaEnEsConfiavel(questoes, prova.totalQuestoes);
+  return null;
 }
 
 async function repararVariantesComumDuplicadas(

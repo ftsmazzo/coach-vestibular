@@ -133,7 +133,7 @@ describe("prova-idioma", () => {
     expect(inferirFaixaEnEsConfiavel(questoes, 90)).toBeNull();
   });
 
-  it("resolverFaixaIdiomaDualDeQuestoes prioriza cadastro e cai em duplicatas confiáveis", () => {
+  it("resolverFaixaIdiomaDualDeQuestoes prioriza cadastro e variantes, sem inferir duplicata física", () => {
     const meta = {
       politicaIdiomas: "DUPLICATA_EN_ES" as const,
       idiomaQuestaoInicio: 16,
@@ -148,10 +148,7 @@ describe("prova-idioma", () => {
       { numero: n },
       { numero: n },
     ]);
-    expect(resolverFaixaIdiomaDualDeQuestoes([...base, ...faixa], undefined, 90)).toEqual({
-      inicio: 83,
-      fim: 90,
-    });
+    expect(resolverFaixaIdiomaDualDeQuestoes([...base, ...faixa], undefined, 90)).toBeNull();
 
     expect(
       resolverFaixaIdiomaDualDeQuestoes([
