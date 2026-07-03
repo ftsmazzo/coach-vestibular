@@ -69,7 +69,7 @@ function faixaIdiomaFallback(total: number): FaixaIdiomaOpcional {
 }
 
 export type MetaPoliticaIdiomas = {
-  politicaIdiomas?: PoliticaIdiomasProva | string;
+  politicaIdiomas?: PoliticaIdiomasProva | string | null;
   idiomaQuestaoInicio?: number | null;
   idiomaQuestaoFim?: number | null;
   ordemIdiomasFaixa?: "INGLES_PRIMEIRO" | "ESPANHOL_PRIMEIRO" | null;
