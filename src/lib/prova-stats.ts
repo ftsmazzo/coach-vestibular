@@ -14,7 +14,7 @@ export type StatsQuestoesMeta = MetaPoliticaIdiomas & {
 
 /** Estatísticas de cobertura do banco vs faixa lógica que o aluno responde. */
 export function statsQuestoesProva(
-  questoes: { numero: number; idiomaVariante?: string }[],
+  questoes: { numero: number; idiomaVariante?: string | null }[],
   totalEsperado: number,
   meta?: StatsQuestoesMeta
 ): {
