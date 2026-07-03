@@ -37,6 +37,12 @@ import {
 } from "@/lib/enem-classificar/triagem-natureza";
 import { triarQuestaoIA, iaClassificacaoDisponivel } from "@/lib/enem-classificar/triagem-ia";
 import {
+  resultadoFromEscopoKeywords,
+  tentarEscopoPorKeywords,
+} from "@/lib/enem-classificar/escopo-por-keywords";
+import { systemPromptComFaseN2 } from "@/lib/enem-classificar/instrucao-fase-n2";
+import { validarEscopoPosIA } from "@/lib/enem-classificar/validacao-pos-ia-n2";
+import {
   triarNaturezaTransversal,
   REGRA_NATUREZA_TRANSVERSAL_ID,
 } from "@/lib/enem-classificar/triagem-natureza-transversal";
@@ -450,11 +456,51 @@ export async function passoClassificacaoN2Somente(
   const escopos = indexarEscopos(catalog);
   const confiancaMinima = catalog.regras.confiancaMinima ?? 0.45;
   const fallbackId = idFallbackNaoClassificado(catalog.materiaId);
+  const texto = textoCompleto(q);
+  const ids = new Set([...escopos.keys(), fallbackId]);
+
+  const kwMatch = tentarEscopoPorKeywords(texto, escopos);
+  if (kwMatch) {
+    let resultado = resultadoFromEscopoKeywords(kwMatch, escopos, catalog.materiaId, fallbackId);
+    resultado = validarEscopoPosIA(texto, resultado, escopos, fallbackId, confiancaMinima);
+    resultado = aplicarGuardrailPrefixoSplit(catalogoId, resultado, fallbackId, meta);
+    return {
+      resultado,
+      etapa: {
+        passo: `n2-${catalogoId}`,
+        detalhe: `Q${q.numero} → ${resultado.escopoId ?? "sem escopo"} (keywords, conf=${(resultado.confianca ?? 0).toFixed(2)})`,
+      },
+    };
+  }
+
+  if (!iaClassificacaoDisponivel()) {
+    const resultado: ResultadoClassificacao = {
+      status: "review",
+      confianca: 0,
+      materiaId: catalog.materiaId,
+      assuntoId: null,
+      dominioId: null,
+      escopoId: fallbackId,
+      conceitoCanonic: null,
+      motivo: "API indisponível e keywords inconclusivas.",
+      sinalizadorRevisao: true,
+      conhecimentoExigido: null,
+    };
+    return {
+      resultado,
+      etapa: {
+        passo: `n2-${catalogoId}`,
+        detalhe: `Q${q.numero} → ${fallbackId} (sem API)`,
+      },
+    };
+  }
+
   const promptMd = promptClassificacaoDisciplina(catalogoId);
-  const systemPrompt =
+  const systemPrompt = systemPromptComFaseN2(
     (promptMd?.trim() || montarSystemClassificacaoV11(catalog)) +
-    "\n\nIMPORTANTE: Esta é a FASE N2 apenas. A LINHA DE CLASSIFICAÇÃO no bloco da questão traz o N1 já gravado — respeite-o. " +
-    "NÃO preencha conhecimento exigido (N3) — será uma fase separada.";
+      "\n\nIMPORTANTE: Esta é a FASE N2 apenas. A LINHA DE CLASSIFICAÇÃO no bloco da questão traz o N1 já gravado — respeite-o. " +
+      "NÃO preencha conhecimento exigido (N3) — será uma fase separada."
+  );
 
   const catalogoJson = JSON.stringify(montarCatalogoReduzido(escopos), null, 0);
   const bloco = blocoQuestaoCompleto(q, { ...meta, catalogoDestino: catalogoId });
@@ -532,7 +578,6 @@ export async function passoClassificacaoN2Somente(
   });
 
   const row = data.classificacoes[0];
-  const ids = new Set([...escopos.keys(), fallbackId]);
 
   let resultado: ResultadoClassificacao;
   if (!row || resolverChaveFonteId(row.fonteId, [q.fonteId]) !== q.fonteId) {
@@ -568,30 +613,43 @@ export async function passoClassificacaoN2Somente(
         rotaCriterio: meta.rota.criterio,
       };
     }
+    resultado = validarEscopoPosIA(texto, resultado, escopos, fallbackId, confiancaMinima);
   }
 
-  const disc = catalogoId;
-  if (ehCatalogDisciplinaSplit(disc)) {
-    const escopoId = resultado.escopoId;
-    if (escopoId && !prefixoValidoParaDisciplina(escopoId, disc)) {
-      resultado = {
-        ...resultado,
-        escopoId: fallbackId,
-        status: "review",
-        sinalizadorRevisao: true,
-        motivo: `Escopo ${escopoId} fora do prefixo de ${disc}.`,
-      };
-    }
-    resultado = { ...resultado, materiaId: disc };
-  }
+  resultado = aplicarGuardrailPrefixoSplit(catalogoId, resultado, fallbackId, meta);
 
   return {
     resultado,
     etapa: {
       passo: `n2-${catalogoId}`,
-      detalhe: `Q${q.numero} → ${resultado.escopoId ?? "sem escopo"} (conf=${(resultado.confianca ?? 0).toFixed(2)})`,
+      detalhe: `Q${q.numero} → ${resultado.escopoId ?? "sem escopo"} (ia, conf=${(resultado.confianca ?? 0).toFixed(2)})`,
     },
   };
+}
+
+function aplicarGuardrailPrefixoSplit(
+  catalogoId: MateriaCorpusId | CatalogDisciplinaId,
+  resultado: ResultadoClassificacao,
+  fallbackId: string,
+  meta: MetaPipelineProva
+): ResultadoClassificacao {
+  if (!ehCatalogDisciplinaSplit(catalogoId)) return resultado;
+
+  const disc = catalogoId;
+  const escopoId = resultado.escopoId;
+  if (escopoId && !prefixoValidoParaDisciplina(escopoId, disc)) {
+    return {
+      ...resultado,
+      escopoId: fallbackId,
+      status: "review",
+      sinalizadorRevisao: true,
+      motivo: `Escopo ${escopoId} fora do prefixo de ${disc}.`,
+      materiaId: disc,
+      disciplinaOriginalId: meta.rota?.disciplinaId,
+      rotaCriterio: meta.rota?.criterio,
+    };
+  }
+  return { ...resultado, materiaId: disc };
 }
 
 /** Passo N3 — conhecimento exigido (texto livre), usa N1+N2 já gravados. */

@@ -6,6 +6,7 @@ import { Button, Card } from "@/components/ui";
 type Fase = "N1" | "N2" | "N3";
 
 type ModoN1 = "faltantes" | "reprocessarAuto" | "forcarTudo";
+type ModoN2 = "faltantes" | "reprocessarAuto" | "forcarTudo";
 
 interface Props {
   provaId: string;
@@ -36,6 +37,12 @@ type ResultadoFase = {
 };
 
 function bodyModoN1(modo: ModoN1): Record<string, boolean> {
+  if (modo === "faltantes") return { apenasFaltantes: true };
+  if (modo === "reprocessarAuto") return { reprocessarTodas: true, preservarManuais: true };
+  return { forcarTudo: true };
+}
+
+function bodyModoN2(modo: ModoN2): Record<string, boolean> {
   if (modo === "faltantes") return { apenasFaltantes: true };
   if (modo === "reprocessarAuto") return { reprocessarTodas: true, preservarManuais: true };
   return { forcarTudo: true };
@@ -98,12 +105,24 @@ export function AdminClassificacaoProva({
 
   async function rodarFase(
     fase: Fase,
-    opts?: { apenasFaltantes?: boolean; modoN1?: ModoN1; numerosQuestao?: number[] }
+    opts?: {
+      apenasFaltantes?: boolean;
+      modoN1?: ModoN1;
+      modoN2?: ModoN2;
+      numerosQuestao?: number[];
+    }
   ) {
     if (fase === "N1" && opts?.modoN1 === "forcarTudo") {
       const ok = window.confirm(
         "Reprocessar N1 em TODAS as questões, inclusive as corrigidas manualmente?\n\n" +
           "Correções manuais serão sobrescritas. N2/N3 serão limpos quando o catálogo mudar."
+      );
+      if (!ok) return;
+    }
+    if (fase === "N2" && opts?.modoN2 === "forcarTudo") {
+      const ok = window.confirm(
+        "Reprocessar N2 em TODAS as questões, inclusive escopos corrigidos manualmente?\n\n" +
+          "Correções manuais de N2 serão sobrescritas. N3 será limpo."
       );
       if (!ok) return;
     }
@@ -121,11 +140,13 @@ export function AdminClassificacaoProva({
     const body =
       fase === "N1" && opts?.modoN1
         ? bodyModoN1(opts.modoN1)
-        : fase === "N2" && opts?.numerosQuestao?.length
-          ? { numerosQuestao: opts.numerosQuestao }
-          : opts?.apenasFaltantes
-            ? { apenasFaltantes: true }
-            : {};
+        : fase === "N2" && opts?.modoN2
+          ? bodyModoN2(opts.modoN2)
+          : fase === "N2" && opts?.numerosQuestao?.length
+            ? { numerosQuestao: opts.numerosQuestao, preservarManuais: true }
+            : opts?.apenasFaltantes
+              ? { apenasFaltantes: true }
+              : {};
 
     try {
       const res = await fetch(`/api/admin/provas/${provaId}/${path}`, {
@@ -236,25 +257,34 @@ export function AdminClassificacaoProva({
       </div>
 
       <div className="mt-3 space-y-2">
+        <p className="text-xs font-medium text-violet-900">N2 — escolha o modo antes de rodar</p>
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada || !n1CompletoTodas}
-            onClick={() => rodarFase("N2")}
-          >
-            {rodando === "N2" ? "N2 rodando…" : "2 · Rodar N2 (todas)"}
-          </Button>
           {faltamN2Real > 0 && n1CompletoTodas && (
             <Button
               type="button"
               variant="secondary"
               disabled={rodando !== null || !extracaoValidada}
-              onClick={() => rodarFase("N2", { apenasFaltantes: true })}
+              onClick={() => rodarFase("N2", { modoN2: "faltantes" })}
             >
-              {rodando === "N2" ? "N2 rodando…" : `2b · N2 só faltantes (${faltamN2Real})`}
+              {rodando === "N2" ? "N2 rodando…" : `2a · N2 faltantes (${faltamN2Real})`}
             </Button>
           )}
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada || !n1CompletoTodas}
+            onClick={() => rodarFase("N2", { modoN2: "reprocessarAuto" })}
+          >
+            {rodando === "N2" ? "N2 rodando…" : "2b · Reprocessar N2 automático"}
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            disabled={rodando !== null || totalQuestoes === 0 || !extracaoValidada || !n1CompletoTodas}
+            onClick={() => rodarFase("N2", { modoN2: "forcarTudo" })}
+          >
+            {rodando === "N2" ? "N2 rodando…" : "2c · N2 tudo (incl. manuais)"}
+          </Button>
           <Button
             type="button"
             variant="secondary"
@@ -264,9 +294,14 @@ export function AdminClassificacaoProva({
             {rodando === "N3" ? "N3 rodando…" : "3 · Rodar N3 (conhecimento)"}
           </Button>
         </div>
+        <p className="text-xs text-slate-600">
+          <strong>Faltantes</strong> — só sem escopo real.{" "}
+          <strong>Reprocessar automático</strong> — recalcula N2 já gravado (preserva manuais); limpa N3.{" "}
+          <strong>Tudo</strong> — sobrescreve inclusive correções manuais de escopo.
+        </p>
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs text-slate-600">
-            <span className="font-medium text-violet-900">2c · N2 em questões específicas</span>
+            <span className="font-medium text-violet-900">2d · N2 em questões específicas</span>
             <input
               type="text"
               value={n2QuestoesInput}

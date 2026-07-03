@@ -19,6 +19,13 @@ import {
 import { validarExatasPosIA, validarTriagemNaturezaPosIA } from "@/lib/enem-classificar/validacao-pos-ia-n1";
 import { montarBlocoLinhaClassificacao } from "@/lib/enem-classificar/linha-classificacao";
 import { resolverAreaMacroQuestao } from "@/lib/inferir-area-macro-conteudo";
+import { carregarCatalogoMateria, indexarEscopos } from "@/lib/conhecimento-catalog/load";
+import { tentarEscopoPorKeywords } from "@/lib/enem-classificar/escopo-por-keywords";
+import {
+  deveProcessarQuestaoN2,
+  n2EhManual,
+  resolverOpcoesFaseN2,
+} from "@/lib/classificacao-n2-types";
 
 describe("regressão N1 produção", () => {
   it("Q29 tira inglês expressão idiomática → Inglês", () => {
@@ -262,5 +269,24 @@ describe("inferência de área macro por conteúdo (Fase 4 N1)", () => {
     });
     assert.equal(r?.area, "natureza");
     assert.equal(r?.via, "conteudo");
+  });
+});
+
+describe("N2 — keywords do catálogo e opções de fase", () => {
+  it("sucessão ecológica → escopo bio.ecologia via keywords", () => {
+    const escopos = indexarEscopos(carregarCatalogoMateria("biologia"));
+    const texto =
+      "Após perturbações ambientais em uma floresta, qual processo ecológico de recuperação ocorre? sucessão ecológica secundária";
+    const match = tentarEscopoPorKeywords(texto, escopos);
+    assert.equal(match?.escopoId, "bio.ecologia.ecossistemas.sucessao");
+  });
+
+  it("preserva N2 manual ao reprocessar", () => {
+    const q = { classificacaoVersao: "n2-manual|cat=portugues|esc=pt.interp.geral" };
+    assert.equal(n2EhManual(q), true);
+    const opts = resolverOpcoesFaseN2({ reprocessarTodas: true, preservarManuais: true });
+    assert.equal(deveProcessarQuestaoN2(q, opts).processar, false);
+    const optsForcar = resolverOpcoesFaseN2({ forcarTudo: true });
+    assert.equal(deveProcessarQuestaoN2(q, optsForcar).processar, true);
   });
 });

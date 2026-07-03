@@ -15,6 +15,9 @@ export async function POST(
   const { id: provaId } = await params;
   const body = (await request.json().catch(() => ({}))) as {
     apenasFaltantes?: boolean;
+    reprocessarTodas?: boolean;
+    preservarManuais?: boolean;
+    forcarTudo?: boolean;
     numerosQuestao?: number[];
   };
 
@@ -32,7 +35,10 @@ export async function POST(
         : undefined;
 
     const resultado = await executarFaseN2Prova(provaId, {
-      apenasSemEscopoReal: !numeros?.length && body.apenasFaltantes === true,
+      apenasSemEscopoReal: body.apenasFaltantes === true && !numeros?.length,
+      reprocessarTodas: body.reprocessarTodas === true || body.forcarTudo === true,
+      preservarManuais: body.forcarTudo ? false : body.preservarManuais !== false,
+      forcarTudo: body.forcarTudo === true,
       numerosQuestao: numeros,
     });
     await refreshProvaGabaritoFlag(provaId);

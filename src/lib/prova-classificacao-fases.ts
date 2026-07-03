@@ -28,6 +28,11 @@ import {
   type OpcoesFaseN1Prova,
 } from "@/lib/classificacao-n1-types";
 import {
+  deveProcessarQuestaoN2,
+  resolverOpcoesFaseN2,
+  type OpcoesFaseN2Prova,
+} from "@/lib/classificacao-n2-types";
+import {
   executarN1Questao,
   metaFromClassificacaoN1,
   passoClassificacaoN2Somente,
@@ -312,29 +317,31 @@ export async function executarFaseN1Prova(
   };
 }
 
-export type OpcoesFaseN2Prova = {
-  /** Pula questões que já têm escopo N2 real (não fallback). */
-  apenasSemEscopoReal?: boolean;
-  /** Reprocessa só estas numerações (ex.: [37, 47, 49, 58, 70]). */
-  numerosQuestao?: number[];
-};
+export type { OpcoesFaseN2Prova } from "@/lib/classificacao-n2-types";
 
 /** FASE 2 — N2: escopo no catálogo. Exige N1 gravado. NÃO gera N3. */
 export async function executarFaseN2Prova(
   provaId: string,
   opts?: OpcoesFaseN2Prova
 ): Promise<ResultadoFaseProva> {
+  const opcoes = resolverOpcoesFaseN2(opts);
   const { prova, questoes, trechos } = await carregarContextoProva(provaId);
   const avisos: string[] = [];
   const etapas: string[] = [
     opts?.numerosQuestao?.length
       ? `═══ FASE N2 — questões ${opts.numerosQuestao.join(", ")} ═══`
-      : opts?.apenasSemEscopoReal
+      : opcoes.apenasSemEscopoReal
         ? "═══ FASE N2 — só questões sem escopo real ═══"
-        : "═══ FASE N2 — escopo no catálogo (sem N3) ═══",
+        : opcoes.forcarTudo
+          ? "═══ FASE N2 — reprocessar tudo (incl. manuais) ═══"
+          : "═══ FASE N2 — escopo no catálogo (sem N3) ═══",
+    `Modo: ${opcoes.apenasSemEscopoReal ? "apenasFaltantes" : opcoes.forcarTudo ? "forcarTudo" : "reprocessarAuto"}` +
+      (opcoes.preservarManuais ? " · preservarManuais" : ""),
   ];
   let ok = 0;
   let processadas = 0;
+  let puladas = 0;
+  let manuaisPreservadas = 0;
 
   const semN1 = questoes.filter((q) => !n1Completo(parseClassificacaoN1(q.classificacaoN1Json)));
   if (semN1.length > 0) {
@@ -355,16 +362,26 @@ export async function executarFaseN2Prova(
 
     if (filtroNumeros && !filtroNumeros.has(q.numero)) continue;
 
-    const escAtual = q.conhecimentoEscopoId?.trim();
-    if (
-      opts?.apenasSemEscopoReal &&
-      escAtual &&
-      !escAtual.endsWith(".__nao_classificado")
-    ) {
+    const decisao = deveProcessarQuestaoN2(q, opcoes);
+    if (!decisao.processar) {
+      puladas++;
+      if (decisao.motivo === "manual_preservado") {
+        manuaisPreservadas++;
+        etapas.push(`Q${q.numero} → pulada (N2 manual preservado)`);
+      } else if (decisao.motivo === "ja_tem_escopo_real") {
+        etapas.push(`Q${q.numero} → pulada (já tem escopo real)`);
+      }
       continue;
     }
 
     const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
+    const texto = textoCompletoPayload(payload);
+    if (texto.length < textoMinimo(q)) {
+      avisos.push(`Q${q.numero}: texto insuficiente para N2.`);
+      puladas++;
+      continue;
+    }
+
     const meta = metaFromClassificacaoN1(n1);
 
     const { resultado, etapa } = await passoClassificacaoN2Somente(
@@ -389,7 +406,6 @@ export async function executarFaseN2Prova(
         classificacaoConfianca: campos.classificacaoConfianca,
         classificacaoSecundariosJson: campos.classificacaoSecundariosJson,
         conceitosCanonicosJson: campos.conceitosCanonicosJson,
-        // N3 fica para fase 3 — não sobrescrever se já existir? Limpar ao re-N2:
         conhecimentoExigido: null,
       },
     });
@@ -400,7 +416,9 @@ export async function executarFaseN2Prova(
     processadas++;
   }
 
-  etapas.push(`N2 concluído: ${ok}/${processadas} com escopo real`);
+  etapas.push(
+    `N2 concluído: ${ok}/${processadas} com escopo real · puladas ${puladas} (manuais ${manuaisPreservadas})`
+  );
 
   return {
     total: questoes.length,
@@ -409,6 +427,8 @@ export async function executarFaseN2Prova(
     falhas: processadas - ok,
     avisos,
     etapas,
+    puladas,
+    manuaisPreservadas,
   };
 }
 
