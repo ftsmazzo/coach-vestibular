@@ -6,6 +6,9 @@ import {
   type StatusExtracaoQuestao,
 } from "@/lib/prova-texto-prova";
 import { compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
+import { numerosLogicosRevisaoImagem } from "@/lib/prova-revisao-imagem";
+import { ocorrenciasMinimasCadastro } from "@/lib/prova-pipeline-ordem-numero";
+import { statsQuestoesProva, type StatsQuestoesMeta } from "@/lib/prova-stats";
 
 export type LinhaExtracaoRelatorio = {
   chave: string;
@@ -25,10 +28,14 @@ export type RelatorioExtracaoProva = {
   totalLogicoCadastro: number;
   /** Linhas físicas extraídas / esperadas na validação */
   linhasFisicas: number;
+  linhasFisicasEsperadas: number | null;
   ok: number;
   curto: number;
   faltando: number;
+  coberturaFaltando: number;
+  textoIncompleto: number;
   prontaParaValidar: boolean;
+  bloqueiosValidacao: string[];
   linhas: LinhaExtracaoRelatorio[];
 };
 
@@ -39,11 +46,32 @@ type QuestaoDb = {
   enunciado?: string | null;
   alternativas?: string | null;
   observacoes?: string | null;
+  idiomaVariante?: string | null;
 };
+
+export type OpcoesRelatorioExtracao = {
+  meta?: StatsQuestoesMeta;
+  questoesFaltando?: number[];
+  revisaoImagem?: number[];
+};
+
+export function montarRelatorioExtracaoComCobertura(
+  questoes: QuestaoDb[],
+  prova: StatsQuestoesMeta & { totalQuestoes: number }
+): RelatorioExtracaoProva {
+  const stats = statsQuestoesProva(questoes, prova.totalQuestoes, prova);
+  const revisao = numerosLogicosRevisaoImagem(questoes);
+  return montarRelatorioExtracao(questoes, prova.totalQuestoes, {
+    meta: prova,
+    questoesFaltando: stats.faltando,
+    revisaoImagem: revisao,
+  });
+}
 
 export function montarRelatorioExtracao(
   questoes: QuestaoDb[],
-  totalLogicoCadastro: number
+  totalLogicoCadastro: number,
+  opts?: OpcoesRelatorioExtracao
 ): RelatorioExtracaoProva {
   const ordenadas = [...questoes].sort(compararPorOrdemExtracao);
   const maxOrdem = ordenadas.reduce((m, q) => Math.max(m, q.ordemExtracao), 0);
@@ -76,17 +104,71 @@ export function montarRelatorioExtracao(
   const curto = linhas.filter((l) => l.status === "curto").length;
   const faltando = linhas.filter((l) => l.status === "faltando").length;
 
+  const coberturaNums = opts?.questoesFaltando ?? [];
+  const textoIncompletoNums =
+    opts?.revisaoImagem ?? numerosLogicosRevisaoImagem(questoes);
+
+  const linhasFisicasEsperadas = opts?.meta
+    ? ocorrenciasMinimasCadastro({
+        totalEsperado: totalLogicoCadastro,
+        politicaIdiomas: opts.meta.politicaIdiomas,
+        idiomaQuestaoInicio: opts.meta.idiomaQuestaoInicio,
+        idiomaQuestaoFim: opts.meta.idiomaQuestaoFim,
+      })
+    : null;
+
+  const bloqueiosValidacao: string[] = [];
+  if (faltando > 0) {
+    bloqueiosValidacao.push(`${faltando} linha(s) física(s) sem enunciado`);
+  }
+  if (curto > 0) {
+    bloqueiosValidacao.push(`${curto} enunciado(s) curto(s)`);
+  }
+  if (coberturaNums.length > 0) {
+    bloqueiosValidacao.push(`${coberturaNums.length} questão(ões) lógica(s) ausente(s) no banco`);
+  }
+  if (textoIncompletoNums.length > 0) {
+    bloqueiosValidacao.push(
+      `${textoIncompletoNums.length} questão(ões) com alternativas incompletas (texto incompleto)`
+    );
+  }
+  if (
+    linhasFisicasEsperadas != null &&
+    linhas.length > 0 &&
+    linhas.length !== linhasFisicasEsperadas
+  ) {
+    bloqueiosValidacao.push(
+      `${linhas.length} linha(s) física(s) no banco, esperado ${linhasFisicasEsperadas} para esta prova`
+    );
+  }
+
+  const prontaParaValidar =
+    bloqueiosValidacao.length === 0 && linhas.length > 0;
+
   return {
     totalLogicoCadastro,
     linhasFisicas: linhas.length,
+    linhasFisicasEsperadas,
     ok,
     curto,
     faltando,
-    prontaParaValidar: faltando === 0 && curto === 0 && linhas.length > 0,
+    coberturaFaltando: coberturaNums.length,
+    textoIncompleto: textoIncompletoNums.length,
+    prontaParaValidar,
+    bloqueiosValidacao,
     linhas,
   };
 }
 
 export function resumoExtracao(relatorio: RelatorioExtracaoProva): string {
-  return `${relatorio.ok}/${relatorio.linhasFisicas} OK · ${relatorio.curto} curto(s) · ${relatorio.faltando} faltando · ${relatorio.linhasFisicas} linha(s) física(s) · cadastro ${relatorio.totalLogicoCadastro} lógica(s)`;
+  const partes = [
+    `${relatorio.ok}/${relatorio.linhasFisicas} OK`,
+    relatorio.curto > 0 ? `${relatorio.curto} curto(s)` : null,
+    relatorio.faltando > 0 ? `${relatorio.faltando} faltando` : null,
+    relatorio.coberturaFaltando > 0 ? `${relatorio.coberturaFaltando} lógica(s) ausente(s)` : null,
+    relatorio.textoIncompleto > 0 ? `${relatorio.textoIncompleto} texto incompleto` : null,
+    `${relatorio.linhasFisicas} linha(s) física(s)`,
+    `cadastro ${relatorio.totalLogicoCadastro} lógica(s)`,
+  ].filter(Boolean);
+  return partes.join(" · ");
 }

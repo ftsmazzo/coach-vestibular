@@ -2,9 +2,10 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import {
-  inferirFaixaPorNumerosDuplicados,
+  faixaIdiomaProva,
+  inferirFaixaEnEsConfiavel,
+  inferirFaixaPorVariantesEnEs,
   questoesTemVariantesEnEs,
-  resolverFaixaIdiomaDualDeQuestoes,
   type FaixaIdiomaOpcional,
 } from "@/lib/prova-idioma";
 
@@ -21,6 +22,23 @@ type QuestaoSync = {
   numero: number;
   idiomaVariante: string;
 };
+
+function resolverFaixaParaSync(
+  questoes: QuestaoSync[],
+  prova: {
+    politicaIdiomas?: string | null;
+    idiomaQuestaoInicio?: number | null;
+    idiomaQuestaoFim?: number | null;
+    totalQuestoes: number;
+  }
+): FaixaIdiomaOpcional | null {
+  const cadastrada = faixaIdiomaProva(prova);
+  if (cadastrada) return cadastrada;
+  if (questoesTemVariantesEnEs(questoes)) {
+    return inferirFaixaPorVariantesEnEs(questoes);
+  }
+  return inferirFaixaEnEsConfiavel(questoes, prova.totalQuestoes);
+}
 
 async function repararVariantesComumDuplicadas(
   questoes: QuestaoSync[],
@@ -49,8 +67,8 @@ async function repararVariantesComumDuplicadas(
 }
 
 /**
- * Após importar/extrair questões: detecta faixa EN/ES, repara variantes COMUM duplicadas
- * e grava política DUPLICATA_EN_ES na prova (idempotente).
+ * Após importar/extrair questões: detecta faixa EN/ES (só com evidência forte),
+ * repara variantes COMUM duplicadas e grava política DUPLICATA_EN_ES (idempotente).
  */
 export async function sincronizarMetadadosPosExtracao(
   provaId: string
@@ -71,18 +89,17 @@ export async function sincronizarMetadadosPosExtracao(
     return { faixa: null, politicaAplicada: false, variantesReparadas: 0, avisos };
   }
 
-  let questoes = prova.questoes as QuestaoSync[];
-
-  let faixa = resolverFaixaIdiomaDualDeQuestoes(questoes, prova);
-
-  if (!faixa && prova.totalQuestoes >= 16) {
-    const dup = inferirFaixaPorNumerosDuplicados(questoes);
-    if (dup) faixa = dup;
-  }
+  const questoes = prova.questoes as QuestaoSync[];
+  const faixa = resolverFaixaParaSync(questoes, prova);
 
   if (!faixa) {
     return { faixa: null, politicaAplicada: false, variantesReparadas: 0, avisos };
   }
+
+  const jaConfigurada =
+    prova.politicaIdiomas === "DUPLICATA_EN_ES" &&
+    prova.idiomaQuestaoInicio === faixa.inicio &&
+    prova.idiomaQuestaoFim === faixa.fim;
 
   let variantesReparadas = 0;
   if (!questoesTemVariantesEnEs(questoes)) {
@@ -94,10 +111,18 @@ export async function sincronizarMetadadosPosExtracao(
     }
   }
 
-  const jaConfigurada =
-    prova.politicaIdiomas === "DUPLICATA_EN_ES" &&
-    prova.idiomaQuestaoInicio === faixa.inicio &&
-    prova.idiomaQuestaoFim === faixa.fim;
+  const podeAplicarPolitica =
+    jaConfigurada ||
+    questoesTemVariantesEnEs(questoes) ||
+    variantesReparadas > 0 ||
+    faixaIdiomaProva(prova) != null;
+
+  if (!podeAplicarPolitica) {
+    avisos.push(
+      `Duplicatas em Q${faixa.inicio}–${faixa.fim} não confirmadas — configure a faixa EN/ES manualmente na aba Prova.`
+    );
+    return { faixa, politicaAplicada: false, variantesReparadas, avisos };
+  }
 
   if (!jaConfigurada) {
     await prisma.prova.update({

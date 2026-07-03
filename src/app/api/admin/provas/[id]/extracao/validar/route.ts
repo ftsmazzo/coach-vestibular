@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
-import { montarRelatorioExtracao, resumoExtracao } from "@/lib/prova-extracao-relatorio";
+import {
+  montarRelatorioExtracaoComCobertura,
+  resumoExtracao,
+} from "@/lib/prova-extracao-relatorio";
 import { sincronizarMetadadosPosExtracao } from "@/lib/prova-pos-extracao";
 import { prisma } from "@/lib/prisma";
 import { compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
@@ -23,12 +26,12 @@ export async function POST(
 
   const questoes = [...prova.questoes].sort(compararPorOrdemExtracao);
 
-  const relatorio = montarRelatorioExtracao(questoes, prova.totalQuestoes);
+  let relatorio = montarRelatorioExtracaoComCobertura(questoes, prova);
 
   if (!relatorio.prontaParaValidar) {
     return NextResponse.json(
       {
-        error: `Extração incompleta: ${resumoExtracao(relatorio)}. Corrija questões curtas ou faltantes antes de validar.`,
+        error: `Extração incompleta: ${resumoExtracao(relatorio)}. Resolva cobertura, alternativas e enunciados antes de confirmar.`,
         relatorio,
       },
       { status: 422 }
@@ -36,6 +39,28 @@ export async function POST(
   }
 
   const sync = await sincronizarMetadadosPosExtracao(provaId);
+
+  const provaAtual = await prisma.prova.findUnique({
+    where: { id: provaId },
+    include: { questoes: true },
+  });
+  if (!provaAtual) {
+    return NextResponse.json({ error: "Prova não encontrada" }, { status: 404 });
+  }
+
+  const questoesAtual = [...provaAtual.questoes].sort(compararPorOrdemExtracao);
+  relatorio = montarRelatorioExtracaoComCobertura(questoesAtual, provaAtual);
+
+  if (!relatorio.prontaParaValidar) {
+    return NextResponse.json(
+      {
+        error: `Após sincronizar metadados: ${resumoExtracao(relatorio)}. Revise faixa EN/ES na aba Prova se necessário.`,
+        relatorio,
+        sync,
+      },
+      { status: 422 }
+    );
+  }
 
   await prisma.prova.update({
     where: { id: provaId },

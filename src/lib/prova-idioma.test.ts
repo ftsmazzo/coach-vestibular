@@ -3,6 +3,7 @@ import {
   faixaIdiomaProva,
   faixaIdiomaHeuristicaBanca,
   inferirFaixaIdiomaDoPdf,
+  inferirFaixaEnEsConfiavel,
   inferirFaixaPorNumerosDuplicados,
   questaoPorNumeroETentativa,
   questoesParaTentativa,
@@ -114,15 +115,43 @@ describe("prova-idioma", () => {
     expect(inferirFaixaPorNumerosDuplicados(questoes)).toEqual({ inicio: 16, fim: 20 });
   });
 
-  it("resolverFaixaIdiomaDualDeQuestoes prioriza cadastro e cai em duplicatas", () => {
+  it("inferirFaixaEnEsConfiavel exige bloco contíguo e total físico = lógico + faixa", () => {
+    const base = Array.from({ length: 82 }, (_, i) => ({ numero: i + 1 }));
+    const faixa = Array.from({ length: 8 }, (_, i) => i + 83).flatMap((n) => [
+      { numero: n },
+      { numero: n },
+    ]);
+    expect(inferirFaixaEnEsConfiavel([...base, ...faixa], 90)).toEqual({ inicio: 83, fim: 90 });
+    expect(inferirFaixaEnEsConfiavel(base, 90)).toBeNull();
+  });
+
+  it("inferirFaixaEnEsConfiavel rejeita duplicatas esparsas (evita 45 faltantes)", () => {
+    const questoes = Array.from({ length: 90 }, (_, i) => ({ numero: i + 1 }));
+    for (let n = 46; n <= 90; n++) {
+      questoes.push({ numero: n });
+    }
+    expect(inferirFaixaEnEsConfiavel(questoes, 90)).toBeNull();
+  });
+
+  it("resolverFaixaIdiomaDualDeQuestoes prioriza cadastro e cai em duplicatas confiáveis", () => {
     const meta = {
       politicaIdiomas: "DUPLICATA_EN_ES" as const,
       idiomaQuestaoInicio: 16,
       idiomaQuestaoFim: 20,
     };
     expect(
-      resolverFaixaIdiomaDualDeQuestoes([{ numero: 1 }, { numero: 16 }, { numero: 16 }], meta)
+      resolverFaixaIdiomaDualDeQuestoes([{ numero: 1 }, { numero: 16 }, { numero: 16 }], meta, 20)
     ).toEqual({ inicio: 16, fim: 20 });
+
+    const base = Array.from({ length: 82 }, (_, i) => ({ numero: i + 1 }));
+    const faixa = Array.from({ length: 8 }, (_, i) => i + 83).flatMap((n) => [
+      { numero: n },
+      { numero: n },
+    ]);
+    expect(resolverFaixaIdiomaDualDeQuestoes([...base, ...faixa], undefined, 90)).toEqual({
+      inicio: 83,
+      fim: 90,
+    });
 
     expect(
       resolverFaixaIdiomaDualDeQuestoes([

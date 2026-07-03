@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import {
   compararQuestoesPorNumeroEOrdem,
   faixaIdiomaProva,
-  inferirFaixaPorNumerosDuplicados,
+  inferirFaixaEnEsConfiavel,
 } from "@/lib/prova-idioma";
 
 export async function GET(
@@ -44,7 +44,7 @@ export async function GET(
     prova.extracaoValidada &&
     prova.questoes.length > 0 &&
     !faixaIdiomaProva(prova) &&
-    inferirFaixaPorNumerosDuplicados(prova.questoes)
+    inferirFaixaEnEsConfiavel(prova.questoes, prova.totalQuestoes)
   ) {
     const sync = await sincronizarMetadadosPosExtracao(id);
     const atualizada = await prisma.prova.findUnique({ where: { id } });

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
-import { montarRelatorioExtracao, resumoExtracao } from "@/lib/prova-extracao-relatorio";
+import {
+  montarRelatorioExtracaoComCobertura,
+  resumoExtracao,
+} from "@/lib/prova-extracao-relatorio";
 import { prisma } from "@/lib/prisma";
 import { compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
 
@@ -21,7 +24,7 @@ export async function GET(
   }
 
   const questoes = [...prova.questoes].sort(compararPorOrdemExtracao);
-  const relatorio = montarRelatorioExtracao(questoes, prova.totalQuestoes);
+  const relatorio = montarRelatorioExtracaoComCobertura(questoes, prova);
 
   return NextResponse.json({
     extracaoValidada: prova.extracaoValidada,

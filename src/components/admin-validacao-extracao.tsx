@@ -9,6 +9,7 @@ interface Props {
   provaId: string;
   extracaoValidada: boolean;
   refreshKey?: string;
+  coberturaOk?: boolean;
   onMensagem: (msg: string) => void;
   onAtualizado: () => void;
 }
@@ -42,6 +43,7 @@ export function AdminValidacaoExtracao({
   provaId,
   extracaoValidada,
   refreshKey,
+  coberturaOk = true,
   onMensagem,
   onAtualizado,
 }: Props) {
@@ -227,7 +229,20 @@ export function AdminValidacaoExtracao({
             {relatorio.ok}/{relatorio.linhasFisicas} OK · {relatorio.curto} curto(s) ·{" "}
             {relatorio.faltando} faltando · {relatorio.linhasFisicas} linha(s) física(s) · cadastro{" "}
             {relatorio.totalLogicoCadastro} lógica(s)
+            {relatorio.coberturaFaltando > 0 && (
+              <> · {relatorio.coberturaFaltando} lógica(s) ausente(s)</>
+            )}
+            {relatorio.textoIncompleto > 0 && (
+              <> · {relatorio.textoIncompleto} texto incompleto</>
+            )}
           </p>
+          {relatorio.linhasFisicasEsperadas != null &&
+            relatorio.linhasFisicas !== relatorio.linhasFisicasEsperadas && (
+              <p className="mt-1 text-xs text-amber-800">
+                Esperado {relatorio.linhasFisicasEsperadas} linha(s) física(s) para esta prova
+                (EN/ES duplicado); no banco há {relatorio.linhasFisicas}.
+              </p>
+            )}
         </div>
         {extracaoValidada ? (
           <div className="flex flex-wrap gap-2">
@@ -246,7 +261,7 @@ export function AdminValidacaoExtracao({
         ) : (
           <Button
             type="button"
-            disabled={validando || !relatorio.prontaParaValidar}
+            disabled={validando || !relatorio.prontaParaValidar || !coberturaOk}
             onClick={validarExtracao}
           >
             {validando ? "Validando…" : "Confirmar extração completa"}
@@ -369,8 +384,15 @@ export function AdminValidacaoExtracao({
       </div>
 
       {!extracaoValidada && !relatorio.prontaParaValidar && (
-        <p className="mt-3 text-xs text-amber-800">
-          Corrija ou cole o texto das linhas Faltando ou Curto antes de confirmar.
+        <ul className="mt-3 list-inside list-disc text-xs text-amber-800">
+          {relatorio.bloqueiosValidacao.map((b) => (
+            <li key={b}>{b}</li>
+          ))}
+        </ul>
+      )}
+      {!extracaoValidada && !coberturaOk && (
+        <p className="mt-2 text-xs text-amber-800">
+          Complete a cobertura do banco (grade acima) antes de confirmar a extração.
         </p>
       )}
     </Card>

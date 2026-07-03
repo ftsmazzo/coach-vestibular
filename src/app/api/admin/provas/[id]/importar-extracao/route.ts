@@ -7,7 +7,7 @@ import {
   persistirQuestoesExtracaoProva,
   persistirTextoFonteProva,
 } from "@/lib/prova-questoes-persist";
-import { montarRelatorioExtracao, resumoExtracao } from "@/lib/prova-extracao-relatorio";
+import { montarRelatorioExtracaoComCobertura, resumoExtracao } from "@/lib/prova-extracao-relatorio";
 import { prisma } from "@/lib/prisma";
 import { n8nItensParaRows, type N8nQuestaoExtraida } from "@/lib/prova-atribuir-area-bloco";
 
@@ -64,7 +64,7 @@ export async function POST(
       include: { questoes: true },
     });
     const relatorio = provaAtual
-      ? montarRelatorioExtracao(provaAtual.questoes, provaAtual.totalQuestoes)
+      ? montarRelatorioExtracaoComCobertura(provaAtual.questoes, provaAtual)
       : null;
 
     const comArea = rows.filter((r) => r.areaBloco?.trim()).length;

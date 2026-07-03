@@ -10,7 +10,7 @@ import {
   montarTextoFonteDeRows,
   persistirTextoFonteProva,
 } from "@/lib/prova-questoes-persist";
-import { montarRelatorioExtracao, resumoExtracao } from "@/lib/prova-extracao-relatorio";
+import { montarRelatorioExtracaoComCobertura, resumoExtracao } from "@/lib/prova-extracao-relatorio";
 import {
   readStoredFile,
   saveProvaCadernoBuffer,
@@ -159,7 +159,7 @@ export async function POST(
     }
 
     let gravadas = 0;
-    let relatorio: ReturnType<typeof montarRelatorioExtracao> | null = null;
+    let relatorio: ReturnType<typeof montarRelatorioExtracaoComCobertura> | null = null;
     if (aplicar) {
       const antigas = await prisma.provaQuestao.findMany({
         where: { provaId },
@@ -201,7 +201,7 @@ export async function POST(
         include: { questoes: true },
       });
       relatorio = provaAtual
-        ? montarRelatorioExtracao(provaAtual.questoes, provaAtual.totalQuestoes)
+        ? montarRelatorioExtracaoComCobertura(provaAtual.questoes, provaAtual)
         : null;
     }
 

@@ -322,10 +322,16 @@ export async function criarOuAtualizarQuestaoManual(
     throw new Error("Enunciado muito curto (mínimo 10 caracteres).");
   }
 
-  const existente = await prisma.provaQuestao.findFirst({
-    where: { provaId, numero: input.numero, idiomaVariante: "COMUM" },
-    select: { id: true },
-  });
+  const existente =
+    (await prisma.provaQuestao.findFirst({
+      where: { provaId, numero: input.numero, idiomaVariante: "COMUM" },
+      select: { id: true },
+    })) ??
+    (await prisma.provaQuestao.findFirst({
+      where: { provaId, numero: input.numero },
+      orderBy: { ordemExtracao: "asc" },
+      select: { id: true },
+    }));
 
   const alternativas = truncarAlternativas(input.alternativas);
   const gabarito = input.gabarito?.toUpperCase() ?? null;

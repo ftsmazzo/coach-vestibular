@@ -44,6 +44,7 @@ export function AdminProvaAbaQuestoes({
   const cadastradas = prova.questoesCadastradas ?? numerosLogicos.size;
   const faltando = prova.questoesFaltando ?? [];
   const revisaoImagem = prova.questoesRevisaoImagem ?? [];
+  const coberturaOk = faltando.length === 0 && revisaoImagem.length === 0;
 
   return (
     <div className="space-y-6">
@@ -92,13 +93,22 @@ export function AdminProvaAbaQuestoes({
       </Card>
 
       {(prova.questoes.length > 0 || prova.totalQuestoes > 0) && (
-        <AdminValidacaoExtracao
-          provaId={prova.id}
-          extracaoValidada={prova.extracaoValidada ?? false}
-          refreshKey={extracaoRefreshKey}
-          onMensagem={onMensagem}
-          onAtualizado={onAtualizado}
-        />
+        <>
+          {!coberturaOk && (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+              Resolva primeiro a <strong>cobertura do banco</strong> (questões ausentes e texto
+              incompleto nas alternativas). Só depois confirme a extração na validação de enunciados.
+            </p>
+          )}
+          <AdminValidacaoExtracao
+            provaId={prova.id}
+            extracaoValidada={prova.extracaoValidada ?? false}
+            refreshKey={extracaoRefreshKey}
+            coberturaOk={coberturaOk}
+            onMensagem={onMensagem}
+            onAtualizado={onAtualizado}
+          />
+        </>
       )}
     </div>
   );

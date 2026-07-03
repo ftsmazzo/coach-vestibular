@@ -133,16 +133,58 @@ export function inferirFaixaPorNumerosDuplicados(
   return { inicio: dup[0], fim: dup[dup.length - 1] };
 }
 
-/** Faixa EN/ES: cadastro da prova → variantes INGLES/ESPANHOL → números repetidos no banco. */
+/**
+ * Faixa EN/ES só quando duplicatas formam bloco contíguo e batem com total lógico + N extras.
+ * Evita inferir faixa errada (ex. 45 faltantes) por duplicatas esparsas ou linhas órfãs.
+ */
+export function inferirFaixaEnEsConfiavel(
+  questoes: { numero: number; idiomaVariante?: string | null }[],
+  totalLogico: number
+): FaixaIdiomaOpcional | null {
+  if (totalLogico < 1 || questoes.length === 0) return null;
+
+  const counts = new Map<number, number>();
+  for (const q of questoes) {
+    counts.set(q.numero, (counts.get(q.numero) ?? 0) + 1);
+  }
+
+  const dup = [...counts.entries()]
+    .filter(([, c]) => c >= 2)
+    .map(([n]) => n)
+    .sort((a, b) => a - b);
+  if (dup.length === 0) return null;
+
+  for (let i = 1; i < dup.length; i++) {
+    if (dup[i] !== dup[i - 1] + 1) return null;
+  }
+
+  const faixaSize = dup.length;
+  if (questoes.length !== totalLogico + faixaSize) return null;
+
+  for (const n of dup) {
+    if (counts.get(n) !== 2) return null;
+  }
+  for (const [n, c] of counts) {
+    if (!dup.includes(n) && c !== 1) return null;
+  }
+
+  return { inicio: dup[0], fim: dup[dup.length - 1] };
+}
+
+/** Faixa EN/ES: cadastro da prova → variantes INGLES/ESPANHOL → duplicatas confiáveis. */
 export function resolverFaixaIdiomaDualDeQuestoes(
   questoes: { numero: number; idiomaVariante?: string | null }[],
-  meta?: MetaPoliticaIdiomas
+  meta?: MetaPoliticaIdiomas,
+  totalLogico?: number
 ): FaixaIdiomaOpcional | null {
   const cadastrada = faixaIdiomaProva(meta ?? undefined);
   if (cadastrada) return cadastrada;
-  return (
-    inferirFaixaPorVariantesEnEs(questoes) ?? inferirFaixaPorNumerosDuplicados(questoes)
-  );
+  const porVariantes = inferirFaixaPorVariantesEnEs(questoes);
+  if (porVariantes) return porVariantes;
+  if (totalLogico != null && totalLogico > 0) {
+    return inferirFaixaEnEsConfiavel(questoes, totalLogico);
+  }
+  return null;
 }
 
 /** Faixa EN/ES só quando início e fim estão explicitamente cadastrados (evita gabarito «travado» em 1–5). */

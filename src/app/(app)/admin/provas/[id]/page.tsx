@@ -131,7 +131,7 @@ export default function AdminProvaDetailPage() {
 
   const faixaIdiomaDual = useMemo(() => {
     if (!prova) return null;
-    return resolverFaixaIdiomaDualDeQuestoes(prova.questoes, prova);
+    return resolverFaixaIdiomaDualDeQuestoes(prova.questoes, prova, prova.totalQuestoes);
   }, [prova]);
 
   const revisaoImagem = useMemo(
