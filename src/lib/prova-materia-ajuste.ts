@@ -7,7 +7,7 @@ const ES_COMANDO =
   /de acuerdo con el texto|según el texto|segun el texto|con base en el texto/i;
 
 /** Comando em inglês (UFU e simulados). */
-const EN_COMANDO =
+export const EN_COMANDO =
   /fill in the blanks|choose the correct answer|according to the text|read the text|select the alternative|complete the text|which best complete/i;
 
 /** Inglês — palavras típicas de passagem em EN, raras em PT. */
@@ -91,6 +91,17 @@ export function normalizarMateria(materia: string): string {
   if (m.includes("físic") || m.includes("fisic")) return "fisica";
   if (m.includes("quím") || m.includes("quim")) return "quimica";
   return m;
+}
+
+/** Comando em português com texto dominante em PT (não exige ausência total de EN/ES). */
+export function comandoPortuguesDominante(texto: string): boolean {
+  const t = texto.trim();
+  if (t.length < 40) return false;
+  if (!PT_COMANDO.test(t)) return false;
+  const pt = contarMatches(t, RE_PT_FORTE);
+  const en = contarMatches(t, RE_EN);
+  const es = contarMatches(t, RE_ES_FORTE);
+  return pt >= 6 && pt >= en && pt >= es;
 }
 
 /** Passagem em inglês (comando em PT ou em EN). */

@@ -1,7 +1,3 @@
-import {
-  detectarPassagemIngles,
-  detectarPassagemEspanhol,
-} from "@/lib/prova-materia-ajuste";
 import { taxonomy } from "@/lib/taxonomy";
 
 function norm(s: string): string {
@@ -21,8 +17,6 @@ export function assuntoPadraoMateria(materiaLabel: string): string {
 export function inferirMateriaPorEnunciado(enunciado: string): string | null {
   const t = enunciado.trim();
   if (!t) return null;
-  if (detectarPassagemIngles(t)) return "Inglês";
-  if (detectarPassagemEspanhol(t)) return "Espanhol";
 
   const n = norm(t);
   if (

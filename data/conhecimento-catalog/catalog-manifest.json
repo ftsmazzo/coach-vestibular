@@ -32,5 +32,6 @@
     "natureza_transversal": "prompt-classificacao-nat-v1.0.md"
   },
   "promptRoteamentoHumanas": "prompt-roteamento-humanas-v1.0.md",
-  "promptRoteamentoLinguagens": "prompt-roteamento-linguagens-v1.0.md"
+  "promptRoteamentoLinguagens": "prompt-roteamento-linguagens-v1.0.md",
+  "promptRoteamentoAreaMacro": "prompt-roteamento-area-macro-v1.0.md"
 }

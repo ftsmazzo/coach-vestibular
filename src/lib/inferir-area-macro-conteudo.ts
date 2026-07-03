@@ -9,10 +9,11 @@ import { triarNaturezaTransversal } from "@/lib/enem-classificar/triagem-naturez
 import { fisicaPrevaleceSobreMatematica } from "@/lib/enem-classificar/fisica-vs-matematica";
 import { inferirMateriaPorEnunciado } from "@/lib/prova-heuristicas";
 import {
-  detectarPassagemEspanhol,
-  detectarPassagemIngles,
+  comandoPortuguesDominante,
   textoIndicaPortuguesInterpretacao,
 } from "@/lib/prova-materia-ajuste";
+import { iaClassificacaoDisponivel } from "@/lib/enem-classificar/classificar-ia";
+import { rotearAreaMacroQuestaoIA } from "@/lib/enem-classificar/roteamento-area-macro-ia";
 
 export type AreaMacro = AreaBlocoId;
 
@@ -82,14 +83,12 @@ export function pontuarAreasMacroPorConteudo(
     out.linguagens.motivos.push(lingHeur.motivo);
   }
 
-  if (detectarPassagemIngles(t) || detectarPassagemEspanhol(t)) {
-    out.linguagens.score += 2.5;
-    out.linguagens.motivos.push("passagem em língua estrangeira");
-  }
-
   if (textoIndicaPortuguesInterpretacao(t)) {
-    out.linguagens.score += 1.8;
+    out.linguagens.score += 2.5;
     out.linguagens.motivos.push("interpretação de texto em português");
+  } else if (comandoPortuguesDominante(t)) {
+    out.linguagens.score += 2;
+    out.linguagens.motivos.push("comando e texto dominante em português");
   }
 
   const humHeur = heuristicaHumanasDisciplina(t);
@@ -99,7 +98,7 @@ export function pontuarAreasMacroPorConteudo(
   }
 
   const materiaHeur = inferirMateriaPorEnunciado(t);
-  if (materiaHeur) {
+  if (materiaHeur && materiaHeur !== "Inglês" && materiaHeur !== "Espanhol") {
     const area = MATERIA_PARA_AREA[materiaHeur];
     if (area) {
       out[area].score += 3;
@@ -107,9 +106,13 @@ export function pontuarAreasMacroPorConteudo(
     }
   }
 
+  const ptInterpretacao =
+    textoIndicaPortuguesInterpretacao(t) || comandoPortuguesDominante(t);
+
   const natTri = triarMateriaNatureza(t);
   if (natTri.materia && natTri.materia !== "Transversal") {
-    out.natureza.score += natTri.confianca * 4;
+    const fatorNat = ptInterpretacao && natTri.confianca < 0.88 ? 0.35 : 1;
+    out.natureza.score += natTri.confianca * 4 * fatorNat;
     out.natureza.motivos.push(`triagem natureza: ${natTri.materia}`);
   }
 
@@ -242,4 +245,68 @@ export function resolverAreaMacroQuestao(
   if (porConteudo) return porConteudo;
 
   return null;
+}
+
+/**
+ * Resolve área macro com IA como fonte primária (Fase N1 em produção).
+ * Heurísticas só entram como fallback ou fast-path inequívoco.
+ */
+export async function resolverAreaMacroQuestaoAsync(
+  texto: string,
+  opts?: {
+    areaBloco?: string | null;
+    materia?: string | null;
+    idiomaVariante?: string | null;
+    fonteId?: string;
+    banca?: string | null;
+    numero?: number;
+  }
+): Promise<ResultadoAreaMacro | null> {
+  const v = opts?.idiomaVariante ?? "COMUM";
+  if (v === "INGLES" || v === "ESPANHOL") {
+    return {
+      area: "linguagens",
+      confianca: 0.92,
+      motivo: `variante ${v}`,
+      via: "conteudo",
+    };
+  }
+
+  if (textoIndicaPortuguesInterpretacao(texto)) {
+    const lingHeur = heuristicaLinguagensDisciplina(texto);
+    const inglesForte =
+      lingHeur?.disciplinaId === "ingles" && lingHeur.confianca >= 0.78;
+    const espanholForte =
+      lingHeur?.disciplinaId === "espanhol" && lingHeur.confianca >= 0.78;
+    if (!inglesForte && !espanholForte) {
+      return {
+        area: "linguagens",
+        confianca: 0.88,
+        motivo: "interpretação de texto em português",
+        via: "conteudo",
+      };
+    }
+  }
+
+  if (iaClassificacaoDisponivel() && opts?.fonteId) {
+    try {
+      const ia = await rotearAreaMacroQuestaoIA(opts.fonteId, texto, {
+        banca: opts.banca,
+        idiomaVariante: v,
+        numero: opts.numero,
+      });
+      if (ia && ia.areaId !== "indefinido" && ia.confianca >= 0.48) {
+        return {
+          area: ia.areaId,
+          confianca: ia.confianca,
+          motivo: ia.justificativa || `IA (${ia.criterio})`,
+          via: "conteudo",
+        };
+      }
+    } catch {
+      /* fallback heurístico abaixo */
+    }
+  }
+
+  return resolverAreaMacroQuestao(texto, opts);
 }

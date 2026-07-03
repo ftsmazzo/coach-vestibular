@@ -45,9 +45,9 @@ import {
 } from "@/lib/enem-classificar/fisica-vs-matematica";
 import {
   aplicarRoteamentoDeterministicoHumanas,
-  aplicarRoteamentoDeterministicoLinguagens,
   roteamentoHumanasPorHeuristica,
   roteamentoLinguagensPorHeuristica,
+  validarRoteamentoLinguagensPosIA,
 } from "@/lib/enem-classificar/heuristica-roteamento-disciplina";
 import {
   CONFIANCA_HEURISTICA_NATUREZA_MIN,
@@ -137,6 +137,7 @@ function blocoQuestaoCompleto(
   const hints = [
     `numero=${q.numero}`,
     q.banca ? `banca=${q.banca}` : null,
+    q.idiomaVariante ? `idiomaVariante=${q.idiomaVariante}` : null,
   ]
     .filter(Boolean)
     .join(" ");
@@ -234,7 +235,7 @@ function rotaDeterministicaLinguagens(
   q: PayloadQuestaoCompleto,
   rota: RotaIa
 ): RotaIa {
-  return aplicarRoteamentoDeterministicoLinguagens(textoCompleto(q), null, rota);
+  return validarRoteamentoLinguagensPosIA(textoCompleto(q), q.idiomaVariante, rota);
 }
 
 function rotaDeterministicaHumanas(q: PayloadQuestaoCompleto, rota: RotaIa): RotaIa {
@@ -347,7 +348,7 @@ export async function passoRoteamentoDisciplina(
 
   const rotaHeuristica =
     area === "linguagens"
-      ? roteamentoLinguagensPorHeuristica(texto)
+      ? roteamentoLinguagensPorHeuristica(texto, q.idiomaVariante)
       : roteamentoHumanasPorHeuristica(texto);
 
   if (rotaHeuristica) {

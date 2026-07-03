@@ -10,6 +10,7 @@ import { compararPorOrdemExtracao } from "@/lib/prova-questao-ordem";
 import { areaBlocoPorId } from "@/lib/areas-bloco";
 import {
   resolverAreaMacroQuestao,
+  resolverAreaMacroQuestaoAsync,
   type AreaMacro,
 } from "@/lib/inferir-area-macro-conteudo";
 import { atribuirAreasProvaDoCaderno } from "@/lib/prova-atribuir-area-caderno";
@@ -86,15 +87,19 @@ function labelMateriaFromN1(n1: ClassificacaoN1): string {
   return cfg?.label ?? n1.catalogoId;
 }
 
-function resolverAreaParaN1(
+async function resolverAreaParaN1(
   q: QuestaoDb,
-  payload: PayloadQuestaoCompleto
-): { area: AreaMacro; via: string; motivo: string } | null {
+  payload: PayloadQuestaoCompleto,
+  banca?: string
+): Promise<{ area: AreaMacro; via: string; motivo: string } | null> {
   const texto = textoCompletoPayload(payload);
-  const res = resolverAreaMacroQuestao(texto, {
+  const res = await resolverAreaMacroQuestaoAsync(texto, {
     areaBloco: q.areaBloco,
     materia: q.materia,
     idiomaVariante: q.idiomaVariante,
+    fonteId: q.id,
+    banca: banca ?? null,
+    numero: q.numero,
   });
   if (!res) return null;
   return { area: res.area, via: res.via, motivo: res.motivo };
@@ -190,7 +195,11 @@ export async function executarFaseN1Prova(
 
   const semAreaInicial = questoes.filter((q) => {
     const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
-    return !resolverAreaParaN1(q, payload);
+    return !resolverAreaMacroQuestao(textoCompletoPayload(payload), {
+      areaBloco: q.areaBloco,
+      materia: q.materia,
+      idiomaVariante: q.idiomaVariante,
+    });
   }).length;
   if (semAreaInicial > 0) {
     etapas.push(
@@ -233,7 +242,7 @@ export async function executarFaseN1Prova(
       continue;
     }
 
-    const areaRes = resolverAreaParaN1(q, payload);
+    const areaRes = await resolverAreaParaN1(q, payload, prova.banca ?? undefined);
     if (!areaRes) {
       avisos.push(`Q${q.numero}: área indefinida (conteúdo + cadastro).`);
       puladas++;

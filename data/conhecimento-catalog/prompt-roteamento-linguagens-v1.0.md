@@ -32,6 +32,8 @@ Decida pela:
 | Texto-base em inglês | portugues | ingles |
 | Texto-base em espanhol | portugues | espanhol |
 | Comando em PT + texto EN | portugues | ingles |
+| Comando em PT + texto-base literário/cultural em PT (variante COMUM) | ingles | portugues |
+| Prova sem trilha EN/ES — palavras estrangeiras pontuais no texto | ingles | portugues |
 | Comando em PT pede equivalência/inferência de fala EN em tira | portugues | ingles |
 | Conteúdo de História/Geo no texto-base | portugues (se L2) | manter L2 se competência for linguística |
 | Gramática PT pura | ingles/espanhol | portugues |

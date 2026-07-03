@@ -25,6 +25,7 @@ type CatalogManifest = {
   roteamentoHumanas?: string;
   promptRoteamentoHumanas?: string;
   promptRoteamentoLinguagens?: string;
+  promptRoteamentoAreaMacro?: string;
   prompts?: Record<string, string>;
 };
 
@@ -113,6 +114,13 @@ export function promptRoteamentoLinguagens(): string | null {
   const spec = blocoSpecRoteamento(manifest.roteamentoLinguagens);
   const merged = `${md}${spec}`.trim();
   return merged || null;
+}
+
+export function promptRoteamentoAreaMacro(): string | null {
+  const manifest = carregarManifest();
+  const file = manifest.promptRoteamentoAreaMacro;
+  if (!file) return null;
+  return carregarPromptCatalogo(file).trim() || null;
 }
 
 function blocoSpecRoteamento(fileName?: string): string {

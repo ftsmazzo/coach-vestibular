@@ -5,6 +5,7 @@ import {
   heuristicaHumanasDisciplina,
   heuristicaLinguagensDisciplina,
   roteamentoLinguagensPorHeuristica,
+  validarRoteamentoLinguagensPosIA,
 } from "@/lib/enem-classificar/heuristica-roteamento-disciplina";
 import { fisicaPrevaleceSobreMatematica } from "@/lib/enem-classificar/fisica-vs-matematica";
 import { triarMateriaNatureza } from "@/lib/enem-classificar/triagem-natureza";
@@ -31,6 +32,20 @@ describe("regressão N1 produção", () => {
     const texto =
       "O trecho da tira que faz com que o argumento do menino seja invalidado é:\nDon't try to fool me";
     assert.equal(heuristicaLinguagensDisciplina(texto)?.disciplinaId, "ingles");
+  });
+
+  it("interpretação PT (COMUM) não vira inglês após IA errada", () => {
+    const texto =
+      "De acordo com o texto, a principal função social da linguagem na sociedade brasileira é promover a comunicação entre diferentes grupos e garantir o acesso à informação disponível para todos os cidadãos.";
+    const iaErrada = {
+      disciplinaId: "ingles",
+      criterio: "lingua_texto_base",
+      confianca: 0.99,
+      justificativa: "falso positivo",
+      sinalizadorRevisao: false,
+    };
+    const corrigida = validarRoteamentoLinguagensPosIA(texto, "COMUM", iaErrada);
+    assert.equal(corrigida.disciplinaId, "portugues");
   });
 
   it("Q58 Beauvoir velhice/produtivismo → Sociologia", () => {

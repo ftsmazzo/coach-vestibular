@@ -1,5 +1,11 @@
 /** Heurísticas determinísticas de roteamento N1 — aplicadas antes e depois da IA. */
 
+import {
+  comandoPortuguesDominante,
+  EN_COMANDO,
+  textoIndicaPortuguesInterpretacao,
+} from "@/lib/prova-materia-ajuste";
+
 export type DisciplinaLinguagensHeuristica = "portugues" | "ingles" | "espanhol";
 export type DisciplinaHumanasHeuristica = "historia" | "geografia" | "filosofia" | "sociologia";
 
@@ -258,7 +264,50 @@ export function validarRoteamentoLinguagensPosIA(
   idiomaVariante: string | null | undefined,
   rota: RotaMinima
 ): RotaMinima {
-  return aplicarRoteamentoDeterministicoLinguagens(texto, idiomaVariante, rota);
+  const heur = heuristicaLinguagensDisciplina(texto);
+  if (heur && heur.confianca >= 0.78) {
+    if (rota.disciplinaId === heur.disciplinaId) return rota;
+    return rotaDeHeuristica(heur, rota);
+  }
+
+  const v = idiomaVariante ?? "COMUM";
+  const t = norm(texto);
+  const fortesIng = pontuarPadroes(t, PADROES_INGLES_FORTES);
+  const cmdEn = EN_COMANDO.test(texto);
+
+  if (rota.disciplinaId === "ingles" && v !== "INGLES" && fortesIng === 0 && !cmdEn) {
+    if (
+      textoIndicaPortuguesInterpretacao(texto) ||
+      comandoPortuguesDominante(texto) ||
+      /\b(gramatica|regencia|crase|sintaxe|morfologia|pontuacao|figura de linguagem|interpretacao)\b/.test(
+        t
+      )
+    ) {
+      return {
+        disciplinaId: "portugues",
+        criterio: "guardrail",
+        confianca: Math.max(0.8, Math.min(0.92, rota.confianca + 0.05)),
+        justificativa:
+          "Prova COMUM: competência cobrada é português (comando/texto em PT), não inglês.",
+        sinalizadorRevisao: rota.confianca >= 0.85,
+      };
+    }
+  }
+
+  if (rota.disciplinaId === "espanhol" && v !== "ESPANHOL") {
+    const es = pontuarPadroes(t, PADROES_ESPANHOL_FORTES);
+    if (es === 0 && (comandoPortuguesDominante(texto) || textoIndicaPortuguesInterpretacao(texto))) {
+      return {
+        disciplinaId: "portugues",
+        criterio: "guardrail",
+        confianca: Math.max(0.78, rota.confianca),
+        justificativa: "Prova COMUM: texto dominante em português — não espanhol.",
+        sinalizadorRevisao: rota.confianca >= 0.85,
+      };
+    }
+  }
+
+  return rota;
 }
 
 /** Pós-validação humanas — corrige conflitos evidentes após IA. */
