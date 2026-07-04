@@ -52,12 +52,19 @@
                 "overall meaning",
                 "purpose of the text",
                 "gist",
-                "theme"
+                "theme",
+                "major preoccupation",
+                "main concern",
+                "the text discusses",
+                "the text is about",
+                "central topic"
               ],
               "keywordsContexto": [
                 "the text is mainly about",
                 "the author intends to",
-                "overall"
+                "overall",
+                "preocupação central",
+                "the text addresses"
               ],
               "negativeHints": [
                 "ideia central em português",
@@ -78,7 +85,7 @@
             {
               "id": "ing.reading.comprehension.inference",
               "label": "Inference and implicit meaning",
-              "descricao": "Cobre inferências, informação implícita, conclusão provável, intenção não explícita e sentido subentendido em texto em inglês. NÃO cobre mera localização literal de informação.",
+              "descricao": "Cobre inferências, informação implícita, conclusão provável, intenção não explícita, sentido subentendido e função argumentativa de exemplos em texto em inglês. NÃO cobre mera localização literal de informação.",
               "keywords": [
                 "infer",
                 "inference",
@@ -94,11 +101,17 @@
                 "enfraquece o argumento",
                 "fala do personagem",
                 "sequência da tira",
-                "sequencia da tira"
+                "sequencia da tira",
+                "the author uses the example",
+                "the example of",
+                "the mention of",
+                "argumentative function"
               ],
               "keywordsContexto": [
                 "it can be inferred",
                 "the passage suggests",
+                "in order to illustrate",
+                "to support the argument",
                 "likely means",
                 "invalidates the argument",
                 "weakens the argument",
@@ -230,12 +243,18 @@
                 "they refer to",
                 "this refers to",
                 "antecedent",
-                "referent"
+                "referent",
+                "the expression refers to",
+                "this fear",
+                "that idea",
+                "such"
               ],
               "keywordsContexto": [
                 "the pronoun",
                 "the word this",
-                "the expression"
+                "the expression",
+                "refers back to",
+                "a expressão se refere"
               ],
               "negativeHints": [
                 "pronome em português",
@@ -265,14 +284,21 @@
                 "whereas",
                 "moreover",
                 "connectors",
-                "linking words"
+                "linking words",
+                "instead",
+                "nevertheless",
+                "on the other hand",
+                "in contrast"
               ],
               "keywordsContexto": [
                 "contrast",
                 "cause",
                 "consequence",
                 "addition",
-                "conclusion"
+                "conclusion",
+                "valor discursivo",
+                "discourse function",
+                "logical relation"
               ],
               "negativeHints": [
                 "conectivo em português",
@@ -475,11 +501,16 @@
                 "equivalent",
                 "same meaning",
                 "closest in meaning",
-                "rephrase"
+                "rephrase",
+                "replaced by",
+                "the word can be replaced",
+                "means the same as"
               ],
               "keywordsContexto": [
                 "can be replaced by",
-                "similar meaning"
+                "similar meaning",
+                "could be substituted",
+                "is closest to"
               ],
               "negativeHints": [
                 "sinonímia em português",
@@ -575,34 +606,53 @@
             {
               "id": "ing.grammar.verbs.modals",
               "label": "Modal verbs and modality",
-              "descricao": "Cobre modal verbs e valores de possibilidade, obrigação, permissão, conselho, probabilidade e habilidade em inglês. NÃO cobre modalização em Português.",
+              "descricao": "Cobre modal verbs e valores de possibilidade, obrigação, permissão, conselho, probabilidade e habilidade em inglês. Só classificar aqui se o COMANDO da questão perguntar sobre função, valor semântico, substituição ou uso do verbo modal. NÃO classificar apenas porque o texto-base contém could/may/should/can/would. NÃO cobre modalização em Português.",
               "keywords": [
                 "modal verb",
-                "can",
-                "could",
-                "may",
-                "might",
-                "must",
-                "should",
-                "would",
-                "have to"
+                "modal verbs"
               ],
               "keywordsContexto": [
                 "possibility",
                 "obligation",
                 "permission",
                 "advice",
-                "probability"
+                "probability",
+                "can/could",
+                "valor do modal",
+                "o modal expressa",
+                "verbo modal indica"
               ],
               "negativeHints": [
                 "modalização em português",
-                "subjuntivo em espanhol"
+                "subjuntivo em espanhol",
+                "main idea",
+                "major preoccupation",
+                "the text discusses",
+                "the expression refers to",
+                "the word can be replaced by",
+                "synonyms",
+                "instead",
+                "connectors",
+                "reference",
+                "inference",
+                "author uses the example",
+                "purpose of the text",
+                "idea central",
+                "replaced by",
+                "closest in meaning",
+                "refers to"
               ],
               "exemplosEnunciado": [
-                "A questão exige cobre modal verbs e valores de possibilidade, obrigação, permissão, conselho, probabilidade e habilidade em inglês."
+                "O modal 'should' no trecho indica...",
+                "A expressão 'could have been' expressa um valor de..."
               ],
               "naoConfundirCom": [
-                "ing.grammar.verbs.tense_aspect"
+                "ing.grammar.verbs.tense_aspect",
+                "ing.reading.comprehension.main_idea",
+                "ing.reading.comprehension.inference",
+                "ing.vocabulary.context.synonyms_paraphrase",
+                "ing.cohesion.reference.pronoun_reference",
+                "ing.cohesion.reference.connectors"
               ],
               "regraDesempate": "Escolha este escopo apenas se o conhecimento exigido para acertar a questão corresponder diretamente à descrição; se o termo aparecer apenas como contexto, prefira o escopo mais específico ou fallback.",
               "conceitoCanonic": null

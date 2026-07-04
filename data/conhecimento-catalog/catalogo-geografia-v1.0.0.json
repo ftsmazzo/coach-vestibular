@@ -1671,20 +1671,29 @@
             {
               "id": "geo.politica_geopolitica.conflitos.ordem_mundial",
               "label": "Ordem mundial, bipolaridade e multipolaridade",
-              "descricao": "Cobre ordem mundial em chave geopolítica, bipolaridade, multipolaridade, hegemonia, polos de poder e disputas espaciais globais. NÃO cobre Guerra Fria como sequência histórica de eventos se o foco for cronologia.",
+              "descricao": "Cobre ordem mundial em chave geopolítica, bipolaridade, multipolaridade, hegemonia, polos de poder, protecionismo econômico, disputas comerciais e disputas espaciais globais. NÃO cobre Guerra Fria como sequência histórica de eventos se o foco for cronologia.",
               "keywords": [
                 "ordem mundial",
                 "bipolaridade",
                 "multipolaridade",
                 "hegemonia",
                 "polos de poder",
-                "geopolítica"
+                "geopolítica",
+                "protecionismo",
+                "barreiras comerciais",
+                "tarifas",
+                "nacionalismo econômico",
+                "guerra comercial",
+                "Davos",
+                "comércio internacional"
               ],
               "keywordsContexto": [
                 "EUA",
                 "China",
                 "Rússia",
-                "União Europeia"
+                "União Europeia",
+                "Estados Unidos",
+                "comércio multilateral"
               ],
               "exemplosEnunciado": [
                 "Uma questão exige aplicar ordem mundial, bipolaridade e multipolaridade para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."

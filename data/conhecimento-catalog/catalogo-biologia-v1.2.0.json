@@ -665,6 +665,48 @@
               ],
               "negativeHints": [],
               "naoConfundirCom": []
+            },
+            {
+              "id": "bio.ecologia.populacoes_comunidades.fragmentacao_habitat",
+              "label": "Fragmentação de habitat e fluxo gênico",
+              "descricao": "Cobre perda de habitat, fragmentação de populações, isolamento de grupos, redução do fluxo gênico, consequências genéticas e ecológicas da fragmentação florestal/desmatamento sobre populações animais.",
+              "keywords": [
+                "perda de habitat",
+                "fragmentação de habitat",
+                "fragmentação",
+                "desmatamento",
+                "grupos isolados",
+                "fluxo gênico",
+                "redução do fluxo gênico",
+                "isolamento populacional",
+                "diversidade genética",
+                "populações fragmentadas",
+                "Arco do Desmatamento",
+                "vulnerável",
+                "corredor ecológico"
+              ],
+              "keywordsContexto": [
+                "variabilidade genética",
+                "endogamia",
+                "deriva genética",
+                "espécie ameaçada",
+                "conservação",
+                "habitat"
+              ],
+              "exemplosEnunciado": [
+                "O desmatamento fragmentou a população de onças em grupos isolados, reduzindo o fluxo gênico entre eles. Qual consequência genética esperada?",
+                "Áreas de fragmentação florestal no Arco do Desmatamento resultam em populações de primatas isoladas. Qual a principal consequência para a diversidade genética?"
+              ],
+              "negativeHints": [
+                "seleção natural",
+                "especiação simpátrica",
+                "mutação"
+              ],
+              "naoConfundirCom": [
+                "bio.evolucao.mecanismos.especiacao",
+                "bio.ecologia.impactos.desmatamento_erosao"
+              ],
+              "regraDesempate": "Se a questão foca na consequência genética/ecológica da fragmentação de habitat sobre populações animais, classifique aqui. Se foca em mecanismo de especiação formal (isolamento reprodutivo, barreira geográfica abstrata), use especiação."
             }
           ]
         },

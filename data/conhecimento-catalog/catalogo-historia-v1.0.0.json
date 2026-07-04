@@ -212,12 +212,20 @@
               ],
               "negativeHints": [
                 "movimentos sociais urbanos",
-                "ações afirmativas"
+                "ações afirmativas",
+                "Isabel de Castela",
+                "Fernando de Aragão",
+                "casamento dinástico",
+                "monarquias ibéricas",
+                "Reis Católicos",
+                "política ibérica",
+                "século XV"
               ],
               "naoConfundirCom": [
-                "soc.movimentos_sociais.identidade.movimento_negro"
+                "soc.movimentos_sociais.identidade.movimento_negro",
+                "hist.moderna.formacao_mundo_moderno.absolutismo_estado_moderno"
               ],
-              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada.",
+              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário for sobre escravidão no Brasil colonial. Isabel de Castela + Fernando de Aragão + política ibérica → hist.moderna.absolutismo_estado_moderno.",
               "conceitoCanonic": "resistencia_escrava"
             }
           ]
@@ -354,7 +362,13 @@
               ],
               "negativeHints": [
                 "independência dos EUA",
-                "independências hispano-americanas"
+                "independências hispano-americanas",
+                "Revolução Iraniana",
+                "Irã",
+                "Khomeini",
+                "aiatolá",
+                "república islâmica",
+                "xiita"
               ],
               "naoConfundirCom": [
                 "hist.america.independencias.america_hispanica"
@@ -1541,21 +1555,32 @@
             },
             {
               "id": "hist.moderna.formacao_mundo_moderno.absolutismo_estado_moderno",
-              "label": "Absolutismo, Estado moderno e Revoluções Inglesas",
-              "descricao": "Cobre centralização monárquica, soberania, burocracia, mercantilismo político, teóricos do absolutismo e Revoluções Inglesas como limitação do poder real. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "label": "Absolutismo, Estado moderno, monarquias ibéricas e Revoluções Inglesas",
+              "descricao": "Cobre centralização monárquica, soberania, burocracia, mercantilismo político, teóricos do absolutismo, monarquias ibéricas (Isabel de Castela, Fernando de Aragão, casamento dinástico), formação dos Estados nacionais europeus e Revoluções Inglesas como limitação do poder real. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
               "keywords": [
                 "absolutismo",
                 "Estado moderno",
                 "Luís XIV",
                 "Revolução Inglesa",
                 "Revolução Gloriosa",
-                "parlamentarismo"
+                "parlamentarismo",
+                "Isabel de Castela",
+                "Fernando de Aragão",
+                "casamento dinástico",
+                "monarquias ibéricas",
+                "Reis Católicos",
+                "unificação ibérica",
+                "monarquias nacionais",
+                "centralização monárquica"
               ],
               "keywordsContexto": [
                 "soberania",
                 "monarquia",
                 "Hobbes",
-                "Locke"
+                "Locke",
+                "política ibérica",
+                "século XV",
+                "agência política feminina"
               ],
               "exemplosEnunciado": [
                 "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer absolutismo, estado moderno e revoluções inglesas para chegar à alternativa correta."
@@ -1954,19 +1979,31 @@
             {
               "id": "hist.contemporanea.guerra_fria.conflitos_revolucoes",
               "label": "Conflitos e revoluções na Guerra Fria",
-              "descricao": "Cobre Coreia, Vietnã, Revolução Chinesa, Revolução Cubana e disputas periféricas da Guerra Fria. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "descricao": "Cobre Coreia, Vietnã, Revolução Chinesa, Revolução Cubana, Revolução Iraniana e disputas periféricas da Guerra Fria. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
               "keywords": [
                 "Guerra da Coreia",
                 "Guerra do Vietnã",
                 "Revolução Chinesa",
                 "Revolução Cubana",
                 "Mao",
-                "Fidel Castro"
+                "Fidel Castro",
+                "Revolução Iraniana",
+                "Irã",
+                "Khomeini",
+                "aiatolá",
+                "xá Reza Pahlavi",
+                "república islâmica",
+                "xiita",
+                "ruptura com os Estados Unidos",
+                "ocidentalização"
               ],
               "keywordsContexto": [
                 "conflitos indiretos",
                 "socialismo",
-                "capitalismo"
+                "capitalismo",
+                "Oriente Médio",
+                "teocracia",
+                "islamismo político"
               ],
               "exemplosEnunciado": [
                 "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer conflitos e revoluções na guerra fria para chegar à alternativa correta."

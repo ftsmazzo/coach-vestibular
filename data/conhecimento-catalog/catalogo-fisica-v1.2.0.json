@@ -715,7 +715,7 @@
                 "dilatação linear e volumétrica",
                 "raio e volume"
               ],
-              "descricao": "Dilatação linear, superficial e volumétrica; relação entre variação de raio e volume em sólidos (ex.: esfera aquecida). NÃO cobre porcentagem abstrata sem coeficiente de dilatação.",
+              "descricao": "Dilatação linear, superficial e volumétrica; relação entre variação de raio e volume em sólidos (ex.: esfera aquecida). NÃO cobre porcentagem abstrata sem coeficiente de dilatação. NÃO cobre ondas em cordas/arames.",
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar dilatação térmica para chegar à alternativa correta.",
                 "Relacionar dilatação volumétrica e linear em uma esfera aquecida (variação de raio e volume)."
@@ -724,7 +724,14 @@
                 "porcentagem pura",
                 "regra de três sem grandezas físicas",
                 "função matemática abstrata",
-                "equação sem fenômeno físico"
+                "equação sem fenômeno físico",
+                "velocidade de propagação",
+                "onda em corda",
+                "onda em arame",
+                "tração",
+                "densidade linear",
+                "Lei de Taylor",
+                "pulso"
               ],
               "naoConfundirCom": [
                 "fis.termologia.calor.calorimetria",
@@ -746,9 +753,17 @@
                 "calor sensivel",
                 "capacidade térmica",
                 "c específico",
-                "equilíbrio térmico"
+                "equilíbrio térmico",
+                "calor específico",
+                "calor especifico",
+                "aquecimento de água",
+                "aquecimento da água",
+                "densidade da água",
+                "variação de temperatura",
+                "Q = mcΔT",
+                "Q=mcΔT"
               ],
-              "descricao": "Calor sensível, capacidade térmica, calor específico e equilíbrio térmico. NÃO cobre mudança de fase com calor latente.",
+              "descricao": "Calor sensível, capacidade térmica, calor específico e equilíbrio térmico. Se a questão dá potência em W como dado intermediário mas pede aquecer água com calor específico e variação de temperatura, o escopo é calorimetria. NÃO cobre mudança de fase com calor latente.",
               "exemplosEnunciado": [
                 "Misturam-se água quente e fria; determine a temperatura de equilíbrio térmico."
               ],
@@ -974,6 +989,45 @@
               "negativeHints": [],
               "naoConfundirCom": [],
               "keywordsContexto": []
+            },
+            {
+              "id": "fis.ondulatoria.ondas.velocidade_corda",
+              "label": "Velocidade de propagação em cordas e arames",
+              "keywords": [
+                "velocidade de propagação",
+                "velocidade na corda",
+                "Lei de Taylor",
+                "tração",
+                "densidade linear",
+                "corda",
+                "arame",
+                "fio tensionado",
+                "onda em corda",
+                "onda em arame",
+                "onda transversal em fio"
+              ],
+              "descricao": "Velocidade de propagação de ondas mecânicas em cordas, fios e arames, dependendo de tração e densidade linear (Lei de Taylor: v = √(T/μ)). NÃO cobre dilatação térmica nem ondas eletromagnéticas.",
+              "exemplosEnunciado": [
+                "Um pulso percorre um arame tensionado com tração T e densidade linear μ. Determine a velocidade de propagação.",
+                "Calcule o tempo que um pulso leva para percorrer um fio de comprimento L, dado a tração e a massa."
+              ],
+              "negativeHints": [
+                "dilatação",
+                "dilatação térmica",
+                "coeficiente de dilatação",
+                "temperatura",
+                "calor"
+              ],
+              "naoConfundirCom": [
+                "fis.termologia.calor.dilatacao",
+                "fis.ondulatoria.ondas.grandesza"
+              ],
+              "keywordsContexto": [
+                "massa do fio",
+                "comprimento do fio",
+                "tempo de propagação"
+              ],
+              "regraDesempate": "Lei de Taylor + onda em corda/arame + tração + densidade linear → aqui. Se foca em frequência/comprimento de onda/período → grandesza."
             }
           ]
         },
@@ -1529,7 +1583,7 @@
                 "potência e consumo",
                 "conta de energia"
               ],
-              "descricao": "Potência elétrica (P), energia (E=P·t) e consumo em kWh; relação entre potência, tempo e energia. NÃO cobre porcentagem de desconto na conta.",
+              "descricao": "Potência elétrica (P), energia (E=P·t) e consumo em kWh; relação entre potência, tempo e energia. Se a potência é dado intermediário mas a pergunta pede aquecimento de água/calor específico/variação de temperatura, classifique como calorimetria. NÃO cobre porcentagem de desconto na conta.",
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar potência, energia e consumo para chegar à alternativa correta.",
                 "Relacionar potência elétrica, energia em kWh e tempo de funcionamento de um aparelho."
@@ -1540,7 +1594,13 @@
                 "função matemática abstrata",
                 "equação sem fenômeno físico",
                 "juros",
-                "desconto percentual"
+                "desconto percentual",
+                "calor específico",
+                "aquecimento de água",
+                "variação de temperatura",
+                "calorimetria",
+                "Q = mcΔT",
+                "densidade da água"
               ],
               "naoConfundirCom": [
                 "fis.eletrodinamica.potencia.eletrica_joule",

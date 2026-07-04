@@ -110,6 +110,14 @@ const PADROES_GEOGRAFIA_AMBIENTAL: RegExp[] = [
   /\bcontencao\s+de\s+encostas\b/,
   /\bvila\s+sahy\b/,
   /\binundac(o|ao)es?\b.*\bencostas?\b/,
+  /\bprotecionismo\b/,
+  /\bbarreiras?\s+comercia(l|is)\b/,
+  /\btarifa(s)?\s+(comercia|alfandega)/,
+  /\bdavos\b/,
+  /\bnacionalismo\s+economico\b/,
+  /\bguerra\s+comercial\b/,
+  /\bcomercio\s+internaciona?l\b/,
+  /\bcomercio\s+multilatera?l\b/,
 ];
 
 function pontuarPadroes(texto: string, padroes: RegExp[]): number {

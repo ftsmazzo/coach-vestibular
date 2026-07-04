@@ -119,13 +119,25 @@
                 "próton",
                 "fóton",
                 "Planck",
-                "efeito fotoelétrico"
+                "efeito fotoelétrico",
+                "progressão geométrica",
+                "PG",
+                "razão geométrica",
+                "logaritmo",
+                "log",
+                "menor n",
+                "semelhança de triângulos",
+                "Tales",
+                "segmentos proporcionais",
+                "paralelismo"
               ],
               "naoConfundirCom": [
                 "mat.funcoes.geral.afim",
                 "mat.aritmetica.numeros.porcentagem",
                 "fis.mecanica.cinematica.mru",
-                "fis.mecanica.cinematica.graficos"
+                "fis.mecanica.cinematica.graficos",
+                "mat.progressoes.sequencias.pg",
+                "mat.geometria_plana.figuras.semelhanca"
               ],
               "keywordsContexto": [],
               "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
@@ -187,12 +199,23 @@
                 "representação gráfica",
                 "proporcionalidade em mapas"
               ],
-              "descricao": "Questões que exigem procedimento matemático de escala e mapas. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "descricao": "Questões que exigem procedimento matemático de escala e mapas. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado. NÃO cobre semelhança de triângulos ou Teorema de Tales.",
               "exemplosEnunciado": [
                 "Uma questão apresenta uma situação-problema e pede aplicar escala e mapas para chegar à alternativa correta."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
+              "negativeHints": [
+                "semelhança de triângulos",
+                "Teorema de Tales",
+                "Tales",
+                "segmentos proporcionais",
+                "retas paralelas cortadas",
+                "feixe de paralelas",
+                "triângulo",
+                "paralelo a um lado"
+              ],
+              "naoConfundirCom": [
+                "mat.geometria_plana.figuras.semelhanca"
+              ],
               "keywordsContexto": []
             },
             {
@@ -714,21 +737,36 @@
             },
             {
               "id": "mat.geometria_plana.figuras.semelhanca",
-              "label": "Semelhança de triângulos",
+              "label": "Semelhança de triângulos e Teorema de Tales",
               "keywords": [
                 "semelhança",
                 "triângulos semelhantes",
                 "proporcionalidade",
-                "escala",
-                "homotetia"
+                "homotetia",
+                "Teorema de Tales",
+                "Tales",
+                "segmentos proporcionais",
+                "paralelismo",
+                "retas paralelas cortadas por transversais",
+                "feixe de paralelas"
               ],
-              "descricao": "Questões que exigem procedimento matemático de semelhança de triângulos. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "descricao": "Semelhança de triângulos, Teorema de Tales e segmentos proporcionais determinados por retas paralelas cortadas por transversais. NÃO cobre escala de mapas.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar semelhança de triângulos para chegar à alternativa correta."
+                "Um triângulo é cortado por uma reta paralela a um de seus lados; determine o segmento usando semelhança.",
+                "Dado um feixe de retas paralelas cortadas por duas transversais, determine o segmento desconhecido pelo Teorema de Tales."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "mapa",
+                "escala de mapa"
+              ],
+              "naoConfundirCom": [
+                "mat.aritmetica.numeros.escala"
+              ],
+              "keywordsContexto": [
+                "triângulo",
+                "paralelo a um lado",
+                "proporcionalidade de segmentos"
+              ]
             }
           ]
         },
@@ -1096,7 +1134,7 @@
                 "coordenadas",
                 "d=√"
               ],
-              "descricao": "Distância entre dois pontos dados por coordenadas no plano cartesiano (fórmula d=√((x₂−x₁)²+(y₂−y₁)²)). NÃO cobre distância em sólidos 3D (cubo, paralelepípedo).",
+              "descricao": "Distância entre dois pontos dados por coordenadas no plano cartesiano (fórmula d=√((x₂−x₁)²+(y₂−y₁)²)). NÃO cobre equação da reta, interseção de retas ou interceptos nos eixos. NÃO cobre distância em sólidos 3D (cubo, paralelepípedo).",
               "exemplosEnunciado": [
                 "Calcule a distância entre A(1, 2) e B(4, 6) no plano cartesiano."
               ],
@@ -1112,7 +1150,12 @@
                 "corda",
                 "arco",
                 "mediatriz",
-                "centro do círculo sem coordenadas"
+                "centro do círculo sem coordenadas",
+                "equação da reta",
+                "coeficiente angular",
+                "intercepta o eixo",
+                "interseção de retas",
+                "produto ab"
               ],
               "naoConfundirCom": [
                 "mat.geometria_espacial.metricas.distancia_pontos_cubo",
@@ -1124,20 +1167,37 @@
             },
             {
               "id": "mat.geometria_analitica.plano.equacao_reta",
-              "label": "Equação da reta",
+              "label": "Equação da reta e interseção de retas",
               "keywords": [
                 "equação da reta",
                 "coeficiente angular",
                 "y=ax+b",
-                "reta no plano"
+                "reta no plano",
+                "intercepta o eixo",
+                "interceptam os eixos",
+                "interseção de retas",
+                "ponto de interseção",
+                "eixo coordenado",
+                "produto ab",
+                "reta que passa por"
               ],
-              "descricao": "Questões que exigem procedimento matemático de equação da reta. Classifique aqui quando a resolução depender desse método, representação ou modelo, não apenas de palavras do enunciado.",
+              "descricao": "Equação da reta, coeficiente angular, interceptos nos eixos coordenados, interseção de retas e problemas envolvendo retas no plano cartesiano.",
               "exemplosEnunciado": [
-                "Uma questão apresenta uma situação-problema e pede aplicar equação da reta para chegar à alternativa correta."
+                "Determine a equação da reta que passa pelos pontos A(2,3) e B(4,7).",
+                "Duas retas interceptam os eixos coordenados; determine o ponto de interseção e o produto ab."
               ],
-              "negativeHints": [],
-              "naoConfundirCom": [],
-              "keywordsContexto": []
+              "negativeHints": [
+                "distância entre pontos",
+                "d=√"
+              ],
+              "naoConfundirCom": [
+                "mat.geometria_analitica.plano.distancia_ponto"
+              ],
+              "keywordsContexto": [
+                "eixo x",
+                "eixo y",
+                "ordenada na origem"
+              ]
             },
             {
               "id": "mat.geometria_analitica.plano.circulo",
@@ -1290,11 +1350,16 @@
                 "PG",
                 "razão geométrica",
                 "q^n",
-                "termo geral PG"
+                "termo geral PG",
+                "razão da PG",
+                "menor n",
+                "menor valor de n",
+                "logaritmo"
               ],
-              "descricao": "Progressão geométrica: razão multiplicativa, termo geral e soma. NÃO cobre função exponencial quando o foco é modelagem contínua.",
+              "descricao": "Progressão geométrica: razão multiplicativa, termo geral, soma e uso de logaritmo para encontrar termos. NÃO cobre função exponencial quando o foco é modelagem contínua.",
               "exemplosEnunciado": [
-                "Uma sequência triplica a cada etapa; determine o sexto termo."
+                "Uma sequência triplica a cada etapa; determine o sexto termo.",
+                "Determine o menor n tal que o n-ésimo termo de uma PG de razão 64/125 seja menor que 0,01."
               ],
               "negativeHints": [
                 "função exponencial",
@@ -1302,9 +1367,14 @@
               ],
               "naoConfundirCom": [
                 "mat.funcoes.geral.exponencial",
-                "mat.financeira.juros.compostos"
+                "mat.financeira.juros.compostos",
+                "mat.aritmetica.numeros.razao_proporcao"
               ],
-              "keywordsContexto": [],
+              "keywordsContexto": [
+                "log",
+                "uso de logaritmo",
+                "PG infinita"
+              ],
               "regraDesempate": "Use a descrição para decidir o conceito efetivamente cobrado. Se o outro escopo aparecer apenas como contexto, mantenha este; se for o procedimento central da resolução, escolha o outro escopo."
             }
           ]

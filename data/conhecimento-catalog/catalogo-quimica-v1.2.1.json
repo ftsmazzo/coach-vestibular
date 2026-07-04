@@ -576,7 +576,7 @@
             {
               "id": "quim.estequiometria.mol.avogadro",
               "label": "Mol e constante de Avogadro",
-              "descricao": "Conceito de mol, constante de Avogadro e conversão entre número de partículas e quantidade de matéria.",
+              "descricao": "Conceito de mol, constante de Avogadro e conversão entre número de partículas e quantidade de matéria. NÃO cobre cálculos de energia de combustão/kJ por mol quando o foco for termoquímica.",
               "keywords": [
                 "mol",
                 "constante de Avogadro",
@@ -591,8 +591,17 @@
               "exemplosEnunciado": [
                 "Quantas moléculas há em 2 mol de água, considerando a constante de Avogadro?"
               ],
-              "negativeHints": [],
-              "naoConfundirCom": []
+              "negativeHints": [
+                "calor de combustão",
+                "energia liberada",
+                "kJ/g",
+                "kJ/mol",
+                "poder calorífico",
+                "entalpia de combustão"
+              ],
+              "naoConfundirCom": [
+                "quim.termoquimica.entalpia.combustao"
+              ]
             },
             {
               "id": "quim.estequiometria.mol.massa_molar",
@@ -1041,16 +1050,26 @@
             {
               "id": "quim.termoquimica.entalpia.combustao",
               "label": "Combustão e poder calorífico",
-              "descricao": "Calor de combustão e poder calorífico de combustíveis. NÃO cobre o contexto ambiental/energético do combustível (ver ambiental.combustiveis).",
+              "descricao": "Calor de combustão e poder calorífico de combustíveis. Cálculos de energia liberada por massa (kJ/g) ou por mol (kJ/mol). Conversão usando massa molar para obter energia molar. NÃO cobre o contexto ambiental/energético do combustível (ver ambiental.combustiveis).",
               "keywords": [
                 "calor de combustão",
                 "poder calorífico",
                 "entalpia de combustão",
-                "combustão completa"
+                "combustão completa",
+                "energia liberada",
+                "kJ/g",
+                "kJ/mol",
+                "energia por grama",
+                "energia por mol"
               ],
               "keywordsContexto": [
                 "energia liberada por grama",
-                "comparação de combustíveis"
+                "comparação de combustíveis",
+                "massa molar",
+                "H2",
+                "CH4",
+                "hidrogênio",
+                "metano"
               ],
               "exemplosEnunciado": [
                 "Compare o poder calorífico do etanol e da gasolina a partir de suas entalpias de combustão."
@@ -1891,10 +1910,12 @@
             {
               "id": "quim.materia_misturas.separacao.destilacao_decantacao",
               "label": "Destilação, filtração e outros métodos de separação",
-              "descricao": "Destilação simples ou fracionada, filtração, centrifugação, cristalização e outros métodos de separação de misturas. NÃO cobre destilação fracionada de petróleo como combustível (ver ambiental.combustiveis).",
+              "descricao": "Destilação simples ou fracionada, filtração, centrifugação, cristalização e outros métodos de separação de misturas. Inclui destilação fracionada de petróleo quando o foco for PROCESSO DE SEPARAÇÃO (torre de destilação, frações, volatilidade, pontos de ebulição).",
               "keywords": [
                 "destilação",
                 "destilacao",
+                "destilação fracionada",
+                "destilacao fracionada",
                 "filtração",
                 "filtracao",
                 "centrifugação",
@@ -1905,12 +1926,19 @@
                 "separacao de misturas",
                 "método de separação",
                 "metodo de separacao",
-                "arraste de vapor"
+                "arraste de vapor",
+                "torre de destilação",
+                "frações do petróleo",
+                "volatilidade",
+                "condensação",
+                "ponto de ebulição"
               ],
               "keywordsContexto": [
                 "mistura homogênea",
                 "mistura heterogênea",
-                "ponto de ebulição"
+                "ponto de ebulição",
+                "petróleo",
+                "refino"
               ],
               "exemplosEnunciado": [
                 "Para separar água e sal dissolvido após evaporação parcial, utiliza-se o método de..."
@@ -2036,32 +2064,41 @@
           "escopos": [
             {
               "id": "quim.ambiental.combustiveis.fossil",
-              "label": "Combustíveis fósseis e petróleo",
-              "descricao": "Petróleo, destilação fracionada, gás natural e carvão como fontes e seus impactos. NÃO cobre o cálculo de calor de combustão (ver termoquimica.combustao).",
+              "label": "Combustíveis fósseis e petróleo (contexto ambiental/energético)",
+              "descricao": "Petróleo, gás natural e carvão como fontes energéticas, seus impactos ambientais e contexto na matriz energética. NÃO cobre o PROCESSO de destilação fracionada/torre de destilação se o foco for método de separação (ver materia_misturas.separacao). NÃO cobre o cálculo de calor de combustão (ver termoquimica.combustao).",
               "keywords": [
                 "petróleo",
                 "combustível fóssil",
-                "destilação fracionada",
                 "gasolina",
                 "diesel",
                 "gás natural",
-                "refino"
+                "emissão de CO2",
+                "impacto ambiental",
+                "matriz energética"
               ],
               "keywordsContexto": [
                 "fração do petróleo",
                 "octanagem"
               ],
               "exemplosEnunciado": [
-                "A separação das frações do petróleo na refinaria baseia-se na diferença de pontos de ebulição, processo chamado..."
+                "Qual o principal impacto ambiental da queima de combustíveis fósseis?"
               ],
               "naoConfundirCom": [
-                "quim.termoquimica.entalpia.combustao"
+                "quim.termoquimica.entalpia.combustao",
+                "quim.materia_misturas.separacao.destilacao_decantacao"
               ],
               "negativeHints": [
                 "calor de combustão",
                 "poder calorífico",
-                "delta H"
-              ]
+                "delta H",
+                "torre de destilação",
+                "volatilidade",
+                "condensação",
+                "ponto de ebulição",
+                "método de separação",
+                "separação de misturas"
+              ],
+              "regraDesempate": "Se o foco é PROCESSO de destilação/fracionamento/torre → separacao.destilacao_decantacao. Se é fonte/impacto ambiental do combustível → aqui."
             },
             {
               "id": "quim.ambiental.combustiveis.renovavel",
