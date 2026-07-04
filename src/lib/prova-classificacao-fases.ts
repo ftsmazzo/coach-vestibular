@@ -110,38 +110,62 @@ async function resolverAreaParaN1(
   return { area: res.area, via: res.via, motivo: res.motivo };
 }
 
+type FonteTextoBase = "textoFonte" | "textoCompartilhado" | null;
+
+type PayloadComFonte = {
+  payload: PayloadQuestaoCompleto;
+  fonteTextoBase: FonteTextoBase;
+};
+
+function questaoParaPayloadComFonte(
+  q: QuestaoDb,
+  trechos: Map<number, string>,
+  banca?: string,
+  todas?: QuestaoDb[]
+): PayloadComFonte {
+  const trecho = trechos.get(q.numero);
+  const enunciado = q.enunciado?.trim() || trecho?.trim() || "";
+  let textoBase: string | null = null;
+  let fonteTextoBase: FonteTextoBase = null;
+
+  if (trecho?.trim() && q.enunciado?.trim() && trecho.length > q.enunciado.length + 40) {
+    textoBase = trecho.trim();
+    fonteTextoBase = "textoFonte";
+  } else if (trecho?.trim() && !q.enunciado?.trim()) {
+    textoBase = trecho.trim();
+    fonteTextoBase = "textoFonte";
+  } else if (todas?.length) {
+    const compartilhado = resolverTextoCompartilhado(q, todas);
+    if (compartilhado) {
+      textoBase = compartilhado;
+      fonteTextoBase = "textoCompartilhado";
+    }
+  }
+
+  return {
+    payload: {
+      fonteId: q.id,
+      numero: q.numero,
+      idiomaVariante: q.idiomaVariante,
+      areaBloco: q.areaBloco,
+      banca: banca ?? null,
+      enunciado,
+      alternativas: q.alternativas?.trim() ?? "",
+      textoBase,
+      gabarito: q.gabarito,
+      observacoes: q.observacoes,
+    },
+    fonteTextoBase,
+  };
+}
+
 function questaoParaPayload(
   q: QuestaoDb,
   trechos: Map<number, string>,
   banca?: string,
   todas?: QuestaoDb[]
 ): PayloadQuestaoCompleto {
-  const trecho = trechos.get(q.numero);
-  const enunciado = q.enunciado?.trim() || trecho?.trim() || "";
-  let textoBase: string | null = null;
-  if (trecho?.trim() && q.enunciado?.trim() && trecho.length > q.enunciado.length + 40) {
-    textoBase = trecho.trim();
-  } else if (trecho?.trim() && !q.enunciado?.trim()) {
-    textoBase = trecho.trim();
-  } else if (todas?.length) {
-    const compartilhado = resolverTextoCompartilhado(q, todas);
-    if (compartilhado) {
-      textoBase = compartilhado;
-    }
-  }
-
-  return {
-    fonteId: q.id,
-    numero: q.numero,
-    idiomaVariante: q.idiomaVariante,
-    areaBloco: q.areaBloco,
-    banca: banca ?? null,
-    enunciado,
-    alternativas: q.alternativas?.trim() ?? "",
-    textoBase,
-    gabarito: q.gabarito,
-    observacoes: q.observacoes,
-  };
+  return questaoParaPayloadComFonte(q, trechos, banca, todas).payload;
 }
 
 function textoMinimo(q: QuestaoDb): number {
@@ -155,21 +179,35 @@ function textoCompletoPayload(p: PayloadQuestaoCompleto): string {
   return [p.textoBase, p.enunciado, p.alternativas, p.observacoes].filter(Boolean).join("\n\n");
 }
 
-type OrigemPayload = "enunciado_db" | "textoFonte" | "textoCompartilhado" | "vazio";
+type OrigemPayload =
+  | "enunciado_db"
+  | "textoFonte"
+  | "textoCompartilhado"
+  | "enunciado_db+textoFonte"
+  | "enunciado_db+textoCompartilhado"
+  | "vazio";
+
+function resolverOrigem(q: QuestaoDb, fonteTextoBase: FonteTextoBase): OrigemPayload {
+  const temEnunciado = !!q.enunciado?.trim();
+  if (temEnunciado && fonteTextoBase) {
+    return `enunciado_db+${fonteTextoBase}`;
+  }
+  if (temEnunciado) return "enunciado_db";
+  if (fonteTextoBase) return fonteTextoBase;
+  return "vazio";
+}
 
 function diagnosticoPayload(
   q: QuestaoDb,
   payload: PayloadQuestaoCompleto,
-  fase: "N1" | "N2" | "N3"
+  fase: "N1" | "N2" | "N3",
+  fonteTextoBase: FonteTextoBase
 ): { log: string; origem: OrigemPayload; aviso?: string } {
   const lenEn = payload.enunciado.length;
   const lenAlt = payload.alternativas.length;
   const lenTb = payload.textoBase?.length ?? 0;
   const total = textoCompletoPayload(payload).length;
-
-  let origem: OrigemPayload = "vazio";
-  if (q.enunciado?.trim()) origem = "enunciado_db";
-  else if (payload.textoBase?.trim()) origem = payload.enunciado ? "textoFonte" : "textoCompartilhado";
+  const origem = resolverOrigem(q, fonteTextoBase);
 
   const log =
     `Q${q.numero} payload [${fase}]: enunciado=${lenEn} chars · alternativas=${lenAlt} chars` +
@@ -267,8 +305,8 @@ export async function executarFaseN1Prova(
       continue;
     }
 
-    const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
-    const diag = diagnosticoPayload(q, payload, "N1");
+    const { payload, fonteTextoBase } = questaoParaPayloadComFonte(q, trechos, prova.banca ?? undefined, questoes);
+    const diag = diagnosticoPayload(q, payload, "N1", fonteTextoBase);
     etapas.push(diag.log);
     if (diag.aviso) avisos.push(diag.aviso);
 
@@ -406,8 +444,8 @@ export async function executarFaseN2Prova(
       continue;
     }
 
-    const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
-    const diag = diagnosticoPayload(q, payload, "N2");
+    const { payload, fonteTextoBase } = questaoParaPayloadComFonte(q, trechos, prova.banca ?? undefined, questoes);
+    const diag = diagnosticoPayload(q, payload, "N2", fonteTextoBase);
     etapas.push(diag.log);
     if (diag.aviso) avisos.push(diag.aviso);
 
@@ -489,8 +527,8 @@ export async function executarFaseN3Prova(provaId: string): Promise<ResultadoFas
     const escopoId = q.conhecimentoEscopoId?.trim();
     if (!n1Completo(n1) || !n1 || !escopoId) continue;
 
-    const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
-    const diagN3 = diagnosticoPayload(q, payload, "N3");
+    const { payload, fonteTextoBase } = questaoParaPayloadComFonte(q, trechos, prova.banca ?? undefined, questoes);
+    const diagN3 = diagnosticoPayload(q, payload, "N3", fonteTextoBase);
     etapas.push(diagN3.log);
 
     const meta = metaFromClassificacaoN1(n1);
