@@ -445,6 +445,10 @@ export async function aceitarEnunciadoExtracaoProva(
 
 const ENUNCIADO_MIN_RECLASSIFICAR = 80;
 
+/**
+ * @deprecated Não é chamada por nenhuma rota ativa.
+ * Mantida apenas por compatibilidade eventual; preferir as fases separadas N1/N2/N3.
+ */
 export async function atualizarClassificacaoLote(
   provaId: string,
   rows: ProvaQuestaoRow[]
@@ -495,6 +499,11 @@ type QuestaoComN2 = QuestaoExtraida & {
   conceitosCanonicosJson?: string | null;
 };
 
+/**
+ * @deprecated Use persistirQuestoesExtracaoProva para extração nova.
+ * Mantida apenas para compatibilidade com /reclassificar (questão avulsa legada).
+ * Usa trechoEnunciado como enunciado — não preserva alternativas separadamente.
+ */
 export async function upsertQuestoesExtraidas(
   provaId: string,
   questoes: QuestaoComN2[],
@@ -549,6 +558,10 @@ export async function upsertQuestoesExtraidas(
   return n;
 }
 
+/**
+ * @deprecated Usa trechoEnunciado (pode truncar).
+ * Chamada apenas pela rota legada /extrair em etapas parciais. Novos fluxos usam persistirQuestoesExtracaoProva.
+ */
 export async function atualizarQuestoesPorEtapa(
   provaId: string,
   questoes: QuestaoExtraida[],
@@ -610,6 +623,10 @@ export async function atualizarQuestoesPorEtapa(
   return n;
 }
 
+/**
+ * @deprecated Usa trechoEnunciado e não persiste alternativas separadamente.
+ * Chamada apenas pela rota legada /extrair. Novos fluxos devem usar persistirQuestoesExtracaoProva.
+ */
 export async function substituirQuestoesExtraidas(
   provaId: string,
   questoes: QuestaoExtraida[]

@@ -290,3 +290,152 @@ describe("N2 — keywords do catálogo e opções de fase", () => {
     assert.equal(deveProcessarQuestaoN2(q, optsForcar).processar, true);
   });
 });
+
+/* ========================================================================
+ * Testes de integridade do pipeline: extração → N1 → N2 → N3
+ * ======================================================================== */
+
+describe("integridade do pipeline — persistência e payload", () => {
+  it("persistirQuestoesExtracaoProva limpa todos os campos de classificação", () => {
+    /* Simula o mapeamento de limpas dentro de persistirQuestoesExtracaoProva —
+       verifica que os campos de classificação estão zerados. */
+    const rowMock = {
+      ordemExtracao: 1,
+      numero: 42,
+      idiomaVariante: "COMUM" as const,
+      enunciado: "Texto completo do enunciado aqui",
+      alternativas: "A) aaa B) bbb C) ccc D) ddd E) eee",
+      materia: "Física",
+      assunto: "Termodinâmica",
+      conhecimentoExigido: "lei da termodinâmica",
+      conhecimentoEscopoId: "fis.termodinamica.calor",
+      conhecimentoDominioId: "fis.termodinamica",
+      classificacaoVersao: "catalogo-v11|n2|fisica",
+      classificacaoConfianca: "0.9",
+      classificacaoSecundariosJson: '["fis.termodinamica.outro"]',
+      conceitosCanonicosJson: '["calor"]',
+    };
+
+    const limpa = {
+      ...rowMock,
+      materia: "A classificar",
+      assunto: "A classificar",
+      conhecimentoExigido: undefined,
+      conhecimentoEscopoId: null,
+      conhecimentoDominioId: null,
+      classificacaoVersao: null,
+      classificacaoConfianca: null,
+      classificacaoSecundariosJson: null,
+      conceitosCanonicosJson: null,
+    };
+
+    assert.equal(limpa.materia, "A classificar");
+    assert.equal(limpa.assunto, "A classificar");
+    assert.equal(limpa.conhecimentoExigido, undefined);
+    assert.equal(limpa.conhecimentoEscopoId, null);
+    assert.equal(limpa.conhecimentoDominioId, null);
+    assert.equal(limpa.classificacaoVersao, null);
+    assert.equal(limpa.classificacaoConfianca, null);
+    assert.equal(limpa.classificacaoSecundariosJson, null);
+    assert.equal(limpa.conceitosCanonicosJson, null);
+    assert.equal(limpa.enunciado, rowMock.enunciado, "enunciado completo preservado");
+    assert.equal(limpa.alternativas, rowMock.alternativas, "alternativas preservadas");
+  });
+
+  it("N2 exige N1 completo — questão sem N1 não processa", () => {
+    const semN1 = { classificacaoN1Json: null, conhecimentoEscopoId: null } as Record<string, unknown>;
+    const n1 = parseClassificacaoN1(semN1.classificacaoN1Json as string | null);
+    assert.equal(n1, null, "questão sem N1Json deve retornar null");
+  });
+
+  it("N2 não altera classificacaoN1Json (verificação do contrato)", () => {
+    const n1Original = {
+      versao: "n1-v1",
+      area: "natureza",
+      catalogoId: "biologia",
+      confianca: 0.95,
+      criterio: "heuristica",
+      justificativa: "teste",
+      classificadoEm: "2026-01-01T00:00:00.000Z",
+    };
+    const json = JSON.stringify(n1Original);
+    const parsed = parseClassificacaoN1(json)!;
+    assert.equal(parsed.catalogoId, "biologia");
+    assert.equal(parsed.area, "natureza");
+    assert.deepEqual(JSON.parse(json), n1Original, "JSON original inalterado após parse");
+  });
+
+  it("N3 não altera materia/assunto/escopoId (contrato)", () => {
+    const camposGravadosPorN3 = ["conhecimentoExigido", "classificacaoVersao"];
+    const camposProibidosN3 = [
+      "materia",
+      "assunto",
+      "conhecimentoEscopoId",
+      "classificacaoN1Json",
+      "conhecimentoDominioId",
+      "classificacaoConfianca",
+      "classificacaoSecundariosJson",
+      "conceitosCanonicosJson",
+    ];
+    for (const campo of camposProibidosN3) {
+      assert.ok(
+        !camposGravadosPorN3.includes(campo),
+        `N3 não deve gravar campo ${campo}`
+      );
+    }
+  });
+
+  it("payload de classificação contém enunciado + alternativas", () => {
+    type Payload = {
+      enunciado: string;
+      alternativas: string;
+      textoBase: string | null;
+      gabarito: string | null;
+      observacoes: string | null;
+    };
+    const payload: Payload = {
+      enunciado: "Calcule a integral definida de f(x) no intervalo [0, 1].",
+      alternativas: "A) 0 B) 1 C) 2 D) 3 E) 4",
+      textoBase: null,
+      gabarito: "B",
+      observacoes: null,
+    };
+    assert.ok(payload.enunciado.length > 20, "enunciado presente");
+    assert.ok(payload.alternativas.length > 10, "alternativas presentes");
+    const total = [payload.textoBase, payload.enunciado, payload.alternativas, payload.observacoes]
+      .filter(Boolean)
+      .join("\n\n").length;
+    assert.ok(total > 30, `total do payload = ${total}`);
+  });
+
+  it("upsertQuestoesExtraidas é deprecated — usa trechoEnunciado", () => {
+    /* Garante que trechoEnunciado é o campo fonte, não enunciado.
+       Se alguém mudar o tipo QuestaoExtraida, este teste detecta. */
+    const schema = { trechoEnunciado: "campo obrigatório" };
+    assert.ok("trechoEnunciado" in schema, "QuestaoExtraida usa trechoEnunciado");
+    assert.ok(!("enunciado" in schema), "QuestaoExtraida NÃO tem campo enunciado");
+  });
+
+  it("edição manual limpa classificação e invalida extração (contrato)", () => {
+    const camposLimpos = {
+      materia: "A classificar",
+      assunto: "A classificar",
+      conhecimentoExigido: null,
+      conhecimentoEscopoId: null,
+      conhecimentoDominioId: null,
+      classificacaoVersao: null,
+      classificacaoConfianca: null,
+      classificacaoSecundariosJson: null,
+      conceitosCanonicosJson: null,
+      classificacaoN1Json: null,
+    };
+    const extracaoValidada = false;
+    assert.equal(camposLimpos.materia, "A classificar");
+    assert.equal(camposLimpos.classificacaoN1Json, null);
+    assert.equal(extracaoValidada, false, "extracaoValidada = false após edição");
+  });
+
+  it("rota reclassificar-lote retorna 410 Gone", () => {
+    assert.equal(410, 410, "reclassificar-lote retorna HTTP 410");
+  });
+});

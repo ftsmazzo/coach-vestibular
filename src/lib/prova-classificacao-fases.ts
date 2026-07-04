@@ -155,6 +155,34 @@ function textoCompletoPayload(p: PayloadQuestaoCompleto): string {
   return [p.textoBase, p.enunciado, p.alternativas, p.observacoes].filter(Boolean).join("\n\n");
 }
 
+type OrigemPayload = "enunciado_db" | "textoFonte" | "textoCompartilhado" | "vazio";
+
+function diagnosticoPayload(
+  q: QuestaoDb,
+  payload: PayloadQuestaoCompleto,
+  fase: "N1" | "N2" | "N3"
+): { log: string; origem: OrigemPayload; aviso?: string } {
+  const lenEn = payload.enunciado.length;
+  const lenAlt = payload.alternativas.length;
+  const lenTb = payload.textoBase?.length ?? 0;
+  const total = textoCompletoPayload(payload).length;
+
+  let origem: OrigemPayload = "vazio";
+  if (q.enunciado?.trim()) origem = "enunciado_db";
+  else if (payload.textoBase?.trim()) origem = payload.enunciado ? "textoFonte" : "textoCompartilhado";
+
+  const log =
+    `Q${q.numero} payload [${fase}]: enunciado=${lenEn} chars · alternativas=${lenAlt} chars` +
+    ` · textoBase=${lenTb} chars · total=${total} chars · origem=${origem}`;
+
+  let aviso: string | undefined;
+  if (lenAlt < 10 && !q.observacoes?.includes(MARCADOR_EXTRACAO_ACEITA)) {
+    aviso = `Q${q.numero}: alternativas ausentes/curtas (${lenAlt} chars) — classificação pode ser instável.`;
+  }
+
+  return { log, origem, aviso };
+}
+
 async function carregarContextoProva(provaId: string) {
   const prova = await prisma.prova.findUnique({
     where: { id: provaId },
@@ -240,6 +268,10 @@ export async function executarFaseN1Prova(
     }
 
     const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
+    const diag = diagnosticoPayload(q, payload, "N1");
+    etapas.push(diag.log);
+    if (diag.aviso) avisos.push(diag.aviso);
+
     const texto = textoCompletoPayload(payload);
     if (texto.length < textoMinimo(q)) {
       avisos.push(`Q${q.numero}: texto insuficiente para N1.`);
@@ -375,6 +407,10 @@ export async function executarFaseN2Prova(
     }
 
     const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
+    const diag = diagnosticoPayload(q, payload, "N2");
+    etapas.push(diag.log);
+    if (diag.aviso) avisos.push(diag.aviso);
+
     const texto = textoCompletoPayload(payload);
     if (texto.length < textoMinimo(q)) {
       avisos.push(`Q${q.numero}: texto insuficiente para N2.`);
@@ -454,6 +490,9 @@ export async function executarFaseN3Prova(provaId: string): Promise<ResultadoFas
     if (!n1Completo(n1) || !n1 || !escopoId) continue;
 
     const payload = questaoParaPayload(q, trechos, prova.banca ?? undefined, questoes);
+    const diagN3 = diagnosticoPayload(q, payload, "N3");
+    etapas.push(diagN3.log);
+
     const meta = metaFromClassificacaoN1(n1);
     meta.catalogoDestino = n1.catalogoId;
 
