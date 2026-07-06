@@ -202,9 +202,9 @@ export function selecionarTiposQuest(
   semEscopo: boolean
 ): TipoQuestJornada[] {
   if (semEscopo) {
-    return quantidade >= 3
-      ? ["METACOGNICAO", "CONCEITO_BASE", "TREINO_GUIADO"].slice(0, quantidade)
-      : ["METACOGNICAO", "TREINO_GUIADO"].slice(0, quantidade);
+    const tres: TipoQuestJornada[] = ["METACOGNICAO", "CONCEITO_BASE", "TREINO_GUIADO"];
+    const dois: TipoQuestJornada[] = ["METACOGNICAO", "TREINO_GUIADO"];
+    return quantidade >= 3 ? tres.slice(0, quantidade) : dois.slice(0, quantidade);
   }
 
   const dominante = tipoErroDominante(tiposErro);
