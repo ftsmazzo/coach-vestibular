@@ -270,7 +270,7 @@ export default function NovoSimuladoPage() {
       const minimo = Math.min(3, Math.max(1, Math.ceil(numerosGrade.length * 0.08)));
       if (preenchidas.length < minimo) {
         setError(
-          `Marque pelo menos ${minimo} questão(ões) antes de gerar o diagnóstico (ou use outro modo).`
+          `Marque pelo menos ${minimo} questão(ões) antes de salvar o resultado (ou use outro modo).`
         );
         setLoading(false);
         return;
@@ -328,9 +328,10 @@ export default function NovoSimuladoPage() {
     <div className="space-y-6">
       <Card className="border-amber-200 bg-amber-50/60">
         <p className="text-sm text-amber-950">
-          <strong>Motor v1 — provas do catálogo.</strong> Plano, copiloto e focos por escopo N2
-          funcionam apenas quando você registra uma prova publicada no catálogo (com classificação
-          admin). Registro manual ou upload isolado fica só como histórico.
+          <strong>Provas do catálogo.</strong> Ao salvar, você gera o relatório desta prova
+          (acertos, erros por escopo). Isso alimenta a elegibilidade da Jornada, mas{" "}
+          <strong>não cria plano semanal nem quests</strong> — a Jornada só começa com «Iniciar
+          Jornada» na Home.
         </p>
       </Card>
       <div>
@@ -462,8 +463,8 @@ export default function NovoSimuladoPage() {
 
               {modoRegistro === "substituir" && (
                 <p className="mt-2 text-xs text-amber-800">
-                  O registro selecionado será apagado ao salvar; diagnóstico e plano serão
-                  recalculados.
+                  O registro selecionado será apagado ao salvar; o relatório da prova será
+                  recalculado.
                 </p>
               )}
             </Card>
@@ -472,8 +473,8 @@ export default function NovoSimuladoPage() {
           <Card>
             <Label>Como você usou esta prova?</Label>
             <p className="mt-1 text-xs text-slate-500">
-              Isso define o peso no seu plano e na jornada — independente do tipo cadastrado pelo
-              admin.
+              Isso classifica como prova oficial, treino ou revisão — usado no relatório desta prova
+              e na elegibilidade da Jornada (sem iniciar a Jornada automaticamente).
             </p>
             <div className="mt-3">
               <ModoUsoSelector value={modoUso} onChange={setModoUso} />
@@ -535,9 +536,8 @@ export default function NovoSimuladoPage() {
             <div className="sm:col-span-2">
               <Label>Como você se sentiu depois da prova? (opcional)</Label>
               <p className="mt-1 text-xs text-slate-500">
-                1 = muito pesado · 5 = tranquilo. Notas 1–2 ou muitos erros deixam o{" "}
-                <strong>plano da semana mais leve</strong> (modo recuperação). Não é terapia —
-                só ajusta a carga de estudo.
+                1 = muito pesado · 5 = tranquilo. Notas 1–2 marcam este registro com sinal de
+                cansaço — útil no relatório; não gera plano da Jornada.
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {[1, 2, 3, 4, 5].map((n) => (
@@ -745,7 +745,7 @@ export default function NovoSimuladoPage() {
             className="w-full sm:w-auto"
           >
             {loading
-              ? "Analisando..."
+              ? "Salvando..."
               : modo === "foto" && !gradeRevisao
                 ? "Revise o gabarito antes de continuar"
                 : modo === "gabarito" &&
@@ -753,8 +753,8 @@ export default function NovoSimuladoPage() {
                     !gabaritoAluno.trim()
                   ? "Marque ou cole seu gabarito"
                   : modoRegistro === "substituir" && jaRegistrou
-                    ? "Substituir e gerar diagnóstico"
-                    : "Gerar diagnóstico e plano"}
+                    ? "Substituir resultado"
+                    : "Salvar resultado da prova"}
           </Button>
         </form>
       )}

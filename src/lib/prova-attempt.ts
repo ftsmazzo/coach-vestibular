@@ -357,13 +357,6 @@ export async function registrarTentativaProva(input: RegistrarTentativaInput) {
     include: { diagnosticSnapshot: true },
   });
 
-  await aplicarPlanoEQuests(
-    input.userId,
-    diagnosis,
-    provaEhOficial(prova.tipo),
-    rawAttempts
-  );
-
   await prisma.exam.update({
     where: { id: exam.id },
     data: { recoveryMode: diagnosis.recoveryMode },
