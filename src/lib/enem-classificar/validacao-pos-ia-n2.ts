@@ -41,6 +41,71 @@ function scoreDoEscopo(
   return ranked.find((r) => r.escopoId === escopoId)?.score ?? 0;
 }
 
+const ESCALA_CARTografica = "geo.cartografia.representacao.escala_cartografica";
+const SIMBOLOS_CARTograficos = "geo.cartografia.representacao.simbolos_cartograficos";
+
+const INDICADORES_SIMBOLOS_CARTograficos = [
+  "simbolos cartograficos",
+  "símbolos cartográficos",
+  "linguagem cartografica",
+  "linguagem cartográfica",
+  "semiologia cartografica",
+  "semiologia cartográfica",
+  "semiologia grafica",
+  "semiologia gráfica",
+  "uso dos simbolos cartograficos",
+  "uso dos símbolos cartográficos",
+  "variaveis visuais",
+  "variáveis visuais",
+  "legenda cartografica",
+  "legenda cartográfica",
+  "pontos linhas areas",
+  "pontos linhas áreas",
+  "relacoes de diversidade",
+  "relações de diversidade",
+  "relacoes de ordem",
+  "relações de ordem",
+  "relacoes de proporcionalidade",
+  "relações de proporcionalidade",
+];
+
+function textoIndicaSimbolosCartograficos(texto: string): boolean {
+  const t = norm(texto);
+  const termos = [
+    ...INDICADORES_SIMBOLOS_CARTograficos,
+    "pontos",
+    "linhas",
+    "areas",
+    "diversidade",
+    "ordem",
+    "proporcionalidade",
+  ];
+  return termos.some((termo) => termoNoTexto(t, termo));
+}
+
+function corrigirEscalaParaSimbolosCartograficos(
+  texto: string,
+  resultado: ResultadoClassificacao,
+  escopos: Map<string, EscopoIndexEntry>
+): ResultadoClassificacao {
+  if (resultado.escopoId !== ESCALA_CARTografica) return resultado;
+  if (!textoIndicaSimbolosCartograficos(texto)) return resultado;
+
+  const altEntry = escopos.get(SIMBOLOS_CARTograficos);
+  if (!altEntry) return resultado;
+
+  return {
+    ...resultado,
+    escopoId: SIMBOLOS_CARTograficos,
+    assuntoId: altEntry.assuntoId,
+    dominioId: altEntry.dominioId,
+    conceitoCanonic: altEntry.conceitoCanonic ?? null,
+    status: "review",
+    sinalizadorRevisao: true,
+    motivo: `pos-ia: escala_cartografica → simbolos_cartograficos (símbolos/pontos/linhas/áreas no enunciado)`,
+  };
+}
+
 /** Corrige ou sinaliza escopo N2 após IA usando metadados do catálogo. */
 export function validarEscopoPosIA(
   texto: string,
@@ -63,7 +128,7 @@ export function validarEscopoPosIA(
       ranked.find((r) => r.escopoId !== escopoId && r.hitsNegative === 0) ?? null;
     if (alternativa && alternativa.score >= scoreIa * 1.2) {
       const altEntry = escopos.get(alternativa.escopoId)!;
-      return {
+      return corrigirEscalaParaSimbolosCartograficos(texto, {
         ...resultado,
         escopoId: alternativa.escopoId,
         assuntoId: altEntry.assuntoId,
@@ -73,19 +138,19 @@ export function validarEscopoPosIA(
         status: "review",
         sinalizadorRevisao: true,
         motivo: `pos-ia: negativeHints [${neg.join(", ")}] — trocado para ${alternativa.escopoId}`,
-      };
+      }, escopos);
     }
-    return {
+    return corrigirEscalaParaSimbolosCartograficos(texto, {
       ...resultado,
       status: "review",
       sinalizadorRevisao: true,
       motivo: `${resultado.motivo ?? ""} | negativeHints: ${neg.join(", ")}`.trim(),
-    };
+    }, escopos);
   }
 
   if (best && best.escopoId !== escopoId && best.score >= scoreIa * 2 && best.hitsNegative === 0) {
     const altEntry = escopos.get(best.escopoId)!;
-    return {
+    return corrigirEscalaParaSimbolosCartograficos(texto, {
       ...resultado,
       escopoId: best.escopoId,
       assuntoId: altEntry.assuntoId,
@@ -95,8 +160,8 @@ export function validarEscopoPosIA(
       status: "review",
       sinalizadorRevisao: true,
       motivo: `pos-ia: keywords favorecem ${best.escopoId} (score ${best.score.toFixed(1)} vs ${scoreIa.toFixed(1)})`,
-    };
+    }, escopos);
   }
 
-  return resultado;
+  return corrigirEscalaParaSimbolosCartograficos(texto, resultado, escopos);
 }

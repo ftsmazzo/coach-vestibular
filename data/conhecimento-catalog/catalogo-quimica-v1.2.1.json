@@ -732,14 +732,21 @@
                 "Qual o volume ocupado por 2 mol de gás nas CNTP?"
               ],
               "naoConfundirCom": [
-                "quim.estequiometria.gases.lei_gases"
+                "quim.estequiometria.gases.lei_gases",
+                "quim.fisicoquimica.gases.equacao_estado_gas_ideal"
               ],
-              "negativeHints": []
+              "negativeHints": [
+                "pA = 2pB",
+                "nA = 4nB",
+                "dois balões",
+                "diferentes gases ideais",
+                "equação de estado"
+              ]
             },
             {
               "id": "quim.estequiometria.gases.lei_gases",
               "label": "Lei dos gases (PV=nRT)",
-              "descricao": "Equação de Clapeyron e transformações gasosas (relação entre P, V, T e n) fora das CNTP.",
+              "descricao": "Equação de Clapeyron e transformações gasosas (relação entre P, V, T e n) fora das CNTP. Para comparação entre dois gases ideais com pA/pB, nA/nB, VA/VB, preferir equacao_estado_gas_ideal.",
               "keywords": [
                 "PV=nRT",
                 "equação de Clapeyron",
@@ -756,9 +763,88 @@
                 "Calcule a pressão de 2 mol de gás ocupando 10 L a 300 K usando a equação de Clapeyron."
               ],
               "naoConfundirCom": [
-                "quim.estequiometria.gases.volume_molar"
+                "quim.estequiometria.gases.volume_molar",
+                "quim.fisicoquimica.gases.equacao_estado_gas_ideal"
               ],
-              "negativeHints": []
+              "negativeHints": [
+                "gases ideais",
+                "gás ideal",
+                "pA = 2pB",
+                "nA = 4nB",
+                "dois balões",
+                "diferentes gases ideais"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "fisicoquimica",
+      "assuntoLabel": "Físico-química",
+      "dominios": [
+        {
+          "id": "quim.fisicoquimica.gases",
+          "label": "Gases ideais",
+          "escopos": [
+            {
+              "id": "quim.fisicoquimica.gases.equacao_estado_gas_ideal",
+              "label": "Gases ideais e equação de estado",
+              "descricao": "Cobre problemas envolvendo gases ideais, equação de Clapeyron, relação entre pressão, volume, temperatura e quantidade de matéria, transformações gasosas e comparação entre estados gasosos. NÃO cobre soluções aquosas, concentração, estequiometria de reação ou propriedades coligativas sem gases ideais.",
+              "keywords": [
+                "gases ideais",
+                "gás ideal",
+                "equação de Clapeyron",
+                "equação de estado",
+                "PV = nRT",
+                "PV=nRT",
+                "pressão",
+                "volume",
+                "temperatura",
+                "quantidade de matéria",
+                "nA",
+                "nB",
+                "pA",
+                "pB",
+                "TA",
+                "TB",
+                "VA",
+                "VB",
+                "transformações gasosas",
+                "lei geral dos gases"
+              ],
+              "keywordsContexto": [
+                "dois balões",
+                "diferentes gases ideais",
+                "volume ocupado pelo gás",
+                "pA = 2pB",
+                "TA = 5TB",
+                "nA = 4nB",
+                "volume em mL",
+                "volume em L"
+              ],
+              "exemplosEnunciado": [
+                "Dois balões contêm gases ideais diferentes. Sabendo pA = 2pB, TA = 5TB, nA = 4nB e VA = 5 L, determine VB.",
+                "Aplique a equação de estado dos gases ideais para relacionar pressão, volume, temperatura e quantidade de matéria entre dois gases."
+              ],
+              "negativeHints": [
+                "concentração em mol/L",
+                "massa molar",
+                "estequiometria de reação",
+                "precipitação",
+                "soluções",
+                "osmose",
+                "propriedades coligativas",
+                "entalpia",
+                "CNTP",
+                "22,4 L"
+              ],
+              "naoConfundirCom": [
+                "quim.estequiometria.gases.volume_molar",
+                "quim.estequiometria.gases.lei_gases",
+                "quim.termoquimica.entalpia.combustao"
+              ],
+              "regraDesempate": "Se a questão relaciona pressão, volume, temperatura e quantidade de matéria em gases ideais, classifique neste escopo."
             }
           ]
         }

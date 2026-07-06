@@ -537,31 +537,93 @@
             {
               "id": "geo.cartografia.representacao.escala_cartografica",
               "label": "Escala cartográfica",
-              "descricao": "Cobre escala numérica/gráfica, cálculo de distância real ou no mapa e proporção espacial. NÃO cobre razão/proporção puramente matemática sem leitura cartográfica.",
+              "descricao": "Cobre escala numérica/gráfica, cálculo de distância real ou no mapa e proporção espacial. NÃO cobre símbolos cartográficos, linguagem cartográfica, pontos/linhas/áreas ou relações visuais de diversidade, ordem e proporcionalidade sem cálculo de escala.",
               "keywords": [
                 "escala cartográfica",
                 "escala numérica",
                 "escala gráfica",
                 "distância no mapa",
-                "distância real"
+                "distância real",
+                "converter centímetros em quilômetros"
               ],
               "keywordsContexto": [
                 "mapa",
-                "proporção",
-                "redução"
+                "redução",
+                "proporção espacial"
               ],
               "exemplosEnunciado": [
-                "Uma questão exige aplicar escala cartográfica para interpretar um fenômeno espacial, territorial, ambiental, populacional ou econômico."
+                "Uma questão exige calcular distância real a partir da escala numérica ou gráfica do mapa."
               ],
               "negativeHints": [
                 "função afim",
                 "porcentagem",
-                "regra de três sem mapa"
+                "regra de três sem mapa",
+                "símbolos cartográficos",
+                "simbolos cartograficos",
+                "linguagem cartográfica",
+                "semiologia cartográfica",
+                "semiologia gráfica",
+                "pontos linhas áreas",
+                "variáveis visuais",
+                "legenda cartográfica",
+                "relações de diversidade",
+                "relações de ordem",
+                "relações de proporcionalidade",
+                "uso dos símbolos cartográficos"
               ],
               "naoConfundirCom": [
-                "mat.proporcionalidade.razao_proporcao.regra_de_tres"
+                "mat.proporcionalidade.razao_proporcao.regra_de_tres",
+                "geo.cartografia.representacao.simbolos_cartograficos"
               ],
-              "regraDesempate": "Classifique aqui somente se o procedimento central da resolução for geográfico: espaço, território, paisagem, escala, rede, região, ambiente, população, economia espacial ou representação cartográfica. Se for processo temporal, teoria social ou conceito filosófico, escolha a disciplina correspondente."
+              "regraDesempate": "Só usar escala cartográfica se houver cálculo ou interpretação de escala numérica/gráfica ou distância real. Se cobra símbolos, pontos, linhas, áreas ou relações visuais → simbolos_cartograficos."
+            },
+            {
+              "id": "geo.cartografia.representacao.simbolos_cartograficos",
+              "label": "Símbolos cartográficos e semiologia gráfica",
+              "descricao": "Cobre a linguagem cartográfica, símbolos em mapas, representação por pontos, linhas e áreas, variáveis visuais e relações de diversidade, ordem e proporcionalidade entre fenômenos geográficos. NÃO cobre cálculo de escala, transformação de medidas, distância real no mapa ou coordenadas geográficas.",
+              "keywords": [
+                "símbolos cartográficos",
+                "simbolos cartograficos",
+                "linguagem cartográfica",
+                "semiologia cartográfica",
+                "semiologia gráfica",
+                "pontos linhas áreas",
+                "pontos",
+                "linhas",
+                "áreas",
+                "areas",
+                "relações de diversidade",
+                "relações de ordem",
+                "relações de proporcionalidade",
+                "variáveis visuais",
+                "legenda cartográfica",
+                "representações cartográficas"
+              ],
+              "keywordsContexto": [
+                "uso dos símbolos cartográficos",
+                "sinais",
+                "diversidade ordem proporcionalidade",
+                "conteúdo de um mapa",
+                "elaborar mapa"
+              ],
+              "exemplosEnunciado": [
+                "A questão apresenta figuras com pontos, linhas e áreas e pergunta sobre o uso dos símbolos cartográficos.",
+                "Identifique a relação visual de diversidade, ordem ou proporcionalidade representada pelos símbolos no mapa."
+              ],
+              "negativeHints": [
+                "escala numérica",
+                "escala gráfica",
+                "distância real",
+                "distância no mapa",
+                "converter centímetros em quilômetros",
+                "coordenadas geográficas",
+                "latitude e longitude"
+              ],
+              "naoConfundirCom": [
+                "geo.cartografia.representacao.escala_cartografica",
+                "geo.cartografia.representacao.coordenadas_orientacao"
+              ],
+              "regraDesempate": "Se a questão cobra símbolos cartográficos, pontos, linhas, áreas, legenda, variáveis visuais ou relações de diversidade/ordem/proporcionalidade, classifique neste escopo. Só usar escala cartográfica se houver cálculo ou interpretação de escala."
             },
             {
               "id": "geo.cartografia.representacao.projecoes",
