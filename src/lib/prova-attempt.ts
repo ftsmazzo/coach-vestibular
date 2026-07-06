@@ -475,8 +475,8 @@ async function aplicarPlanoEQuests(
 }
 
 export type RegenerarPlanoResult = {
-  planId: string;
-  fonte: "ia" | "jornada" | "anamnese" | "vazio";
+  planId: string | null;
+  fonte: "ia" | "jornada" | "anamnese" | "vazio" | "bloqueado";
   blocosPlano: number;
   questsPendentes: number;
   questsRemovidas?: number;

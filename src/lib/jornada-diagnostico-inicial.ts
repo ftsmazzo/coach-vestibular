@@ -26,6 +26,7 @@ import { prisma } from "@/lib/prisma";
 import {
   agruparUnidadesJornada,
   PROVA_SELECT_MULTIDIA,
+  type ExamParaAgrupamento,
   type UnidadeRegistroJornada,
 } from "@/lib/prova-multidia";
 import { parseJsonStringArray } from "@/lib/json-snapshot-utils";
@@ -207,6 +208,31 @@ type AttemptColeta = {
   banca: string | null;
 };
 
+type QuestaoEvidenciaJornada = {
+  numero: number;
+  correto: boolean;
+  conhecimentoDominioId?: string | null;
+  conhecimentoEscopoId?: string | null;
+  conhecimentoExigido?: string | null;
+  classificacaoConfianca?: number | null;
+  conceitosCanonicosJson?: string | null;
+  tipoErro?: ErrorType | null;
+  observacao?: string | null;
+  metadadosCognitivosJson?: string | null;
+  materiaId?: string | null;
+  provaQuestao?: {
+    classificacaoN1Json?: string | null;
+    conhecimentoDominioId?: string | null;
+    conhecimentoEscopoId?: string | null;
+    conhecimentoExigido?: string | null;
+    conceitosCanonicosJson?: string | null;
+    materia?: string;
+  } | null;
+};
+
+type ExamEvidenciaJornada = ExamParaAgrupamento<QuestaoEvidenciaJornada>;
+type UnidadeEvidenciaJornada = UnidadeRegistroJornada<ExamEvidenciaJornada>;
+
 export type ColetaEvidenciasBruta = {
   geradoEm: Date;
   metaProva: string | null;
@@ -218,7 +244,7 @@ export type ColetaEvidenciasBruta = {
     structuredProfile: StructuredAnamneseProfile | null;
     structuredProfileJson: unknown;
   };
-  unidades: UnidadeRegistroJornada[];
+  unidades: UnidadeEvidenciaJornada[];
   metricas: Awaited<ReturnType<typeof coletarMetricasElegibilidadeJornada>>;
 };
 
@@ -266,25 +292,7 @@ function normalizarAttemptColeta(
   examId: string,
   modoUso: ModoUsoRegistro,
   banca: string | null,
-  a: UnidadeRegistroJornada["questionAttempts"][number] & {
-    conhecimentoDominioId?: string | null;
-    conhecimentoEscopoId?: string | null;
-    conhecimentoExigido?: string | null;
-    classificacaoConfianca?: number | null;
-    conceitosCanonicosJson?: string | null;
-    tipoErro?: ErrorType | null;
-    observacao?: string | null;
-    metadadosCognitivosJson?: string | null;
-    materiaId?: string | null;
-    provaQuestao?: {
-      classificacaoN1Json?: string | null;
-      conhecimentoDominioId?: string | null;
-      conhecimentoEscopoId?: string | null;
-      conhecimentoExigido?: string | null;
-      conceitosCanonicosJson?: string | null;
-      materia?: string;
-    } | null;
-  }
+  a: QuestaoEvidenciaJornada
 ): AttemptColeta | null {
   const pq = a.provaQuestao;
   const n1 = resolverN1(pq, a);
@@ -361,7 +369,7 @@ export async function coletarEvidenciasBrutasJornada(
       structuredProfile: profile,
       structuredProfileJson: profile ?? null,
     },
-    unidades: agruparUnidadesJornada(exams).filter(unidadeValidaParaJornada),
+    unidades: agruparUnidadesJornada(exams).filter(unidadeValidaParaJornada) as UnidadeEvidenciaJornada[],
     metricas,
   };
 }
@@ -642,7 +650,7 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
     .filter((e) => e.estadoInicial === "CRITICO" || e.estadoInicial === "FRAGILIDADE")
     .slice(0, 8)
     .map((e) => {
-      const label = escoposIndex.get(e.escopoId)?.label ?? e.escopoId;
+      const label = escoposIndex.get(e.escopoId)?.escopoLabel ?? e.escopoId;
       const tipos = Object.keys(e.tiposErro);
       return {
         escopoId: e.escopoId,
@@ -677,7 +685,7 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
   }));
 
   const fragilidades = escoposCriticos.slice(0, 6).map((e) => {
-    const label = escoposIndex.get(e.escopoId)?.label ?? e.escopoId;
+    const label = escoposIndex.get(e.escopoId)?.escopoLabel ?? e.escopoId;
     return {
       titulo: label,
       descricao: e.motivo,
@@ -719,7 +727,7 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
     .filter((e) => e.erros > 0 && e.estadoInicial !== "MONITORAR")
     .slice(0, 6)
     .map((e, i) => {
-      const label = escoposIndex.get(e.escopoId)?.label ?? e.escopoId;
+      const label = escoposIndex.get(e.escopoId)?.escopoLabel ?? e.escopoId;
       const tipoErroDom = Object.entries(e.tiposErro).sort((a, b) => b[1] - a[1])[0]?.[0];
       const tipoPrioridade: "CONTEUDO" | "COGNITIVA" | "MISTA" | "ROTINA" =
         tipoErroDom && TIPOS_ERRO_COGNITIVOS.has(tipoErroDom) && tipoErroDom !== "CONCEITO_TEORICO"

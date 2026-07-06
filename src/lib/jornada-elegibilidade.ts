@@ -11,28 +11,27 @@ import {
   PROVA_SELECT_MULTIDIA,
   type ExamParaAgrupamento,
 } from "@/lib/prova-multidia";
+import {
+  MIN_ERROS_ANALISAVEIS_JORNADA,
+  MIN_PCT_N1N2N3_JORNADA,
+  MIN_PROVAS_JORNADA,
+  MIN_QUESTOES_JORNADA,
+  type ElegibilidadeJornada,
+  type MetricasElegibilidadeJornada,
+} from "@/lib/jornada-elegibilidade-shared";
 
-export const MIN_PROVAS_JORNADA = 2;
-export const MIN_QUESTOES_JORNADA = 80;
-export const MIN_ERROS_ANALISAVEIS_JORNADA = 15;
-export const MIN_PCT_N1N2N3_JORNADA = 0.95;
+export {
+  MIN_ERROS_ANALISAVEIS_JORNADA,
+  MIN_PCT_N1N2N3_JORNADA,
+  MIN_PROVAS_JORNADA,
+  MIN_QUESTOES_JORNADA,
+  type ElegibilidadeJornada,
+  type MetricasElegibilidadeJornada,
+} from "@/lib/jornada-elegibilidade-shared";
 
+export type ModoUsoEvidenciaJornada = ModoUsoRegistro;
 /** Modos de uso que contam como evidência forte/média para elegibilidade. */
-export const MODOS_USO_EVIDENCIA_JORNADA: ModoUsoRegistro[] = ["OFICIAL", "TREINO"];
-
-export type MetricasElegibilidadeJornada = {
-  anamneseConcluida: boolean;
-  provasOuSimuladosValidos: number;
-  totalQuestoesValidas: number;
-  totalErrosAnalisaveis: number;
-  pctQuestoesComN1N2N3: number;
-};
-
-export type ElegibilidadeJornada = {
-  elegivel: boolean;
-  motivosBloqueio: string[];
-  metricas: MetricasElegibilidadeJornada;
-};
+export const MODOS_USO_EVIDENCIA_JORNADA: ModoUsoEvidenciaJornada[] = ["OFICIAL", "TREINO"];
 
 type AttemptClassificacao = {
   correto: boolean;
@@ -41,7 +40,7 @@ type AttemptClassificacao = {
   conhecimentoExigido: string | null;
 };
 
-type AttemptRow = ExamParaAgrupamento["questionAttempts"][number] & {
+type AttemptRow = ExamParaAgrupamento<{ numero: number; correto: boolean }>["questionAttempts"][number] & {
   conhecimentoDominioId?: string | null;
   conhecimentoEscopoId?: string | null;
   conhecimentoExigido?: string | null;
@@ -134,6 +133,7 @@ export async function coletarMetricasElegibilidadeJornada(
       include: {
         questionAttempts: {
           select: {
+            numero: true,
             correto: true,
             materiaId: true,
             conhecimentoDominioId: true,

@@ -258,9 +258,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   ]);
 
   const temRegistrosProva = resumo.totalRegistros > 0;
-  const temPlanoJornadaAtivo = Boolean(
-    planoData.plan?.escopo === "GLOBAL" && planoData.plan
-  );
+  const temPlanoJornadaAtivo = Boolean(planoData.plan);
   const insightBase = {
     jornadaIniciada,
     elegibilidade,

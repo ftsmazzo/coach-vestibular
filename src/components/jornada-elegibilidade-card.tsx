@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
-import type { ElegibilidadeJornada } from "@/lib/jornada-elegibilidade";
+import type { ElegibilidadeJornada } from "@/lib/jornada-elegibilidade-shared";
 import {
   MIN_ERROS_ANALISAVEIS_JORNADA,
   MIN_PROVAS_JORNADA,
   MIN_QUESTOES_JORNADA,
-} from "@/lib/jornada-elegibilidade";
+} from "@/lib/jornada-elegibilidade-shared";
 import { Button, Card, LinkButton } from "@/components/ui";
 
 type Props = {

@@ -20,6 +20,7 @@ const BASELINE_CICLO_VERSAO = "1.0";
 export type SnapshotInicialRow = {
   id: string;
   createdAt: Date;
+  tipo?: string;
   diagnosticoJson: string;
   baselineJson: string | null;
   narrativaJson: string | null;
@@ -222,13 +223,17 @@ function focoFromEscopo(
   const linhaBaseline = baseline.porEscopo.find((e) => e.escopoId === escopoId);
   const n1 = escopoId.split(".")[0] ?? null;
   const padroesRelacionados = diagnostico.padroesCognitivos.filter((p) =>
-    p.evidencias.some((ev) => ev.includes(escopoId) || ev.toLowerCase().includes(entry?.label?.toLowerCase() ?? ""))
+    p.evidencias.some(
+      (ev) =>
+        ev.includes(escopoId) ||
+        ev.toLowerCase().includes(entry?.escopoLabel?.toLowerCase() ?? "")
+    )
   );
 
   return {
     escopoId,
     dominioId: linhaBaseline?.dominioId ?? entry?.dominioId ?? null,
-    titulo: entry?.label ?? escopoId,
+    titulo: entry?.escopoLabel ?? escopoId,
     motivo,
     estadoInicial: linhaBaseline?.estadoInicial,
     materiaLabel: n1 ? getMateriaLabel(n1) : null,
