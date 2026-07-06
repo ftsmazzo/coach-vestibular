@@ -207,30 +207,13 @@ export async function podeGerarPlanoJornada(userId: string): Promise<boolean> {
 }
 
 export type IniciarJornadaResult =
-  | { ok: true; jaIniciada: boolean }
+  | { ok: true; jaIniciada: boolean; snapshotInicialId: string }
   | { ok: false; error: string; motivosBloqueio?: string[] };
 
-/**
- * Marca início da Jornada (placeholder seguro — motor de Diagnóstico Inicial vem na próxima etapa).
- * Não gera plano/ciclo legado automaticamente.
- */
+/** Delega ao motor de Diagnóstico Inicial (Etapa 2). */
 export async function iniciarJornadaUsuario(userId: string): Promise<IniciarJornadaResult> {
-  const elegibilidade = await avaliarElegibilidadeJornada(userId);
-  if (!elegibilidade.elegivel) {
-    return {
-      ok: false,
-      error: elegibilidade.motivosBloqueio[0] ?? "Critérios de elegibilidade não atendidos.",
-      motivosBloqueio: elegibilidade.motivosBloqueio,
-    };
-  }
-
-  const jaIniciada = await jornadaFoiIniciada(userId);
-  if (jaIniciada) return { ok: true, jaIniciada: true };
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { jornadaIniciadaEm: new Date() },
-  });
-
-  return { ok: true, jaIniciada: false };
+  const { iniciarJornadaComDiagnosticoInicial } = await import(
+    "@/lib/jornada-diagnostico-inicial"
+  );
+  return iniciarJornadaComDiagnosticoInicial(userId);
 }

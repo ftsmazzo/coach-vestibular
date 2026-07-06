@@ -25,8 +25,9 @@ export async function POST() {
   return NextResponse.json({
     ok: true,
     jaIniciada: resultado.jaIniciada,
+    snapshotInicialId: resultado.snapshotInicialId,
     mensagem: resultado.jaIniciada
-      ? "Sua Jornada já estava iniciada."
-      : "Jornada iniciada. O diagnóstico inicial completo será refinado na próxima etapa.",
+      ? "Sua Jornada já estava iniciada — diagnóstico inicial preservado."
+      : "Jornada iniciada com Diagnóstico Inicial registrado. Plano semanal e Semana 1 virão na próxima etapa.",
   });
 }

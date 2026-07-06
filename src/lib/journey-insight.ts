@@ -27,6 +27,10 @@ import {
   jornadaFoiIniciada,
   type ElegibilidadeJornada,
 } from "@/lib/jornada-elegibilidade";
+import {
+  buscarDiagnosticoInicialJornada,
+  type DiagnosticoInicialResumo,
+} from "@/lib/jornada-diagnostico-inicial";
 
 export type TendenciaJornada = "subindo" | "estavel" | "cuidado" | "inicio";
 
@@ -83,6 +87,8 @@ export type JourneyInsight = {
   elegibilidade: ElegibilidadeJornada;
   /** Tem ao menos um registro de prova/simulado (relatórios disponíveis). */
   temRegistrosProva: boolean;
+  /** Marco zero imutável — Etapa 2. */
+  diagnosticoInicial: DiagnosticoInicialResumo | null;
   focoPrincipal: FocoPedagogico | null;
   focosSecundarios: FocoPedagogico[];
   principalGargalo: GargaloEscopoInsight | null;
@@ -219,6 +225,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     cicloAtivo,
     elegibilidade,
     jornadaIniciada,
+    diagnosticoInicial,
   ] = await Promise.all([
     buildResumoJornada(userId),
     buildMetacognicaoGlobalJornada(userId),
@@ -239,13 +246,18 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     getCicloAtivo(userId),
     avaliarElegibilidadeJornada(userId),
     jornadaFoiIniciada(userId),
+    buscarDiagnosticoInicialJornada(userId),
   ]);
 
   const temRegistrosProva = resumo.totalRegistros > 0;
+  const temPlanoJornadaAtivo = Boolean(
+    planoData.plan?.escopo === "GLOBAL" && planoData.plan
+  );
   const insightBase = {
     jornadaIniciada,
     elegibilidade,
     temRegistrosProva,
+    diagnosticoInicial,
   };
 
   const usaIa =
@@ -441,7 +453,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
 
   const insightSemQuests: JourneyInsight = {
     context: "JOURNEY",
-    temDados: true,
+    temDados: jornadaIniciada && temPlanoJornadaAtivo,
     ...insightBase,
     focoPrincipal,
     focosSecundarios,

@@ -15,6 +15,7 @@ type Props = {
   elegibilidade: ElegibilidadeJornada;
   jornadaIniciada: boolean;
   temRegistrosProva: boolean;
+  aguardandoDiagnostico?: boolean;
 };
 
 function ItemProgresso({
@@ -52,6 +53,7 @@ export function JornadaElegibilidadeCard({
   elegibilidade,
   jornadaIniciada,
   temRegistrosProva,
+  aguardandoDiagnostico = false,
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -78,16 +80,16 @@ export function JornadaElegibilidadeCard({
     }
   }
 
-  if (jornadaIniciada) {
+  if (jornadaIniciada && aguardandoDiagnostico) {
     return (
-      <Card className="border-teal-200 bg-gradient-to-br from-teal-50 to-white p-5 sm:p-6">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-800">
+      <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 sm:p-6">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-800">
           Jornada iniciada
         </p>
-        <h2 className="mt-1 text-xl font-bold text-slate-900">Seu acompanhamento longitudinal começou</h2>
+        <h2 className="mt-1 text-xl font-bold text-slate-900">Preparando Diagnóstico Inicial</h2>
         <p className="mt-3 text-sm leading-relaxed text-slate-700">
-          O diagnóstico inicial completo e o primeiro ciclo semanal serão refinados na próxima etapa do
-          motor. Por enquanto, seus relatórios por prova continuam disponíveis em Atividades.
+          Sua Jornada foi iniciada, mas o Diagnóstico Inicial ainda está sendo preparado. Tente
+          atualizar a página em instantes ou registre novamente se o problema persistir.
         </p>
         <LinkButton href="/provas" className="mt-4" variant="secondary">
           Ver relatórios de prova

@@ -197,6 +197,7 @@ model User {
   anamnesis           StudentAnamnesis?
   feedbacks           Feedback[]
   ciclos              LearningCycle[]
+  journeyDiagnosticSnapshots JourneyDiagnosticSnapshot[]
 }
 
 /// Report de erro / sugestão do aluno (beta). Fonte da verdade; também enviado a um webhook (N8N).
@@ -376,6 +377,31 @@ model DiagnosticSnapshot {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+}
+
+/// Snapshot longitudinal da Jornada — separado de DiagnosticSnapshot (por prova).
+model JourneyDiagnosticSnapshot {
+  id              String   @id @default(cuid())
+  userId          String
+  /** INICIAL | ATUALIZACAO | FECHAMENTO_CICLO | POS_PROVA */
+  tipo            String
+  cicloId         String?
+  examId          String?
+  versao          String   @default("1.0")
+
+  evidenciasJson  String   @db.Text
+  diagnosticoJson String   @db.Text
+  baselineJson    String?  @db.Text
+  mudancasJson    String?  @db.Text
+  narrativaJson   String?  @db.Text
+
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, tipo])
+  @@index([tipo])
 }
 
 model StudyPlan {
