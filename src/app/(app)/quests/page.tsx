@@ -13,6 +13,8 @@ interface QuestMeta {
   rotulo?: string;
   materiaDestaque?: string;
   errosNaMateria?: number;
+  criterioConclusao?: string;
+  motivo?: string;
 }
 
 interface Quest {
@@ -31,6 +33,7 @@ interface QuestsResponse {
   quests: Quest[];
   oQueFazerAgora?: Quest[];
   copilotoConcluidas?: Quest[];
+  fluxoJornadaNovo?: boolean;
   ciclo?: CicloResumo | null;
   planoAtualizadoEm: string | null;
   recoveryMode: boolean;
@@ -108,6 +111,7 @@ function QuestsPageInner() {
     ...outras.filter((q) => q.status === "done"),
   ];
 
+  const fluxoJornada = data?.fluxoJornadaNovo ?? false;
   const lenteHref =
     data?.lenteHref ??
     (conjuntoId
@@ -151,10 +155,25 @@ function QuestsPageInner() {
                 {q.descricao}
               </p>
             )}
+            {q.meta?.motivo && (
+              <p className="mt-2 text-xs text-slate-600">
+                <span className="font-medium">Por que existe:</span> {q.meta.motivo}
+              </p>
+            )}
+            {q.meta?.criterioConclusao && (
+              <p className="mt-1 text-xs text-teal-800">
+                <span className="font-medium">Concluir quando:</span> {q.meta.criterioConclusao}
+              </p>
+            )}
             <p className="mt-1 text-xs text-slate-500">
               ~{q.duracaoMin} min
               {dia ? ` · sugerido: ${dia}` : ""}
             </p>
+            {fluxoJornada && (
+              <p className="mt-2 text-xs text-amber-800">
+                Concluir esta quest registra adesão local — não confirma domínio global do escopo.
+              </p>
+            )}
           </div>
           <Button onClick={() => completeQuest(q.id)} className="w-full shrink-0 sm:w-auto">
             Concluir
@@ -173,7 +192,9 @@ function QuestsPageInner() {
         <p className="text-slate-600">
           {data?.provaNome
             ? `Micro-plano de ${data.provaNome} — tarefas só desta prova.`
-            : "Comece por O que fazer agora — passos da sua jornada inteira. O plano em /plano explica o porquê."}
+            : fluxoJornada
+              ? "Quests da Semana 1 da Jornada — específicas ao foco do ciclo ativo. O plano em /plano explica o porquê."
+              : "Comece por O que fazer agora — passos da sua jornada inteira. O plano em /plano explica o porquê."}
         </p>
         {escopoProva && lenteHref && (
           <p className="mt-2 text-sm">
@@ -221,7 +242,7 @@ function QuestsPageInner() {
         <p className="text-slate-500">Carregando...</p>
       ) : (
         <>
-          {pendingOutras.length > 0 && !escopoProva && (
+          {pendingOutras.length > 0 && !escopoProva && !fluxoJornada && (
             <Card className="border-amber-200 bg-amber-50/60">
               <p className="text-sm text-amber-950">
                 Há <strong>{pendingOutras.length}</strong> tarefa(s) de planos antigos (duplicam o
@@ -239,11 +260,14 @@ function QuestsPageInner() {
           )}
 
           {!escopoProva && (
-            <section id="agora">
-              <h2 className="mb-1 text-lg font-semibold text-teal-900">O que fazer agora</h2>
+            <section id={fluxoJornada ? "jornada" : "agora"}>
+              <h2 className="mb-1 text-lg font-semibold text-teal-900">
+                {fluxoJornada ? "Quests da Semana 1" : "O que fazer agora"}
+              </h2>
               <p className="mb-3 text-sm text-slate-500">
-                Sua lista da semana — uma tarefa de cada vez, na ordem. Baseada em todos os
-                registros da jornada, não só na última prova.
+                {fluxoJornada
+                  ? "Tarefas do motor da Jornada — uma por vez, na ordem. Não misturamos com quests de prova ou copiloto legado."
+                  : "Sua lista da semana — uma tarefa de cada vez, na ordem. Baseada em todos os registros da jornada, não só na última prova."}
               </p>
               {oQueFazer.length === 0 ? (
                 <Card className="border-dashed border-slate-200">

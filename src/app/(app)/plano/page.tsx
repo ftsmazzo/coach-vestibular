@@ -1,15 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { getPlanoAtual } from "@/lib/plano-atual";
+import { getPlanoAtual, getPlanoJornadaSemanal } from "@/lib/plano-atual";
 import { getCicloResumo } from "@/lib/ciclo";
 import { CicloHeader } from "@/components/ciclo-header";
 import { buildResumoJornada } from "@/lib/jornada";
+import { jornadaFoiIniciada } from "@/lib/jornada-elegibilidade";
+import { buscarResumoCicloInicialJornada } from "@/lib/jornada-ciclo-inicial";
+import { podeGerarPlanoSemanalJornada } from "@/lib/jornada-plano-semanal";
 import { RecalcularDiagnosticoButton } from "@/components/recalcular-diagnostico-button";
 import { RegenerarPlanoButton } from "@/components/regenerar-plano-button";
+import { GerarPlanoJornadaButton } from "@/components/gerar-plano-jornada-button";
 import { PanoramaJornadaLive } from "@/components/panorama-jornada-live";
 import { Card, Badge, LinkButton } from "@/components/ui";
 import type { StudyPlanItem } from "@/lib/study-plan";
+import { AVISO_LIMITE_PLANO_JORNADA } from "@/lib/jornada-plano-semanal";
 
 function isPlanoCopiloto(items: StudyPlanItem[]): boolean {
   return items.some(
@@ -86,11 +91,107 @@ export default async function PlanoPage() {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [{ plan, items }, jornada, ciclo] = await Promise.all([
-    getPlanoAtual(session.userId),
-    buildResumoJornada(session.userId),
-    getCicloResumo(session.userId),
-  ]);
+  const [{ plan, items }, jornada, ciclo, jornadaIniciada, planoJornada, cicloJornada, podeGerar] =
+    await Promise.all([
+      getPlanoAtual(session.userId),
+      buildResumoJornada(session.userId),
+      getCicloResumo(session.userId),
+      jornadaFoiIniciada(session.userId),
+      getPlanoJornadaSemanal(session.userId),
+      buscarResumoCicloInicialJornada(session.userId),
+      podeGerarPlanoSemanalJornada(session.userId),
+    ]);
+
+  const planoSemanalNovo = planoJornada.items && planoJornada.narrative;
+  const fluxoJornadaNovo = jornadaIniciada && !plan;
+
+  if (fluxoJornadaNovo) {
+    return (
+      <div className="space-y-6 sm:space-y-8">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Plano desta semana</h1>
+          <p className="text-sm text-slate-600 sm:text-base">
+            Plano da Jornada — nasce do ciclo ativo e do diagnóstico inicial, sem recalcular
+            diagnóstico.
+          </p>
+        </div>
+
+        {ciclo && <CicloHeader ciclo={ciclo} />}
+
+        {!planoSemanalNovo ? (
+          <Card className="border-teal-200 bg-teal-50/30 p-5">
+            <h2 className="text-lg font-semibold text-slate-900">Semana 1 — plano pendente</h2>
+            <p className="mt-2 text-sm text-slate-700">
+              {cicloJornada
+                ? `Foco: ${cicloJornada.narrativa.focoPrincipal}. Gere o plano para criar quests específicas desta semana.`
+                : "Inicie a Jornada na Home para criar o primeiro ciclo."}
+            </p>
+            {podeGerar && (
+              <div className="mt-4">
+                <GerarPlanoJornadaButton />
+              </div>
+            )}
+          </Card>
+        ) : (
+          <>
+            <Card className="border-teal-200 bg-gradient-to-br from-teal-50/90 to-white p-5 sm:p-6">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-800">
+                Jornada · Semana 1
+              </p>
+              <h2 className="mt-1 text-xl font-bold text-slate-900">
+                {planoJornada.narrative!.titulo}
+              </h2>
+              <p className="mt-2 text-sm text-slate-700">{planoJornada.narrative!.mensagem}</p>
+
+              <div className="mt-4 rounded-lg border border-teal-100 bg-white/80 px-3 py-3">
+                <p className="text-[10px] font-semibold uppercase text-slate-500">Foco da semana</p>
+                <p className="mt-1 font-medium text-slate-900">
+                  {planoJornada.narrative!.focoDaSemana}
+                </p>
+                <p className="mt-2 text-xs text-slate-600">
+                  {planoJornada.narrative!.porQueEssePlano}
+                </p>
+              </div>
+
+              <div className="mt-4 text-sm text-slate-700">
+                <p>
+                  {planoJornada.items!.carga.questsTotal} quests · ~
+                  {planoJornada.items!.carga.duracaoTotalEstimadaMin} min ·{" "}
+                  {planoJornada.items!.carga.intensidade.toLowerCase()}
+                </p>
+                <p className="mt-2 text-xs">{planoJornada.narrative!.comoExecutar}</p>
+              </div>
+
+              {planoJornada.items!.blocos.length > 0 && (
+                <section className="mt-6 space-y-3">
+                  <h3 className="font-semibold text-slate-900">Blocos</h3>
+                  {planoJornada.items!.blocos.map((b) => (
+                    <Card key={b.ordem} className="border-slate-200">
+                      <p className="font-medium text-slate-900">
+                        {b.ordem}. {b.titulo}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">{b.objetivo}</p>
+                    </Card>
+                  ))}
+                </section>
+              )}
+
+              <p className="mt-4 rounded-lg border border-violet-100 bg-violet-50/60 px-3 py-2.5 text-sm text-violet-950">
+                {planoJornada.narrative!.criterioDeFechamentoLocal}
+              </p>
+              <p className="mt-3 rounded-lg border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs text-amber-950">
+                {planoJornada.narrative!.limiteDaInterpretacao || AVISO_LIMITE_PLANO_JORNADA}
+              </p>
+
+              <LinkButton href="/quests#jornada" className="mt-4">
+                Ver quests da semana
+              </LinkButton>
+            </Card>
+          </>
+        )}
+      </div>
+    );
+  }
 
   const copiloto = isPlanoCopiloto(items);
   const diagnostico = items.filter((i) => i.bloco === "diagnostico");
@@ -156,7 +257,7 @@ export default async function PlanoPage() {
               </strong>
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <RegenerarPlanoButton />
+              <RegenerarPlanoButton ocultar={jornadaIniciada} />
               <span className="text-xs text-slate-500">
                 Apaga plano/quests antigos e recria com dados atuais (anamnese + provas).
               </span>

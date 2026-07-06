@@ -2,6 +2,17 @@ import { prisma } from "./prisma";
 import type { StudyPlanItem } from "./study-plan";
 import { isQuestAlavanca } from "./quests-alavanca";
 import type { CopilotoNarrativa } from "./copiloto-ia-types";
+import {
+  buscarPlanoSemanalPorCiclo,
+  buscarQuestsJornadaPorCiclo,
+  isQuestJornadaMotor,
+  parseStudyPlanJornadaItems,
+  ESCOPO_JORNADA_SEMANAL,
+  FONTE_GERACAO_JORNADA_V1,
+  type StudyPlanJornadaItems,
+  type StudyPlanJornadaNarrative,
+} from "./jornada-plano-semanal";
+import { buscarCicloSemana1Jornada } from "./jornada-ciclo-inicial";
 
 export interface PlanoAtualData {
   plan: {
@@ -115,4 +126,75 @@ export async function getQuestsDaProva(userId: string, provaId: string) {
   });
 
   return { quests, plan, prova, items };
+}
+
+export type PlanoJornadaSemanalData = {
+  plan: {
+    id: string;
+    recoveryMode: boolean;
+    createdAt: Date;
+    weekStart: Date;
+  } | null;
+  items: StudyPlanJornadaItems | null;
+  narrative: StudyPlanJornadaNarrative | null;
+};
+
+export async function getPlanoJornadaSemanal(userId: string): Promise<PlanoJornadaSemanalData> {
+  const ciclo = await buscarCicloSemana1Jornada(userId);
+  if (!ciclo || ciclo.status !== "ATIVO") {
+    return { plan: null, items: null, narrative: null };
+  }
+
+  const plan = await buscarPlanoSemanalPorCiclo(userId, ciclo.id);
+  if (!plan) return { plan: null, items: null, narrative: null };
+
+  let narrative: StudyPlanJornadaNarrative | null = null;
+  if (plan.narrativeJson) {
+    try {
+      narrative = JSON.parse(plan.narrativeJson) as StudyPlanJornadaNarrative;
+    } catch {
+      narrative = null;
+    }
+  }
+
+  return {
+    plan: {
+      id: plan.id,
+      recoveryMode: plan.recoveryMode,
+      createdAt: plan.createdAt,
+      weekStart: plan.weekStart,
+    },
+    items: parseStudyPlanJornadaItems(plan.itemsJson),
+    narrative,
+  };
+}
+
+/** Quests do motor jornada-v1 vinculadas ao ciclo ativo — não mistura com PROVA/copiloto. */
+export async function getQuestsJornadaSemanal(userId: string) {
+  const ciclo = await buscarCicloSemana1Jornada(userId);
+  if (!ciclo || ciclo.status !== "ATIVO") {
+    return { quests: [], cicloId: null as string | null, plan: null };
+  }
+
+  const [quests, plan] = await Promise.all([
+    buscarQuestsJornadaPorCiclo(userId, ciclo.id),
+    prisma.studyPlan.findFirst({
+      where: {
+        userId,
+        escopo: ESCOPO_JORNADA_SEMANAL,
+        fonteGeracao: FONTE_GERACAO_JORNADA_V1,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
+  const motor = quests.filter(isQuestJornadaMotor);
+  const planoCiclo = plan ? parseStudyPlanJornadaItems(plan.itemsJson) : null;
+  const planoOk = planoCiclo?.cicloId === ciclo.id ? plan : null;
+
+  return {
+    quests: motor,
+    cicloId: ciclo.id,
+    plan: planoOk,
+  };
 }

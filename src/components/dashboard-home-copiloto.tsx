@@ -3,6 +3,7 @@ import type { JourneyInsight, TendenciaJornada } from "@/lib/journey-insight";
 import { JornadaCicloInicialCard } from "@/components/jornada-ciclo-inicial-card";
 import { JornadaDiagnosticoInicialCard } from "@/components/jornada-diagnostico-inicial-card";
 import { JornadaElegibilidadeCard } from "@/components/jornada-elegibilidade-card";
+import { JornadaPlanoSemanalCard } from "@/components/jornada-plano-semanal-card";
 import { Badge, Card, LinkButton } from "@/components/ui";
 
 function tomTendencia(t: TendenciaJornada) {
@@ -26,6 +27,12 @@ export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) 
           <JornadaDiagnosticoInicialCard diagnostico={insight.diagnosticoInicial} />
         )}
         {insight.cicloInicial && <JornadaCicloInicialCard ciclo={insight.cicloInicial} />}
+        {(insight.planoSemanal || insight.podeGerarPlanoSemanal) && (
+          <JornadaPlanoSemanalCard
+            plano={insight.planoSemanal}
+            podeGerar={insight.podeGerarPlanoSemanal}
+          />
+        )}
         {!insight.diagnosticoInicial && (
           <JornadaElegibilidadeCard
             elegibilidade={insight.elegibilidade}

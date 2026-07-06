@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui";
 
-export function RegenerarPlanoButton({ ocultar = false }: { ocultar?: boolean }) {
+export function GerarPlanoJornadaButton({ label = "Gerar plano da semana" }: { label?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{
@@ -13,34 +13,25 @@ export function RegenerarPlanoButton({ ocultar = false }: { ocultar?: boolean })
     texto: string;
   } | null>(null);
 
-  if (ocultar) return null;
-
-  async function regenerar() {
-    if (
-      !confirm(
-        "Apagar planos e tarefas antigos do copiloto e recriar tudo com os dados atuais? (Provas e gabaritos não são apagados.)"
-      )
-    ) {
-      return;
-    }
+  async function gerar() {
     setFeedback(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/plano/regenerar", {
+      const res = await fetch("/api/jornada/plano/gerar", {
         method: "POST",
         cache: "no-store",
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      if (!res.ok || !data.ok) {
         setFeedback({
           tipo: "erro",
-          texto: data.error ?? "Não foi possível atualizar o plano.",
+          texto: data.error ?? "Não foi possível gerar o plano da semana.",
         });
         return;
       }
       setFeedback({
         tipo: "ok",
-        texto: data.mensagem ?? "Plano atualizado.",
+        texto: data.mensagem ?? "Plano da semana pronto.",
       });
       router.refresh();
     } catch {
@@ -55,8 +46,8 @@ export function RegenerarPlanoButton({ ocultar = false }: { ocultar?: boolean })
 
   return (
     <div className="space-y-3">
-      <Button type="button" variant="secondary" disabled={loading} onClick={regenerar}>
-        {loading ? "Atualizando…" : "Atualizar plano pela jornada"}
+      <Button type="button" disabled={loading} onClick={gerar}>
+        {loading ? "Gerando…" : label}
       </Button>
 
       {feedback && (
@@ -71,8 +62,8 @@ export function RegenerarPlanoButton({ ocultar = false }: { ocultar?: boolean })
           {feedback.tipo === "ok" && (
             <>
               {" "}
-              <Link href="/quests#agora" className="font-medium underline">
-                Ver tarefas →
+              <Link href="/quests#jornada" className="font-medium underline">
+                Ver quests →
               </Link>
             </>
           )}

@@ -35,6 +35,11 @@ import {
   buscarResumoCicloInicialJornada,
   type CicloInicialResumo,
 } from "@/lib/jornada-ciclo-inicial";
+import {
+  buscarResumoPlanoSemanalJornada,
+  podeGerarPlanoSemanalJornada,
+  type PlanoSemanalJornadaResumo,
+} from "@/lib/jornada-plano-semanal";
 
 export type TendenciaJornada = "subindo" | "estavel" | "cuidado" | "inicio";
 
@@ -95,6 +100,9 @@ export type JourneyInsight = {
   diagnosticoInicial: DiagnosticoInicialResumo | null;
   /** Semana 1 / primeiro LearningCycle — Etapa 3. */
   cicloInicial: CicloInicialResumo | null;
+  /** Plano semanal motor-jornada-v1 — Etapa 4B. */
+  planoSemanal: PlanoSemanalJornadaResumo | null;
+  podeGerarPlanoSemanal: boolean;
   focoPrincipal: FocoPedagogico | null;
   focosSecundarios: FocoPedagogico[];
   principalGargalo: GargaloEscopoInsight | null;
@@ -233,6 +241,8 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     jornadaIniciada,
     diagnosticoInicial,
     cicloInicial,
+    planoSemanal,
+    podeGerarPlanoSemanal,
   ] = await Promise.all([
     buildResumoJornada(userId),
     buildMetacognicaoGlobalJornada(userId),
@@ -255,16 +265,21 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     jornadaFoiIniciada(userId),
     buscarDiagnosticoInicialJornada(userId),
     buscarResumoCicloInicialJornada(userId),
+    buscarResumoPlanoSemanalJornada(userId),
+    podeGerarPlanoSemanalJornada(userId),
   ]);
 
   const temRegistrosProva = resumo.totalRegistros > 0;
   const temPlanoJornadaAtivo = Boolean(planoData.plan);
+  const fluxoJornadaNovo = jornadaIniciada && !temPlanoJornadaAtivo;
   const insightBase = {
     jornadaIniciada,
     elegibilidade,
     temRegistrosProva,
     diagnosticoInicial,
     cicloInicial,
+    planoSemanal,
+    podeGerarPlanoSemanal,
   };
 
   const usaIa =
@@ -363,13 +378,20 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
 
     if (usaIa && planoData.plan?.narrative) {
       aplicarNarrativaIa(base, planoData.plan.narrative);
-    } else {
+    } else if (!fluxoJornadaNovo) {
       await garantirQuestsAlavanca(userId, base);
     }
 
-    const oQueFazer = await getOQueFazerAgora(userId);
-    if (base.missao) {
-      base.missao.questsPendentes = oQueFazer.map((q) => ({ id: q.id, titulo: q.titulo }));
+    if (!fluxoJornadaNovo) {
+      const oQueFazer = await getOQueFazerAgora(userId);
+      if (base.missao) {
+        base.missao.questsPendentes = oQueFazer.map((q) => ({ id: q.id, titulo: q.titulo }));
+      }
+    } else if (base.missao && planoSemanal) {
+      base.missao.questsPendentes = planoSemanal.quests
+        .filter((q) => q.status === "pending")
+        .map((q) => ({ id: q.id, titulo: q.titulo }));
+      base.missao.temPlano = Boolean(planoSemanal.planId);
     }
 
     return base;
@@ -498,16 +520,23 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
 
   if (usaIa && planoData.plan?.narrative) {
     aplicarNarrativaIa(insightSemQuests, planoData.plan.narrative);
-  } else {
+  } else if (!fluxoJornadaNovo) {
     await garantirQuestsAlavanca(userId, insightSemQuests);
   }
 
-  const oQueFazer = await getOQueFazerAgora(userId);
-  if (insightSemQuests.missao) {
-    insightSemQuests.missao.questsPendentes = oQueFazer.map((q) => ({
-      id: q.id,
-      titulo: q.titulo,
-    }));
+  if (!fluxoJornadaNovo) {
+    const oQueFazer = await getOQueFazerAgora(userId);
+    if (insightSemQuests.missao) {
+      insightSemQuests.missao.questsPendentes = oQueFazer.map((q) => ({
+        id: q.id,
+        titulo: q.titulo,
+      }));
+    }
+  } else if (insightSemQuests.missao && planoSemanal) {
+    insightSemQuests.missao.questsPendentes = planoSemanal.quests
+      .filter((q) => q.status === "pending")
+      .map((q) => ({ id: q.id, titulo: q.titulo }));
+    insightSemQuests.missao.temPlano = Boolean(planoSemanal.planId);
   }
 
   return insightSemQuests;

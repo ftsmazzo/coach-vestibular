@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getQuestsDaProva, getQuestsDoPlanoAtual } from "@/lib/plano-atual";
+import { getQuestsDaProva, getQuestsDoPlanoAtual, getQuestsJornadaSemanal, getPlanoAtual } from "@/lib/plano-atual";
+import { questRowParaResumo } from "@/lib/jornada-plano-semanal";
+import { jornadaFoiIniciada } from "@/lib/jornada-elegibilidade";
 import { prefixoQuestConjunto } from "@/lib/micro-plano-conjunto";
 import {
   getOQueFazerAgora,
@@ -52,16 +54,56 @@ export async function GET(request: Request) {
   }
 
   let oQueFazerAgora: Awaited<ReturnType<typeof getOQueFazerAgora>> = [];
+  let questsJornada: Array<{
+    id: string;
+    titulo: string;
+    descricao: string;
+    duracaoMin: number;
+    status: string;
+    tipoQuest: string;
+    criterioConclusao: string;
+    motivo: string;
+    rewardMsg: string | null;
+  }> = [];
+  let fluxoJornadaNovo = false;
   let ciclo: Awaited<ReturnType<typeof import("@/lib/ciclo").getCicloResumo>> = null;
   if (!provaId && !conjuntoId) {
-    const { buildJourneyInsight } = await import("@/lib/journey-insight");
-    await buildJourneyInsight(session.userId);
-    oQueFazerAgora = await getOQueFazerAgora(session.userId);
+    const [iniciada, planoGlobal] = await Promise.all([
+      jornadaFoiIniciada(session.userId),
+      getPlanoAtual(session.userId),
+    ]);
+    fluxoJornadaNovo = iniciada && !planoGlobal.plan;
+
+    if (fluxoJornadaNovo) {
+      const jornada = await getQuestsJornadaSemanal(session.userId);
+      quests = jornada.quests;
+      plan = jornada.plan;
+      items = [];
+      questsJornada = jornada.quests.map((q) => {
+        const resumo = questRowParaResumo(q);
+        return {
+          id: q.id,
+          titulo: q.titulo,
+          descricao: resumo.descricao,
+          duracaoMin: q.duracaoMin,
+          status: q.status,
+          tipoQuest: resumo.tipoQuest,
+          criterioConclusao: resumo.criterioConclusao,
+          motivo: resumo.motivo,
+          rewardMsg: q.rewardMsg,
+        };
+      });
+    } else {
+      const { buildJourneyInsight } = await import("@/lib/journey-insight");
+      await buildJourneyInsight(session.userId);
+      oQueFazerAgora = await getOQueFazerAgora(session.userId);
+    }
+
     const { getCicloResumo } = await import("@/lib/ciclo");
     ciclo = await getCicloResumo(session.userId);
   }
 
-  const copilotoConcluidas = provaId || conjuntoId
+  const copilotoConcluidas = provaId || conjuntoId || fluxoJornadaNovo
     ? []
     : (
         await prisma.quest.findMany({
@@ -124,17 +166,38 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     quests: questsPlano,
-    oQueFazerAgora: oQueFazerAgora.map((q) => ({
-      id: q.id,
-      titulo: q.titulo,
-      descricao: q.descricao,
-      duracaoMin: q.duracaoMin,
-      status: "pending",
-      rewardMsg: null,
-      ordemPlano: q.ordem,
-      dueDate: q.dueDate,
-      meta: { bloco: "copiloto" as const, rotulo: q.rotulo },
-    })),
+    oQueFazerAgora: fluxoJornadaNovo
+      ? questsJornada
+          .filter((q) => q.status === "pending")
+          .map((q, i) => ({
+            id: q.id,
+            titulo: q.titulo,
+            descricao: q.descricao,
+            duracaoMin: q.duracaoMin,
+            status: "pending" as const,
+            rewardMsg: q.rewardMsg,
+            ordemPlano: i + 1,
+            dueDate: null,
+            meta: {
+              bloco: "jornada" as const,
+              rotulo: q.tipoQuest,
+              criterioConclusao: q.criterioConclusao,
+              motivo: q.motivo,
+            },
+          }))
+      : oQueFazerAgora.map((q) => ({
+          id: q.id,
+          titulo: q.titulo,
+          descricao: q.descricao,
+          duracaoMin: q.duracaoMin,
+          status: "pending",
+          rewardMsg: null,
+          ordemPlano: q.ordem,
+          dueDate: q.dueDate,
+          meta: { bloco: "copiloto" as const, rotulo: q.rotulo },
+        })),
+    questsJornada: fluxoJornadaNovo ? questsJornada : undefined,
+    fluxoJornadaNovo,
     ciclo,
     copilotoConcluidas,
     questsAlavanca: [],
