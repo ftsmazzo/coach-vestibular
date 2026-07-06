@@ -26,8 +26,9 @@ export async function POST() {
     ok: true,
     jaIniciada: resultado.jaIniciada,
     snapshotInicialId: resultado.snapshotInicialId,
+    cicloInicialId: resultado.cicloInicialId,
     mensagem: resultado.jaIniciada
-      ? "Sua Jornada já estava iniciada — diagnóstico inicial preservado."
-      : "Jornada iniciada com Diagnóstico Inicial registrado. Plano semanal e Semana 1 virão na próxima etapa.",
+      ? "Sua Jornada já estava iniciada — diagnóstico e Semana 1 preservados."
+      : "Jornada iniciada com Diagnóstico Inicial e Semana 1 registrados. Plano e quests virão na próxima etapa.",
   });
 }

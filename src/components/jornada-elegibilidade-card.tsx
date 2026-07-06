@@ -16,6 +16,7 @@ type Props = {
   jornadaIniciada: boolean;
   temRegistrosProva: boolean;
   aguardandoDiagnostico?: boolean;
+  aguardandoCicloInicial?: boolean;
 };
 
 function ItemProgresso({
@@ -54,6 +55,7 @@ export function JornadaElegibilidadeCard({
   jornadaIniciada,
   temRegistrosProva,
   aguardandoDiagnostico = false,
+  aguardandoCicloInicial = false,
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -78,6 +80,25 @@ export function JornadaElegibilidadeCard({
     } finally {
       setLoading(false);
     }
+  }
+
+  if (jornadaIniciada && aguardandoCicloInicial) {
+    return (
+      <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 sm:p-6">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-800">
+          Diagnóstico registrado
+        </p>
+        <h2 className="mt-1 text-xl font-bold text-slate-900">Preparar Semana 1</h2>
+        <p className="mt-3 text-sm leading-relaxed text-slate-700">
+          Seu Diagnóstico Inicial já está salvo, mas a Semana 1 ainda não foi aberta. Clique abaixo
+          para criar o primeiro ciclo sem duplicar o diagnóstico.
+        </p>
+        <Button type="button" disabled={loading} onClick={iniciarJornada} className="mt-4">
+          {loading ? "Preparando…" : "Preparar Semana 1"}
+        </Button>
+        {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
+      </Card>
+    );
   }
 
   if (jornadaIniciada && aguardandoDiagnostico) {

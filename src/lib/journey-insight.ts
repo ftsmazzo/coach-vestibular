@@ -31,6 +31,10 @@ import {
   buscarDiagnosticoInicialJornada,
   type DiagnosticoInicialResumo,
 } from "@/lib/jornada-diagnostico-inicial";
+import {
+  buscarResumoCicloInicialJornada,
+  type CicloInicialResumo,
+} from "@/lib/jornada-ciclo-inicial";
 
 export type TendenciaJornada = "subindo" | "estavel" | "cuidado" | "inicio";
 
@@ -89,6 +93,8 @@ export type JourneyInsight = {
   temRegistrosProva: boolean;
   /** Marco zero imutável — Etapa 2. */
   diagnosticoInicial: DiagnosticoInicialResumo | null;
+  /** Semana 1 / primeiro LearningCycle — Etapa 3. */
+  cicloInicial: CicloInicialResumo | null;
   focoPrincipal: FocoPedagogico | null;
   focosSecundarios: FocoPedagogico[];
   principalGargalo: GargaloEscopoInsight | null;
@@ -226,6 +232,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     elegibilidade,
     jornadaIniciada,
     diagnosticoInicial,
+    cicloInicial,
   ] = await Promise.all([
     buildResumoJornada(userId),
     buildMetacognicaoGlobalJornada(userId),
@@ -247,6 +254,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     avaliarElegibilidadeJornada(userId),
     jornadaFoiIniciada(userId),
     buscarDiagnosticoInicialJornada(userId),
+    buscarResumoCicloInicialJornada(userId),
   ]);
 
   const temRegistrosProva = resumo.totalRegistros > 0;
@@ -258,6 +266,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     elegibilidade,
     temRegistrosProva,
     diagnosticoInicial,
+    cicloInicial,
   };
 
   const usaIa =

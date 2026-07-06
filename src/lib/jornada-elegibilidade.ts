@@ -199,15 +199,15 @@ export async function jornadaFoiIniciada(userId: string): Promise<boolean> {
 }
 
 /**
- * Plano semanal, quests de ciclo e LearningCycle só após iniciar a Jornada.
- * Relatórios por prova e DiagnosticSnapshot por exam continuam permitidos.
+ * Plano/quests legados — liberar na Etapa 4.
+ * LearningCycle da Jornada é criado por jornada-ciclo-inicial (Etapa 3).
  */
-export async function podeGerarPlanoJornada(userId: string): Promise<boolean> {
-  return jornadaFoiIniciada(userId);
+export async function podeGerarPlanoJornada(_userId: string): Promise<boolean> {
+  return false;
 }
 
 export type IniciarJornadaResult =
-  | { ok: true; jaIniciada: boolean; snapshotInicialId: string }
+  | { ok: true; jaIniciada: boolean; snapshotInicialId: string; cicloInicialId: string }
   | { ok: false; error: string; motivosBloqueio?: string[] };
 
 /** Delega ao motor de Diagnóstico Inicial (Etapa 2). */

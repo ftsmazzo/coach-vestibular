@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { JourneyInsight, TendenciaJornada } from "@/lib/journey-insight";
+import { JornadaCicloInicialCard } from "@/components/jornada-ciclo-inicial-card";
 import { JornadaDiagnosticoInicialCard } from "@/components/jornada-diagnostico-inicial-card";
 import { JornadaElegibilidadeCard } from "@/components/jornada-elegibilidade-card";
 import { Badge, Card, LinkButton } from "@/components/ui";
@@ -19,16 +20,29 @@ function tomTendencia(t: TendenciaJornada) {
 
 export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) {
   if (!insight.temDados) {
-    if (insight.diagnosticoInicial) {
-      return <JornadaDiagnosticoInicialCard diagnostico={insight.diagnosticoInicial} />;
-    }
     return (
-      <JornadaElegibilidadeCard
-        elegibilidade={insight.elegibilidade}
-        jornadaIniciada={insight.jornadaIniciada}
-        temRegistrosProva={insight.temRegistrosProva}
-        aguardandoDiagnostico={insight.jornadaIniciada && !insight.diagnosticoInicial}
-      />
+      <div className="space-y-5 sm:space-y-6">
+        {insight.diagnosticoInicial && (
+          <JornadaDiagnosticoInicialCard diagnostico={insight.diagnosticoInicial} />
+        )}
+        {insight.cicloInicial && <JornadaCicloInicialCard ciclo={insight.cicloInicial} />}
+        {!insight.diagnosticoInicial && (
+          <JornadaElegibilidadeCard
+            elegibilidade={insight.elegibilidade}
+            jornadaIniciada={insight.jornadaIniciada}
+            temRegistrosProva={insight.temRegistrosProva}
+            aguardandoDiagnostico={insight.jornadaIniciada && !insight.diagnosticoInicial}
+          />
+        )}
+        {insight.diagnosticoInicial && !insight.cicloInicial && insight.jornadaIniciada && (
+          <JornadaElegibilidadeCard
+            elegibilidade={insight.elegibilidade}
+            jornadaIniciada={insight.jornadaIniciada}
+            temRegistrosProva={insight.temRegistrosProva}
+            aguardandoCicloInicial
+          />
+        )}
+      </div>
     );
   }
 

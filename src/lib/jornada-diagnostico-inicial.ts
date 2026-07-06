@@ -187,7 +187,7 @@ export type DiagnosticoInicialResumo = {
 };
 
 export type IniciarJornadaComDiagnosticoResult =
-  | { ok: true; jaIniciada: boolean; snapshotInicialId: string }
+  | { ok: true; jaIniciada: boolean; snapshotInicialId: string; cicloInicialId: string }
   | { ok: false; error: string; motivosBloqueio?: string[] };
 
 type AttemptColeta = {
@@ -798,7 +798,7 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
         : []),
     ],
     avisoLimite:
-      "Este é o marco zero da sua Jornada — não será sobrescrito. O plano semanal e as quests da Semana 1 virão na próxima etapa.",
+      "Este é o marco zero da sua Jornada — não será sobrescrito. O plano semanal e as quests serão gerados na próxima etapa.",
   };
 
   return { evidenciasJson, baselineJson, diagnosticoJson, narrativaJson };
@@ -895,10 +895,13 @@ export async function iniciarJornadaComDiagnosticoInicial(
         data: { jornadaIniciadaEm: snapshotInicial.createdAt },
       });
     }
+    const { criarOuObterPrimeiroCicloJornada } = await import("@/lib/jornada-ciclo-inicial");
+    const ciclo = await criarOuObterPrimeiroCicloJornada(userId, snapshotInicial);
     return {
       ok: true,
       jaIniciada: true,
       snapshotInicialId: snapshotInicial.id,
+      cicloInicialId: ciclo.cicloId,
     };
   }
 
@@ -920,20 +923,26 @@ export async function iniciarJornadaComDiagnosticoInicial(
     };
   }
 
-  const snapshotId = await prisma.$transaction(async (tx) => {
-    const { snapshotId: id } = await gerarDiagnosticoInicialJornada(userId, tx);
+  const resultado = await prisma.$transaction(async (tx) => {
+    const { snapshotId } = await gerarDiagnosticoInicialJornada(userId, tx);
     if (!user?.jornadaIniciadaEm) {
       await tx.user.update({
         where: { id: userId },
         data: { jornadaIniciadaEm: new Date() },
       });
     }
-    return id;
+    const snap = await tx.journeyDiagnosticSnapshot.findUniqueOrThrow({
+      where: { id: snapshotId },
+    });
+    const { criarOuObterPrimeiroCicloJornada } = await import("@/lib/jornada-ciclo-inicial");
+    const ciclo = await criarOuObterPrimeiroCicloJornada(userId, snap, tx);
+    return { snapshotId, cicloId: ciclo.cicloId };
   });
 
   return {
     ok: true,
     jaIniciada: modoRecuperacao,
-    snapshotInicialId: snapshotId,
+    snapshotInicialId: resultado.snapshotId,
+    cicloInicialId: resultado.cicloId,
   };
 }

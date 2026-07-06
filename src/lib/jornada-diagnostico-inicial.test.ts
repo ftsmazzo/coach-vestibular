@@ -221,16 +221,18 @@ describe("evidências fracas não geram diagnóstico inicial", () => {
 });
 
 describe("contrato da API e ausência de plano/ciclo", () => {
-  it("14. resultado de sucesso inclui snapshotInicialId no tipo", () => {
+  it("14. resultado de sucesso inclui snapshotInicialId e cicloInicialId", () => {
     const ok = {
       ok: true as const,
       jaIniciada: false,
       snapshotInicialId: "snap-test-123",
+      cicloInicialId: "ciclo-test-456",
     };
     assert.equal(ok.snapshotInicialId, "snap-test-123");
+    assert.equal(ok.cicloInicialId, "ciclo-test-456");
   });
 
-  it("15. motor não cria StudyPlan, Quest nem LearningCycle (somente snapshot)", () => {
+  it("15. montarDiagnosticoInicialPayload não cria StudyPlan nem Quest (ciclo é Etapa 3)", () => {
     const src = montarDiagnosticoInicialPayload.toString();
     assert.equal(src.includes("studyPlan"), false);
     assert.equal(src.includes("learningCycle"), false);
