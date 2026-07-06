@@ -707,15 +707,16 @@ export async function finalizarAnamnese(userId: string): Promise<AnamnesePublicV
     },
   });
 
-  // Ao concluir a anamnese, regenera o plano/quests para nascerem da conversa
-  // (não só recalcula o insight). Best-effort: não quebra o fechamento.
+  // Plano/quests de jornada só após Iniciar Jornada (docs/MOTOR-JORNADA-DIAGNOSTICO.md).
+  // Anamnese concluída não dispara mais plano semanal automático.
   try {
-    const { regenerarPlanoGlobalUsuario } = await import("@/lib/prova-attempt");
-    await regenerarPlanoGlobalUsuario(userId);
+    const { jornadaFoiIniciada } = await import("@/lib/jornada-elegibilidade");
+    if (await jornadaFoiIniciada(userId)) {
+      const { regenerarPlanoGlobalUsuario } = await import("@/lib/prova-attempt");
+      await regenerarPlanoGlobalUsuario(userId);
+    }
   } catch (e) {
     console.error("[anamnese] falha ao regenerar plano após concluir:", e);
-    const { buildJourneyInsight } = await import("@/lib/journey-insight");
-    await buildJourneyInsight(userId);
   }
 
   return toPublicView(updated);

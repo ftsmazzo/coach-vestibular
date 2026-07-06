@@ -395,6 +395,16 @@ async function aplicarPlanoEQuests(
   _ehProvaOficial: boolean,
   _rawAttemptsUltimo: AttemptInput[] = []
 ) {
+  const { podeGerarPlanoJornada } = await import("@/lib/jornada-elegibilidade");
+  if (!(await podeGerarPlanoJornada(userId))) {
+    return {
+      planId: null,
+      fonte: "bloqueado" as const,
+      blocosPlano: 0,
+      questsPendentes: 0,
+    };
+  }
+
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
 
@@ -478,6 +488,16 @@ export async function regenerarPlanoGlobalUsuario(
   userId: string,
   opts?: { pularLimpeza?: boolean; incluirAnamnese?: boolean }
 ): Promise<RegenerarPlanoResult> {
+  const { podeGerarPlanoJornada } = await import("@/lib/jornada-elegibilidade");
+  if (!(await podeGerarPlanoJornada(userId))) {
+    return {
+      planId: "",
+      fonte: "vazio",
+      blocosPlano: 0,
+      questsPendentes: 0,
+    };
+  }
+
   let questsRemovidas = 0;
   let planosRemovidos = 0;
   if (!opts?.pularLimpeza) {

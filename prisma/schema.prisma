@@ -181,6 +181,8 @@ model User {
   /** Nome no ranking — escolhido pelo aluno; se vazio, gera apelido automático */
   nomeExibicaoRanking  String?
   xp                   Int      @default(0)
+  /** Marca início explícito da Jornada longitudinal (botão Iniciar Jornada). */
+  jornadaIniciadaEm    DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

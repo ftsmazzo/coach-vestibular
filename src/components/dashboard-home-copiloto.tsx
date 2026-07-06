@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { JourneyInsight, TendenciaJornada } from "@/lib/journey-insight";
+import { JornadaElegibilidadeCard } from "@/components/jornada-elegibilidade-card";
 import { Badge, Card, LinkButton } from "@/components/ui";
 
 function tomTendencia(t: TendenciaJornada) {
@@ -18,16 +19,11 @@ function tomTendencia(t: TendenciaJornada) {
 export function DashboardHomeCopiloto({ insight }: { insight: JourneyInsight }) {
   if (!insight.temDados) {
     return (
-      <Card className="border-dashed border-teal-200 bg-teal-50/40 p-6 text-center">
-        <h2 className="text-lg font-semibold text-slate-900">Sua jornada começa aqui</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Registre uma prova do catálogo para receber missão da semana, focos por escopo e prioridades
-          personalizadas.
-        </p>
-        <LinkButton href="/provas" className="mt-4">
-          Ver atividades
-        </LinkButton>
-      </Card>
+      <JornadaElegibilidadeCard
+        elegibilidade={insight.elegibilidade}
+        jornadaIniciada={insight.jornadaIniciada}
+        temRegistrosProva={insight.temRegistrosProva}
+      />
     );
   }
 

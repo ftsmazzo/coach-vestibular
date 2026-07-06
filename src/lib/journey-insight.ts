@@ -22,6 +22,11 @@ import type { AnamneseMotorContext } from "@/lib/anamnese-types";
 import type { CopilotoNarrativa } from "@/lib/copiloto-ia-types";
 import { buildCicloInicioStory } from "@/lib/learning-storytelling";
 import { getCicloAtivo } from "@/lib/ciclo";
+import {
+  avaliarElegibilidadeJornada,
+  jornadaFoiIniciada,
+  type ElegibilidadeJornada,
+} from "@/lib/jornada-elegibilidade";
 
 export type TendenciaJornada = "subindo" | "estavel" | "cuidado" | "inicio";
 
@@ -72,7 +77,12 @@ export type NarrativaEscopo = {
 
 export type JourneyInsight = {
   context: "JOURNEY";
+  /** Jornada longitudinal ativa (após Iniciar Jornada), não apenas ter registros. */
   temDados: boolean;
+  jornadaIniciada: boolean;
+  elegibilidade: ElegibilidadeJornada;
+  /** Tem ao menos um registro de prova/simulado (relatórios disponíveis). */
+  temRegistrosProva: boolean;
   focoPrincipal: FocoPedagogico | null;
   focosSecundarios: FocoPedagogico[];
   principalGargalo: GargaloEscopoInsight | null;
@@ -207,6 +217,8 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     focosPedagogicos,
     coberturaN2,
     cicloAtivo,
+    elegibilidade,
+    jornadaIniciada,
   ] = await Promise.all([
     buildResumoJornada(userId),
     buildMetacognicaoGlobalJornada(userId),
@@ -225,10 +237,73 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     getFocosPedagogicosRecentes(userId, 5),
     getCoberturaN2(userId),
     getCicloAtivo(userId),
+    avaliarElegibilidadeJornada(userId),
+    jornadaFoiIniciada(userId),
   ]);
+
+  const temRegistrosProva = resumo.totalRegistros > 0;
+  const insightBase = {
+    jornadaIniciada,
+    elegibilidade,
+    temRegistrosProva,
+  };
 
   const usaIa =
     planoData.plan?.fonteGeracao === "ia" && Boolean(planoData.plan?.narrative);
+
+  if (!jornadaIniciada) {
+    const missaoAnamnese =
+      anamneseCtx.completed && anamneseCtx.focoInicialTitulo && temRegistrosProva
+        ? {
+            focoTitulo: anamneseCtx.focoInicialTitulo,
+            focoDescricao:
+              anamneseCtx.focoInicialDescricao ??
+              "Registre mais provas do catálogo até liberar a Jornada — até lá, confira os relatórios por prova.",
+            impactoEstimado: "Baseado na conversa inicial com o copiloto",
+            questsPendentes: [] as Array<{ id: string; titulo: string }>,
+            temPlano: false,
+          }
+        : null;
+
+    const base: JourneyInsight = {
+      context: "JOURNEY",
+      temDados: false,
+      ...insightBase,
+      focoPrincipal: null,
+      focosSecundarios: [],
+      principalGargalo: null,
+      copiloto: null,
+      temDiagnosticoEscopo: false,
+      coberturaN2,
+      principalAlavanca: null,
+      focoSemana: null,
+      missao: missaoAnamnese,
+      estado: temRegistrosProva
+        ? {
+            tendencia: "inicio" as TendenciaJornada,
+            tendenciaLabel:
+              "Relatórios de prova disponíveis — a Jornada longitudinal abre após critérios de elegibilidade.",
+            pctAcertoPonderado: resumo.pctAcertoPonderado,
+            totalRegistros: resumo.totalRegistros,
+            consistenciaLabel: `${resumo.totalRegistros} registro(s) — faltam evidências para a Jornada`,
+            riscoLabel: "Sem diagnóstico longitudinal até iniciar a Jornada",
+            recoveryMode: false,
+            metaAlvo: resumo.metaAlvo || "Defina sua meta em Perfil",
+          }
+        : null,
+      padraoCognitivo: null,
+      diagnosticoIntegrado: null,
+      alavancas: [],
+      atividadesRecentes: temRegistrosProva
+        ? analytics.registrosRecentes.slice(0, 4)
+        : [],
+      anamnese: anamneseCtx,
+      focosPedagogicos: [],
+      linhaAnamnese: linhaContrasteAnamneseEscopo(anamneseCtx, false, null),
+    };
+
+    return base;
+  }
 
   if (resumo.totalRegistros === 0) {
     const missaoAnamnese =
@@ -247,6 +322,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
     const base: JourneyInsight = {
       context: "JOURNEY",
       temDados: false,
+      ...insightBase,
       focoPrincipal: null,
       focosSecundarios: [],
       principalGargalo: null,
@@ -366,6 +442,7 @@ export async function buildJourneyInsight(userId: string): Promise<JourneyInsigh
   const insightSemQuests: JourneyInsight = {
     context: "JOURNEY",
     temDados: true,
+    ...insightBase,
     focoPrincipal,
     focosSecundarios,
     principalGargalo,

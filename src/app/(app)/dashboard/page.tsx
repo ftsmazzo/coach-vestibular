@@ -38,9 +38,9 @@ export default async function DashboardPage() {
 
       <AnamneseBanner anamnese={anamnese} />
 
-      {ultimoCiclo && <CicloResultadoCard ciclo={ultimoCiclo} />}
+      {insight.jornadaIniciada && ultimoCiclo && <CicloResultadoCard ciclo={ultimoCiclo} />}
 
-      {cicloAtivo && cicloAtivo.historiaInicio && (
+      {insight.jornadaIniciada && cicloAtivo && cicloAtivo.historiaInicio && (
         <CicloStoryCard ciclo={cicloAtivo} />
       )}
 
