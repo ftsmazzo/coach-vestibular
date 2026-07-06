@@ -1857,7 +1857,7 @@
             {
               "id": "hist.contemporanea.guerras_totalitarismos.fascismo_nazismo",
               "label": "Fascismo, nazismo e regimes totalitários",
-              "descricao": "Cobre características dos totalitarismos, fascismo italiano, nazismo alemão, propaganda, autoritarismo, racismo e antissemitismo. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "descricao": "Cobre características dos totalitarismos, fascismo italiano, nazismo alemão, propaganda, autoritarismo, racismo e antissemitismo como ideologia de regime. NÃO cobre testemunhos de sobreviventes, campos de concentração ou desumanização de prisioneiros (ver holocausto_desumanizacao).",
               "keywords": [
                 "fascismo",
                 "nazismo",
@@ -1876,41 +1876,115 @@
               ],
               "negativeHints": [
                 "Estado Novo",
-                "ditadura militar brasileira"
+                "ditadura militar brasileira",
+                "Primo Levi",
+                "É isto um homem",
+                "Häftling",
+                "campo de concentração",
+                "número tatuado",
+                "desumanização",
+                "testemunho de sobrevivente"
               ],
               "naoConfundirCom": [
-                "hist.brasil_republica.vargas.estado_novo"
+                "hist.brasil_republica.vargas.estado_novo",
+                "hist.contemporanea.guerras_totalitarismos.holocausto_desumanizacao"
               ],
               "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
             },
             {
               "id": "hist.contemporanea.guerras_totalitarismos.segunda_guerra",
-              "label": "Segunda Guerra Mundial e Holocausto",
-              "descricao": "Cobre causas, fases, Eixo/Aliados, genocídio, Holocausto, fim da guerra e nova ordem internacional pós-1945. NÃO cobre usos meramente contextuais do termo, nem questões cujo conhecimento exigido principal seja de Geografia, Sociologia, Filosofia ou Linguagens.",
+              "label": "Segunda Guerra Mundial (conflito militar e ordem pós-1945)",
+              "descricao": "Cobre causas, fases, Eixo/Aliados, batalhas, alianças, fim da guerra e nova ordem internacional pós-1945. NÃO cobre testemunhos de sobreviventes do Holocausto, campos de concentração, desumanização ou perda de identidade de prisioneiros (ver holocausto_desumanizacao).",
               "keywords": [
                 "Segunda Guerra",
-                "Holocausto",
                 "Eixo",
                 "Aliados",
-                "genocídio",
-                "1945"
+                "1945",
+                "Pearl Harbor",
+                "D-Day",
+                "batalhas",
+                "alianças militares"
               ],
               "keywordsContexto": [
-                "nazismo",
                 "guerra total",
-                "ONU"
+                "ONU",
+                "Plano Marshall"
               ],
               "exemplosEnunciado": [
-                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer segunda guerra mundial e holocausto para chegar à alternativa correta."
+                "Uma questão apresenta fonte, texto histórico ou situação-problema e exige reconhecer causas, fases ou consequências militares da Segunda Guerra Mundial."
               ],
               "negativeHints": [
                 "Primeira Guerra",
-                "Guerra Fria"
+                "Guerra Fria",
+                "Primo Levi",
+                "É isto um homem",
+                "Häftling",
+                "campo de concentração",
+                "número tatuado",
+                "desumanização",
+                "perda de identidade",
+                "Auschwitz",
+                "testemunho de sobrevivente"
               ],
               "naoConfundirCom": [
-                "hist.contemporanea.guerra_fria.bipolaridade"
+                "hist.contemporanea.guerra_fria.bipolaridade",
+                "hist.contemporanea.guerras_totalitarismos.holocausto_desumanizacao"
               ],
-              "regraDesempate": "Classifique aqui apenas se o conhecimento necessário para resolver for processo histórico situado no tempo. Se o termo aparecer só como tema do texto, escolha a disciplina/escopo que expressa a operação cobrada."
+              "regraDesempate": "Se o foco é conflito militar, alianças ou ordem pós-1945 → aqui. Se é Primo Levi, campos, Holocausto, número tatuado ou desumanização → holocausto_desumanizacao."
+            },
+            {
+              "id": "hist.contemporanea.guerras_totalitarismos.holocausto_desumanizacao",
+              "label": "Holocausto, campos de concentração e desumanização",
+              "descricao": "Cobre o Holocausto, os campos de concentração nazistas, a perseguição aos judeus e a outros grupos, os mecanismos de desumanização, perda de identidade, violência burocrática e testemunhos de sobreviventes no contexto da Segunda Guerra Mundial. NÃO cobre Segunda Guerra Mundial apenas como conflito militar, batalhas, alianças ou geopolítica sem foco no Holocausto e nos campos.",
+              "keywords": [
+                "Primo Levi",
+                "É isto um homem",
+                "Häftling",
+                "Haftling",
+                "campo de concentração",
+                "campos de concentração",
+                "número tatuado",
+                "Holocausto",
+                "nazismo",
+                "desumanização",
+                "perda de identidade",
+                "Segunda Guerra Mundial",
+                "prisioneiros",
+                "Auschwitz",
+                "marca tatuada",
+                "testemunho",
+                "genocídio"
+              ],
+              "keywordsContexto": [
+                "meu nome é 174.517",
+                "mostrando o número",
+                "tatuada no braço esquerdo",
+                "vida em liberdade",
+                "novo nome",
+                "marcas azuladas",
+                "iniciação",
+                "pão e sopa",
+                "174517"
+              ],
+              "exemplosEnunciado": [
+                "Primo Levi relata que, nos campos, o prisioneiro era reduzido a um número tatuado no braço, perdendo sua identidade nominal.",
+                "A questão exige compreender a desumanização burocrática dos prisioneiros nos campos de concentração nazistas."
+              ],
+              "negativeHints": [
+                "Plano Marshall",
+                "Guerra Fria",
+                "batalhas militares",
+                "fascismo italiano isolado",
+                "Primeira Guerra Mundial",
+                "Revolução Russa",
+                "Pearl Harbor",
+                "D-Day"
+              ],
+              "naoConfundirCom": [
+                "hist.contemporanea.guerras_totalitarismos.segunda_guerra",
+                "hist.contemporanea.guerras_totalitarismos.fascismo_nazismo"
+              ],
+              "regraDesempate": "Se a questão trata de Primo Levi, campos de concentração nazistas, Holocausto, número tatuado, perda de identidade ou desumanização de prisioneiros, classifique neste escopo."
             }
           ]
         },

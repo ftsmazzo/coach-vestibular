@@ -372,7 +372,7 @@
             {
               "id": "fil.epistemologia.conhecimento.racionalismo_empirismo",
               "label": "Racionalismo e empirismo",
-              "descricao": "Cobre disputa entre razão e experiência como fontes do conhecimento, Descartes, Locke, Hume e tradição moderna; NÃO cobre método científico experimental em si quando o foco for ciência moderna.",
+              "descricao": "Cobre disputa entre razão e experiência como fontes do conhecimento, Descartes, Locke, Hume e tradição moderna; NÃO cobre método científico experimental em si quando o foco for ciência moderna. NÃO cobre teoria agostiniana da iluminação divina.",
               "keywords": [
                 "racionalismo",
                 "empirismo",
@@ -403,11 +403,18 @@
                 "função do gênero",
                 "figura de linguagem",
                 "gramática",
-                "coesão textual"
+                "coesão textual",
+                "Santo Agostinho",
+                "Agostinho",
+                "teoria da iluminação",
+                "iluminação divina",
+                "luz divina",
+                "patrística"
               ],
               "naoConfundirCom": [
                 "fil.ciencia.metodo.ciencia_moderna",
-                "fil.epistemologia.conhecimento.ceticismo"
+                "fil.epistemologia.conhecimento.ceticismo",
+                "fil.medieval.agostinho.teoria_iluminacao"
               ],
               "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
               "conceitoCanonic": "conhecimento"
@@ -1963,6 +1970,71 @@
               ],
               "regraDesempate": "Classifique aqui apenas se o conhecimento exigido for conceitual-filosófico. Se o foco for processo histórico, organização social empírica ou dado geográfico, escolha o catálogo correspondente ou fallback.",
               "conceitoCanonic": "deliberacao"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "assuntoId": "filosofia_medieval",
+      "assuntoLabel": "Filosofia Medieval e Patrística",
+      "dominios": [
+        {
+          "id": "fil.medieval.agostinho",
+          "label": "Santo Agostinho",
+          "escopos": [
+            {
+              "id": "fil.medieval.agostinho.teoria_iluminacao",
+              "label": "Santo Agostinho e teoria da iluminação",
+              "descricao": "Cobre a filosofia de Santo Agostinho, especialmente a teoria da iluminação divina, segundo a qual o conhecimento das verdades eternas e imutáveis ocorre pela inteligência humana iluminada por Deus. NÃO cobre empirismo, racionalismo moderno, teoria das ideias de Platão isolada ou escolástica tomista.",
+              "keywords": [
+                "Santo Agostinho",
+                "Agostinho",
+                "teoria da iluminação",
+                "iluminação divina",
+                "luz divina",
+                "verdades eternas",
+                "ideias eternas",
+                "inteligência",
+                "Deus",
+                "patrística",
+                "filosofia medieval",
+                "conhecimento inteligível",
+                "imutabilidade",
+                "necessidade",
+                "interioridade"
+              ],
+              "keywordsContexto": [
+                "luz interior",
+                "mestre interior",
+                "verdade imutável",
+                "conhecimento pela inteligência",
+                "não depende dos sentidos",
+                "procedente de Deus",
+                "participação na verdade divina"
+              ],
+              "exemplosEnunciado": [
+                "Segundo Agostinho, a inteligência humana conhece verdades eternas e imutáveis pela luz divina que a ilumina.",
+                "A questão exige compreender a teoria agostiniana da iluminação como fonte do conhecimento inteligível."
+              ],
+              "negativeHints": [
+                "Aristóteles",
+                "Tomás de Aquino",
+                "Kant",
+                "Descartes",
+                "empirismo",
+                "utilitarismo",
+                "imperativo categórico",
+                "mundo das ideias de Platão sem Agostinho",
+                "Locke",
+                "Hume"
+              ],
+              "naoConfundirCom": [
+                "fil.epistemologia.conhecimento.racionalismo_empirismo",
+                "fil.epistemologia.conhecimento.kant_conhecimento",
+                "fil.antiga.socrates_platao_aristoteles.platao_mundo_ideias"
+              ],
+              "regraDesempate": "Se a questão cobra Santo Agostinho, teoria da iluminação, verdades eternas conhecidas pela inteligência e luz divina procedente de Deus, classifique neste escopo."
             }
           ]
         }
