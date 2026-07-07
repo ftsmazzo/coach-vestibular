@@ -8,6 +8,10 @@ import {
   type ExamParaAgrupamento,
 } from "@/lib/prova-multidia";
 import {
+  catalogoQuestoesUnidadeJornada,
+  nomeProvaUnidadeJornada,
+} from "@/lib/jornada-catalogo-unidade";
+import {
   motivosPendenciaClassificacao,
   montarAtualizacaoSnapshotClassificacao,
   questaoTemN1N2N3,
@@ -59,12 +63,6 @@ type AttemptRow = ExamParaAgrupamento<{ numero: number; correto: boolean }>["que
 };
 
 type DbClient = Prisma.TransactionClient | typeof prisma;
-
-function mapaCatalogoPorNumero(
-  questoes: (QuestaoCatalogoClassificacao & { numero: number })[]
-): Map<number, QuestaoCatalogoClassificacao> {
-  return new Map(questoes.map((q) => [q.numero, q]));
-}
 
 export async function coletarPendenciasClassificacaoJornada(
   userId: string,
@@ -120,9 +118,7 @@ export async function coletarPendenciasClassificacaoJornada(
   const porProva: PendenciasClassificacaoPorProva[] = [];
 
   for (const unidade of unidades) {
-    const catalogo = unidade.prova?.questoes
-      ? mapaCatalogoPorNumero(unidade.prova.questoes)
-      : new Map<number, QuestaoCatalogoClassificacao>();
+    const catalogo = catalogoQuestoesUnidadeJornada(unidade);
 
     let completasUnidade = 0;
     const pendentes: PendenciaQuestaoClassificacao[] = [];
@@ -160,7 +156,7 @@ export async function coletarPendenciasClassificacaoJornada(
     porProva.push({
       examId: unidade.id,
       provaId: unidade.provaId,
-      nome: unidade.prova?.nome ?? unidade.nome,
+      nome: nomeProvaUnidadeJornada(unidade),
       total,
       completas: completasUnidade,
       pct: total > 0 ? Math.round((completasUnidade / total) * 100) : 0,

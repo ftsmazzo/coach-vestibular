@@ -9,6 +9,7 @@ import {
   resolverClassificacaoAttempt,
   type QuestaoCatalogoClassificacao,
 } from "@/lib/jornada-classificacao-attempt";
+import { catalogoQuestoesUnidadeJornada } from "@/lib/jornada-catalogo-unidade";
 import { prisma } from "@/lib/prisma";
 import {
   agruparUnidadesJornada,
@@ -50,12 +51,6 @@ type AttemptRow = ExamParaAgrupamento<{ numero: number; correto: boolean }>["que
   materiaId?: string | null;
   provaQuestao?: QuestaoCatalogoClassificacao | null;
 };
-
-function mapaCatalogoPorNumero(
-  questoes: (QuestaoCatalogoClassificacao & { numero: number })[]
-): Map<number, QuestaoCatalogoClassificacao> {
-  return new Map(questoes.map((q) => [q.numero, q]));
-}
 
 export function examModoValidoParaJornada(modoUso: ModoUsoRegistro): boolean {
   return MODOS_USO_EVIDENCIA_JORNADA.includes(modoUso);
@@ -154,9 +149,7 @@ export async function coletarMetricasElegibilidadeJornada(
   let comN1N2N3 = 0;
 
   for (const unidade of unidades) {
-    const catalogo = unidade.prova?.questoes
-      ? mapaCatalogoPorNumero(unidade.prova.questoes)
-      : new Map<number, QuestaoCatalogoClassificacao>();
+    const catalogo = catalogoQuestoesUnidadeJornada(unidade);
 
     for (const attempt of unidade.questionAttempts as AttemptRow[]) {
       totalQuestoesValidas++;

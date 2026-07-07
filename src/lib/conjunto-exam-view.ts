@@ -25,6 +25,8 @@ export type ConjuntoExamView = {
     temaId: string | null;
     tipoErro: string | null;
     provaQuestaoId: string | null;
+    conhecimentoEscopoId: string | null;
+    conhecimentoExigido: string | null;
     provaQuestao: {
       materia: string;
       assunto: string;
@@ -73,6 +75,8 @@ export async function loadConjuntoExamView(
       temaId: a.temaId,
       tipoErro: a.tipoErro,
       provaQuestaoId: a.provaQuestaoId,
+      conhecimentoEscopoId: a.conhecimentoEscopoId,
+      conhecimentoExigido: a.conhecimentoExigido,
       provaQuestao: a.provaQuestao,
     })),
     ...e2.questionAttempts.map((a) => ({
@@ -83,6 +87,8 @@ export async function loadConjuntoExamView(
       temaId: a.temaId,
       tipoErro: a.tipoErro,
       provaQuestaoId: a.provaQuestaoId,
+      conhecimentoEscopoId: a.conhecimentoEscopoId,
+      conhecimentoExigido: a.conhecimentoExigido,
       provaQuestao: a.provaQuestao,
     })),
   ].sort((a, b) => a.numero - b.numero);
