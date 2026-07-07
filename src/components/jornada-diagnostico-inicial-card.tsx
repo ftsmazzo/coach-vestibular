@@ -1,4 +1,8 @@
-import type { DiagnosticoInicialResumo } from "@/lib/jornada-diagnostico-inicial";
+import {
+  AVISO_DIAGNOSTICO_INICIAL_BETA,
+  diagnosticoInicialEmValidacao,
+  type DiagnosticoInicialResumo,
+} from "@/lib/jornada-diagnostico-inicial";
 import { Card, LinkButton } from "@/components/ui";
 
 type Props = {
@@ -8,15 +12,22 @@ type Props = {
 export function JornadaDiagnosticoInicialCard({ diagnostico }: Props) {
   const { narrativa, evidencias, diagnostico: diag } = diagnostico;
   const prioridades = diag.prioridadesIniciais.slice(0, 3);
+  const emValidacao = diagnosticoInicialEmValidacao(diag);
 
   return (
     <Card className="border-teal-200 bg-gradient-to-br from-teal-50 via-white to-indigo-50/30 p-5 sm:p-6">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-800">
-        Marco zero da Jornada
+        {emValidacao ? "Diagnóstico inicial (em validação)" : "Marco zero da Jornada"}
       </p>
       <h2 className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">{narrativa.titulo}</h2>
       <p className="mt-1 text-sm text-slate-600">{narrativa.subtitulo}</p>
       <p className="mt-4 text-sm leading-relaxed text-slate-800">{narrativa.mensagemPrincipal}</p>
+
+      {emValidacao && (
+        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50/90 px-3 py-2.5 text-sm text-amber-950">
+          {AVISO_DIAGNOSTICO_INICIAL_BETA}
+        </p>
+      )}
 
       <div className="mt-5 rounded-lg border border-teal-100 bg-white/80 px-3 py-3">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">

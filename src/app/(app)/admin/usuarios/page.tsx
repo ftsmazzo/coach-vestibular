@@ -14,6 +14,39 @@ interface Aluno {
   registrosProva: number;
 }
 
+type JornadaResetTipo = "ANAMNESE" | "PLANO_JORNADA" | "JORNADA";
+
+const RESET_CONFIG: Record<
+  JornadaResetTipo,
+  {
+    rotulo: string;
+    confirmar: string;
+    aviso: string;
+    variant: "secondary" | "ghost";
+  }
+> = {
+  ANAMNESE: {
+    rotulo: "Resetar anamnese",
+    confirmar: "RESET_ANAMNESE",
+    aviso: "Apaga APENAS a anamnese. Mantém provas, diagnóstico da Jornada, ciclos, plano e quests.",
+    variant: "secondary",
+  },
+  PLANO_JORNADA: {
+    rotulo: "Resetar plano semanal da Jornada",
+    confirmar: "RESET_PLANO_JORNADA",
+    aviso:
+      "Apaga APENAS o plano semanal (motor-jornada-v1) e quests da semana. Mantém anamnese, diagnóstico inicial e ciclos.",
+    variant: "ghost",
+  },
+  JORNADA: {
+    rotulo: "Resetar Jornada",
+    confirmar: "RESET_JORNADA",
+    aviso:
+      "Apaga diagnóstico da Jornada, ciclos, plano e quests da semana. Preserva anamnese, provas e respostas.",
+    variant: "ghost",
+  },
+};
+
 export default function AdminUsuariosPage() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,8 +54,7 @@ export default function AdminUsuariosPage() {
   const [error, setError] = useState("");
   const [sucesso, setSucesso] = useState("");
   const [senhaGerada, setSenhaGerada] = useState<string | null>(null);
-  const [zerandoId, setZerandoId] = useState<string | null>(null);
-  const [resetandoId, setResetandoId] = useState<string | null>(null);
+  const [resetandoJornada, setResetandoJornada] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -84,69 +116,52 @@ export default function AdminUsuariosPage() {
     load();
   }
 
-  async function zerarCopiloto(aluno: Aluno) {
+  async function resetJornadaAdmin(aluno: Aluno, tipo: JornadaResetTipo) {
+    const cfg = RESET_CONFIG[tipo];
     if (
       !confirm(
-        `Zerar copiloto de ${aluno.name}?\n\n` +
-          "Remove TODOS os planos e quests (incluindo concluídas) e gera novos a partir dos registros de prova atuais.\n" +
-          "Mantém: conta, provas cadastradas, gabaritos e respostas.\n\n" +
-          "Continuar?"
+        `${cfg.rotulo} — ${aluno.name}\n\n${cfg.aviso}\n\nNa próxima etapa você precisará digitar a confirmação literal.`
       )
     ) {
       return;
     }
-    const incluirAnamnese = confirm(
-      "Apagar também a anamnese (Entendendo sua jornada)?\n\n" +
-        "OK = sim, o banner volta na Home para refazer.\n" +
-        "Cancelar = mantém a anamnese já feita."
-    );
 
-    setZerandoId(aluno.id);
+    const digitado = prompt(
+      `Digite exatamente: ${cfg.confirmar}\n\nQualquer outro texto cancela a operação.`
+    );
+    if (digitado !== cfg.confirmar) {
+      if (digitado !== null) {
+        setError("Confirmação incorreta. Nada foi alterado.");
+      }
+      return;
+    }
+
+    const chave = `${tipo}:${aluno.id}`;
+    setResetandoJornada(chave);
     setError("");
     setSucesso("");
-    const res = await fetch(`/api/admin/users/${aluno.id}/zerar-copiloto`, {
+
+    const res = await fetch("/api/admin/jornada/reset", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ incluirAnamnese }),
+      body: JSON.stringify({
+        userId: aluno.id,
+        tipo,
+        confirmar: cfg.confirmar,
+      }),
     });
     const data = await res.json();
-    setZerandoId(null);
+    setResetandoJornada(null);
 
     if (!res.ok) {
-      setError(data.error ?? "Erro ao zerar copiloto");
+      setError(data.error ?? `Erro ao executar ${cfg.rotulo.toLowerCase()}`);
       return;
     }
-    const detalhe =
-      data.planoGeradoEm != null
-        ? ` Gerado em ${new Date(data.planoGeradoEm).toLocaleString("pt-BR")}.`
-        : "";
-    setSucesso((data.mensagem ?? "Copiloto recriado.") + detalhe);
-  }
 
-  async function resetarAnamnese(aluno: Aluno) {
-    if (
-      !confirm(
-        `Resetar SÓ a anamnese de ${aluno.name}?\n\n` +
-          "Apaga apenas a conversa inicial. Mantém plano, quests, provas e respostas.\n" +
-          "O banner volta na Home; quando o aluno refizer a anamnese, o plano é regenerado a partir dela.\n\n" +
-          "Continuar?"
-      )
-    ) {
-      return;
-    }
-    setResetandoId(aluno.id);
-    setError("");
-    setSucesso("");
-    const res = await fetch(`/api/admin/users/${aluno.id}/resetar-anamnese`, {
-      method: "POST",
-    });
-    const data = await res.json();
-    setResetandoId(null);
-    if (!res.ok) {
-      setError(data.error ?? "Erro ao resetar anamnese");
-      return;
-    }
-    setSucesso(data.mensagem ?? "Anamnese resetada.");
+    const contagens = data.contagens
+      ? ` Removidos: ${JSON.stringify(data.contagens)}.`
+      : "";
+    setSucesso((data.mensagem ?? cfg.rotulo) + contagens);
   }
 
   return (
@@ -254,7 +269,7 @@ export default function AdminUsuariosPage() {
                   <th className="p-3 font-medium">Meta</th>
                   <th className="p-3 font-medium text-center">Provas</th>
                   <th className="p-3 font-medium">Desde</th>
-                  <th className="p-3 font-medium">Copiloto</th>
+                  <th className="p-3 font-medium">Resets da Jornada</th>
                 </tr>
               </thead>
               <tbody>
@@ -276,25 +291,24 @@ export default function AdminUsuariosPage() {
                       {new Date(a.createdAt).toLocaleDateString("pt-BR")}
                     </td>
                     <td className="p-3">
-                      <div className="flex flex-col gap-1.5">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="text-xs"
-                          disabled={resetandoId === a.id}
-                          onClick={() => resetarAnamnese(a)}
-                        >
-                          {resetandoId === a.id ? "Resetando…" : "Resetar anamnese"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="text-xs"
-                          disabled={zerandoId === a.id}
-                          onClick={() => zerarCopiloto(a)}
-                        >
-                          {zerandoId === a.id ? "Recriando…" : "Zerar e recriar"}
-                        </Button>
+                      <div className="flex min-w-[12rem] flex-col gap-1.5">
+                        {(Object.keys(RESET_CONFIG) as JornadaResetTipo[]).map((tipo) => {
+                          const cfg = RESET_CONFIG[tipo];
+                          const chave = `${tipo}:${a.id}`;
+                          return (
+                            <Button
+                              key={tipo}
+                              type="button"
+                              variant={cfg.variant}
+                              className="text-left text-xs"
+                              disabled={resetandoJornada === chave}
+                              title={cfg.aviso}
+                              onClick={() => resetJornadaAdmin(a, tipo)}
+                            >
+                              {resetandoJornada === chave ? "Executando…" : cfg.rotulo}
+                            </Button>
+                          );
+                        })}
                       </div>
                     </td>
                   </tr>
@@ -303,6 +317,11 @@ export default function AdminUsuariosPage() {
             </table>
           </div>
         )}
+        <p className="mt-3 text-xs text-slate-500">
+          O botão legado &quot;Zerar e recriar copiloto&quot; foi removido desta tela — ele apagava
+          todos os planos/quests e podia apagar anamnese. Use os resets acima ou{" "}
+          <code className="rounded bg-slate-100 px-1">POST /api/admin/jornada/reset</code>.
+        </p>
       </section>
     </div>
   );

@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
+import { resetarSomenteAnamneseAdmin } from "@/lib/jornada-reset-admin";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -24,16 +25,16 @@ export async function POST(
     return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 });
   }
 
-  const r = await prisma.studentAnamnesis.deleteMany({ where: { userId } });
+  const r = await resetarSomenteAnamneseAdmin(userId);
 
   revalidatePath("/dashboard", "layout");
   revalidatePath("/anamnese", "layout");
 
   return NextResponse.json({
     ok: true,
-    removida: r.count > 0,
+    removida: r.studentAnamnesis > 0,
     mensagem:
-      r.count > 0
+      r.studentAnamnesis > 0
         ? `Anamnese de ${aluno.name} apagada. O banner volta na Home; quando ${aluno.name.split(" ")[0]} refizer a conversa, o plano é regenerado a partir dela. (Plano e provas atuais foram mantidos.)`
         : `${aluno.name} ainda não tinha anamnese registrada.`,
   });

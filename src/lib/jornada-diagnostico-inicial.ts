@@ -114,9 +114,15 @@ export type BaselineJornada = {
   }>;
 };
 
+export const AVISO_DIAGNOSTICO_INICIAL_BETA =
+  "Este diagnóstico inicial ainda está em validação. Ele organiza os primeiros sinais das suas provas, mas será refinado antes de orientar decisões mais fortes.";
+
 export type DiagnosticoInicialJornada = {
   versao: typeof JOURNEY_DIAGNOSTIC_VERSAO;
   tipo: typeof JOURNEY_DIAGNOSTIC_TIPO_INICIAL;
+  /** Enquanto o motor não for refinado, novos snapshots saem como rascunho/BETA. */
+  statusValidacao?: "rascunho" | "validado";
+  qualidade?: "BETA" | "FINAL";
   resumoExecutivo: string;
   forcas: Array<{
     titulo: string;
@@ -161,6 +167,11 @@ export type DiagnosticoInicialJornada = {
   }>;
   limitesDaAnalise: string[];
 };
+
+export function diagnosticoInicialEmValidacao(diag: DiagnosticoInicialJornada): boolean {
+  if (diag.qualidade === "FINAL" || diag.statusValidacao === "validado") return false;
+  return true;
+}
 
 export type NarrativaDiagnosticoInicial = {
   titulo: string;
@@ -801,6 +812,8 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
   const diagnosticoJson: DiagnosticoInicialJornada = {
     versao: JOURNEY_DIAGNOSTIC_VERSAO,
     tipo: JOURNEY_DIAGNOSTIC_TIPO_INICIAL,
+    statusValidacao: "rascunho",
+    qualidade: "BETA",
     resumoExecutivo,
     forcas,
     fragilidades,
@@ -838,8 +851,7 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
         ? [{ titulo: "Contexto da anamnese", texto: moduladores[0]!, tipo: "contexto" as const }]
         : []),
     ],
-    avisoLimite:
-      "Este é o marco zero da sua Jornada — não será sobrescrito. O plano semanal e as quests serão gerados na próxima etapa.",
+    avisoLimite: `${AVISO_DIAGNOSTICO_INICIAL_BETA} Este é o marco zero da sua Jornada — não será sobrescrito automaticamente.`,
   };
 
   return { evidenciasJson, baselineJson, diagnosticoJson, narrativaJson };
