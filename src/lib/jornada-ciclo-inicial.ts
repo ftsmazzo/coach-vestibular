@@ -3,6 +3,12 @@
  * Nasce do JourneyDiagnosticSnapshot INICIAL; sem StudyPlan, Quest ou CicloQuiz.
  */
 import type { Prisma } from "@/generated/prisma/client";
+import {
+  inputEscopoFromBaseline,
+  isMicroescopoIngles,
+  selecionarMelhorFocoSemana1,
+  tentarElevarFocoIngles,
+} from "@/lib/jornada-foco-inicial";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
 import {
   JOURNEY_DIAGNOSTIC_TIPO_INICIAL,
@@ -45,6 +51,10 @@ export type FocoInicialJornada = {
   tiposErro: Record<string, number>;
   padroesCognitivos: Array<{ titulo: string; descricao: string }>;
   origem: "CRITICO" | "FRAGILIDADE" | "MONITORAR" | "PRIORIDADE" | "COGNITIVA" | "ORGANIZACAO";
+  /** Foco pedagógico derivado (ex.: leitura em inglês) mantendo escopos originais em meta. */
+  focoComposto?: boolean;
+  escoposOriginais?: string[];
+  scoreQualidade?: number;
 };
 
 export type BaselineCicloInicial = {
@@ -134,43 +144,61 @@ export function selecionarFocoInicialDoDiagnostico(
   const { diagnostico, baseline } = snapshot;
   const escoposIndex = indexGlobalEscopos();
 
-  const critico = diagnostico.escoposCriticos.find((e) => e.estado === "CRITICO" && e.escopoId);
-  if (critico) {
-    return focoFromEscopo(critico.escopoId, critico.motivo, "CRITICO", baseline, escoposIndex, diagnostico);
-  }
+  const candidatos = baseline.porEscopo
+    .filter((e) => e.erros > 0 && e.escopoId?.trim())
+    .map((e) => {
+      const label = escoposIndex.get(e.escopoId)?.escopoLabel ?? e.escopoId;
+      return inputEscopoFromBaseline(e, label);
+    });
 
-  const fragil = diagnostico.escoposCriticos.find((e) => e.estado === "FRAGILIDADE" && e.escopoId);
-  if (fragil) {
-    return focoFromEscopo(fragil.escopoId, fragil.motivo, "FRAGILIDADE", baseline, escoposIndex, diagnostico);
-  }
+  const { escolhido, rejeitados } = selecionarMelhorFocoSemana1(candidatos);
 
-  const prioridadeComEscopo = diagnostico.prioridadesIniciais.find((p) => p.escopoId?.trim());
-  if (prioridadeComEscopo?.escopoId) {
-    return focoFromEscopo(
-      prioridadeComEscopo.escopoId,
-      prioridadeComEscopo.motivo,
-      "PRIORIDADE",
+  if (escolhido) {
+    const critico = diagnostico.escoposCriticos.find((e) => e.escopoId === escolhido.escopoId);
+    const prioridade = diagnostico.prioridadesIniciais.find((p) => p.escopoId === escolhido.escopoId);
+    const origem: FocoInicialJornada["origem"] =
+      critico?.estado === "CRITICO"
+        ? "CRITICO"
+        : critico?.estado === "FRAGILIDADE"
+          ? "FRAGILIDADE"
+          : prioridade
+            ? "PRIORIDADE"
+            : "FRAGILIDADE";
+
+    let motivo = prioridade?.motivo ?? critico?.motivo ?? escolhido.escopoLabel;
+    const rejeitouMicroIngles = rejeitados.some(
+      (r) =>
+        isMicroescopoIngles(r.escopo.escopoId, r.escopo.escopoLabel) &&
+        r.escopo.escopoId !== escolhido.escopoId
+    );
+    if (rejeitouMicroIngles && !isMicroescopoIngles(escolhido.escopoId, escolhido.escopoLabel)) {
+      motivo =
+        "Apesar de haver erros recorrentes em inglês, eles têm baixa amostra e parecem microtópicos. " +
+        `Para a primeira semana, o motor priorizou ${escolhido.escopoLabel} como foco mais estruturante.`;
+    }
+
+    const focoBase = focoFromEscopo(
+      escolhido.escopoId,
+      motivo,
+      origem,
       baseline,
       escoposIndex,
       diagnostico
     );
-  }
 
-  const fragilidade = diagnostico.fragilidades.find((f) => f.escopoId?.trim());
-  if (fragilidade?.escopoId) {
-    return focoFromEscopo(
-      fragilidade.escopoId,
-      fragilidade.descricao,
-      "FRAGILIDADE",
-      baseline,
-      escoposIndex,
-      diagnostico
-    );
-  }
+    const elevado = tentarElevarFocoIngles(candidatos, escolhido);
+    if (elevado) {
+      return {
+        ...focoBase,
+        titulo: elevado.titulo,
+        motivo: elevado.motivo,
+        focoComposto: true,
+        escoposOriginais: elevado.escoposOriginais,
+        escopoId: elevado.escopoIdReferencia,
+      };
+    }
 
-  const monitorar = diagnostico.escoposCriticos.find((e) => e.estado === "MONITORAR" && e.escopoId);
-  if (monitorar) {
-    return focoFromEscopo(monitorar.escopoId, monitorar.motivo, "MONITORAR", baseline, escoposIndex, diagnostico);
+    return focoBase;
   }
 
   const cognitiva = diagnostico.prioridadesIniciais.find(
@@ -316,7 +344,9 @@ export function montarNarrativaInicioCiclo(
     titulo: "Semana 1 da Jornada",
     subtitulo: foco.escopoId ? `Foco: ${focoLabel}` : "Organização inicial",
     mensagem: foco.escopoId
-      ? `A Semana 1 vai focar em ${focoLabel} porque esse escopo apareceu como prioridade inicial no seu Diagnóstico da Jornada. Nesta semana, vamos observar se o erro está mais ligado a conceito, unidade ou interpretação do comando. O resultado da semana será um sinal local; a confirmação real virá em uma próxima prova ou simulado completo.`
+      ? foco.focoComposto
+        ? `${foco.motivo} Nesta semana, vamos observar se você consegue usar pistas do texto antes de decidir a alternativa. O resultado será um sinal local; a confirmação real virá em uma próxima prova ou simulado completo.`
+        : `A Semana 1 vai focar em ${focoLabel} porque esse escopo apareceu como prioridade inicial no seu Diagnóstico da Jornada. Nesta semana, vamos observar se o erro está mais ligado a conceito, unidade ou interpretação do comando. O resultado da semana será um sinal local; a confirmação real virá em uma próxima prova ou simulado completo.`
       : `A Semana 1 organiza seu ritmo na Jornada enquanto consolidamos evidências para um foco pedagógico mais específico. O resultado desta semana será um sinal local, não um diagnóstico definitivo.`,
     focoPrincipal: focoLabel,
     porqueEsseFoco: porque,
@@ -324,7 +354,7 @@ export function montarNarrativaInicioCiclo(
       ? `Baseline: ${foco.motivo} Evolução local será observada ao longo da semana; confirmação global exige nova prova.`
       : "Aderência ao ritmo proposto e clareza sobre o próximo foco pedagógico.",
     limiteDaSemana:
-      "Semana 1 ainda não possui plano nem quests gerados — isso virá na próxima etapa.",
+      "Fechamento semanal e mini-quiz serão liberados em etapa posterior. Esta semana mede adesão e clareza do foco, não domínio consolidado.",
   };
 }
 
@@ -380,7 +410,7 @@ export function parseCicloInicialResumo(ciclo: {
           porqueEsseFoco: baseline.foco.motivo,
           comoVamosMedir: baseline.leitura.oQueSeraObservadoNaSemana,
           limiteDaSemana:
-            "Semana 1 ainda não possui plano nem quests gerados — isso virá na próxima etapa.",
+            "Fechamento semanal e mini-quiz serão liberados em etapa posterior. Esta semana mede adesão e clareza do foco, não domínio consolidado.",
         };
     return {
       cicloId: ciclo.id,
@@ -435,7 +465,15 @@ async function persistirPrimeiroCiclo(
       metaEscopoId: foco.escopoId,
       metaDominioId: foco.dominioId,
       metaConceitosJson:
-        foco.conceitosCanonicos.length > 0 ? JSON.stringify(foco.conceitosCanonicos) : null,
+        foco.escoposOriginais && foco.escoposOriginais.length > 0
+          ? JSON.stringify({
+              conceitos: foco.conceitosCanonicos,
+              escoposOriginais: foco.escoposOriginais,
+              focoComposto: foco.focoComposto ?? false,
+            })
+          : foco.conceitosCanonicos.length > 0
+            ? JSON.stringify(foco.conceitosCanonicos)
+            : null,
       metaCognitivaJson:
         foco.padroesCognitivos.length > 0 ? JSON.stringify(foco.padroesCognitivos) : null,
       baselineJson: JSON.stringify(baseline),

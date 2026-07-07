@@ -533,7 +533,7 @@ async function executarGeracao(
     excecaoSemEscopo: semEscopo,
   };
 
-  const tipos = selecionarTiposQuest(baseline.evidencias.tiposErro, quantidade, semEscopo);
+  const tipos = selecionarTiposQuest(baseline.evidencias.tiposErro, quantidade, semEscopo, escopoId);
   const draftsRaw = montarQuestsFromTemplates(ctx, tipos);
   const foco = { escopoId, titulo: escopoLabel };
   const drafts: QuestJornadaDraft[] = [];

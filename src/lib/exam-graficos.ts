@@ -102,12 +102,14 @@ export function montarExamGraficos(attempts: AttemptInput[]): ExamGraficos {
     const raw = a.provaQuestao?.conhecimentoExigido?.trim();
     const chave = escopoId ?? raw ?? "";
     if (!chave) continue;
+    const labelEscopoN2 = escopoId ? labelEscopo(escopoId) ?? escopoId : null;
     const texto =
-      raw && raw.length >= 8
-        ? raw.length > 140
-          ? `${raw.slice(0, 137)}…`
+      labelEscopoN2 ??
+      (raw && raw.length >= 8
+        ? raw.length > 80
+          ? `${raw.slice(0, 77)}…`
           : raw
-        : labelEscopo(escopoId) ?? "Escopo sem N3";
+        : "Conteúdo sem rótulo");
     const entry = porConhecimento.get(chave) ?? { texto, erros: 0, escopoId };
     entry.erros += 1;
     porConhecimento.set(chave, entry);

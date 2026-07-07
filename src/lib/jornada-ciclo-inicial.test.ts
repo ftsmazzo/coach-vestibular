@@ -208,8 +208,8 @@ describe("baseline e narrativa do ciclo", () => {
 
     assert.equal(narrativa.titulo, "Semana 1 da Jornada");
     assert.ok(narrativa.mensagem.includes("Semana 1"));
-    assert.ok(narrativa.limiteDaSemana.includes("plano"));
-    assert.ok(narrativa.limiteDaSemana.includes("quests"));
+    assert.ok(narrativa.limiteDaSemana.includes("mini-quiz"));
+    assert.ok(narrativa.limiteDaSemana.includes("etapa posterior"));
   });
 });
 

@@ -2,6 +2,7 @@
  * Templates determinísticos de quests da Jornada — docs/MOTOR-PLANO-QUESTS.md §15.
  */
 import type { BaselineCicloInicial } from "@/lib/jornada-ciclo-inicial";
+import { isEscopoIngles, isMicroescopoIngles } from "@/lib/jornada-foco-inicial";
 import type { FonteDiagnosticoQuestJornada, QuestJornadaDraft } from "@/lib/jornada-quest-validador";
 
 export type TipoQuestJornada =
@@ -71,6 +72,9 @@ function secaoConclusao(criterio: string): string {
 }
 
 export function templateRevisaoErro(ctx: ContextoTemplateQuest): QuestJornadaDraft {
+  if (isEscopoIngles(ctx.escopoId ?? "")) {
+    return templateRevisaoErroIngles(ctx);
+  }
   const n = nQuestoes(ctx);
   const dominante = tipoErroDominante(ctx.tiposErro);
   let extra = "";
@@ -96,6 +100,9 @@ export function templateRevisaoErro(ctx: ContextoTemplateQuest): QuestJornadaDra
 }
 
 export function templateConceitoBase(ctx: ContextoTemplateQuest): QuestJornadaDraft {
+  if (isEscopoIngles(ctx.escopoId ?? "")) {
+    return templateLeituraIngles(ctx);
+  }
   const n3 = ctx.conhecimentosExigidos[0];
   const refN3 = n3 ? ` Inclua o conhecimento exigido: ${n3.slice(0, 120)}.` : "";
   const criterio = CRITERIOS.CONCEITO_BASE;
@@ -111,6 +118,51 @@ export function templateConceitoBase(ctx: ContextoTemplateQuest): QuestJornadaDr
     duracaoEstimadaMin: 30,
     dificuldade: "MEDIA",
     fonteDiagnosticoJson: montarFonte(ctx, "CONCEITO_BASE", criterio),
+  };
+}
+
+/** Quest de leitura orientada para inglês / microescopos gramaticais. */
+export function templateLeituraIngles(ctx: ContextoTemplateQuest): QuestJornadaDraft {
+  const criterio =
+    "Concluir quando tiver refeito as questões de inglês indicadas, grifado as pistas linguísticas em cada uma e registrado qual relação de sentido você ignorou ao comparar com o gabarito.";
+  const focoLabel = isMicroescopoIngles(ctx.escopoId ?? "", ctx.escopoLabel)
+    ? "preposições, conectores e expressões que mudam o sentido"
+    : ctx.escopoLabel;
+  const corpo =
+    `Refaça as questões de inglês que você errou neste foco. Em cada uma, grife a preposição, conector ou expressão que muda o sentido da frase (${focoLabel}). ` +
+    "Ao lado, escreva se ela indica tempo, lugar, causa, direção, meio, contraste ou condição. " +
+    "Depois compare sua resposta original com o gabarito e registre qual pista textual você ignorou ou interpretou de outro modo.";
+  return {
+    cicloId: ctx.cicloId,
+    conhecimentoEscopoId: ctx.escopoId,
+    conhecimentoDominioId: ctx.dominioId,
+    tipoQuest: "CONCEITO_BASE",
+    titulo: "Marcar pistas de sentido no texto em inglês",
+    descricao: corpo + secaoConclusao(criterio),
+    criterioConclusao: criterio,
+    duracaoEstimadaMin: 35,
+    dificuldade: "MEDIA",
+    fonteDiagnosticoJson: montarFonte(ctx, "CONCEITO_BASE", criterio),
+  };
+}
+
+export function templateRevisaoErroIngles(ctx: ContextoTemplateQuest): QuestJornadaDraft {
+  const n = nQuestoes(ctx);
+  const criterio = CRITERIOS.REVISAO_ERRO;
+  const corpo =
+    `Refaça ${n} questão(ões) de inglês que você errou. Antes de ver o gabarito, anote: qual palavra ou expressão mudava o sentido, qual alternativa você marcou e por que ela parecia plausível. ` +
+    "Depois compare com o gabarito e escreva qual pista do enunciado você não usou.";
+  return {
+    cicloId: ctx.cicloId,
+    conhecimentoEscopoId: ctx.escopoId,
+    conhecimentoDominioId: ctx.dominioId,
+    tipoQuest: "REVISAO_ERRO",
+    titulo: "Comparar resposta e gabarito em inglês",
+    descricao: corpo + secaoConclusao(criterio),
+    criterioConclusao: criterio,
+    duracaoEstimadaMin: 35,
+    dificuldade: "MEDIA",
+    fonteDiagnosticoJson: montarFonte(ctx, "REVISAO_ERRO", criterio),
   };
 }
 
@@ -199,12 +251,18 @@ const BUILDERS: Record<TipoQuestJornada, (ctx: ContextoTemplateQuest) => QuestJo
 export function selecionarTiposQuest(
   tiposErro: Record<string, number>,
   quantidade: number,
-  semEscopo: boolean
+  semEscopo: boolean,
+  escopoId?: string | null
 ): TipoQuestJornada[] {
   if (semEscopo) {
     const tres: TipoQuestJornada[] = ["METACOGNICAO", "CONCEITO_BASE", "TREINO_GUIADO"];
     const dois: TipoQuestJornada[] = ["METACOGNICAO", "TREINO_GUIADO"];
     return quantidade >= 3 ? tres.slice(0, quantidade) : dois.slice(0, quantidade);
+  }
+
+  if (escopoId && isEscopoIngles(escopoId)) {
+    const ingles: TipoQuestJornada[] = ["REVISAO_ERRO", "CONCEITO_BASE", "METACOGNICAO"];
+    return ingles.slice(0, quantidade);
   }
 
   const dominante = tipoErroDominante(tiposErro);

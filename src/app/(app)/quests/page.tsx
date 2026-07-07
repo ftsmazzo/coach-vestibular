@@ -212,7 +212,9 @@ function QuestsPageInner() {
         )}
       </div>
 
-      {!escopoProva && data?.ciclo && <CicloHeader ciclo={data.ciclo} />}
+      {!escopoProva && data?.ciclo && (
+        <CicloHeader ciclo={data.ciclo} fluxoJornadaV1={fluxoJornada} />
+      )}
 
       <Card>
         <p className="text-sm font-medium">Como você está agora? (ao concluir uma tarefa)</p>

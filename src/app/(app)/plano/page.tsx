@@ -116,7 +116,7 @@ export default async function PlanoPage() {
           </p>
         </div>
 
-        {ciclo && <CicloHeader ciclo={ciclo} />}
+        {ciclo && <CicloHeader ciclo={ciclo} fluxoJornadaV1 />}
 
         {!planoSemanalNovo ? (
           <Card className="border-teal-200 bg-teal-50/30 p-5">

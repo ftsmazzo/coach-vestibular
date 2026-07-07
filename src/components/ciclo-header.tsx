@@ -2,14 +2,20 @@ import Link from "next/link";
 import { Card, Badge } from "@/components/ui";
 import type { CicloResumo } from "@/lib/ciclo";
 
-export function CicloHeader({ ciclo }: { ciclo: CicloResumo }) {
+export function CicloHeader({
+  ciclo,
+  fluxoJornadaV1 = false,
+}: {
+  ciclo: CicloResumo;
+  fluxoJornadaV1?: boolean;
+}) {
   const prazoTom = ciclo.expirado
     ? "danger"
     : ciclo.diasRestantes <= 2
       ? "warning"
       : "neutral";
   const prazoLabel = ciclo.expirado
-    ? "Ciclo encerrado — hora de fechar"
+    ? "Ciclo encerrado"
     : ciclo.diasRestantes === 0
       ? "Último dia"
       : `${ciclo.diasRestantes} dia${ciclo.diasRestantes > 1 ? "s" : ""} restante${ciclo.diasRestantes > 1 ? "s" : ""}`;
@@ -51,18 +57,24 @@ export function CicloHeader({ ciclo }: { ciclo: CicloResumo }) {
         </div>
       </div>
 
-      <div className="mt-3">
-        <Link
-          href="/ciclo/fechar"
-          className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium ${
-            ciclo.expirado
-              ? "bg-teal-600 text-white hover:bg-teal-700"
-              : "text-teal-700 hover:underline"
-          }`}
-        >
-          {ciclo.expirado ? "Fechar ciclo e avaliar →" : "Fechar ciclo agora (mini-quiz) →"}
-        </Link>
-      </div>
+      {fluxoJornadaV1 ? (
+        <p className="mt-3 text-xs leading-relaxed text-slate-600">
+          Fechamento semanal e mini-quiz serão liberados em etapa posterior.
+        </p>
+      ) : (
+        <div className="mt-3">
+          <Link
+            href="/ciclo/fechar"
+            className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium ${
+              ciclo.expirado
+                ? "bg-teal-600 text-white hover:bg-teal-700"
+                : "text-teal-700 hover:underline"
+            }`}
+          >
+            {ciclo.expirado ? "Fechar ciclo e avaliar →" : "Fechar ciclo agora (mini-quiz) →"}
+          </Link>
+        </div>
+      )}
     </Card>
   );
 }

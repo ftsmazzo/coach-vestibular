@@ -19,6 +19,13 @@ import {
   questaoTemN1N2N3,
   unidadeValidaParaJornada,
 } from "@/lib/jornada-elegibilidade";
+import {
+  calcularPesoDiagnosticoEscopoAprimorado,
+  inputEscopoFromBaseline,
+  motivoEscopoCriticoEnriquecido,
+  motivoPrioridadeEnriquecido,
+  avaliarQualidadeFocoInicial,
+} from "@/lib/jornada-foco-inicial";
 import { pesoBancaParaMeta } from "@/lib/meta-vestibular";
 import { pesoModoUso } from "@/lib/modo-uso";
 import { mapQuestionAttemptToInput } from "@/lib/question-attempt-input";
@@ -402,26 +409,6 @@ function calcularEstadoEscopo(
   return "MONITORAR";
 }
 
-function calcularPesoDiagnosticoEscopo(opts: {
-  erros: number;
-  provasComErro: number;
-  modoUsoMedio: number;
-  bancaPesoMedio: number;
-  tiposErroRecorrentes: number;
-  n3Distintos: number;
-}): number {
-  const bonusN3 = opts.n3Distintos >= 2 ? 2 : opts.n3Distintos >= 1 ? 1 : 0;
-  const bonusTipo = opts.tiposErroRecorrentes >= 2 ? 2 : opts.tiposErroRecorrentes === 1 ? 1 : 0;
-  return (
-    opts.erros * 2 +
-    opts.provasComErro * 3 +
-    opts.modoUsoMedio +
-    opts.bancaPesoMedio +
-    bonusTipo +
-    bonusN3
-  );
-}
-
 /** Monta payload completo — função pura testável a partir da coleta. */
 export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): DiagnosticoInicialPayload {
   const escoposIndex = indexGlobalEscopos();
@@ -566,39 +553,90 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
     }
   }
 
-  const porEscopo: BaselineEscopoJornada[] = [...escopoMap.values()].map((acc) => {
+  const porEscopoPreliminar = [...escopoMap.values()].map((acc) => {
     const pctErro = acc.total > 0 ? acc.erros / acc.total : 0;
-    const confiancaBaixa =
-      acc.confiancas.length > 0 &&
-      acc.confiancas.reduce((s, v) => s + v, 0) / acc.confiancas.length < 0.55;
+    const label = escoposIndex.get(acc.escopoId)?.escopoLabel ?? acc.escopoId;
     const provasComErro = acc.examIdsErro.size;
     const tiposErroRecorrentes = [...acc.tiposErro.values()].filter((n) => n >= 2).length;
-    const n3Distintos = new Set(acc.conhecimentosExigidos).size;
-    const pesoDiagnostico = calcularPesoDiagnosticoEscopo({
-      erros: acc.erros,
+    const conhecimentosExigidos = [...new Set(acc.conhecimentosExigidos)];
+    const n3Distintos = conhecimentosExigidos.length;
+    return {
+      acc,
+      label,
+      pctErro,
       provasComErro,
-      modoUsoMedio: acc.pesosModo.reduce((s, v) => s + v, 0) / Math.max(1, acc.pesosModo.length),
-      bancaPesoMedio: acc.pesosBanca.reduce((s, v) => s + v, 0) / Math.max(1, acc.pesosBanca.length),
       tiposErroRecorrentes,
+      conhecimentosExigidos,
       n3Distintos,
-    });
-    let estadoInicial = calcularEstadoEscopo(acc.erros, provasComErro, pctErro, confiancaBaixa);
-    if (pesoDiagnostico >= 14 && estadoInicial !== "SINAL_INICIAL") estadoInicial = "CRITICO";
+      tiposErro: Object.fromEntries(acc.tiposErro),
+    };
+  });
+
+  const inputsAlternativas = porEscopoPreliminar.map((row) =>
+    inputEscopoFromBaseline(
+      {
+        escopoId: row.acc.escopoId,
+        dominioId: row.acc.dominioId,
+        total: row.acc.total,
+        acertos: row.acc.acertos,
+        erros: row.acc.erros,
+        pctErro: Math.round(row.pctErro * 100),
+        conhecimentosExigidos: row.conhecimentosExigidos.slice(0, 8),
+        conceitosCanonicos: [...row.acc.conceitosCanonicos].slice(0, 8),
+        tiposErro: row.tiposErro,
+        observacoesAluno: [...new Set(row.acc.observacoes)].slice(0, 5),
+        pesoDiagnostico: 0,
+        estadoInicial: "MONITORAR" as const,
+        provasComErro: row.provasComErro,
+      },
+      row.label
+    )
+  );
+
+  const porEscopo: BaselineEscopoJornada[] = porEscopoPreliminar.map((row, i) => {
+    const confiancaBaixa =
+      row.acc.confiancas.length > 0 &&
+      row.acc.confiancas.reduce((s, v) => s + v, 0) / row.acc.confiancas.length < 0.55;
+    const pesoDiagnostico = calcularPesoDiagnosticoEscopoAprimorado(
+      {
+        escopoId: row.acc.escopoId,
+        escopoLabel: row.label,
+        erros: row.acc.erros,
+        total: row.acc.total,
+        provasComErro: row.provasComErro,
+        modoUsoMedio:
+          row.acc.pesosModo.reduce((s, v) => s + v, 0) / Math.max(1, row.acc.pesosModo.length),
+        bancaPesoMedio:
+          row.acc.pesosBanca.reduce((s, v) => s + v, 0) / Math.max(1, row.acc.pesosBanca.length),
+        tiposErroRecorrentes: row.tiposErroRecorrentes,
+        n3Distintos: row.n3Distintos,
+        tiposErro: row.tiposErro,
+        conhecimentosExigidos: row.conhecimentosExigidos,
+      },
+      inputsAlternativas
+    );
+    let estadoInicial = calcularEstadoEscopo(
+      row.acc.erros,
+      row.provasComErro,
+      row.pctErro,
+      confiancaBaixa
+    );
+    if (pesoDiagnostico >= 16 && estadoInicial !== "SINAL_INICIAL") estadoInicial = "CRITICO";
 
     return {
-      escopoId: acc.escopoId,
-      dominioId: acc.dominioId,
-      total: acc.total,
-      acertos: acc.acertos,
-      erros: acc.erros,
-      pctErro: Math.round(pctErro * 100),
-      conhecimentosExigidos: [...new Set(acc.conhecimentosExigidos)].slice(0, 8),
-      conceitosCanonicos: [...acc.conceitosCanonicos].slice(0, 8),
-      tiposErro: Object.fromEntries(acc.tiposErro),
-      observacoesAluno: [...new Set(acc.observacoes)].slice(0, 5),
-      pesoDiagnostico: Math.round(pesoDiagnostico * 10) / 10,
+      escopoId: row.acc.escopoId,
+      dominioId: row.acc.dominioId,
+      total: row.acc.total,
+      acertos: row.acc.acertos,
+      erros: row.acc.erros,
+      pctErro: Math.round(row.pctErro * 100),
+      conhecimentosExigidos: row.conhecimentosExigidos.slice(0, 8),
+      conceitosCanonicos: [...row.acc.conceitosCanonicos].slice(0, 8),
+      tiposErro: row.tiposErro,
+      observacoesAluno: [...new Set(row.acc.observacoes)].slice(0, 5),
+      pesoDiagnostico,
       estadoInicial,
-      provasComErro,
+      provasComErro: row.provasComErro,
     };
   });
 
@@ -656,10 +694,7 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
         escopoId: e.escopoId,
         dominioId: e.dominioId,
         estado: e.estadoInicial === "CRITICO" ? ("CRITICO" as const) : ("FRAGILIDADE" as const),
-        motivo:
-          e.provasComErro >= 2
-            ? `${label} reapareceu em ${e.provasComErro} provas com ${e.erros} erro(s).`
-            : `${e.erros} erro(s) em ${label} na amostra inicial.`,
+        motivo: motivoEscopoCriticoEnriquecido(e, label),
         evidencias: [
           `${e.erros} erro(s) de ${e.total} questões neste escopo`,
           ...(e.provasComErro >= 2 ? [`Recorrência em ${e.provasComErro} provas`] : []),
@@ -735,15 +770,13 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
           : moduladores.length > 0 && i === 0
             ? "MISTA"
             : "CONTEUDO";
+      const qualidade = avaliarQualidadeFocoInicial(inputEscopoFromBaseline(e, label), inputsAlternativas);
       return {
         ordem: i + 1,
         escopoId: e.escopoId,
         n1: e.escopoId.split(".")[0],
         titulo: label,
-        motivo:
-          e.provasComErro >= 2
-            ? `Recorrência em ${e.provasComErro} provas e ${e.erros} erro(s) analisáveis.`
-            : `${e.erros} erro(s) com classificação N2/N3 completa.`,
+        motivo: motivoPrioridadeEnriquecido(e, label, qualidade),
         tipoPrioridade,
       };
     });
