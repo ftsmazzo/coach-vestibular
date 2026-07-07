@@ -67,13 +67,13 @@ describe("calcularElegibilidadeJornada", () => {
       metricasBase({ totalErrosAnalisaveis: MIN_ERROS_ANALISAVEIS_JORNADA - 1 })
     );
     assert.equal(r.elegivel, false);
-    assert.ok(r.motivosBloqueio.some((m) => m.includes("erros analisáveis")));
+    assert.ok(r.motivosBloqueio.some((m) => m.includes("erros prontos para análise")));
   });
 
-  it("6. com 2 provas e N1/N2/N3 incompletos, bloqueada", () => {
+  it("6. com 2 provas e processamento pedagógico incompleto, bloqueada", () => {
     const r = calcularElegibilidadeJornada(metricasBase({ pctQuestoesComN1N2N3: 0.9 }));
     assert.equal(r.elegivel, false);
-    assert.ok(r.motivosBloqueio.some((m) => m.includes("classificação pedagógica")));
+    assert.ok(r.motivosBloqueio.some((m) => m.includes("sendo preparadas pela equipe")));
   });
 
   it("7. com todos os critérios atendidos, liberada", () => {

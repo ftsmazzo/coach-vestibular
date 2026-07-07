@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin-auth";
+import { sincronizarSnapshotsClassificacaoAttemptsDaProva } from "@/lib/jornada-pendencias-classificacao";
 import { executarFaseN3Prova } from "@/lib/prova-classificacao-fases";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 
@@ -24,8 +26,12 @@ export async function POST(
   try {
     const resultado = await executarFaseN3Prova(provaId);
     await refreshProvaGabaritoFlag(provaId);
+    const sync = await sincronizarSnapshotsClassificacaoAttemptsDaProva(provaId);
+    revalidatePath("/dashboard", "layout");
+    revalidatePath("/plano", "layout");
     return NextResponse.json({
       ...resultado,
+      sync,
       fase: "N3",
       mensagem: `Fase N3: ${resultado.ok}/${resultado.processadas} com conhecimento exigido.`,
     });

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
+import { sincronizarSnapshotsClassificacaoAttemptsDaProva } from "@/lib/jornada-pendencias-classificacao";
 import { executarFaseN1Prova } from "@/lib/prova-classificacao-fases";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 
@@ -41,6 +43,9 @@ export async function POST(
   try {
     const resultado = await executarFaseN1Prova(provaId, body);
     await refreshProvaGabaritoFlag(provaId);
+    const sync = await sincronizarSnapshotsClassificacaoAttemptsDaProva(provaId);
+    revalidatePath("/dashboard", "layout");
+    revalidatePath("/plano", "layout");
 
     const modo = body.forcarTudo
       ? "forcarTudo"
@@ -50,6 +55,7 @@ export async function POST(
 
     return NextResponse.json({
       ...resultado,
+      sync,
       fase: "N1",
       modo,
       mensagem:

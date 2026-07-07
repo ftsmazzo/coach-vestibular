@@ -3,8 +3,12 @@
  * Uma prova isolada não libera a Jornada longitudinal; só relatório da prova.
  */
 import type { ModoUsoRegistro } from "@/generated/prisma/client";
-import { parseClassificacaoN1 } from "@/lib/classificacao-n1-types";
-import { escopoN2Real } from "@/lib/classificacao-n2-types";
+import {
+  erroAnalisavel,
+  questaoTemN1N2N3,
+  resolverClassificacaoAttempt,
+  type QuestaoCatalogoClassificacao,
+} from "@/lib/jornada-classificacao-attempt";
 import { prisma } from "@/lib/prisma";
 import {
   agruparUnidadesJornada,
@@ -29,58 +33,28 @@ export {
   type MetricasElegibilidadeJornada,
 } from "@/lib/jornada-elegibilidade-shared";
 
+export {
+  erroAnalisavel,
+  questaoTemN1N2N3,
+  resolverClassificacaoAttempt,
+} from "@/lib/jornada-classificacao-attempt";
+
 export type ModoUsoEvidenciaJornada = ModoUsoRegistro;
 /** Modos de uso que contam como evidência forte/média para elegibilidade. */
 export const MODOS_USO_EVIDENCIA_JORNADA: ModoUsoEvidenciaJornada[] = ["OFICIAL", "TREINO"];
-
-type AttemptClassificacao = {
-  correto: boolean;
-  n1CatalogoId: string | null;
-  escopoId: string | null;
-  conhecimentoExigido: string | null;
-};
 
 type AttemptRow = ExamParaAgrupamento<{ numero: number; correto: boolean }>["questionAttempts"][number] & {
   conhecimentoDominioId?: string | null;
   conhecimentoEscopoId?: string | null;
   conhecimentoExigido?: string | null;
   materiaId?: string | null;
-  provaQuestao?: {
-    classificacaoN1Json?: string | null;
-    conhecimentoDominioId?: string | null;
-    conhecimentoEscopoId?: string | null;
-    conhecimentoExigido?: string | null;
-    materia?: string;
-  } | null;
+  provaQuestao?: QuestaoCatalogoClassificacao | null;
 };
 
-function resolverClassificacaoAttempt(a: AttemptRow): AttemptClassificacao {
-  const pq = a.provaQuestao;
-  const n1 = parseClassificacaoN1(pq?.classificacaoN1Json);
-  const escopoId = a.conhecimentoEscopoId ?? pq?.conhecimentoEscopoId ?? null;
-  const conhecimentoExigido = a.conhecimentoExigido ?? pq?.conhecimentoExigido ?? null;
-  const dominioId = a.conhecimentoDominioId ?? pq?.conhecimentoDominioId ?? null;
-  const n1CatalogoId =
-    n1?.catalogoId ??
-    dominioId?.split(".")[0] ??
-    a.materiaId?.trim().toLowerCase() ??
-    pq?.materia?.trim().toLowerCase() ??
-    null;
-
-  return { correto: a.correto, n1CatalogoId, escopoId, conhecimentoExigido };
-}
-
-/** Questão com classificação pedagógica completa (N1 + N2 real + N3). */
-export function questaoTemN1N2N3(c: Pick<AttemptClassificacao, "n1CatalogoId" | "escopoId" | "conhecimentoExigido">): boolean {
-  const n1Ok = Boolean(c.n1CatalogoId?.trim());
-  const n2Ok = escopoN2Real(c.escopoId);
-  const n3Ok = Boolean(c.conhecimentoExigido?.trim());
-  return n1Ok && n2Ok && n3Ok;
-}
-
-/** Erro com classificação suficiente para priorização (N1/N2/N3). */
-export function erroAnalisavel(c: AttemptClassificacao): boolean {
-  return !c.correto && questaoTemN1N2N3(c);
+function mapaCatalogoPorNumero(
+  questoes: (QuestaoCatalogoClassificacao & { numero: number })[]
+): Map<number, QuestaoCatalogoClassificacao> {
+  return new Map(questoes.map((q) => [q.numero, q]));
 }
 
 export function examModoValidoParaJornada(modoUso: ModoUsoRegistro): boolean {
@@ -107,10 +81,12 @@ export function calcularElegibilidadeJornada(metricas: MetricasElegibilidadeJorn
     motivosBloqueio.push("Ainda há poucas questões respondidas para iniciar a jornada.");
   }
   if (metricas.totalErrosAnalisaveis < MIN_ERROS_ANALISAVEIS_JORNADA) {
-    motivosBloqueio.push("Ainda há poucos erros analisáveis para gerar prioridades confiáveis.");
+    motivosBloqueio.push("Ainda há poucos erros prontos para análise para gerar prioridades confiáveis.");
   }
   if (metricas.pctQuestoesComN1N2N3 < MIN_PCT_N1N2N3_JORNADA) {
-    motivosBloqueio.push("Algumas questões ainda não possuem classificação pedagógica completa.");
+    motivosBloqueio.push(
+      "Algumas questões ainda estão sendo preparadas pela equipe antes de liberar sua Jornada."
+    );
   }
 
   return {
@@ -150,7 +126,21 @@ export async function coletarMetricasElegibilidadeJornada(
             },
           },
         },
-        prova: { select: PROVA_SELECT_MULTIDIA },
+        prova: {
+          select: {
+            ...PROVA_SELECT_MULTIDIA,
+            questoes: {
+              select: {
+                numero: true,
+                materia: true,
+                classificacaoN1Json: true,
+                conhecimentoDominioId: true,
+                conhecimentoEscopoId: true,
+                conhecimentoExigido: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { data: "desc" },
     }),
@@ -164,9 +154,16 @@ export async function coletarMetricasElegibilidadeJornada(
   let comN1N2N3 = 0;
 
   for (const unidade of unidades) {
+    const catalogo = unidade.prova?.questoes
+      ? mapaCatalogoPorNumero(unidade.prova.questoes)
+      : new Map<number, QuestaoCatalogoClassificacao>();
+
     for (const attempt of unidade.questionAttempts as AttemptRow[]) {
       totalQuestoesValidas++;
-      const classificacao = resolverClassificacaoAttempt(attempt);
+      const classificacao = resolverClassificacaoAttempt(
+        attempt,
+        catalogo.get(attempt.numero) ?? null
+      );
       if (questaoTemN1N2N3(classificacao)) comN1N2N3++;
       if (erroAnalisavel(classificacao)) totalErrosAnalisaveis++;
     }

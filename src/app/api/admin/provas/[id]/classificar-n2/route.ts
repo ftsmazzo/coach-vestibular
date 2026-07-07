@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin-auth";
+import { sincronizarSnapshotsClassificacaoAttemptsDaProva } from "@/lib/jornada-pendencias-classificacao";
 import { executarFaseN2Prova } from "@/lib/prova-classificacao-fases";
 import { refreshProvaGabaritoFlag } from "@/lib/prova-attempt";
 
@@ -42,6 +44,9 @@ export async function POST(
       numerosQuestao: numeros,
     });
     await refreshProvaGabaritoFlag(provaId);
+    const sync = await sincronizarSnapshotsClassificacaoAttemptsDaProva(provaId);
+    revalidatePath("/dashboard", "layout");
+    revalidatePath("/plano", "layout");
     const prefixo = numeros?.length
       ? `N2 (Q${numeros.join(", Q")})`
       : body.apenasFaltantes
@@ -49,6 +54,7 @@ export async function POST(
         : "Fase N2";
     return NextResponse.json({
       ...resultado,
+      sync,
       fase: "N2",
       mensagem: `${prefixo}: ${resultado.ok}/${resultado.processadas} com escopo real (de ${resultado.total} no banco).`,
     });

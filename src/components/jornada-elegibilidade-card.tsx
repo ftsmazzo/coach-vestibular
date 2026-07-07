@@ -154,13 +154,13 @@ export function JornadaElegibilidadeCard({
         />
         <ItemProgresso
           ok={metricas.totalErrosAnalisaveis >= MIN_ERROS_ANALISAVEIS_JORNADA}
-          label="Erros analisáveis (N1/N2/N3)"
+          label="Erros prontos para análise"
           atual={`${metricas.totalErrosAnalisaveis}`}
           meta={`≥ ${MIN_ERROS_ANALISAVEIS_JORNADA}`}
         />
         <ItemProgresso
           ok={metricas.pctQuestoesComN1N2N3 >= 0.95}
-          label="Classificação pedagógica"
+          label="Processamento pedagógico das questões"
           atual={`${pctN1}%`}
           meta="≥ 95%"
         />

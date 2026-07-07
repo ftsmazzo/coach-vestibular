@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDataAplicacao } from "@/lib/data-prova";
 import { parseConjuntoExamId } from "@/lib/prova-multidia";
 import { labelEscopo } from "@/lib/escopo-display-server";
+import { conhecimentoExigidoExibicao } from "@/lib/jornada-classificacao-attempt";
 import { PageBackLink } from "@/components/page-back-link";
 import { TabelaQuestoesRegistro } from "@/components/tabela-questoes-registro";
 import { SugestoesRegistroResumo } from "@/components/sugestoes-registro-resumo";
@@ -72,9 +73,9 @@ export default async function SimuladoQuestoesPage({
               gabarito: q.provaQuestao?.gabarito ?? null,
               materia: q.provaQuestao?.materia ?? "—",
               assunto: q.provaQuestao?.assunto ?? "—",
-              escopoId: q.provaQuestao?.conhecimentoEscopoId ?? null,
-              escopoLabel: labelEscopo(q.provaQuestao?.conhecimentoEscopoId),
-              conhecimento: q.provaQuestao?.conhecimentoExigido ?? null,
+              escopoId: q.provaQuestao?.conhecimentoEscopoId ?? q.conhecimentoEscopoId ?? null,
+              escopoLabel: labelEscopo(q.provaQuestao?.conhecimentoEscopoId ?? q.conhecimentoEscopoId),
+              conhecimento: conhecimentoExigidoExibicao(q, q.provaQuestao),
               nivelDificuldade: q.provaQuestao?.nivelDificuldade ?? null,
               correto: q.correto,
               podeSugerir: Boolean(q.provaQuestaoId && q.provaQuestao),
@@ -155,9 +156,9 @@ export default async function SimuladoQuestoesPage({
               gabarito: q.provaQuestao?.gabarito ?? null,
               materia: q.provaQuestao?.materia ?? "—",
               assunto: q.provaQuestao?.assunto ?? "—",
-              escopoId: q.provaQuestao?.conhecimentoEscopoId ?? null,
-              escopoLabel: labelEscopo(q.provaQuestao?.conhecimentoEscopoId),
-              conhecimento: q.provaQuestao?.conhecimentoExigido ?? null,
+              escopoId: q.provaQuestao?.conhecimentoEscopoId ?? q.conhecimentoEscopoId ?? null,
+              escopoLabel: labelEscopo(q.provaQuestao?.conhecimentoEscopoId ?? q.conhecimentoEscopoId),
+              conhecimento: conhecimentoExigidoExibicao(q, q.provaQuestao),
               nivelDificuldade: q.provaQuestao?.nivelDificuldade ?? null,
               correto: q.correto,
               podeSugerir: Boolean(q.provaQuestaoId && q.provaQuestao),
