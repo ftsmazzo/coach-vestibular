@@ -60,9 +60,9 @@ export default async function SimuladoDetailPage({
         {total > 0 ? (
           <section className="space-y-1">
             <h2 className="text-lg font-semibold text-slate-900">Os números desta prova</h2>
-            <p className="text-xs text-slate-500">
-              Matérias, causas de erro e conhecimentos — prova completa de {total} questões.
-            </p>
+          <p className="text-xs text-slate-500">
+            Por escopo nesta prova (não agrega outras provas da Jornada).
+          </p>
             <div className="pt-2">
               <ExamGraficos data={graficos} />
             </div>
@@ -162,7 +162,7 @@ export default async function SimuladoDetailPage({
         <section className="space-y-1">
           <h2 className="text-lg font-semibold text-slate-900">Os números desta prova</h2>
           <p className="text-xs text-slate-500">
-            Matérias, causas de erro e conhecimentos — só desta tentativa. A leitura por extenso e o
+            Por escopo nesta prova (não agrega outras provas da Jornada). A leitura por extenso e o
             micro-plano ficam na <strong>Lente</strong> da prova.
           </p>
           <div className="pt-2">

@@ -33,6 +33,11 @@ import {
   montarResumoExecutivoDiagnostico,
   rotularTipoErro,
 } from "@/lib/jornada-diagnostico-sintese";
+import {
+  evidenciaCanonicaFocoDeAgregado,
+  processarUnidadesEvidenciaCanonica,
+  type UnidadeEvidenciaInput,
+} from "@/lib/jornada-evidencia-canonica";
 import { pesoBancaParaMeta } from "@/lib/meta-vestibular";
 import { pesoModoUso } from "@/lib/modo-uso";
 import { mapQuestionAttemptToInput } from "@/lib/question-attempt-input";
@@ -420,6 +425,16 @@ function calcularEstadoEscopo(
 
 /** Monta payload completo — função pura testável a partir da coleta. */
 export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): DiagnosticoInicialPayload {
+  const canonica = processarUnidadesEvidenciaCanonica(
+    coleta.unidades as UnidadeEvidenciaInput[]
+  );
+  const canonPorEscopo = new Map(
+    canonica.agregadoPorEscopo.map((e) => [e.escopoId, e])
+  );
+  const evidenciaPorEscopo = new Map(
+    canonica.agregadoPorEscopo.map((e) => [e.escopoId, evidenciaCanonicaFocoDeAgregado(e)])
+  );
+
   const escoposIndex = indexGlobalEscopos();
   const attempts: AttemptColeta[] = [];
 
@@ -603,6 +618,12 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
   );
 
   const porEscopo: BaselineEscopoJornada[] = porEscopoPreliminar.map((row, i) => {
+    const canon = canonPorEscopo.get(row.acc.escopoId);
+    const erros = canon?.erros ?? row.acc.erros;
+    const total = canon?.total ?? row.acc.total;
+    const provasComErro = canon?.provasComErro ?? row.provasComErro;
+    const pctErro = total > 0 ? erros / total : row.pctErro;
+
     const confiancaBaixa =
       row.acc.confiancas.length > 0 &&
       row.acc.confiancas.reduce((s, v) => s + v, 0) / row.acc.confiancas.length < 0.55;
@@ -610,9 +631,9 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
       {
         escopoId: row.acc.escopoId,
         escopoLabel: row.label,
-        erros: row.acc.erros,
-        total: row.acc.total,
-        provasComErro: row.provasComErro,
+        erros,
+        total,
+        provasComErro,
         modoUsoMedio:
           row.acc.pesosModo.reduce((s, v) => s + v, 0) / Math.max(1, row.acc.pesosModo.length),
         bancaPesoMedio:
@@ -624,28 +645,23 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
       },
       inputsAlternativas
     );
-    let estadoInicial = calcularEstadoEscopo(
-      row.acc.erros,
-      row.provasComErro,
-      row.pctErro,
-      confiancaBaixa
-    );
+    let estadoInicial = calcularEstadoEscopo(erros, provasComErro, pctErro, confiancaBaixa);
     if (pesoDiagnostico >= 16 && estadoInicial !== "SINAL_INICIAL") estadoInicial = "CRITICO";
 
     return {
       escopoId: row.acc.escopoId,
       dominioId: row.acc.dominioId,
-      total: row.acc.total,
-      acertos: row.acc.acertos,
-      erros: row.acc.erros,
-      pctErro: Math.round(row.pctErro * 100),
-      conhecimentosExigidos: row.conhecimentosExigidos.slice(0, 8),
+      total,
+      acertos: canon?.acertos ?? row.acc.acertos,
+      erros,
+      pctErro: Math.round(pctErro * 100),
+      conhecimentosExigidos: canon?.n3Recorrentes.slice(0, 8) ?? row.conhecimentosExigidos.slice(0, 8),
       conceitosCanonicos: [...row.acc.conceitosCanonicos].slice(0, 8),
       tiposErro: row.tiposErro,
       observacoesAluno: [...new Set(row.acc.observacoes)].slice(0, 5),
       pesoDiagnostico,
       estadoInicial,
-      provasComErro: row.provasComErro,
+      provasComErro,
     };
   });
 
@@ -696,7 +712,8 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
   const escoposCriticos = montarEscoposCriticosDiagnostico(
     porEscopo,
     escopoScores,
-    inputsAlternativas
+    inputsAlternativas,
+    evidenciaPorEscopo
   );
 
   const forcas = montarForcasDiagnostico(porEscopo, porN1);
@@ -731,7 +748,8 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
     escopoScores,
     baselineJson.padroesCognitivos,
     moduladores,
-    inputsAlternativas
+    inputsAlternativas,
+    evidenciaPorEscopo
   );
 
   const padraoTop = baselineJson.padroesCognitivos[0];

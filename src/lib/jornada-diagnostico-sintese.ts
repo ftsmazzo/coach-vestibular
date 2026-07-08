@@ -4,6 +4,8 @@
  */
 import type { StructuredAnamneseProfile } from "@/lib/anamnese-types";
 import type { EscopoScore } from "@/lib/diagnosis-escopo";
+import type { EvidenciaCanonicaFoco } from "@/lib/jornada-evidencia-canonica";
+import { formatarEvidenciaFocoAgregada } from "@/lib/jornada-evidencia-canonica";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
 import type {
   BaselineEscopoJornada,
@@ -73,21 +75,29 @@ export function escopoElegivelParaDiagnosticoCritico(linha: BaselineEscopoJornad
 export function montarEvidenciasEscopoRicas(
   linha: BaselineEscopoJornada,
   escopoLabel: string,
-  escopoScore?: EscopoScore
+  escopoScore?: EscopoScore,
+  evidenciaCanonica?: EvidenciaCanonicaFoco
 ): string[] {
   const evidencias: string[] = [];
+
+  if (evidenciaCanonica) {
+    evidencias.push(formatarEvidenciaFocoAgregada(evidenciaCanonica));
+  }
+
   const tipoDom = dominanteTipoErro(linha.tiposErro);
 
-  if (linha.erros >= 3 && linha.provasComErro >= 2) {
-    evidencias.push(
-      `${linha.erros} erros em ${linha.total} questões de ${escopoLabel}, repetindo em ${linha.provasComErro} provas`
-    );
-  } else if (linha.pctErro >= 55 && linha.total >= 4) {
-    evidencias.push(
-      `${linha.pctErro}% de erro em ${escopoLabel} (${linha.erros} de ${linha.total} questões)`
-    );
-  } else if (linha.erros >= 2) {
-    evidencias.push(`${linha.erros} erros analisáveis em ${linha.total} questão(ões) de ${escopoLabel}`);
+  if (!evidenciaCanonica) {
+    if (linha.erros >= 3 && linha.provasComErro >= 2) {
+      evidencias.push(
+        `${linha.erros} erros em ${linha.total} questões de ${escopoLabel}, repetindo em ${linha.provasComErro} provas`
+      );
+    } else if (linha.pctErro >= 55 && linha.total >= 4) {
+      evidencias.push(
+        `${linha.pctErro}% de erro em ${escopoLabel} (${linha.erros} de ${linha.total} questões)`
+      );
+    } else if (linha.erros >= 2) {
+      evidencias.push(`${linha.erros} erros analisáveis em ${linha.total} questão(ões) de ${escopoLabel}`);
+    }
   }
 
   if (tipoDom && linha.tiposErro[tipoDom]! >= 2) {
@@ -123,12 +133,15 @@ export function motivoDiagnosticoEscopo(
   linha: BaselineEscopoJornada,
   escopoLabel: string,
   qualidade: ReturnType<typeof avaliarQualidadeFocoInicial>,
-  escopoScore?: EscopoScore
+  escopoScore?: EscopoScore,
+  evidenciaCanonica?: EvidenciaCanonicaFoco
 ): string {
   const tipoDom = dominanteTipoErro(linha.tiposErro);
   const partes: string[] = [];
 
-  if (linha.erros >= 3 && linha.provasComErro >= 2) {
+  if (evidenciaCanonica) {
+    partes.push(formatarEvidenciaFocoAgregada(evidenciaCanonica).replace(/\.$/, ""));
+  } else if (linha.erros >= 3 && linha.provasComErro >= 2) {
     partes.push(
       `${escopoLabel} concentra ${linha.erros} erros em ${linha.total} questões e reaparece em ${linha.provasComErro} provas`
     );
@@ -226,7 +239,8 @@ export type EscopoCriticoDiagnostico = {
 export function montarEscoposCriticosDiagnostico(
   porEscopo: BaselineEscopoJornada[],
   escopoScores: EscopoScore[],
-  inputsAlternativas: InputEscopoFoco[]
+  inputsAlternativas: InputEscopoFoco[],
+  evidenciaPorEscopo?: Map<string, EvidenciaCanonicaFoco>
 ): EscopoCriticoDiagnostico[] {
   const escoposIndex = indexGlobalEscopos();
   const scoreMap = new Map(escopoScores.map((s) => [s.escopoId, s]));
@@ -253,7 +267,12 @@ export function montarEscoposCriticosDiagnostico(
               ? ("FRAGILIDADE" as const)
               : ("MONITORAR" as const),
         motivo: motivoDiagnosticoEscopo(e, label, qualidade, escopoScore),
-        evidencias: montarEvidenciasEscopoRicas(e, label, escopoScore),
+        evidencias: montarEvidenciasEscopoRicas(
+          e,
+          label,
+          escopoScore,
+          evidenciaPorEscopo?.get(e.escopoId)
+        ),
         n3Recorrentes: e.conhecimentosExigidos.slice(0, 4),
         tiposErroRelevantes: tipos,
       };
@@ -281,7 +300,8 @@ export function montarPrioridadesDiagnostico(
   escopoScores: EscopoScore[],
   padroesCognitivos: BaselineJornada["padroesCognitivos"],
   moduladoresAnamnese: string[],
-  inputsAlternativas: InputEscopoFoco[]
+  inputsAlternativas: InputEscopoFoco[],
+  evidenciaPorEscopo?: Map<string, EvidenciaCanonicaFoco>
 ): PrioridadeDiagnostico[] {
   const escoposIndex = indexGlobalEscopos();
   const scoreMap = new Map(escopoScores.map((s) => [s.escopoId, s]));
@@ -318,7 +338,13 @@ export function montarPrioridadesDiagnostico(
       escopoId: c.e.escopoId,
       n1: c.e.escopoId.split(".")[0],
       titulo: c.label,
-      motivo: motivoDiagnosticoEscopo(c.e, c.label, c.qualidade, c.escopoScore),
+      motivo: motivoDiagnosticoEscopo(
+        c.e,
+        c.label,
+        c.qualidade,
+        c.escopoScore,
+        evidenciaPorEscopo?.get(c.e.escopoId)
+      ),
       tipoPrioridade,
     };
   });

@@ -2,7 +2,12 @@
  * Dados serializáveis para gráficos da análise de uma prova (motor v1 — escopo N2).
  */
 import type { ErrorType } from "@/generated/prisma/client";
+import { escopoN2Real } from "@/lib/classificacao-n2-types";
 import { labelEscopo } from "@/lib/escopo-display-server";
+import {
+  questaoTemN1N2N3,
+  resolverClassificacaoAttempt,
+} from "@/lib/jornada-classificacao-attempt";
 import { getTipoErroLabel, taxonomy } from "@/lib/taxonomy";
 
 const CORES_CAUSA: Record<string, string> = {
@@ -33,19 +38,24 @@ export type ExamGraficos = {
 type AttemptInput = {
   correto: boolean;
   tipoErro: ErrorType | string | null;
+  materiaId?: string | null;
   conhecimentoEscopoId?: string | null;
+  conhecimentoExigido?: string | null;
   provaQuestao?: {
     conhecimentoEscopoId?: string | null;
     conhecimentoExigido?: string | null;
+    classificacaoN1Json?: string | null;
+    conhecimentoDominioId?: string | null;
+    materia?: string | null;
   } | null;
 };
 
 function escopoIdDe(a: AttemptInput): string | null {
-  return (
-    a.conhecimentoEscopoId?.trim() ||
-    a.provaQuestao?.conhecimentoEscopoId?.trim() ||
-    null
-  );
+  const classificacao = resolverClassificacaoAttempt(a, a.provaQuestao ?? null);
+  if (!questaoTemN1N2N3(classificacao)) return null;
+  const escopoId = classificacao.escopoId;
+  if (!escopoId || !escopoN2Real(escopoId)) return null;
+  return escopoId;
 }
 
 export function montarExamGraficos(attempts: AttemptInput[]): ExamGraficos {
@@ -99,7 +109,8 @@ export function montarExamGraficos(attempts: AttemptInput[]): ExamGraficos {
   const porConhecimento = new Map<string, ExamConhecimento>();
   for (const a of incorretas) {
     const escopoId = escopoIdDe(a);
-    const raw = a.provaQuestao?.conhecimentoExigido?.trim();
+    const raw =
+      a.conhecimentoExigido?.trim() || a.provaQuestao?.conhecimentoExigido?.trim();
     const chave = escopoId ?? raw ?? "";
     if (!chave) continue;
     const labelEscopoN2 = escopoId ? labelEscopo(escopoId) ?? escopoId : null;

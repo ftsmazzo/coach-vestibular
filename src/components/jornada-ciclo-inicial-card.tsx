@@ -45,7 +45,13 @@ export function JornadaCicloInicialCard({ ciclo }: Props) {
           <p className="mt-1">
             {ev.errosNoEscopo} erro(s) em {ev.totalQuestoesNoEscopo} questões ({ev.pctErro}% de
             erro)
-            {ev.provasComErro >= 2 ? ` · recorrência em ${ev.provasComErro} provas` : ""}
+            {ev.provasComErro >= 2
+              ? ` · em ${ev.provasComErro} provas da Jornada`
+              : ""}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Contagem agregada somando as provas consideradas na Jornada — não é o total de uma única
+            prova.
           </p>
           <p className="mt-2 text-xs text-slate-600">{baseline.leitura.hipoteseDiagnostica}</p>
         </div>
