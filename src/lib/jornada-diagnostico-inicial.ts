@@ -1,5 +1,5 @@
 /**
- * Diagnóstico Inicial da Jornada — marco zero imutável (Etapa 2).
+ * Diagnóstico Inicial da Jornada — marco zero imutável (Etapa 2 + síntese 4D).
  * docs/MOTOR-JORNADA-DIAGNOSTICO.md §3.3
  */
 import type { ErrorType, ModoUsoRegistro } from "@/generated/prisma/client";
@@ -22,10 +22,17 @@ import {
 import {
   calcularPesoDiagnosticoEscopoAprimorado,
   inputEscopoFromBaseline,
-  motivoEscopoCriticoEnriquecido,
-  motivoPrioridadeEnriquecido,
   avaliarQualidadeFocoInicial,
 } from "@/lib/jornada-foco-inicial";
+import {
+  cruzarAnamneseComEvidencias,
+  montarEscoposCriticosDiagnostico,
+  montarForcasDiagnostico,
+  montarPadroesCognitivosDiagnostico,
+  montarPrioridadesDiagnostico,
+  montarResumoExecutivoDiagnostico,
+  rotularTipoErro,
+} from "@/lib/jornada-diagnostico-sintese";
 import { pesoBancaParaMeta } from "@/lib/meta-vestibular";
 import { pesoModoUso } from "@/lib/modo-uso";
 import { mapQuestionAttemptToInput } from "@/lib/question-attempt-input";
@@ -37,7 +44,6 @@ import {
   type UnidadeRegistroJornada,
 } from "@/lib/prova-multidia";
 import { parseJsonStringArray } from "@/lib/json-snapshot-utils";
-import { getMateriaLabel } from "@/lib/taxonomy";
 
 export const JOURNEY_DIAGNOSTIC_VERSAO = "1.0";
 export const JOURNEY_DIAGNOSTIC_TIPO_INICIAL = "INICIAL";
@@ -267,14 +273,6 @@ export type ColetaEvidenciasBruta = {
 };
 
 type DbClient = Prisma.TransactionClient | typeof prisma;
-
-const TIPOS_ERRO_COGNITIVOS = new Set<string>([
-  "CONCEITO_TEORICO",
-  "INTERPRETACAO_ENUNCIADO",
-  "DUVIDA_CRUCIAL",
-  "CHUTE_TOTAL",
-  "FALTA_TEMPO",
-]);
 
 function parseStructuredProfile(raw: string | null): StructuredAnamneseProfile | null {
   if (!raw?.trim()) return null;
@@ -695,42 +693,15 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
     anamnese: anamneseParaContexto(coleta.anamnese.structuredProfile),
   });
 
-  const escoposCriticos = porEscopo
-    .filter((e) => e.estadoInicial === "CRITICO" || e.estadoInicial === "FRAGILIDADE")
-    .slice(0, 8)
-    .map((e) => {
-      const label = escoposIndex.get(e.escopoId)?.escopoLabel ?? e.escopoId;
-      const tipos = Object.keys(e.tiposErro);
-      return {
-        escopoId: e.escopoId,
-        dominioId: e.dominioId,
-        estado: e.estadoInicial === "CRITICO" ? ("CRITICO" as const) : ("FRAGILIDADE" as const),
-        motivo: motivoEscopoCriticoEnriquecido(e, label),
-        evidencias: [
-          `${e.erros} erro(s) de ${e.total} questões neste escopo`,
-          ...(e.provasComErro >= 2 ? [`Recorrência em ${e.provasComErro} provas`] : []),
-        ],
-        n3Recorrentes: e.conhecimentosExigidos.slice(0, 4),
-        tiposErroRelevantes: tipos,
-      };
-    });
+  const escoposCriticos = montarEscoposCriticosDiagnostico(
+    porEscopo,
+    escopoScores,
+    inputsAlternativas
+  );
 
-  const forcasN1 = porN1
-    .filter((n) => n.total >= 5 && n.pctAcerto >= 65)
-    .sort((a, b) => b.pctAcerto - a.pctAcerto)
-    .slice(0, 3);
+  const forcas = montarForcasDiagnostico(porEscopo, porN1);
 
-  const forcas = forcasN1.map((n) => ({
-    titulo: getMateriaLabel(n.n1) || n.n1,
-    descricao: `${n.pctAcerto}% de acerto em ${n.total} questões de ${getMateriaLabel(n.n1) || n.n1} nas provas consideradas.`,
-    evidencias: [`${n.acertos} acertos em ${n.total} questões`],
-    escoposAssociados: porEscopo
-      .filter((e) => e.escopoId.startsWith(n.n1) && e.pctErro < 40)
-      .slice(0, 3)
-      .map((e) => e.escopoId),
-  }));
-
-  const fragilidades = escoposCriticos.slice(0, 6).map((e) => {
+  const fragilidades = escoposCriticos.slice(0, 5).map((e) => {
     const label = escoposIndex.get(e.escopoId)?.escopoLabel ?? e.escopoId;
     return {
       titulo: label,
@@ -742,72 +713,41 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
     };
   });
 
-  const padroesCognitivosDiag = baselineJson.padroesCognitivos
-    .filter((p) => p.ocorrencias >= 2)
-    .slice(0, 5)
-    .map((p) => ({
-      titulo: p.tipo.replace(/_/g, " ").toLowerCase(),
-      descricao: p.interpretacao,
-      evidencias: [`${p.ocorrencias} ocorrências em ${p.escoposAssociados.length} escopo(s)`],
-    }));
+  const padroesCognitivosDiag = montarPadroesCognitivosDiagnostico(baselineJson.padroesCognitivos);
 
-  const moduladores: string[] = [];
-  const limites: string[] = [];
-  const profile = coleta.anamnese.structuredProfile;
-  if (profile?.routine?.consistencyLevel === "BAIXA") {
-    moduladores.push("Rotina de estudo com consistência baixa — prioridades iniciais devem ser poucas.");
-  }
-  if (profile?.examBehavior?.anxietyOrBlanking) {
-    moduladores.push("Ansiedade ou branco em prova relatados na anamnese — considerar ritmo e volume.");
-  }
-  if (profile?.academicSelfPerception?.perceivedWeakSubjects?.length) {
-    limites.push(
-      "Matérias percebidas como fracas na anamnese só entram como fragilidade quando confirmadas por erros nas provas."
-    );
-  }
-  limites.push(
-    `Diagnóstico baseado em ${provasConsideradas.length} prova(s)/simulado(s) e ${attempts.length} questões válidas — padrões podem mudar com novas evidências.`
+  const cruzamentoAnamnese = cruzarAnamneseComEvidencias(
+    coleta.anamnese.structuredProfile,
+    porEscopo,
+    porN1
+  );
+  const moduladores = cruzamentoAnamnese.moduladores;
+  const limites = [
+    ...cruzamentoAnamnese.limites,
+    `Diagnóstico baseado em ${provasConsideradas.length} prova(s)/simulado(s) e ${attempts.length} questões válidas — padrões podem mudar com novas evidências.`,
+  ];
+
+  const prioridadesIniciais = montarPrioridadesDiagnostico(
+    porEscopo,
+    escopoScores,
+    baselineJson.padroesCognitivos,
+    moduladores,
+    inputsAlternativas
   );
 
-  const prioridadesIniciais = porEscopo
-    .filter((e) => e.erros > 0 && e.estadoInicial !== "MONITORAR")
-    .slice(0, 6)
-    .map((e, i) => {
-      const label = escoposIndex.get(e.escopoId)?.escopoLabel ?? e.escopoId;
-      const tipoErroDom = Object.entries(e.tiposErro).sort((a, b) => b[1] - a[1])[0]?.[0];
-      const tipoPrioridade: "CONTEUDO" | "COGNITIVA" | "MISTA" | "ROTINA" =
-        tipoErroDom && TIPOS_ERRO_COGNITIVOS.has(tipoErroDom) && tipoErroDom !== "CONCEITO_TEORICO"
-          ? "COGNITIVA"
-          : moduladores.length > 0 && i === 0
-            ? "MISTA"
-            : "CONTEUDO";
-      const qualidade = avaliarQualidadeFocoInicial(inputEscopoFromBaseline(e, label), inputsAlternativas);
-      return {
-        ordem: i + 1,
-        escopoId: e.escopoId,
-        n1: e.escopoId.split(".")[0],
-        titulo: label,
-        motivo: motivoPrioridadeEnriquecido(e, label, qualidade),
-        tipoPrioridade,
-      };
-    });
-
-  if (prioridadesIniciais.length === 0 && escopoScores[0]) {
-    const top = escopoScores[0];
-    prioridadesIniciais.push({
-      ordem: 1,
-      escopoId: top.escopoId,
-      n1: top.materiaId,
-      titulo: top.escopoLabel,
-      motivo: `${top.erros} erro(s) no escopo com maior pressão na amostra.`,
-      tipoPrioridade: "CONTEUDO",
-    });
-  }
-
-  const resumoExecutivo =
-    `Com base em ${provasConsideradas.length} prova(s) e ${attempts.length} questões válidas, ` +
-    `seu ponto de partida na Jornada mostra ${escoposCriticos.length} escopo(s) que pedem atenção ` +
-    `e ${forcas.length} área(s) com desempenho mais sólido na amostra inicial.`;
+  const padraoTop = baselineJson.padroesCognitivos[0];
+  const resumoExecutivo = montarResumoExecutivoDiagnostico({
+    provas: provasConsideradas.length,
+    questoes: attempts.length,
+    pctAcerto: evidenciasJson.totais.pctAcerto,
+    escoposCriticos,
+    prioridades: prioridadesIniciais,
+    forcas,
+    padraoCognitivoTop: padraoTop
+      ? { titulo: rotularTipoErro(padraoTop.tipo), ocorrencias: padraoTop.ocorrencias }
+      : undefined,
+    moduladoresAnamnese: moduladores,
+    confirmacoesAnamnese: cruzamentoAnamnese.confirmacoes,
+  });
 
   const diagnosticoJson: DiagnosticoInicialJornada = {
     versao: JOURNEY_DIAGNOSTIC_VERSAO,
@@ -825,7 +765,7 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
         (coleta.anamnese.concluida
           ? "Anamnese concluída — contexto pessoal modula prioridades, sem substituir evidências das provas."
           : "Sem anamnese detalhada no snapshot."),
-      moduladores,
+      moduladores: [...moduladores, ...cruzamentoAnamnese.confirmacoes],
       limites,
     },
     prioridadesIniciais: prioridadesIniciais.slice(0, 5),

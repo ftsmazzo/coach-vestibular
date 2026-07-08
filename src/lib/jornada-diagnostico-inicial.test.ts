@@ -200,6 +200,24 @@ describe("montarDiagnosticoInicialPayload", () => {
     assert.ok(payload.diagnosticoJson.influenciaAnamnese.moduladores.length > 0);
     assert.ok(payload.diagnosticoJson.influenciaAnamnese.limites.length > 0);
   });
+
+  it("16. Etapa 4D — resumo executivo não é contagem genérica de escopos", () => {
+    const resumo = payload.diagnosticoJson.resumoExecutivo;
+    assert.equal(resumo.includes("escopo(s) que pedem atenção"), false);
+    assert.ok(resumo.length > 40);
+    assert.ok(resumo.includes("prova"));
+  });
+
+  it("17. Etapa 4D — evidências de escopo crítico são ricas", () => {
+    const critico = payload.diagnosticoJson.escoposCriticos[0];
+    if (!critico) return;
+    assert.ok(critico.evidencias.length >= 1);
+    assert.equal(
+      critico.evidencias.some((e) => e === `Recorrência em 2 provas`),
+      false
+    );
+    assert.ok(critico.motivo.length > 30);
+  });
 });
 
 describe("evidências fracas não geram diagnóstico inicial", () => {
