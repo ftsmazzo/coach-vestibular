@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, Button, Input, Label, Badge } from "@/components/ui";
+import { Card, Button, Input, Label, Badge, LinkButton } from "@/components/ui";
 
 interface Aluno {
   id: string;
@@ -269,6 +269,7 @@ export default function AdminUsuariosPage() {
                   <th className="p-3 font-medium">Meta</th>
                   <th className="p-3 font-medium text-center">Provas</th>
                   <th className="p-3 font-medium">Desde</th>
+                  <th className="p-3 font-medium">Jornada</th>
                   <th className="p-3 font-medium">Resets da Jornada</th>
                 </tr>
               </thead>
@@ -289,6 +290,15 @@ export default function AdminUsuariosPage() {
                     </td>
                     <td className="p-3 text-slate-500 whitespace-nowrap">
                       {new Date(a.createdAt).toLocaleDateString("pt-BR")}
+                    </td>
+                    <td className="p-3">
+                      <LinkButton
+                        href={`/admin/jornada/auditoria?userId=${a.id}`}
+                        variant="secondary"
+                        className="whitespace-nowrap text-xs"
+                      >
+                        Auditoria da Jornada
+                      </LinkButton>
                     </td>
                     <td className="p-3">
                       <div className="flex min-w-[12rem] flex-col gap-1.5">
