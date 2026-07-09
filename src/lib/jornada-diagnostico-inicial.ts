@@ -33,6 +33,8 @@ import {
   montarResumoExecutivoDiagnostico,
   rotularTipoErro,
 } from "@/lib/jornada-diagnostico-sintese";
+import { inferirHipotesePedagogicaFoco } from "@/lib/jornada-hipotese-pedagogica";
+import { isMicroescopoIngles } from "@/lib/jornada-foco-inicial";
 import {
   evidenciaCanonicaFocoDeAgregado,
   processarUnidadesEvidenciaCanonica,
@@ -753,6 +755,27 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
   );
 
   const padraoTop = baselineJson.padroesCognitivos[0];
+  const topPrioridade = prioridadesIniciais[0];
+  const evidenciaPrioridade = topPrioridade?.escopoId
+    ? evidenciaPorEscopo.get(topPrioridade.escopoId)
+    : undefined;
+  const hipotesePrioridade = evidenciaPrioridade
+    ? inferirHipotesePedagogicaFoco(evidenciaPrioridade, topPrioridade!.titulo)
+    : undefined;
+  const atencaoIngles = prioridadesIniciais.find(
+    (p, i) =>
+      i > 0 &&
+      p.escopoId &&
+      isMicroescopoIngles(p.escopoId, p.titulo)
+  );
+  const atencaoSecundaria = atencaoIngles
+    ? `Inglês segue como atenção secundária por recorrência em microtópicos (${atencaoIngles.titulo})`
+    : prioridadesIniciais[1] &&
+        prioridadesIniciais[1].escopoId &&
+        isMicroescopoIngles(prioridadesIniciais[1].escopoId, prioridadesIniciais[1].titulo)
+      ? `Inglês segue como atenção secundária por recorrência em microtópicos`
+      : undefined;
+
   const resumoExecutivo = montarResumoExecutivoDiagnostico({
     provas: provasConsideradas.length,
     questoes: attempts.length,
@@ -765,6 +788,9 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
       : undefined,
     moduladoresAnamnese: moduladores,
     confirmacoesAnamnese: cruzamentoAnamnese.confirmacoes,
+    evidenciaPrioridade,
+    hipotesePrioridade,
+    atencaoSecundaria,
   });
 
   const diagnosticoJson: DiagnosticoInicialJornada = {
@@ -809,7 +835,8 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
         ? [{ titulo: "Contexto da anamnese", texto: moduladores[0]!, tipo: "contexto" as const }]
         : []),
     ],
-    avisoLimite: `${AVISO_DIAGNOSTICO_INICIAL_BETA} Este é o marco zero da sua Jornada — não será sobrescrito automaticamente.`,
+    avisoLimite:
+      "Este é o marco zero da sua Jornada — não será sobrescrito automaticamente.",
   };
 
   return { evidenciasJson, baselineJson, diagnosticoJson, narrativaJson };

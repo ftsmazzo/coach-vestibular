@@ -3,6 +3,11 @@
  */
 import type { BaselineCicloInicial } from "@/lib/jornada-ciclo-inicial";
 import { isEscopoIngles, isMicroescopoIngles } from "@/lib/jornada-foco-inicial";
+import {
+  isEscopoSomaAngulosFiguras,
+  motivoQuestConceitoBase,
+  type HipotesePedagogicaFoco,
+} from "@/lib/jornada-hipotese-pedagogica";
 import type { FonteDiagnosticoQuestJornada, QuestJornadaDraft } from "@/lib/jornada-quest-validador";
 
 export type TipoQuestJornada =
@@ -18,6 +23,8 @@ export type ContextoTemplateQuest = {
   dominioId: string | null;
   escopoLabel: string;
   motivoFoco: string;
+  motivoQuest?: string;
+  hipotese?: HipotesePedagogicaFoco;
   baseline: BaselineCicloInicial;
   tiposErro: Record<string, number>;
   conhecimentosExigidos: string[];
@@ -61,7 +68,7 @@ function montarFonte(
     dominioId: ctx.dominioId,
     conhecimentoExigido: ctx.conhecimentosExigidos.slice(0, 3),
     tiposErro: ctx.tiposErro,
-    motivo: ctx.motivoFoco,
+    motivo: ctx.motivoQuest ?? ctx.motivoFoco,
     criterioConclusao,
     excecaoSemEscopo: ctx.excecaoSemEscopo,
   };
@@ -74,6 +81,9 @@ function secaoConclusao(criterio: string): string {
 export function templateRevisaoErro(ctx: ContextoTemplateQuest): QuestJornadaDraft {
   if (isEscopoIngles(ctx.escopoId ?? "")) {
     return templateRevisaoErroIngles(ctx);
+  }
+  if (isEscopoSomaAngulosFiguras(ctx.escopoId ?? "", ctx.escopoLabel)) {
+    return templateRevisaoErroSomaAngulos(ctx);
   }
   const n = nQuestoes(ctx);
   const dominante = tipoErroDominante(ctx.tiposErro);
@@ -103,6 +113,9 @@ export function templateConceitoBase(ctx: ContextoTemplateQuest): QuestJornadaDr
   if (isEscopoIngles(ctx.escopoId ?? "")) {
     return templateLeituraIngles(ctx);
   }
+  if (isEscopoSomaAngulosFiguras(ctx.escopoId ?? "", ctx.escopoLabel)) {
+    return templateConceitoBaseSomaAngulos(ctx);
+  }
   const n3 = ctx.conhecimentosExigidos[0];
   const refN3 = n3 ? ` Inclua o conhecimento exigido: ${n3.slice(0, 120)}.` : "";
   const criterio = CRITERIOS.CONCEITO_BASE;
@@ -118,6 +131,60 @@ export function templateConceitoBase(ctx: ContextoTemplateQuest): QuestJornadaDr
     duracaoEstimadaMin: 30,
     dificuldade: "MEDIA",
     fonteDiagnosticoJson: montarFonte(ctx, "CONCEITO_BASE", criterio),
+  };
+}
+
+/** Quest REVISAO_ERRO — soma de ângulos em figuras planas. */
+export function templateRevisaoErroSomaAngulos(ctx: ContextoTemplateQuest): QuestJornadaDraft {
+  const criterio =
+    ctx.hipotese?.criterioConclusao ??
+    "Concluir quando tiver refeito as questões indicadas com marcação da figura, relação angular escolhida, equação montada e uma frase dizendo onde o raciocínio quebrou.";
+  const motivo =
+    ctx.motivoQuest ??
+    ctx.hipotese?.motivoQuest ??
+    "Refazer esses itens ajuda a localizar se o erro aconteceu na leitura da figura, na escolha da relação angular ou na montagem da equação.";
+  const corpo =
+    "Refaça as questões erradas de Soma de ângulos em figuras planas. Antes de olhar a correção, marque na figura quais ângulos são conhecidos, qual ângulo precisa ser encontrado e qual relação liga esses ângulos. Depois escreva a equação usada e compare com o gabarito.";
+  return {
+    cicloId: ctx.cicloId,
+    conhecimentoEscopoId: ctx.escopoId,
+    conhecimentoDominioId: ctx.dominioId,
+    tipoQuest: "REVISAO_ERRO",
+    titulo: "Refazer erros de soma de ângulos com marcação da figura",
+    descricao: corpo + secaoConclusao(criterio),
+    criterioConclusao: criterio,
+    duracaoEstimadaMin: 40,
+    dificuldade: "MEDIA",
+    fonteDiagnosticoJson: {
+      ...montarFonte(ctx, "REVISAO_ERRO", criterio),
+      motivo,
+    },
+  };
+}
+
+/** Quest CONCEITO_BASE — relações angulares em figuras planas. */
+export function templateConceitoBaseSomaAngulos(ctx: ContextoTemplateQuest): QuestJornadaDraft {
+  const criterio =
+    "Concluir quando a folha tiver 5 casos desenhados, cada um com uma equação correta, e 3 sinais visuais para reconhecer a relação angular.";
+  const motivo = ctx.hipotese
+    ? motivoQuestConceitoBase(ctx.hipotese, ctx.escopoId ?? "", ctx.escopoLabel)
+    : "Os erros sugerem que a base de reconhecimento das relações angulares precisa ser testada antes de novos exercícios.";
+  const corpo =
+    "Monte uma folha de relações angulares com 5 casos: ângulos suplementares, complementares, opostos pelo vértice, soma interna/externa de polígonos e paralelas cortadas por transversal. Para cada caso, desenhe um exemplo simples, marque os ângulos relevantes e escreva a relação em forma de equação. Termine com 3 sinais visuais que ajudam a reconhecer qual relação usar.";
+  return {
+    cicloId: ctx.cicloId,
+    conhecimentoEscopoId: ctx.escopoId,
+    conhecimentoDominioId: ctx.dominioId,
+    tipoQuest: "CONCEITO_BASE",
+    titulo: "Montar mapa de relações angulares",
+    descricao: corpo + secaoConclusao(criterio),
+    criterioConclusao: criterio,
+    duracaoEstimadaMin: 35,
+    dificuldade: "MEDIA",
+    fonteDiagnosticoJson: {
+      ...montarFonte(ctx, "CONCEITO_BASE", criterio),
+      motivo,
+    },
   };
 }
 

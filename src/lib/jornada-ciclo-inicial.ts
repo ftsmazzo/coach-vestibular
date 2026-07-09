@@ -9,6 +9,16 @@ import {
   selecionarMelhorFocoSemana1,
   tentarElevarFocoIngles,
 } from "@/lib/jornada-foco-inicial";
+import {
+  buscarEscopoAgregadoCanonica,
+  coletarEvidenciaCanonicaJornada,
+  evidenciaCanonicaFocoDeAgregado,
+  type EvidenciaCanonicaFoco,
+} from "@/lib/jornada-evidencia-canonica";
+import {
+  inferirHipotesePedagogicaFoco,
+  type HipotesePedagogicaFoco,
+} from "@/lib/jornada-hipotese-pedagogica";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
 import {
   JOURNEY_DIAGNOSTIC_TIPO_INICIAL,
@@ -62,6 +72,7 @@ export type BaselineCicloInicial = {
   origem: "JourneyDiagnosticSnapshot:INICIAL";
   snapshotInicialId: string;
   criadoEm: string;
+  hipotese?: HipotesePedagogicaFoco;
   foco: {
     escopoId?: string | null;
     dominioId?: string | null;
@@ -84,6 +95,12 @@ export type BaselineCicloInicial = {
     hipoteseDiagnostica: string;
     oQueSeraObservadoNaSemana: string;
     oQueNaoPodeSerConcluidoAinda: string;
+    motivoDiagnostico?: string;
+    motivoSemana?: string;
+    motivoQuest?: string;
+    criterioConclusao?: string;
+    baselineEvidencia?: string;
+    hipotesePedagogica?: string;
   };
 };
 
@@ -95,6 +112,9 @@ export type NarrativaInicioCiclo = {
   porqueEsseFoco: string;
   comoVamosMedir: string;
   limiteDaSemana: string;
+  motivoDiagnostico?: string;
+  hipotesePedagogica?: string;
+  motivoSemana?: string;
 };
 
 export type CicloInicialResumo = {
@@ -277,7 +297,8 @@ function focoFromEscopo(
 
 export function montarBaselineCicloInicial(
   snapshot: SnapshotInicialParsed,
-  foco: FocoInicialJornada
+  foco: FocoInicialJornada,
+  opts?: { evidencia?: EvidenciaCanonicaFoco; hipotese?: HipotesePedagogicaFoco }
 ): BaselineCicloInicial {
   const linha = foco.escopoId
     ? snapshot.baseline.porEscopo.find((e) => e.escopoId === foco.escopoId)
@@ -285,14 +306,16 @@ export function montarBaselineCicloInicial(
 
   const tiposErro = linha?.tiposErro ?? foco.tiposErro;
   const tipoDominante = Object.entries(tiposErro).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const hipotese = opts?.hipotese;
 
-  let hipotese = foco.motivo;
-  if (tipoDominante === "CONCEITO_TEORICO") {
-    hipotese = "Os erros sugerem lacuna conceitual no conteúdo exigido neste escopo.";
-  } else if (tipoDominante === "INTERPRETACAO_ENUNCIADO") {
-    hipotese = "Os erros sugerem dificuldade em interpretar o comando antes de aplicar o conteúdo.";
-  } else if (foco.padroesCognitivos[0]) {
-    hipotese = foco.padroesCognitivos[0].descricao;
+  let hipoteseDiagnostica = hipotese?.hipotese ?? foco.motivo;
+  if (!hipotese && tipoDominante === "CONCEITO_TEORICO") {
+    hipoteseDiagnostica = "Os erros sugerem lacuna conceitual no conteúdo exigido neste escopo.";
+  } else if (!hipotese && tipoDominante === "INTERPRETACAO_ENUNCIADO") {
+    hipoteseDiagnostica =
+      "Os erros sugerem dificuldade em interpretar o comando antes de aplicar o conteúdo.";
+  } else if (!hipotese && foco.padroesCognitivos[0]) {
+    hipoteseDiagnostica = foco.padroesCognitivos[0].descricao;
   }
 
   return {
@@ -300,44 +323,59 @@ export function montarBaselineCicloInicial(
     origem: "JourneyDiagnosticSnapshot:INICIAL",
     snapshotInicialId: snapshot.id,
     criadoEm: new Date().toISOString(),
+    hipotese,
     foco: {
       escopoId: foco.escopoId,
       dominioId: foco.dominioId,
       titulo: foco.titulo,
-      motivo: foco.motivo,
+      motivo: hipotese?.motivoDiagnostico ?? foco.motivo,
       estadoInicial: foco.estadoInicial,
     },
     evidencias: {
-      totalQuestoesNoEscopo: linha?.total ?? 0,
-      acertosNoEscopo: linha?.acertos ?? 0,
-      errosNoEscopo: linha?.erros ?? 0,
-      pctErro: linha?.pctErro ?? 0,
-      provasComErro: linha?.provasComErro ?? 0,
+      totalQuestoesNoEscopo: opts?.evidencia?.total ?? linha?.total ?? 0,
+      acertosNoEscopo: opts?.evidencia?.acertos ?? linha?.acertos ?? 0,
+      errosNoEscopo: opts?.evidencia?.erros ?? linha?.erros ?? 0,
+      pctErro: opts?.evidencia?.pctErro ?? linha?.pctErro ?? 0,
+      provasComErro: opts?.evidencia?.provasComErro ?? linha?.provasComErro ?? 0,
       conhecimentosExigidos: linha?.conhecimentosExigidos ?? [],
       tiposErro,
       observacoesAluno: linha?.observacoesAluno ?? [],
     },
     leitura: {
       problemaPrincipal: foco.escopoId
-        ? `${foco.titulo} apareceu como prioridade no Diagnóstico Inicial da Jornada.`
+        ? hipotese
+          ? `Sinal inicial em ${foco.titulo} — ${hipotese.cuidadoInterpretativo}`
+          : `${foco.titulo} apareceu como prioridade no Diagnóstico Inicial da Jornada.`
         : "A Semana 1 organiza o ritmo e a leitura dos primeiros sinais da Jornada.",
-      hipoteseDiagnostica: hipotese,
-      oQueSeraObservadoNaSemana: foco.escopoId
-        ? "Se o erro está mais ligado a conceito, unidade ou interpretação do comando neste escopo."
-        : "Como você organiza estudo e responde aos primeiros focos quando surgirem.",
+      hipoteseDiagnostica,
+      oQueSeraObservadoNaSemana:
+        hipotese?.objetivoDaSemana ??
+        (foco.escopoId
+          ? "Se o erro está mais ligado a conceito, unidade ou interpretação do comando neste escopo."
+          : "Como você organiza estudo e responde aos primeiros focos quando surgirem."),
       oQueNaoPodeSerConcluidoAinda:
+        hipotese?.cuidadoInterpretativo ??
         "Domínio consolidado global — a confirmação real virá em uma próxima prova ou simulado completo.",
+      motivoDiagnostico: hipotese?.motivoDiagnostico,
+      motivoSemana: hipotese?.motivoSemana,
+      motivoQuest: hipotese?.motivoQuest,
+      criterioConclusao: hipotese?.criterioConclusao,
+      baselineEvidencia: hipotese?.baselineEvidencia,
+      hipotesePedagogica: hipotese?.hipotese,
     },
   };
 }
 
 export function montarNarrativaInicioCiclo(
   snapshot: SnapshotInicialParsed,
-  foco: FocoInicialJornada
+  foco: FocoInicialJornada,
+  opts?: { hipotese?: HipotesePedagogicaFoco }
 ): NarrativaInicioCiclo {
   const focoLabel = foco.titulo;
+  const hipotese = opts?.hipotese;
   const porque =
-    foco.motivo ||
+    hipotese?.motivoDiagnostico ??
+    foco.motivo ??
     `Este foco foi escolhido a partir das prioridades do seu Diagnóstico Inicial (${snapshot.narrativa.subtitulo}).`;
 
   return {
@@ -346,15 +384,21 @@ export function montarNarrativaInicioCiclo(
     mensagem: foco.escopoId
       ? foco.focoComposto
         ? `${foco.motivo} Nesta semana, vamos observar se você consegue usar pistas do texto antes de decidir a alternativa. O resultado será um sinal local; a confirmação real virá em uma próxima prova ou simulado completo.`
-        : `A Semana 1 vai focar em ${focoLabel} porque esse escopo apareceu como prioridade inicial no seu Diagnóstico da Jornada. Nesta semana, vamos observar se o erro está mais ligado a conceito, unidade ou interpretação do comando. O resultado da semana será um sinal local; a confirmação real virá em uma próxima prova ou simulado completo.`
+        : hipotese?.motivoSemana ??
+          `A Semana 1 vai focar em ${focoLabel} porque esse escopo apareceu como sinal inicial no seu Diagnóstico da Jornada. Nesta semana, vamos observar se o erro está mais ligado a conceito, unidade ou interpretação do comando. O resultado da semana será um sinal local; a confirmação real virá em uma próxima prova ou simulado completo.`
       : `A Semana 1 organiza seu ritmo na Jornada enquanto consolidamos evidências para um foco pedagógico mais específico. O resultado desta semana será um sinal local, não um diagnóstico definitivo.`,
     focoPrincipal: focoLabel,
     porqueEsseFoco: porque,
-    comoVamosMedir: foco.escopoId
-      ? `Baseline: ${foco.motivo} Evolução local será observada ao longo da semana; confirmação global exige nova prova.`
-      : "Aderência ao ritmo proposto e clareza sobre o próximo foco pedagógico.",
+    comoVamosMedir: hipotese
+      ? `Baseline: ${hipotese.baselineEvidencia}. Objetivo: ${hipotese.objetivoDaSemana} Evolução local será observada ao longo da semana; confirmação global exige nova prova.`
+      : foco.escopoId
+        ? `Baseline: ${foco.motivo} Evolução local será observada ao longo da semana; confirmação global exige nova prova.`
+        : "Aderência ao ritmo proposto e clareza sobre o próximo foco pedagógico.",
     limiteDaSemana:
       "Fechamento semanal e mini-quiz serão liberados em etapa posterior. Esta semana mede adesão e clareza do foco, não domínio consolidado.",
+    motivoDiagnostico: hipotese?.motivoDiagnostico,
+    hipotesePedagogica: hipotese?.hipotese,
+    motivoSemana: hipotese?.motivoSemana,
   };
 }
 
@@ -444,8 +488,20 @@ async function persistirPrimeiroCiclo(
 ): Promise<PrimeiroCicloResultado> {
   const snapshot = parseSnapshotInicialRow(snapshotRow);
   const foco = selecionarFocoInicialDoDiagnostico(snapshot);
-  const baseline = montarBaselineCicloInicial(snapshot, foco);
-  const narrativa = montarNarrativaInicioCiclo(snapshot, foco);
+
+  let evidencia: EvidenciaCanonicaFoco | undefined;
+  let hipotese: HipotesePedagogicaFoco | undefined;
+  if (foco.escopoId) {
+    const canonica = await coletarEvidenciaCanonicaJornada(userId);
+    const agregado = buscarEscopoAgregadoCanonica(canonica, foco.escopoId);
+    if (agregado) {
+      evidencia = evidenciaCanonicaFocoDeAgregado(agregado);
+      hipotese = inferirHipotesePedagogicaFoco(evidencia, foco.titulo);
+    }
+  }
+
+  const baseline = montarBaselineCicloInicial(snapshot, foco, { evidencia, hipotese });
+  const narrativa = montarNarrativaInicioCiclo(snapshot, foco, { hipotese });
 
   const startAt = new Date();
   const endAt = new Date(startAt);

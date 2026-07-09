@@ -6,6 +6,10 @@ import type { StructuredAnamneseProfile } from "@/lib/anamnese-types";
 import type { EscopoScore } from "@/lib/diagnosis-escopo";
 import type { EvidenciaCanonicaFoco } from "@/lib/jornada-evidencia-canonica";
 import { formatarEvidenciaFocoAgregada } from "@/lib/jornada-evidencia-canonica";
+import {
+  inferirHipotesePedagogicaFoco,
+  type HipotesePedagogicaFoco,
+} from "@/lib/jornada-hipotese-pedagogica";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
 import type {
   BaselineEscopoJornada,
@@ -140,7 +144,8 @@ export function motivoDiagnosticoEscopo(
   const partes: string[] = [];
 
   if (evidenciaCanonica) {
-    partes.push(formatarEvidenciaFocoAgregada(evidenciaCanonica).replace(/\.$/, ""));
+    const hipotese = inferirHipotesePedagogicaFoco(evidenciaCanonica, escopoLabel);
+    partes.push(hipotese.motivoDiagnostico.replace(/\.$/, ""));
   } else if (linha.erros >= 3 && linha.provasComErro >= 2) {
     partes.push(
       `${escopoLabel} concentra ${linha.erros} erros em ${linha.total} questões e reaparece em ${linha.provasComErro} provas`
@@ -467,6 +472,9 @@ export function montarResumoExecutivoDiagnostico(opts: {
   padraoCognitivoTop?: { titulo: string; ocorrencias: number };
   moduladoresAnamnese: string[];
   confirmacoesAnamnese: string[];
+  evidenciaPrioridade?: EvidenciaCanonicaFoco;
+  hipotesePrioridade?: HipotesePedagogicaFoco;
+  atencaoSecundaria?: string;
 }): string {
   const partes: string[] = [];
 
@@ -474,8 +482,19 @@ export function montarResumoExecutivoDiagnostico(opts: {
     `Com base em ${opts.provas} prova(s) e ${opts.questoes} questões válidas (${opts.pctAcerto}% de acerto na amostra)`
   );
 
-  if (opts.prioridades[0]) {
-    partes.push(`a leitura inicial aponta ${opts.prioridades[0].titulo} como eixo mais urgente`);
+  if (opts.hipotesePrioridade && opts.evidenciaPrioridade && opts.prioridades[0]) {
+    const titulo = opts.prioridades[0].titulo;
+    partes.push(
+      `o sinal inicial mais consistente para começar a Jornada aparece em ${titulo}`
+    );
+    partes.push(formatarEvidenciaFocoAgregada(opts.evidenciaPrioridade).replace(/\.$/, ""));
+    partes.push(
+      `Como a amostra do tema ainda é ${opts.hipotesePrioridade.forcaDaEvidencia === "INICIAL" ? "pequena" : "limitada"}, o diagnóstico trata isso como hipótese de intervenção, não como conclusão definitiva`
+    );
+  } else if (opts.prioridades[0]) {
+    partes.push(
+      `a leitura inicial aponta ${opts.prioridades[0].titulo} como primeira hipótese de intervenção`
+    );
     if (opts.prioridades[1]) {
       partes.push(`seguido de ${opts.prioridades[1].titulo}`);
     }
@@ -496,7 +515,9 @@ export function montarResumoExecutivoDiagnostico(opts: {
     partes.push(`enquanto ${opts.forcas[0].titulo} aparece mais estável na amostra`);
   }
 
-  if (opts.confirmacoesAnamnese[0]) {
+  if (opts.atencaoSecundaria) {
+    partes.push(opts.atencaoSecundaria.replace(/\.$/, ""));
+  } else if (opts.confirmacoesAnamnese[0]) {
     partes.push(opts.confirmacoesAnamnese[0]!.replace(/\.$/, ""));
   } else if (opts.moduladoresAnamnese[0]) {
     partes.push(

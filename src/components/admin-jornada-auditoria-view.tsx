@@ -300,12 +300,20 @@ export function AdminJornadaAuditoriaView({
                   {prova.acertos} acertos · {prova.erros} erros · {pct(prova.pctAcerto)} acerto
                 </p>
                 {prova.porEscopo.length > 0 && (
-                  <ul className="mt-3 space-y-1 text-sm">
-                    {prova.porEscopo
-                      .filter((s) => s.erros > 0 || s.total > 0)
-                      .sort((a, b) => b.erros - a.erros)
-                      .slice(0, 12)
-                      .map((s) => (
+                  <>
+                    <p className="mt-3 text-xs text-slate-500">
+                      Mostrando principais escopos com erro nesta prova
+                      {prova.porEscopo.filter((s) => s.erros > 0 || s.total > 0).length > 12
+                        ? " (top 12 por quantidade de erros)"
+                        : ""}
+                      .
+                    </p>
+                    <ul className="mt-2 space-y-1 text-sm">
+                      {prova.porEscopo
+                        .filter((s) => s.erros > 0 || s.total > 0)
+                        .sort((a, b) => b.erros - a.erros)
+                        .slice(0, 12)
+                        .map((s) => (
                         <li key={s.escopoId} className="flex flex-wrap justify-between gap-2 text-slate-700">
                           <Link
                             href={`/admin/jornada/auditoria?userId=${aluno.id}&escopoId=${encodeURIComponent(s.escopoId)}`}
@@ -324,7 +332,8 @@ export function AdminJornadaAuditoriaView({
                           </span>
                         </li>
                       ))}
-                  </ul>
+                    </ul>
+                  </>
                 )}
               </Card>
             ))
