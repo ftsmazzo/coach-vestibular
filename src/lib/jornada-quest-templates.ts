@@ -74,10 +74,6 @@ function montarFonte(
   };
 }
 
-function secaoConclusao(criterio: string): string {
-  return `\n\nConcluir quando: ${criterio}`;
-}
-
 export function templateRevisaoErro(ctx: ContextoTemplateQuest): QuestJornadaDraft {
   if (isEscopoIngles(ctx.escopoId ?? "")) {
     return templateRevisaoErroIngles(ctx);
@@ -101,7 +97,7 @@ export function templateRevisaoErro(ctx: ContextoTemplateQuest): QuestJornadaDra
     conhecimentoDominioId: ctx.dominioId,
     tipoQuest: "REVISAO_ERRO",
     titulo: `Refazer erros em ${ctx.escopoLabel}`,
-    descricao: corpo + secaoConclusao(criterio),
+    descricao: corpo,
     criterioConclusao: criterio,
     duracaoEstimadaMin: 35,
     dificuldade: "MEDIA",
@@ -126,7 +122,7 @@ export function templateConceitoBase(ctx: ContextoTemplateQuest): QuestJornadaDr
     conhecimentoDominioId: ctx.dominioId,
     tipoQuest: "CONCEITO_BASE",
     titulo: `Reconstruir base: ${ctx.escopoLabel}`,
-    descricao: corpo + secaoConclusao(criterio),
+    descricao: corpo,
     criterioConclusao: criterio,
     duracaoEstimadaMin: 30,
     dificuldade: "MEDIA",
@@ -143,15 +139,21 @@ export function templateRevisaoErroSomaAngulos(ctx: ContextoTemplateQuest): Ques
     ctx.motivoQuest ??
     ctx.hipotese?.motivoQuest ??
     "Refazer esses itens ajuda a localizar se o erro aconteceu na leitura da figura, na escolha da relação angular ou na montagem da equação.";
+  const questoesRef =
+    ctx.hipotese?.questoesRevisaoTexto?.trim() ||
+    "";
+  const abertura = questoesRef
+    ? `Refaça ${questoesRef}.`
+    : "Refaça as questões erradas de Soma de ângulos em figuras planas.";
   const corpo =
-    "Refaça as questões erradas de Soma de ângulos em figuras planas. Antes de olhar a correção, marque na figura quais ângulos são conhecidos, qual ângulo precisa ser encontrado e qual relação liga esses ângulos. Depois escreva a equação usada e compare com o gabarito.";
+    `${abertura} Antes de olhar a correção, marque na figura quais ângulos são conhecidos, qual ângulo precisa ser encontrado e qual relação liga esses ângulos. Depois escreva a equação usada e compare com o gabarito.`;
   return {
     cicloId: ctx.cicloId,
     conhecimentoEscopoId: ctx.escopoId,
     conhecimentoDominioId: ctx.dominioId,
     tipoQuest: "REVISAO_ERRO",
     titulo: "Refazer erros de soma de ângulos com marcação da figura",
-    descricao: corpo + secaoConclusao(criterio),
+    descricao: corpo,
     criterioConclusao: criterio,
     duracaoEstimadaMin: 40,
     dificuldade: "MEDIA",
@@ -177,7 +179,7 @@ export function templateConceitoBaseSomaAngulos(ctx: ContextoTemplateQuest): Que
     conhecimentoDominioId: ctx.dominioId,
     tipoQuest: "CONCEITO_BASE",
     titulo: "Montar mapa de relações angulares",
-    descricao: corpo + secaoConclusao(criterio),
+    descricao: corpo,
     criterioConclusao: criterio,
     duracaoEstimadaMin: 35,
     dificuldade: "MEDIA",
@@ -205,7 +207,7 @@ export function templateLeituraIngles(ctx: ContextoTemplateQuest): QuestJornadaD
     conhecimentoDominioId: ctx.dominioId,
     tipoQuest: "CONCEITO_BASE",
     titulo: "Marcar pistas de sentido no texto em inglês",
-    descricao: corpo + secaoConclusao(criterio),
+    descricao: corpo,
     criterioConclusao: criterio,
     duracaoEstimadaMin: 35,
     dificuldade: "MEDIA",
@@ -225,7 +227,7 @@ export function templateRevisaoErroIngles(ctx: ContextoTemplateQuest): QuestJorn
     conhecimentoDominioId: ctx.dominioId,
     tipoQuest: "REVISAO_ERRO",
     titulo: "Comparar resposta e gabarito em inglês",
-    descricao: corpo + secaoConclusao(criterio),
+    descricao: corpo,
     criterioConclusao: criterio,
     duracaoEstimadaMin: 35,
     dificuldade: "MEDIA",
@@ -253,7 +255,7 @@ export function templateTreinoGuiado(ctx: ContextoTemplateQuest): QuestJornadaDr
     conhecimentoDominioId: ctx.dominioId,
     tipoQuest: "TREINO_GUIADO",
     titulo: `Treino guiado: ${ctx.escopoLabel}`,
-    descricao: corpo + secaoConclusao(criterio),
+    descricao: corpo,
     criterioConclusao: criterio,
     duracaoEstimadaMin: 40,
     dificuldade: "FORTE",
@@ -270,7 +272,7 @@ export function templateMetacognicao(ctx: ContextoTemplateQuest): QuestJornadaDr
     conhecimentoDominioId: ctx.dominioId,
     tipoQuest: "METACOGNICAO",
     titulo: `Classificar erros em ${ctx.escopoLabel}`,
-    descricao: corpo + secaoConclusao(criterio),
+    descricao: corpo,
     criterioConclusao: criterio,
     duracaoEstimadaMin: 25,
     dificuldade: "LEVE",
@@ -300,7 +302,7 @@ export function templateOrganizacaoRotina(ctx: ContextoTemplateQuest): QuestJorn
     conhecimentoDominioId: null,
     tipoQuest: "METACOGNICAO",
     titulo: "Organizar ritmo da Semana 1",
-    descricao: corpo + secaoConclusao(criterio),
+    descricao: corpo,
     criterioConclusao: criterio,
     duracaoEstimadaMin: 20,
     dificuldade: "LEVE",

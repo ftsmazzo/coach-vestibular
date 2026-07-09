@@ -29,6 +29,7 @@ import {
 } from "@/lib/jornada-diagnostico-inicial";
 import { prisma } from "@/lib/prisma";
 import { getMateriaLabel } from "@/lib/taxonomy";
+import { rotuloFocoMateria } from "@/lib/jornada-labels";
 
 const DIAS_CICLO = 7;
 const BASELINE_CICLO_VERSAO = "1.0";
@@ -97,6 +98,8 @@ export type BaselineCicloInicial = {
     oQueNaoPodeSerConcluidoAinda: string;
     motivoDiagnostico?: string;
     motivoSemana?: string;
+    narrativaSemana?: string;
+    resumoPlano?: string;
     motivoQuest?: string;
     criterioConclusao?: string;
     baselineEvidencia?: string;
@@ -115,6 +118,8 @@ export type NarrativaInicioCiclo = {
   motivoDiagnostico?: string;
   hipotesePedagogica?: string;
   motivoSemana?: string;
+  narrativaSemana?: string;
+  resumoPlano?: string;
 };
 
 export type CicloInicialResumo = {
@@ -270,6 +275,7 @@ function focoFromEscopo(
   const entry = escoposIndex.get(escopoId);
   const linhaBaseline = baseline.porEscopo.find((e) => e.escopoId === escopoId);
   const n1 = escopoId.split(".")[0] ?? null;
+  const labelEscopo = entry?.escopoLabel ?? escopoId;
   const padroesRelacionados = diagnostico.padroesCognitivos.filter((p) =>
     p.evidencias.some(
       (ev) =>
@@ -281,10 +287,10 @@ function focoFromEscopo(
   return {
     escopoId,
     dominioId: linhaBaseline?.dominioId ?? entry?.dominioId ?? null,
-    titulo: entry?.escopoLabel ?? escopoId,
+    titulo: labelEscopo,
     motivo,
     estadoInicial: linhaBaseline?.estadoInicial,
-    materiaLabel: n1 ? getMateriaLabel(n1) : null,
+    materiaLabel: rotuloFocoMateria(escopoId, labelEscopo, n1 ? getMateriaLabel(n1) : null),
     conceitosCanonicos: linhaBaseline?.conceitosCanonicos ?? [],
     tiposErro: linhaBaseline?.tiposErro ?? {},
     padroesCognitivos: padroesRelacionados.slice(0, 2).map((p) => ({
@@ -358,6 +364,8 @@ export function montarBaselineCicloInicial(
         "Domínio consolidado global — a confirmação real virá em uma próxima prova ou simulado completo.",
       motivoDiagnostico: hipotese?.motivoDiagnostico,
       motivoSemana: hipotese?.motivoSemana,
+      narrativaSemana: hipotese?.narrativaSemana,
+      resumoPlano: hipotese?.resumoPlano,
       motivoQuest: hipotese?.motivoQuest,
       criterioConclusao: hipotese?.criterioConclusao,
       baselineEvidencia: hipotese?.baselineEvidencia,
@@ -384,7 +392,8 @@ export function montarNarrativaInicioCiclo(
     mensagem: foco.escopoId
       ? foco.focoComposto
         ? `${foco.motivo} Nesta semana, vamos observar se você consegue usar pistas do texto antes de decidir a alternativa. O resultado será um sinal local; a confirmação real virá em uma próxima prova ou simulado completo.`
-        : hipotese?.motivoSemana ??
+        : hipotese?.narrativaSemana ??
+          hipotese?.motivoSemana ??
           `A Semana 1 vai focar em ${focoLabel} porque esse escopo apareceu como sinal inicial no seu Diagnóstico da Jornada. Nesta semana, vamos observar se o erro está mais ligado a conceito, unidade ou interpretação do comando. O resultado da semana será um sinal local; a confirmação real virá em uma próxima prova ou simulado completo.`
       : `A Semana 1 organiza seu ritmo na Jornada enquanto consolidamos evidências para um foco pedagógico mais específico. O resultado desta semana será um sinal local, não um diagnóstico definitivo.`,
     focoPrincipal: focoLabel,
@@ -399,6 +408,8 @@ export function montarNarrativaInicioCiclo(
     motivoDiagnostico: hipotese?.motivoDiagnostico,
     hipotesePedagogica: hipotese?.hipotese,
     motivoSemana: hipotese?.motivoSemana,
+    narrativaSemana: hipotese?.narrativaSemana,
+    resumoPlano: hipotese?.resumoPlano,
   };
 }
 
@@ -508,6 +519,9 @@ async function persistirPrimeiroCiclo(
   endAt.setDate(endAt.getDate() + DIAS_CICLO);
 
   const metaTitulo = foco.escopoId ? `Semana 1: ${foco.titulo}` : "Semana 1: organização inicial";
+  const metaMateria = foco.escopoId
+    ? rotuloFocoMateria(foco.escopoId, foco.titulo, foco.materiaLabel)
+    : foco.materiaLabel;
 
   const created = await db.learningCycle.create({
     data: {
@@ -517,7 +531,7 @@ async function persistirPrimeiroCiclo(
       startAt,
       endAt,
       metaTitulo,
-      metaMateria: foco.materiaLabel,
+      metaMateria,
       metaEscopoId: foco.escopoId,
       metaDominioId: foco.dominioId,
       metaConceitosJson:

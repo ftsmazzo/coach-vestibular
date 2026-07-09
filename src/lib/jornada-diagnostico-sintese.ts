@@ -8,6 +8,7 @@ import type { EvidenciaCanonicaFoco } from "@/lib/jornada-evidencia-canonica";
 import { formatarEvidenciaFocoAgregada } from "@/lib/jornada-evidencia-canonica";
 import {
   inferirHipotesePedagogicaFoco,
+  motivoPrioridadeInicial,
   type HipotesePedagogicaFoco,
 } from "@/lib/jornada-hipotese-pedagogica";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
@@ -144,8 +145,7 @@ export function motivoDiagnosticoEscopo(
   const partes: string[] = [];
 
   if (evidenciaCanonica) {
-    const hipotese = inferirHipotesePedagogicaFoco(evidenciaCanonica, escopoLabel);
-    partes.push(hipotese.motivoDiagnostico.replace(/\.$/, ""));
+    partes.push(motivoPrioridadeInicial(escopoLabel, evidenciaCanonica).replace(/\.$/, ""));
   } else if (linha.erros >= 3 && linha.provasComErro >= 2) {
     partes.push(
       `${escopoLabel} concentra ${linha.erros} erros em ${linha.total} questões e reaparece em ${linha.provasComErro} provas`
@@ -271,7 +271,13 @@ export function montarEscoposCriticosDiagnostico(
             : e.estadoInicial === "FRAGILIDADE"
               ? ("FRAGILIDADE" as const)
               : ("MONITORAR" as const),
-        motivo: motivoDiagnosticoEscopo(e, label, qualidade, escopoScore),
+        motivo: motivoDiagnosticoEscopo(
+          e,
+          label,
+          qualidade,
+          escopoScore,
+          evidenciaPorEscopo?.get(e.escopoId)
+        ),
         evidencias: montarEvidenciasEscopoRicas(
           e,
           label,
@@ -343,25 +349,28 @@ export function montarPrioridadesDiagnostico(
       escopoId: c.e.escopoId,
       n1: c.e.escopoId.split(".")[0],
       titulo: c.label,
-      motivo: motivoDiagnosticoEscopo(
-        c.e,
-        c.label,
-        c.qualidade,
-        c.escopoScore,
-        evidenciaPorEscopo?.get(c.e.escopoId)
-      ),
+      motivo: evidenciaPorEscopo?.get(c.e.escopoId)
+        ? motivoPrioridadeInicial(c.label, evidenciaPorEscopo.get(c.e.escopoId))
+        : motivoDiagnosticoEscopo(
+            c.e,
+            c.label,
+            c.qualidade,
+            c.escopoScore,
+            evidenciaPorEscopo?.get(c.e.escopoId)
+          ),
       tipoPrioridade,
     };
   });
 
   if (prioridades.length === 0 && escopoScores[0]) {
     const top = escopoScores[0];
+    const ev = evidenciaPorEscopo?.get(top.escopoId);
     prioridades.push({
       ordem: 1,
       escopoId: top.escopoId,
       n1: top.materiaId,
       titulo: top.escopoLabel,
-      motivo: `${top.escopoLabel} concentrou ${top.erros} erro(s) com maior pressão na amostra — ainda com evidência limitada para afirmar consolidação.`,
+      motivo: motivoPrioridadeInicial(top.escopoLabel, ev),
       tipoPrioridade: "CONTEUDO",
     });
   }
@@ -462,6 +471,18 @@ export function cruzarAnamneseComEvidencias(
   return { moduladores, limites, confirmacoes };
 }
 
+function juntarFrasesResumo(partes: string[]): string {
+  if (partes.length === 0) return "";
+  let out = partes[0]!;
+  for (let i = 1; i < partes.length; i++) {
+    const p = partes[i]!;
+    const novaFrase = /^[A-ZÁÉÍÓÚÂÊÔÃÕÇ]|^Como |^Enquanto /.test(p);
+    out += novaFrase ? `. ${p}` : `, ${p}`;
+  }
+  if (!out.endsWith(".")) out += ".";
+  return out.charAt(0).toUpperCase() + out.slice(1);
+}
+
 export function montarResumoExecutivoDiagnostico(opts: {
   provas: number;
   questoes: number;
@@ -487,7 +508,12 @@ export function montarResumoExecutivoDiagnostico(opts: {
     partes.push(
       `o sinal inicial mais consistente para começar a Jornada aparece em ${titulo}`
     );
-    partes.push(formatarEvidenciaFocoAgregada(opts.evidenciaPrioridade).replace(/\.$/, ""));
+    partes.push(
+      formatarEvidenciaFocoAgregada(opts.evidenciaPrioridade, { nomesCurtos: true }).replace(
+        /\.$/,
+        ""
+      )
+    );
     partes.push(
       `Como a amostra do tema ainda é ${opts.hipotesePrioridade.forcaDaEvidencia === "INICIAL" ? "pequena" : "limitada"}, o diagnóstico trata isso como hipótese de intervenção, não como conclusão definitiva`
     );
@@ -525,6 +551,5 @@ export function montarResumoExecutivoDiagnostico(opts: {
     );
   }
 
-  const texto = partes.join(", ") + ".";
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
+  return juntarFrasesResumo(partes);
 }

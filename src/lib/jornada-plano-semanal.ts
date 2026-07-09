@@ -223,7 +223,7 @@ export function questRowParaResumo(q: {
   return {
     id: q.id,
     titulo: q.titulo,
-    descricao: q.descricao ?? "",
+    descricao: descricaoQuestSemCriterioDuplicado(q.descricao),
     tipoQuest: q.tipoQuest ?? "TREINO_GUIADO",
     duracaoMin: q.duracaoMin,
     criterioConclusao: fonte?.criterioConclusao ?? "",
@@ -340,17 +340,31 @@ export function resolverQuantidadeQuests(profile: StructuredAnamneseProfile | nu
   return { quantidade, intensidade, moduladaPorAnamnese: modulada };
 }
 
+export function descricaoQuestSemCriterioDuplicado(descricao: string | null): string {
+  if (!descricao) return "";
+  return descricao
+    .replace(/\n\nConcluir quando:\s*.+$/s, "")
+    .replace(/\nConcluir quando:\s*.+$/s, "")
+    .trim();
+}
+
 function montarNarrative(
   focoTitulo: string,
   motivo: string,
   narrativaCiclo: NarrativaInicioCiclo,
-  carga: StudyPlanJornadaItems["carga"]
+  carga: StudyPlanJornadaItems["carga"],
+  resumoPlano?: string
 ): StudyPlanJornadaNarrative {
   return {
     titulo: "Plano da Semana 1 da Jornada",
-    mensagem: narrativaCiclo.mensagem,
+    mensagem:
+      resumoPlano ??
+      narrativaCiclo.resumoPlano ??
+      narrativaCiclo.narrativaSemana ??
+      narrativaCiclo.mensagem,
     focoDaSemana: focoTitulo,
-    porQueEssePlano: motivo || narrativaCiclo.porqueEsseFoco,
+    porQueEssePlano:
+      narrativaCiclo.motivoDiagnostico ?? motivo ?? narrativaCiclo.porqueEsseFoco,
     comoExecutar: `Execute ${carga.questsTotal} tarefas (~${carga.duracaoTotalEstimadaMin} min no total), uma por vez. Marque como concluída só após cumprir o critério de cada quest.`,
     criterioDeFechamentoLocal:
       "Concluir as quests desta semana registrando o que fez — sem interpretar como domínio global.",
@@ -474,7 +488,8 @@ async function executarGeracao(
       cicloResumo.baseline.foco.titulo,
       cicloResumo.baseline.foco.motivo,
       cicloResumo.narrativa,
-      items.carga
+      items.carga,
+      cicloResumo.baseline.leitura.resumoPlano ?? cicloResumo.narrativa.resumoPlano
     );
     const plan = await db.studyPlan.create({
       data: {
@@ -612,7 +627,8 @@ async function executarGeracao(
     escopoLabel,
     baseline.foco.motivo,
     cicloResumo.narrativa,
-    items.carga
+    items.carga,
+    baseline.leitura.resumoPlano ?? cicloResumo.narrativa.resumoPlano
   );
 
   let planId: string;

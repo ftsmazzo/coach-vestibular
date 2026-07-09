@@ -2,6 +2,7 @@
  * Etapa 4E — hipótese pedagógica do foco a partir da evidência canônica.
  */
 import type { EvidenciaCanonicaFoco } from "@/lib/jornada-evidencia-canonica";
+import { abreviarNomeProva } from "@/lib/jornada-labels";
 
 export type ForcaDaEvidencia = "FORTE" | "MODERADA" | "INICIAL";
 
@@ -13,10 +14,17 @@ export type HipotesePedagogicaFoco = {
   cuidadoInterpretativo: string;
   motivoParaAluno: string;
   motivoDiagnostico: string;
+  /** Narrativa média — card Semana 1. */
+  narrativaSemana: string;
+  /** Texto longo com evidência detalhada — baseline/admin. */
   motivoSemana: string;
+  /** Resumo curto — plano semanal. */
+  resumoPlano: string;
   motivoQuest: string;
   criterioConclusao: string;
   baselineEvidencia: string;
+  /** Ex.: "Q8 da FAMERP e Q87/Q89 da UNESP". */
+  questoesRevisaoTexto: string;
 };
 
 export function isEscopoSomaAngulosFiguras(escopoId: string, label = ""): boolean {
@@ -61,12 +69,39 @@ export function formatarBaselineEvidenciaCiclo(ev: EvidenciaCanonicaFoco): strin
   const porProva = ev.ocorrenciasPorProva
     .filter((o) => o.erros > 0)
     .map((o) => {
+      const nome = abreviarNomeProva(o.nome);
       const qs =
         o.numerosErradas.length > 0 ? ` (Q${o.numerosErradas.join(", Q")})` : "";
-      return `${o.nome}: ${o.erros} erro(s)${qs}`;
+      return `${nome}: ${o.erros} erro(s)${qs}`;
     })
     .join("; ");
   return porProva ? `${base} — ${porProva}` : base;
+}
+
+/** Lista de questões erradas por prova para quest REVISAO_ERRO. */
+export function formatarQuestoesRevisaoPorProva(ev: EvidenciaCanonicaFoco): string {
+  const chunks = ev.ocorrenciasPorProva
+    .filter((o) => o.erros > 0 && o.numerosErradas.length > 0)
+    .map((o) => ({
+      prova: abreviarNomeProva(o.nome),
+      qs: o.numerosErradas.map((n) => `Q${n}`).join("/"),
+    }));
+  if (chunks.length === 0) return "";
+  return chunks.map((c) => `${c.qs} da ${c.prova}`).join(" e ");
+}
+
+/** Motivo de prioridade inicial no diagnóstico — sempre usa contagem canônica agregada. */
+export function motivoPrioridadeInicial(
+  escopoLabel: string,
+  evidencia?: EvidenciaCanonicaFoco
+): string {
+  if (!evidencia) {
+    return `${escopoLabel} aparece como sinal inicial na amostra — evidência ainda limitada para conclusão definitiva.`;
+  }
+  const forca = inferirForcaDaEvidencia(evidencia);
+  const amostra =
+    forca === "INICIAL" ? "pequena" : forca === "MODERADA" ? "ainda limitada" : "consistente, mas não definitiva";
+  return `${escopoLabel} aparece como primeira hipótese de intervenção: ${evidencia.erros} erro(s) em ${evidencia.total} questão(ões), somando as provas consideradas. A amostra ainda é ${amostra}, por isso não deve ser lida como conclusão definitiva.`;
 }
 
 function montarSinais(ev: EvidenciaCanonicaFoco, label: string): string[] {
@@ -154,7 +189,7 @@ export function inferirHipotesePedagogicaFoco(
 
   const motivoParaAluno = `Esse tema apareceu como o sinal inicial mais consistente porque você errou ${evidencia.erros === evidencia.total && evidencia.total > 0 ? `as ${evidencia.total} questões` : `${evidencia.erros} questão(ões)`} desse escopo somando as provas consideradas. Como a amostra é ${forcaDaEvidencia === "INICIAL" ? "pequena" : "ainda limitada"}, a semana vai usar esse foco para investigar a hipótese pedagógica, não para fechar um diagnóstico definitivo.`;
 
-  const motivoDiagnostico = `${label} surge como primeira hipótese de intervenção: ${baselineEvidencia}. ${cuidadoInterpretativo}`;
+  const motivoDiagnostico = motivoPrioridadeInicial(label, evidencia);
 
   const trabalhoSemana = isEscopoSomaAngulosFiguras(evidencia.escopoId, label)
     ? "leitura da figura, marcação dos ângulos, escolha da relação e montagem da equação"
@@ -164,10 +199,22 @@ export function inferirHipotesePedagogicaFoco(
     ? "a dificuldade esteja em reconhecer a relação angular correta na figura antes de fazer a conta"
     : "o erro esteja mais ligado ao conceito, à interpretação do comando ou à execução";
 
+  const questoesRevisaoTexto = formatarQuestoesRevisaoPorProva(evidencia);
+
+  const narrativaSemana =
+    `A Semana 1 foca em ${label} para testar a hipótese de que ${nucleoHipotese}. ` +
+    `Objetivo: ${conteudo.objetivoDaSemana} ` +
+    `Evidência inicial: ${evidencia.erros} erro(s) em ${evidencia.total} questão(ões), somando as provas consideradas. ` +
+    `O resultado será um sinal local; a confirmação real virá em nova prova ou simulado completo.`;
+
   const motivoSemana =
     `A Semana 1 vai focar em ${label} porque esse foi o sinal inicial mais consistente para intervenção: ${baselineEvidencia}. ` +
     `A hipótese é que ${nucleoHipotese}. ` +
     `Por isso, a semana vai trabalhar ${trabalhoSemana}. O resultado da semana será um sinal local; a confirmação real virá em nova prova ou simulado completo.`;
+
+  const resumoPlano = isEscopoSomaAngulosFiguras(evidencia.escopoId, label)
+    ? "Esta semana transforma a hipótese diagnóstica em duas tarefas práticas: refazer os erros com marcação da figura e reconstruir relações angulares essenciais. A meta é entender onde o raciocínio quebra, não provar domínio global."
+    : `Esta semana transforma a hipótese diagnóstica em tarefas práticas no escopo ${label}. A meta é entender onde o raciocínio quebra, não provar domínio global.`;
 
   return {
     forcaDaEvidencia,
@@ -177,10 +224,13 @@ export function inferirHipotesePedagogicaFoco(
     cuidadoInterpretativo,
     motivoParaAluno,
     motivoDiagnostico,
+    narrativaSemana,
     motivoSemana,
+    resumoPlano,
     motivoQuest: conteudo.motivoQuestRevisao,
     criterioConclusao: conteudo.criterioConclusao,
     baselineEvidencia,
+    questoesRevisaoTexto,
   };
 }
 

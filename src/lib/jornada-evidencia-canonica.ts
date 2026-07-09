@@ -19,6 +19,7 @@ import {
   type UnidadeRegistroJornada,
 } from "@/lib/prova-multidia";
 import { unidadeValidaParaJornada } from "@/lib/jornada-elegibilidade";
+import { abreviarNomeProva } from "@/lib/jornada-labels";
 import { prisma } from "@/lib/prisma";
 
 export type QuestaoEvidenciaCanonica = {
@@ -307,19 +308,26 @@ export function evidenciaCanonicaFocoDeAgregado(
 }
 
 /** Texto explícito: agregado longitudinal vs por prova. */
-export function formatarEvidenciaFocoAgregada(ev: EvidenciaCanonicaFoco): string {
+export function formatarEvidenciaFocoAgregada(
+  ev: EvidenciaCanonicaFoco,
+  opts?: { nomesCurtos?: boolean }
+): string {
   const partes = [
     `${ev.erros} erro(s) em ${ev.total} questão(ões) de ${ev.label} (somando as provas consideradas)`,
   ];
   if (ev.provasComErro >= 2) {
     const detalhe = ev.ocorrenciasPorProva
       .filter((o) => o.erros > 0)
-      .map((o) => `${o.nome}: ${o.erros} erro(s) (questões ${o.numerosErradas.join(", ")})`)
+      .map((o) => {
+        const nome = opts?.nomesCurtos ? abreviarNomeProva(o.nome) : o.nome;
+        return `${nome}: ${o.erros} erro(s) (questões ${o.numerosErradas.join(", ")})`;
+      })
       .join("; ");
     partes.push(`distribuídos em ${ev.provasComErro} provas (${detalhe})`);
   } else if (ev.ocorrenciasPorProva[0]) {
     const o = ev.ocorrenciasPorProva[0];
-    partes.push(`nesta amostra: ${o.nome} — ${o.erros} erro(s)`);
+    const nome = opts?.nomesCurtos ? abreviarNomeProva(o.nome) : o.nome;
+    partes.push(`nesta amostra: ${nome} — ${o.erros} erro(s)`);
   }
   return `${partes.join(" — ")}.`;
 }

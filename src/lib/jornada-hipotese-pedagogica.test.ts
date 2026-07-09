@@ -193,7 +193,7 @@ describe("inferirHipotesePedagogicaFoco — caso Frederico", () => {
     assert.ok(forca === "INICIAL" || forca === "MODERADA");
     assert.notEqual(forca, "FORTE");
     assert.ok(hipotese.cuidadoInterpretativo.includes("amostra"));
-    assert.ok(!hipotese.motivoDiagnostico.toLowerCase().includes("definitiv"));
+    assert.ok(hipotese.motivoDiagnostico.includes("não deve ser lida como conclusão definitiva"));
   });
 
   it("2. diagnóstico usa hipótese de intervenção, não eixo mais urgente", () => {
@@ -224,7 +224,10 @@ describe("inferirHipotesePedagogicaFoco — caso Frederico", () => {
 
     assert.ok(narrativa.mensagem.includes("3 erro"));
     assert.ok(narrativa.mensagem.includes("somando"));
-    assert.ok(narrativa.mensagem.includes("FAMERP") || narrativa.mensagem.includes("UNESP"));
+    assert.ok(
+      baseline.leitura.baselineEvidencia?.includes("FAMERP") ||
+        baseline.leitura.baselineEvidencia?.includes("UNESP")
+    );
     assert.ok(
       narrativa.mensagem.includes("relação angular") ||
         narrativa.hipotesePedagogica?.includes("relação angular")
@@ -247,6 +250,9 @@ describe("quests de soma de ângulos", () => {
     assert.ok(revisao.descricao.includes("marque na figura"));
     assert.ok(revisao.descricao.includes("relação"));
     assert.ok(revisao.descricao.includes("equação"));
+    assert.equal(revisao.descricao.includes("Concluir quando:"), false);
+    assert.ok(revisao.descricao.includes("Q8 da FAMERP"));
+    assert.ok(revisao.descricao.includes("Q87/Q89 da UNESP"));
   });
 
   it("7–8. CONCEITO_BASE não usa resumo genérico e pede desenho/equação", () => {

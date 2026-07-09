@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, Badge } from "@/components/ui";
 import type { CicloResumo } from "@/lib/ciclo";
+import { formatarRotuloMateriaCiclo } from "@/lib/jornada-labels";
 
 export function CicloHeader({
   ciclo,
@@ -20,6 +21,12 @@ export function CicloHeader({
       ? "Último dia"
       : `${ciclo.diasRestantes} dia${ciclo.diasRestantes > 1 ? "s" : ""} restante${ciclo.diasRestantes > 1 ? "s" : ""}`;
 
+  const materiaExibicao = formatarRotuloMateriaCiclo(
+    ciclo.metaMateria,
+    ciclo.metaEscopoId,
+    ciclo.metaTitulo
+  );
+
   return (
     <Card className="border-teal-200 bg-gradient-to-br from-teal-50 to-white">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -30,8 +37,8 @@ export function CicloHeader({
           <h2 className="mt-0.5 text-base font-bold text-slate-900 sm:text-lg">
             Meta: {ciclo.metaTitulo}
           </h2>
-          {ciclo.metaMateria && (
-            <p className="text-xs text-slate-500">Foco em {ciclo.metaMateria}</p>
+          {materiaExibicao && (
+            <p className="text-xs text-slate-500">Foco em {materiaExibicao}</p>
           )}
           {ciclo.historiaInicio && ciclo.historiaInicio.length > 0 && (
             <p className="mt-2 text-sm leading-relaxed text-slate-700">

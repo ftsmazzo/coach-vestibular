@@ -17,6 +17,13 @@ interface QuestMeta {
   motivo?: string;
 }
 
+const TIPO_QUEST_LABEL: Record<string, string> = {
+  REVISAO_ERRO: "Revisão de erro",
+  CONCEITO_BASE: "Conceito base",
+  TREINO_GUIADO: "Treino guiado",
+  METACOGNICAO: "Metacognição",
+};
+
 interface Quest {
   id: string;
   titulo: string;
@@ -130,6 +137,7 @@ function QuestsPageInner() {
     numero?: number;
   }) {
     const rotulo = q.meta?.rotulo;
+    const tipoLabel = rotulo ? TIPO_QUEST_LABEL[rotulo] ?? rotulo : null;
     const dia = diaSugeridoLabel(q.dueDate);
     return (
       <Card
@@ -148,8 +156,15 @@ function QuestsPageInner() {
                 </span>
               )}
               <h3 className="font-semibold text-slate-900">{q.titulo}</h3>
-              {rotulo && <Badge tone="success">{rotulo}</Badge>}
+              {rotulo && fluxoJornada && tipoLabel && (
+                <Badge tone="neutral">{tipoLabel}</Badge>
+              )}
+              {rotulo && !fluxoJornada && <Badge tone="success">{rotulo}</Badge>}
             </div>
+            <p className="mt-1 text-xs text-slate-500">
+              ~{q.duracaoMin} min
+              {dia ? ` · sugerido: ${dia}` : ""}
+            </p>
             {q.descricao && (
               <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">
                 {q.descricao}
@@ -165,10 +180,6 @@ function QuestsPageInner() {
                 <span className="font-medium">Concluir quando:</span> {q.meta.criterioConclusao}
               </p>
             )}
-            <p className="mt-1 text-xs text-slate-500">
-              ~{q.duracaoMin} min
-              {dia ? ` · sugerido: ${dia}` : ""}
-            </p>
             {fluxoJornada && (
               <p className="mt-2 text-xs text-amber-800">
                 Concluir esta quest registra adesão local — não confirma domínio global do escopo.
