@@ -3,12 +3,8 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-auth";
 import {
   auditarCoerenciaDadosJornada,
-  type AuditoriaDadosJornadaComFoco,
 } from "@/lib/jornada-auditoria-dados";
-import {
-  evidenciaCanonicaFocoDeAgregado,
-  formatarEvidenciaFocoAgregada,
-} from "@/lib/jornada-evidencia-canonica";
+import { formatarEvidenciaFocoAgregada } from "@/lib/jornada-evidencia-canonica";
 import { prisma } from "@/lib/prisma";
 
 const querySchema = z.object({
@@ -41,9 +37,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 });
   }
 
-  const auditoria = (await auditarCoerenciaDadosJornada(userId, {
+  const auditoria = await auditarCoerenciaDadosJornada(userId, {
     escopoId,
-  })) as AuditoriaDadosJornadaComFoco;
+  });
 
   const resposta: Record<string, unknown> = {
     ...auditoria,
@@ -51,10 +47,10 @@ export async function GET(request: Request) {
     temDivergencias: auditoria.divergencias.length > 0,
   };
 
-  if (auditoria.escopoFiltrado) {
-    const foco = evidenciaCanonicaFocoDeAgregado(auditoria.escopoFiltrado);
-    resposta.evidenciaCanonicaFoco = foco;
-    resposta.textoEvidenciaAgregada = formatarEvidenciaFocoAgregada(foco);
+  if (auditoria.evidenciaCanonicaFoco) {
+    resposta.textoEvidenciaAgregada = formatarEvidenciaFocoAgregada(
+      auditoria.evidenciaCanonicaFoco
+    );
   }
 
   return NextResponse.json(resposta);
