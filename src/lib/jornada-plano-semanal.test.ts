@@ -159,7 +159,9 @@ describe("geração determinística de quests", () => {
     const q = templateRevisaoErro(ctxTemplate);
     assert.ok(q.titulo.includes("Gases"));
     assert.ok(q.descricao.includes("Refaça"));
-    assert.ok(q.descricao.includes("Concluir quando:"));
+    assert.equal(q.descricao.includes("Concluir quando:"), false);
+    assert.ok(q.criterioConclusao.length > 0);
+    assert.equal(q.criterioConclusao.toLowerCase().startsWith("concluir quando"), false);
     assert.equal(q.fonteDiagnosticoJson.versao, "1.0");
     assert.equal(q.fonteDiagnosticoJson.origem, "LearningCycle");
   });

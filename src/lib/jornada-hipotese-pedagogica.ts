@@ -2,7 +2,14 @@
  * Etapa 4E — hipótese pedagógica do foco a partir da evidência canônica.
  */
 import type { EvidenciaCanonicaFoco } from "@/lib/jornada-evidencia-canonica";
-import { abreviarNomeProva } from "@/lib/jornada-labels";
+import {
+  abreviarNomeProva,
+  formatarErros,
+  formatarQuestoes,
+  textoCriterioConclusaoExibicao,
+} from "@/lib/jornada-labels";
+
+export type PapelPrioridadeTexto = "primaria" | "secundaria";
 
 export type ForcaDaEvidencia = "FORTE" | "MODERADA" | "INICIAL";
 
@@ -65,14 +72,14 @@ export function inferirForcaDaEvidencia(ev: EvidenciaCanonicaFoco): ForcaDaEvide
 }
 
 export function formatarBaselineEvidenciaCiclo(ev: EvidenciaCanonicaFoco): string {
-  const base = `${ev.erros} erro(s) em ${ev.total} questão(ões), somando as provas consideradas`;
+  const base = `${formatarErros(ev.erros)} em ${formatarQuestoes(ev.total)}, somando as provas consideradas`;
   const porProva = ev.ocorrenciasPorProva
     .filter((o) => o.erros > 0)
     .map((o) => {
       const nome = abreviarNomeProva(o.nome);
       const qs =
         o.numerosErradas.length > 0 ? ` (Q${o.numerosErradas.join(", Q")})` : "";
-      return `${nome}: ${o.erros} erro(s)${qs}`;
+      return `${nome}: ${formatarErros(o.erros)}${qs}`;
     })
     .join("; ");
   return porProva ? `${base} — ${porProva}` : base;
@@ -90,23 +97,30 @@ export function formatarQuestoesRevisaoPorProva(ev: EvidenciaCanonicaFoco): stri
   return chunks.map((c) => `${c.qs} da ${c.prova}`).join(" e ");
 }
 
-/** Motivo de prioridade inicial no diagnóstico — sempre usa contagem canônica agregada. */
+/** Motivo de prioridade no diagnóstico — contagem canônica; só a 1ª usa "primeira hipótese". */
 export function motivoPrioridadeInicial(
   escopoLabel: string,
-  evidencia?: EvidenciaCanonicaFoco
+  evidencia?: EvidenciaCanonicaFoco,
+  papel: PapelPrioridadeTexto = "primaria"
 ): string {
   if (!evidencia) {
-    return `${escopoLabel} aparece como sinal inicial na amostra — evidência ainda limitada para conclusão definitiva.`;
+    return papel === "primaria"
+      ? `${escopoLabel} aparece como sinal inicial na amostra — evidência ainda limitada para conclusão definitiva.`
+      : `${escopoLabel} aparece como atenção secundária — evidência ainda limitada para conclusão definitiva.`;
   }
   const forca = inferirForcaDaEvidencia(evidencia);
   const amostra =
     forca === "INICIAL" ? "pequena" : forca === "MODERADA" ? "ainda limitada" : "consistente, mas não definitiva";
-  return `${escopoLabel} aparece como primeira hipótese de intervenção: ${evidencia.erros} erro(s) em ${evidencia.total} questão(ões), somando as provas consideradas. A amostra ainda é ${amostra}, por isso não deve ser lida como conclusão definitiva.`;
+  const contagem = `${formatarErros(evidencia.erros)} em ${formatarQuestoes(evidencia.total)}, somando as provas consideradas`;
+  if (papel === "secundaria") {
+    return `${escopoLabel} aparece como atenção secundária: ${contagem}.`;
+  }
+  return `${escopoLabel} aparece como primeira hipótese de intervenção: ${contagem}. A amostra ainda é ${amostra}, por isso não deve ser lida como conclusão definitiva.`;
 }
 
 function montarSinais(ev: EvidenciaCanonicaFoco, label: string): string[] {
   const sinais: string[] = [
-    `${ev.erros} erro(s) em ${ev.total} questão(ões) somando as provas consideradas`,
+    `${formatarErros(ev.erros)} em ${formatarQuestoes(ev.total)} somando as provas consideradas`,
   ];
   if (ev.provasComErro >= 2) {
     sinais.push(`erros distribuídos em ${ev.provasComErro} provas`);
@@ -144,7 +158,7 @@ function hipoteseConteudo(
     const refQuantidade =
       ev && ev.erros === ev.total
         ? `as ${ev.erros} questões`
-        : `${ev?.erros ?? "as"} questão(ões)`;
+        : formatarQuestoes(ev?.erros ?? 0);
 
     return {
       hipotese:
@@ -154,8 +168,9 @@ function hipoteseConteudo(
       motivoQuestRevisao: `Você errou ${refQuantidade} desse escopo${refProvas}. Refazer esses itens ajuda a localizar se o erro aconteceu na leitura da figura, na escolha da relação angular ou na montagem da equação.`,
       motivoQuestConceito:
         "Os erros sugerem que a base de reconhecimento das relações angulares precisa ser testada antes de novos exercícios. A tarefa reconstrói os casos essenciais que costumam aparecer em figuras planas.",
-      criterioConclusao:
-        "Concluir quando tiver refeito as questões indicadas com marcação da figura, relação angular escolhida, equação montada e uma frase dizendo onde o raciocínio quebrou.",
+      criterioConclusao: textoCriterioConclusaoExibicao(
+        "Concluir quando tiver refeito as questões indicadas com marcação da figura, relação angular escolhida, equação montada e uma frase dizendo onde o raciocínio quebrou."
+      ),
     };
   }
 
@@ -167,8 +182,9 @@ function hipoteseConteudo(
       "Refazer os erros deste escopo ajuda a localizar em qual etapa da resolução o raciocínio quebrou.",
     motivoQuestConceito:
       "Antes de aumentar volume, vale reconstruir os casos-base que sustentam este escopo.",
-    criterioConclusao:
-      "Concluir quando tiver registrado o comando, o passo decisivo e uma frase sobre onde o raciocínio falhou.",
+    criterioConclusao: textoCriterioConclusaoExibicao(
+      "Concluir quando tiver registrado o comando, o passo decisivo e uma frase sobre onde o raciocínio falhou."
+    ),
   };
 }
 
@@ -187,9 +203,9 @@ export function inferirHipotesePedagogicaFoco(
       ? "A evidência é consistente, mas ainda vale confirmar em nova prova antes de tratar como fragilidade global."
       : "A amostra ainda é pequena; a semana serve para testar a hipótese, não para concluir domínio ou fragilidade global.";
 
-  const motivoParaAluno = `Esse tema apareceu como o sinal inicial mais consistente porque você errou ${evidencia.erros === evidencia.total && evidencia.total > 0 ? `as ${evidencia.total} questões` : `${evidencia.erros} questão(ões)`} desse escopo somando as provas consideradas. Como a amostra é ${forcaDaEvidencia === "INICIAL" ? "pequena" : "ainda limitada"}, a semana vai usar esse foco para investigar a hipótese pedagógica, não para fechar um diagnóstico definitivo.`;
+  const motivoParaAluno = `Esse tema apareceu como o sinal inicial mais consistente porque você errou ${evidencia.erros === evidencia.total && evidencia.total > 0 ? `as ${evidencia.total} questões` : formatarQuestoes(evidencia.erros)} desse escopo somando as provas consideradas. Como a amostra é ${forcaDaEvidencia === "INICIAL" ? "pequena" : "ainda limitada"}, a semana vai usar esse foco para investigar a hipótese pedagógica, não para fechar um diagnóstico definitivo.`;
 
-  const motivoDiagnostico = motivoPrioridadeInicial(label, evidencia);
+  const motivoDiagnostico = motivoPrioridadeInicial(label, evidencia, "primaria");
 
   const trabalhoSemana = isEscopoSomaAngulosFiguras(evidencia.escopoId, label)
     ? "leitura da figura, marcação dos ângulos, escolha da relação e montagem da equação"
@@ -204,7 +220,7 @@ export function inferirHipotesePedagogicaFoco(
   const narrativaSemana =
     `A Semana 1 foca em ${label} para testar a hipótese de que ${nucleoHipotese}. ` +
     `Objetivo: ${conteudo.objetivoDaSemana} ` +
-    `Evidência inicial: ${evidencia.erros} erro(s) em ${evidencia.total} questão(ões), somando as provas consideradas. ` +
+    `Evidência inicial: ${formatarErros(evidencia.erros)} em ${formatarQuestoes(evidencia.total)}, somando as provas consideradas. ` +
     `O resultado será um sinal local; a confirmação real virá em nova prova ou simulado completo.`;
 
   const motivoSemana =

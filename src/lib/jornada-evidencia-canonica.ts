@@ -19,7 +19,7 @@ import {
   type UnidadeRegistroJornada,
 } from "@/lib/prova-multidia";
 import { unidadeValidaParaJornada } from "@/lib/jornada-elegibilidade";
-import { abreviarNomeProva } from "@/lib/jornada-labels";
+import { abreviarNomeProva, formatarErros, formatarQuestoes } from "@/lib/jornada-labels";
 import { prisma } from "@/lib/prisma";
 
 export type QuestaoEvidenciaCanonica = {
@@ -313,21 +313,21 @@ export function formatarEvidenciaFocoAgregada(
   opts?: { nomesCurtos?: boolean }
 ): string {
   const partes = [
-    `${ev.erros} erro(s) em ${ev.total} questão(ões) de ${ev.label} (somando as provas consideradas)`,
+    `${formatarErros(ev.erros)} em ${formatarQuestoes(ev.total)} de ${ev.label} (somando as provas consideradas)`,
   ];
   if (ev.provasComErro >= 2) {
     const detalhe = ev.ocorrenciasPorProva
       .filter((o) => o.erros > 0)
       .map((o) => {
         const nome = opts?.nomesCurtos ? abreviarNomeProva(o.nome) : o.nome;
-        return `${nome}: ${o.erros} erro(s) (questões ${o.numerosErradas.join(", ")})`;
+        return `${nome}: ${formatarErros(o.erros)} (questões ${o.numerosErradas.join(", ")})`;
       })
       .join("; ");
     partes.push(`distribuídos em ${ev.provasComErro} provas (${detalhe})`);
   } else if (ev.ocorrenciasPorProva[0]) {
     const o = ev.ocorrenciasPorProva[0];
     const nome = opts?.nomesCurtos ? abreviarNomeProva(o.nome) : o.nome;
-    partes.push(`nesta amostra: ${nome} — ${o.erros} erro(s)`);
+    partes.push(`nesta amostra: ${nome} — ${formatarErros(o.erros)}`);
   }
   return `${partes.join(" — ")}.`;
 }
@@ -336,7 +336,7 @@ export function formatarEvidenciaFocoPorProva(
   escopo: EscopoPorProvaCanonica,
   nomeProva: string
 ): string {
-  return `${escopo.erros} erro(s) em ${escopo.total} questão(ões) de ${escopo.label} nesta prova (${nomeProva}).`;
+  return `${formatarErros(escopo.erros)} em ${formatarQuestoes(escopo.total)} de ${escopo.label} nesta prova (${nomeProva}).`;
 }
 
 export type UnidadeEvidenciaInput = UnidadeRegistroJornada<

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Card, Button, Badge } from "@/components/ui";
 import { CicloHeader } from "@/components/ciclo-header";
 import type { CicloResumo } from "@/lib/ciclo";
+import { textoCriterioConclusaoExibicao } from "@/lib/jornada-labels";
 
 interface QuestMeta {
   ordem?: number;
@@ -177,7 +178,8 @@ function QuestsPageInner() {
             )}
             {q.meta?.criterioConclusao && (
               <p className="mt-1 text-xs text-teal-800">
-                <span className="font-medium">Concluir quando:</span> {q.meta.criterioConclusao}
+                <span className="font-medium">Concluir quando:</span>{" "}
+                {textoCriterioConclusaoExibicao(q.meta.criterioConclusao)}
               </p>
             )}
             {fluxoJornada && (

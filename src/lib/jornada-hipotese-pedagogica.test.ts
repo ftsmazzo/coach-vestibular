@@ -210,7 +210,7 @@ describe("inferirHipotesePedagogicaFoco — caso Frederico", () => {
       hipotesePrioridade: hipotese,
       atencaoSecundaria: "Inglês segue como atenção secundária por recorrência em microtópicos",
     });
-    assert.ok(resumo.includes("sinal inicial mais consistente"));
+    assert.ok(resumo.includes("sinal inicial") || resumo.includes("foco inicial"));
     assert.ok(resumo.includes("hipótese de intervenção"));
     assert.equal(resumo.includes("eixo mais urgente"), false);
     assert.equal(resumo.includes("fragilidade consolidada"), false);

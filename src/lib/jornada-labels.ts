@@ -26,6 +26,33 @@ const N1_CATALOGO: Record<string, string> = {
   portugues: "Português",
 };
 
+/** Pluralização simples para microcopy da Jornada. */
+export function pluralizar(n: number, singular: string, plural: string): string {
+  return n === 1 ? singular : plural;
+}
+
+export function formatarContagem(n: number, singular: string, plural: string): string {
+  return `${n} ${pluralizar(n, singular, plural)}`;
+}
+
+export function formatarErros(n: number): string {
+  return formatarContagem(n, "erro", "erros");
+}
+
+export function formatarQuestoes(n: number): string {
+  return formatarContagem(n, "questão", "questões");
+}
+
+export function formatarProvas(n: number): string {
+  return formatarContagem(n, "prova", "provas");
+}
+
+/** Remove prefixo duplicado "Concluir quando" do critério (a UI já exibe o rótulo). */
+export function textoCriterioConclusaoExibicao(criterio: string | null | undefined): string {
+  if (!criterio?.trim()) return "";
+  return criterio.replace(/^Concluir quando:?\s*/i, "").trim();
+}
+
 /** Abrevia nome longo de prova para resumos (UNESP, FAMERP, …). */
 export function abreviarNomeProva(nome: string): string {
   const upper = nome.toUpperCase();
@@ -48,7 +75,6 @@ export function labelMateriaEscopo(escopoId: string | null | undefined): string 
   return label;
 }
 
-/** Rótulo de matéria/área para cabeçalhos — nunca exibe "mat" cru. */
 /** Rótulo amigável para metaMateria persistida (ex.: "mat" → "Matemática · Geometria plana"). */
 export function formatarRotuloMateriaCiclo(
   metaMateria: string | null | undefined,
@@ -61,6 +87,7 @@ export function formatarRotuloMateriaCiclo(
   return rotuloFocoMateria(metaEscopoId, escopoLabel, metaMateria);
 }
 
+/** Rótulo de matéria/área para cabeçalhos — nunca exibe "mat" cru. */
 export function rotuloFocoMateria(
   escopoId: string | null | undefined,
   escopoLabel: string,

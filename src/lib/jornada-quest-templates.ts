@@ -8,6 +8,7 @@ import {
   motivoQuestConceitoBase,
   type HipotesePedagogicaFoco,
 } from "@/lib/jornada-hipotese-pedagogica";
+import { formatarQuestoes, textoCriterioConclusaoExibicao } from "@/lib/jornada-labels";
 import type { FonteDiagnosticoQuestJornada, QuestJornadaDraft } from "@/lib/jornada-quest-validador";
 
 export type TipoQuestJornada =
@@ -33,13 +34,13 @@ export type ContextoTemplateQuest = {
 
 const CRITERIOS: Record<TipoQuestJornada, string> = {
   REVISAO_ERRO:
-    "Concluir quando tiver refeito as questões indicadas, registrado comando e dado decisivo em cada uma e escrito uma frase sobre o erro principal.",
+    "tiver refeito as questões indicadas, registrado comando e dado decisivo em cada uma e escrito uma frase sobre o erro principal.",
   CONCEITO_BASE:
-    "Concluir quando o resumo tiver 6 a 8 linhas com sinais do enunciado e você tiver listado 3 perguntas que saberia responder sobre o escopo.",
+    "o resumo tiver 6 a 8 linhas com sinais do enunciado e você tiver listado 3 perguntas que saberia responder sobre o escopo.",
   TREINO_GUIADO:
-    "Concluir quando tiver resolvido as questões seguindo o roteiro (comando, dados, regra/conceito antes da resposta) em cada uma.",
+    "tiver resolvido as questões seguindo o roteiro (comando, dados, regra/conceito antes da resposta) em cada uma.",
   METACOGNICAO:
-    "Concluir quando cada erro estiver classificado (conceito, interpretação, cálculo, atenção ou tempo) e você tiver escrito qual categoria predominou e qual atitude testará na próxima.",
+    "cada erro estiver classificado (conceito, interpretação, cálculo, atenção ou tempo) e você tiver escrito qual categoria predominou e qual atitude testará na próxima.",
 };
 
 function tipoErroDominante(tipos: Record<string, number>): string | null {
@@ -59,6 +60,7 @@ function montarFonte(
   tipoQuest: TipoQuestJornada,
   criterioConclusao: string
 ): FonteDiagnosticoQuestJornada {
+  const criterio = textoCriterioConclusaoExibicao(criterioConclusao);
   return {
     versao: "1.0",
     origem: "LearningCycle",
@@ -69,7 +71,7 @@ function montarFonte(
     conhecimentoExigido: ctx.conhecimentosExigidos.slice(0, 3),
     tiposErro: ctx.tiposErro,
     motivo: ctx.motivoQuest ?? ctx.motivoFoco,
-    criterioConclusao,
+    criterioConclusao: criterio,
     excecaoSemEscopo: ctx.excecaoSemEscopo,
   };
 }
@@ -89,8 +91,8 @@ export function templateRevisaoErro(ctx: ContextoTemplateQuest): QuestJornadaDra
   } else if (dominante === "CALCULO_BOBEIRA") {
     extra = " Confira unidade, sinal e grandeza antes de comparar com o gabarito.";
   }
-  const criterio = CRITERIOS.REVISAO_ERRO;
-  const corpo = `Refaça ${n} questão(ões) errada(s) do escopo ${ctx.escopoLabel}. Antes de olhar a correção, escreva: qual era o comando da questão, qual dado era decisivo e onde seu raciocínio mudou. Conclua registrando em uma frase o erro principal.${extra}`;
+  const criterio = textoCriterioConclusaoExibicao(CRITERIOS.REVISAO_ERRO);
+  const corpo = `Refaça ${formatarQuestoes(n)} errada${n === 1 ? "" : "s"} do escopo ${ctx.escopoLabel}. Antes de olhar a correção, escreva: qual era o comando da questão, qual dado era decisivo e onde seu raciocínio mudou. Conclua registrando em uma frase o erro principal.${extra}`;
   return {
     cicloId: ctx.cicloId,
     conhecimentoEscopoId: ctx.escopoId,
@@ -114,7 +116,7 @@ export function templateConceitoBase(ctx: ContextoTemplateQuest): QuestJornadaDr
   }
   const n3 = ctx.conhecimentosExigidos[0];
   const refN3 = n3 ? ` Inclua o conhecimento exigido: ${n3.slice(0, 120)}.` : "";
-  const criterio = CRITERIOS.CONCEITO_BASE;
+  const criterio = textoCriterioConclusaoExibicao(CRITERIOS.CONCEITO_BASE);
   const corpo = `Escreva um resumo de 6 a 8 linhas sobre ${ctx.escopoLabel}, incluindo quando usar a ideia principal, quais sinais do enunciado indicam esse conteúdo e um exemplo simples.${refN3} Conclua criando 3 perguntas que você deveria saber responder sobre esse escopo.`;
   return {
     cicloId: ctx.cicloId,
@@ -132,9 +134,10 @@ export function templateConceitoBase(ctx: ContextoTemplateQuest): QuestJornadaDr
 
 /** Quest REVISAO_ERRO — soma de ângulos em figuras planas. */
 export function templateRevisaoErroSomaAngulos(ctx: ContextoTemplateQuest): QuestJornadaDraft {
-  const criterio =
+  const criterio = textoCriterioConclusaoExibicao(
     ctx.hipotese?.criterioConclusao ??
-    "Concluir quando tiver refeito as questões indicadas com marcação da figura, relação angular escolhida, equação montada e uma frase dizendo onde o raciocínio quebrou.";
+      "tiver refeito as questões indicadas com marcação da figura, relação angular escolhida, equação montada e uma frase dizendo onde o raciocínio quebrou."
+  );
   const motivo =
     ctx.motivoQuest ??
     ctx.hipotese?.motivoQuest ??
@@ -166,8 +169,9 @@ export function templateRevisaoErroSomaAngulos(ctx: ContextoTemplateQuest): Ques
 
 /** Quest CONCEITO_BASE — relações angulares em figuras planas. */
 export function templateConceitoBaseSomaAngulos(ctx: ContextoTemplateQuest): QuestJornadaDraft {
-  const criterio =
-    "Concluir quando a folha tiver 5 casos desenhados, cada um com uma equação correta, e 3 sinais visuais para reconhecer a relação angular.";
+  const criterio = textoCriterioConclusaoExibicao(
+    "a folha tiver 5 casos desenhados, cada um com uma equação correta, e 3 sinais visuais para reconhecer a relação angular."
+  );
   const motivo = ctx.hipotese
     ? motivoQuestConceitoBase(ctx.hipotese, ctx.escopoId ?? "", ctx.escopoLabel)
     : "Os erros sugerem que a base de reconhecimento das relações angulares precisa ser testada antes de novos exercícios.";
@@ -192,8 +196,9 @@ export function templateConceitoBaseSomaAngulos(ctx: ContextoTemplateQuest): Que
 
 /** Quest de leitura orientada para inglês / microescopos gramaticais. */
 export function templateLeituraIngles(ctx: ContextoTemplateQuest): QuestJornadaDraft {
-  const criterio =
-    "Concluir quando tiver refeito as questões de inglês indicadas, grifado as pistas linguísticas em cada uma e registrado qual relação de sentido você ignorou ao comparar com o gabarito.";
+  const criterio = textoCriterioConclusaoExibicao(
+    "tiver refeito as questões de inglês indicadas, grifado as pistas linguísticas em cada uma e registrado qual relação de sentido você ignorou ao comparar com o gabarito."
+  );
   const focoLabel = isMicroescopoIngles(ctx.escopoId ?? "", ctx.escopoLabel)
     ? "preposições, conectores e expressões que mudam o sentido"
     : ctx.escopoLabel;
@@ -217,9 +222,9 @@ export function templateLeituraIngles(ctx: ContextoTemplateQuest): QuestJornadaD
 
 export function templateRevisaoErroIngles(ctx: ContextoTemplateQuest): QuestJornadaDraft {
   const n = nQuestoes(ctx);
-  const criterio = CRITERIOS.REVISAO_ERRO;
+  const criterio = textoCriterioConclusaoExibicao(CRITERIOS.REVISAO_ERRO);
   const corpo =
-    `Refaça ${n} questão(ões) de inglês que você errou. Antes de ver o gabarito, anote: qual palavra ou expressão mudava o sentido, qual alternativa você marcou e por que ela parecia plausível. ` +
+    `Refaça ${formatarQuestoes(n)} de inglês que você errou. Antes de ver o gabarito, anote: qual palavra ou expressão mudava o sentido, qual alternativa você marcou e por que ela parecia plausível. ` +
     "Depois compare com o gabarito e escreva qual pista do enunciado você não usou.";
   return {
     cicloId: ctx.cicloId,
@@ -247,7 +252,7 @@ export function templateTreinoGuiado(ctx: ContextoTemplateQuest): QuestJornadaDr
     roteiro =
       "liste unidade e grandeza de cada dado, confira sinal e ordem de magnitude, depois execute o cálculo e marque a alternativa";
   }
-  const criterio = CRITERIOS.TREINO_GUIADO;
+  const criterio = textoCriterioConclusaoExibicao(CRITERIOS.TREINO_GUIADO);
   const corpo = `Resolva ${n} questões do escopo ${ctx.escopoLabel}. Em cada uma, siga o roteiro: ${roteiro}.`;
   return {
     cicloId: ctx.cicloId,
@@ -264,7 +269,7 @@ export function templateTreinoGuiado(ctx: ContextoTemplateQuest): QuestJornadaDr
 }
 
 export function templateMetacognicao(ctx: ContextoTemplateQuest): QuestJornadaDraft {
-  const criterio = CRITERIOS.METACOGNICAO;
+  const criterio = textoCriterioConclusaoExibicao(CRITERIOS.METACOGNICAO);
   const corpo = `Revise suas respostas no escopo ${ctx.escopoLabel} e classifique cada erro em uma categoria: conceito, interpretação, cálculo, atenção ou tempo. Depois escreva qual categoria mais apareceu e qual atitude você vai testar na próxima resolução.`;
   return {
     cicloId: ctx.cicloId,
@@ -282,8 +287,9 @@ export function templateMetacognicao(ctx: ContextoTemplateQuest): QuestJornadaDr
 
 /** Quest cognitiva/organização quando não há escopo N2 confiável. */
 export function templateOrganizacaoRotina(ctx: ContextoTemplateQuest): QuestJornadaDraft {
-  const criterio =
-    "Concluir quando tiver registrado 3 blocos de estudo da semana com duração e tema, e escrito qual será o primeiro escopo a revisar quando houver nova prova.";
+  const criterio = textoCriterioConclusaoExibicao(
+    "tiver registrado 3 blocos de estudo da semana com duração e tema, e escrito qual será o primeiro escopo a revisar quando houver nova prova."
+  );
   const corpo = `Organize sua semana da Jornada: liste 3 blocos de estudo (dia, duração, tema). Escreva como vai registrar erros das próximas provas para alimentar o diagnóstico. Identifique qual matéria ou escopo você revisará primeiro quando surgir nova evidência.`;
   const fonte: FonteDiagnosticoQuestJornada = {
     versao: "1.0",

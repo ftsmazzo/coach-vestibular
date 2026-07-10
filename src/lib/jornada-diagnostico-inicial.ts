@@ -34,6 +34,7 @@ import {
   rotularTipoErro,
 } from "@/lib/jornada-diagnostico-sintese";
 import { inferirHipotesePedagogicaFoco } from "@/lib/jornada-hipotese-pedagogica";
+import { formatarProvas, formatarQuestoes } from "@/lib/jornada-labels";
 import { isMicroescopoIngles } from "@/lib/jornada-foco-inicial";
 import {
   evidenciaCanonicaFocoDeAgregado,
@@ -742,7 +743,7 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
   const moduladores = cruzamentoAnamnese.moduladores;
   const limites = [
     ...cruzamentoAnamnese.limites,
-    `Diagnóstico baseado em ${provasConsideradas.length} prova(s)/simulado(s) e ${attempts.length} questões válidas — padrões podem mudar com novas evidências.`,
+    `Diagnóstico baseado em ${formatarProvas(provasConsideradas.length)} e ${formatarQuestoes(attempts.length)} — padrões podem mudar com novas evidências.`,
   ];
 
   const prioridadesIniciais = montarPrioridadesDiagnostico(
@@ -818,7 +819,7 @@ export function montarDiagnosticoInicialPayload(coleta: ColetaEvidenciasBruta): 
 
   const narrativaJson: NarrativaDiagnosticoInicial = {
     titulo: "Diagnóstico Inicial da Jornada",
-    subtitulo: `Marco zero — ${provasConsideradas.length} prova(s) consideradas`,
+    subtitulo: `Marco zero — ${formatarProvas(provasConsideradas.length)} consideradas`,
     mensagemPrincipal: resumoExecutivo,
     cards: [
       ...forcas.slice(0, 2).map((f) => ({

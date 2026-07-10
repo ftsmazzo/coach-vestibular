@@ -2,6 +2,7 @@
  * Etapa 4C — qualidade do foco inicial da Semana 1 e score de priorização.
  */
 import type { BaselineEscopoJornada } from "@/lib/jornada-diagnostico-inicial";
+import { formatarErros } from "@/lib/jornada-labels";
 
 export type NivelQualidadeFoco = "FORTE" | "ACEITAVEL" | "FRACO";
 
@@ -321,7 +322,7 @@ export function motivoPrioridadeEnriquecido(
       `${linha.erros} erros analisáveis em ${linha.total} questões de ${escopoLabel} na amostra inicial`
     );
   } else {
-    partes.push(`${linha.erros} erro(s) em ${escopoLabel} com classificação completa`);
+    partes.push(`${formatarErros(linha.erros)} em ${escopoLabel} com classificação completa`);
   }
 
   if (qualidade.bonus.includes("fragilidade estruturante com amostra razoável")) {

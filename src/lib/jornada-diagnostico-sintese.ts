@@ -7,10 +7,10 @@ import type { EscopoScore } from "@/lib/diagnosis-escopo";
 import type { EvidenciaCanonicaFoco } from "@/lib/jornada-evidencia-canonica";
 import { formatarEvidenciaFocoAgregada } from "@/lib/jornada-evidencia-canonica";
 import {
-  inferirHipotesePedagogicaFoco,
   motivoPrioridadeInicial,
   type HipotesePedagogicaFoco,
 } from "@/lib/jornada-hipotese-pedagogica";
+import { formatarErros, formatarProvas, formatarQuestoes } from "@/lib/jornada-labels";
 import { indexGlobalEscopos } from "@/lib/conhecimento-catalog/load";
 import type {
   BaselineEscopoJornada,
@@ -101,7 +101,7 @@ export function montarEvidenciasEscopoRicas(
         `${linha.pctErro}% de erro em ${escopoLabel} (${linha.erros} de ${linha.total} questões)`
       );
     } else if (linha.erros >= 2) {
-      evidencias.push(`${linha.erros} erros analisáveis em ${linha.total} questão(ões) de ${escopoLabel}`);
+      evidencias.push(`${linha.erros} erros analisáveis em ${formatarQuestoes(linha.total)} de ${escopoLabel}`);
     }
   }
 
@@ -145,7 +145,9 @@ export function motivoDiagnosticoEscopo(
   const partes: string[] = [];
 
   if (evidenciaCanonica) {
-    partes.push(motivoPrioridadeInicial(escopoLabel, evidenciaCanonica).replace(/\.$/, ""));
+    partes.push(
+      motivoPrioridadeInicial(escopoLabel, evidenciaCanonica, "secundaria").replace(/\.$/, "")
+    );
   } else if (linha.erros >= 3 && linha.provasComErro >= 2) {
     partes.push(
       `${escopoLabel} concentra ${linha.erros} erros em ${linha.total} questões e reaparece em ${linha.provasComErro} provas`
@@ -350,7 +352,11 @@ export function montarPrioridadesDiagnostico(
       n1: c.e.escopoId.split(".")[0],
       titulo: c.label,
       motivo: evidenciaPorEscopo?.get(c.e.escopoId)
-        ? motivoPrioridadeInicial(c.label, evidenciaPorEscopo.get(c.e.escopoId))
+        ? motivoPrioridadeInicial(
+            c.label,
+            evidenciaPorEscopo.get(c.e.escopoId),
+            i === 0 ? "primaria" : "secundaria"
+          )
         : motivoDiagnosticoEscopo(
             c.e,
             c.label,
@@ -370,7 +376,7 @@ export function montarPrioridadesDiagnostico(
       escopoId: top.escopoId,
       n1: top.materiaId,
       titulo: top.escopoLabel,
-      motivo: motivoPrioridadeInicial(top.escopoLabel, ev),
+      motivo: motivoPrioridadeInicial(top.escopoLabel, ev, "primaria"),
       tipoPrioridade: "CONTEUDO",
     });
   }
@@ -407,7 +413,7 @@ export function montarPadroesCognitivosDiagnostico(
         "Padrão de erro observado nas provas consideradas.",
       evidencias: [
         `${p.ocorrencias} ocorrências`,
-        `Presente em ${p.escoposAssociados.length} escopo(s) distintos`,
+        `Presente em ${p.escoposAssociados.length} escopos distintos`,
       ],
     }));
 }
@@ -500,30 +506,22 @@ export function montarResumoExecutivoDiagnostico(opts: {
   const partes: string[] = [];
 
   partes.push(
-    `Com base em ${opts.provas} prova(s) e ${opts.questoes} questões válidas (${opts.pctAcerto}% de acerto na amostra)`
+    `Com base em ${formatarProvas(opts.provas)} e ${formatarQuestoes(opts.questoes)} (${opts.pctAcerto}% de acerto)`
   );
 
   if (opts.hipotesePrioridade && opts.evidenciaPrioridade && opts.prioridades[0]) {
     const titulo = opts.prioridades[0].titulo;
+    const ev = opts.evidenciaPrioridade;
     partes.push(
-      `o sinal inicial mais consistente para começar a Jornada aparece em ${titulo}`
+      `o foco inicial é ${titulo}: ${formatarErros(ev.erros)} em ${formatarQuestoes(ev.total)}`
     );
     partes.push(
-      formatarEvidenciaFocoAgregada(opts.evidenciaPrioridade, { nomesCurtos: true }).replace(
-        /\.$/,
-        ""
-      )
-    );
-    partes.push(
-      `Como a amostra do tema ainda é ${opts.hipotesePrioridade.forcaDaEvidencia === "INICIAL" ? "pequena" : "limitada"}, o diagnóstico trata isso como hipótese de intervenção, não como conclusão definitiva`
+      `amostra ${opts.hipotesePrioridade.forcaDaEvidencia === "INICIAL" ? "pequena" : "limitada"} — hipótese de intervenção, não conclusão definitiva`
     );
   } else if (opts.prioridades[0]) {
     partes.push(
       `a leitura inicial aponta ${opts.prioridades[0].titulo} como primeira hipótese de intervenção`
     );
-    if (opts.prioridades[1]) {
-      partes.push(`seguido de ${opts.prioridades[1].titulo}`);
-    }
   } else if (opts.escoposCriticos[0]) {
     const idx = indexGlobalEscopos();
     const label =
@@ -531,24 +529,12 @@ export function montarResumoExecutivoDiagnostico(opts: {
     partes.push(`a leitura inicial destaca atenção em ${label}`);
   }
 
-  if (opts.padraoCognitivoTop && opts.padraoCognitivoTop.ocorrencias >= 3) {
-    partes.push(
-      `com padrão transversal de ${opts.padraoCognitivoTop.titulo} (${opts.padraoCognitivoTop.ocorrencias} ocorrências)`
-    );
-  }
-
   if (opts.forcas[0]) {
-    partes.push(`enquanto ${opts.forcas[0].titulo} aparece mais estável na amostra`);
+    partes.push(`${opts.forcas[0].titulo} aparece mais estável`);
   }
 
   if (opts.atencaoSecundaria) {
     partes.push(opts.atencaoSecundaria.replace(/\.$/, ""));
-  } else if (opts.confirmacoesAnamnese[0]) {
-    partes.push(opts.confirmacoesAnamnese[0]!.replace(/\.$/, ""));
-  } else if (opts.moduladoresAnamnese[0]) {
-    partes.push(
-      "a anamnese sugere moderar volume e ritmo nas primeiras intervenções"
-    );
   }
 
   return juntarFrasesResumo(partes);

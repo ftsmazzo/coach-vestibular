@@ -146,12 +146,13 @@ describe("Etapa 4F — polimento UI/texto", () => {
       evidenciaPorEscopo
     );
     const motivo = prioridades[0]?.motivo ?? "";
-    assert.ok(motivo.includes("3 erro(s) em 3 questão(ões)"));
-    assert.equal(motivo.includes("2 erro(s)"), false);
+    assert.ok(motivo.includes("3 erros em 3 questões"));
+    assert.equal(motivo.includes("2 erros"), false);
+    assert.equal(motivo.includes("erro(s)"), false);
     assert.ok(motivo.includes("primeira hipótese de intervenção"));
   });
 
-  it("2. resumo executivo não contém ', Como'", () => {
+  it("2. resumo executivo não contém ', Como' e usa pontuação limpa", () => {
     const resumo = montarResumoExecutivoDiagnostico({
       provas: 2,
       questoes: 120,
@@ -173,7 +174,8 @@ describe("Etapa 4F — polimento UI/texto", () => {
       hipotesePrioridade: hipotese,
     });
     assert.equal(resumo.includes(", Como"), false);
-    assert.ok(resumo.includes(". Como"));
+    assert.equal(resumo.includes("erro(s)"), false);
+    assert.ok(resumo.includes("hipótese de intervenção"));
   });
 
   it("3. resumo executivo usa nomes curtos de prova", () => {
@@ -243,5 +245,7 @@ describe("Etapa 4F — polimento UI/texto", () => {
     assert.ok(motivo.startsWith(`${LABEL_SOMA} aparece como primeira hipótese de intervenção:`));
     assert.ok(motivo.includes("amostra ainda é pequena"));
     assert.equal(motivo.includes("concentrou"), false);
+    assert.equal(motivo.includes("erro(s)"), false);
+    assert.equal(motivo.includes("questão(ões)"), false);
   });
 });

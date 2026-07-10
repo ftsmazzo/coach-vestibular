@@ -21,6 +21,7 @@ import {
   selecionarTiposQuest,
   type TipoQuestJornada,
 } from "@/lib/jornada-quest-templates";
+import { textoCriterioConclusaoExibicao } from "@/lib/jornada-labels";
 import {
   logRejeicaoQuest,
   validarQuestJornada,
@@ -226,7 +227,7 @@ export function questRowParaResumo(q: {
     descricao: descricaoQuestSemCriterioDuplicado(q.descricao),
     tipoQuest: q.tipoQuest ?? "TREINO_GUIADO",
     duracaoMin: q.duracaoMin,
-    criterioConclusao: fonte?.criterioConclusao ?? "",
+    criterioConclusao: textoCriterioConclusaoExibicao(fonte?.criterioConclusao ?? ""),
     motivo: fonte?.motivo ?? "",
     status: q.status,
     conhecimentoEscopoId: q.conhecimentoEscopoId,

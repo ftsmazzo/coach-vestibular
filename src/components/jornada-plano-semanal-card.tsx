@@ -1,5 +1,6 @@
 import type { PlanoSemanalJornadaResumo } from "@/lib/jornada-plano-semanal";
 import { AVISO_LIMITE_PLANO_JORNADA } from "@/lib/jornada-plano-semanal";
+import { textoCriterioConclusaoExibicao } from "@/lib/jornada-labels";
 import { Card, LinkButton } from "@/components/ui";
 import { GerarPlanoJornadaButton } from "@/components/gerar-plano-jornada-button";
 
@@ -102,7 +103,8 @@ export function JornadaPlanoSemanalCard({ plano, podeGerar }: Props) {
               )}
               {q.criterioConclusao && (
                 <p className="mt-1 text-xs text-teal-800">
-                  <span className="font-medium">Concluir quando:</span> {q.criterioConclusao}
+                  <span className="font-medium">Concluir quando:</span>{" "}
+                  {textoCriterioConclusaoExibicao(q.criterioConclusao)}
                 </p>
               )}
             </div>
