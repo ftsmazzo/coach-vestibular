@@ -343,8 +343,8 @@ export function resolverQuantidadeQuests(profile: StructuredAnamneseProfile | nu
 export function descricaoQuestSemCriterioDuplicado(descricao: string | null): string {
   if (!descricao) return "";
   return descricao
-    .replace(/\n\nConcluir quando:\s*.+$/s, "")
-    .replace(/\nConcluir quando:\s*.+$/s, "")
+    .replace(/\n\nConcluir quando:\s*[\s\S]+$/, "")
+    .replace(/\nConcluir quando:\s*[\s\S]+$/, "")
     .trim();
 }
 
